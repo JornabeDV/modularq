@@ -3,8 +3,9 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, Users, Clock, FileText, Settings, LogOut, Factory } from "lucide-react"
+import { LayoutDashboard, FolderKanban, Users, Clock, FileText, Settings, LogOut, Shield } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 
 const navigation = [
@@ -16,19 +17,25 @@ const navigation = [
   { name: "Configuración", href: "/settings", icon: Settings },
 ]
 
+const adminNavigation = [
+  { name: "Gestión de Usuarios", href: "/admin/users", icon: Shield },
+]
+
 export function Sidebar() {
-  const { user, logout } = useAuth()
+  const { user, userProfile, logout } = useAuth()
   const pathname = usePathname()
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r">
       {/* Header */}
-      <div className="flex h-16 items-center gap-2 px-6 border-b">
-        <Factory className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="font-bold text-lg">Sistema Operarios</h1>
-          <p className="text-xs text-muted-foreground">Gestión Industrial</p>
-        </div>
+      <div className="flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
+        <Image
+          src="/assets/logo.png"
+          alt="MODULARQ Logo"
+          width={150}
+          height={150}
+          className="object-contain"
+        />
       </div>
 
       {/* User Info */}
@@ -36,15 +43,22 @@ export function Sidebar() {
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-sm font-medium text-primary">
-              {user?.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+              {userProfile?.name && typeof userProfile.name === 'string'
+                ? userProfile.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                : "U"}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.name}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            <p className="text-sm font-medium truncate">
+              {userProfile?.name || user?.email || "Usuario"}
+            </p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {userProfile?.role || "Sin rol"}
+            </p>
           </div>
         </div>
       </div>
@@ -71,6 +85,37 @@ export function Sidebar() {
               </li>
             )
           })}
+          
+          {/* Admin Navigation */}
+          {userProfile?.role === 'admin' && (
+            <>
+              <div className="my-4 border-t border-border" />
+              <div className="px-3 py-2">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Administración
+                </h3>
+              </div>
+              {adminNavigation.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  </li>
+                )
+              })}
+            </>
+          )}
         </ul>
       </nav>
 

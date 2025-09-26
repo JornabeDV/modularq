@@ -4,10 +4,14 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
 import { mockProjects, mockOperarios, mockTasks } from "@/lib/mock-data"
-import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings } from "lucide-react"
+import Link from "next/link"
 
 export default function DashboardPage() {
+  const { userProfile } = useAuth()
   const activeProjects = mockProjects.filter((p) => p.status === "active")
   const totalOperarios = mockOperarios.length
   const activeTasks = mockTasks.filter((t) => t.status === "in-progress").length
@@ -49,9 +53,34 @@ export default function DashboardPage() {
     <MainLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-balance">Dashboard</h1>
-          <p className="text-muted-foreground">Resumen general del sistema de gestión de operarios</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-balance">Dashboard</h1>
+            <p className="text-muted-foreground">
+              {userProfile?.role === 'admin' 
+                ? 'Panel de administración - Gestión completa del sistema'
+                : 'Resumen general del sistema de gestión de operarios'
+              }
+            </p>
+          </div>
+          
+          {/* Admin Quick Actions */}
+          {userProfile?.role === 'admin' && (
+            <div className="flex gap-2">
+              <Link href="/admin/users">
+                <Button variant="outline" className="gap-2">
+                  <Shield className="h-4 w-4" />
+                  Gestión de Usuarios
+                </Button>
+              </Link>
+              <Link href="/admin/users">
+                <Button className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Crear Usuario
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -179,6 +208,70 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Admin Section */}
+        {userProfile?.role === 'admin' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Panel de Administración
+              </CardTitle>
+              <CardDescription>Gestión de usuarios y control del sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Control de Usuarios</h3>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Crea, edita y gestiona todos los usuarios del sistema
+                  </p>
+                  <Link href="/admin/users">
+                    <Button size="sm" className="w-full">
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      Gestionar Usuarios
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Asignación de Contraseñas</h3>
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Genera y asigna contraseñas seguras a los usuarios
+                  </p>
+                  <Link href="/admin/users">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <Shield className="h-3 w-3 mr-1" />
+                      Configurar Accesos
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Estadísticas del Sistema</h3>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Monitorea el rendimiento y actividad del sistema
+                  </p>
+                  <Link href="/reports">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Ver Reportes
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Activity */}
         <Card>
