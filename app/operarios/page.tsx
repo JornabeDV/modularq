@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { mockOperarios, mockTasks } from "@/lib/mock-data"
 import { Plus, Clock, TrendingUp, Mail, Wrench } from "lucide-react"
+import Link from "next/link"
 
 export default function OperariosPage() {
   const getOperarioTasks = (operarioId: string) => {
@@ -33,11 +34,54 @@ export default function OperariosPage() {
             <h1 className="text-3xl font-bold text-balance">Operarios</h1>
             <p className="text-muted-foreground">Gestión del personal y asignación de tareas</p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Operario
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/admin/users">
+              <Button variant="outline">
+                <Wrench className="mr-2 h-4 w-4" />
+                Gestionar Usuarios
+              </Button>
+            </Link>
+            <Link href="/admin/users">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nuevo Operario
+              </Button>
+            </Link>
+          </div>
         </div>
+
+        {/* Admin Notice */}
+        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Panel de Administración
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                  Como administrador, puedes gestionar todos los usuarios del sistema desde aquí.
+                </p>
+                <div className="flex gap-2">
+                  <Link href="/admin/users">
+                    <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900">
+                      <Plus className="h-3 w-3 mr-1" />
+                      Crear Usuario
+                    </Button>
+                  </Link>
+                  <Link href="/admin/users">
+                    <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900">
+                      <Wrench className="h-3 w-3 mr-1" />
+                      Ver Todos los Usuarios
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Operarios Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
