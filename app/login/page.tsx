@@ -10,24 +10,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Factory } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-  const { login, isLoading } = useAuth()
+  const { loginWithName, isLoading } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    const success = await login(email, password)
+    const success = await loginWithName(username, password)
     if (success) {
       router.push("/dashboard")
     } else {
-      setError("Credenciales inválidas. Use cualquier email de la lista y contraseña: 123456")
+      setError("Credenciales inválidas. Verifique su nombre de usuario y contraseña")
     }
   }
 
@@ -36,21 +37,26 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Factory className="h-12 w-12 text-primary" />
+            <Image
+              src="/assets/logo.png"
+              alt="MODULARQ Logo"
+              width={250}
+              height={250}
+              className="object-contain"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">Sistema Operarios</CardTitle>
           <CardDescription>Ingrese sus credenciales para acceder al sistema</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Nombre</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@empresa.com"
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Complete con su nombre"
                 required
               />
             </div>
@@ -84,15 +90,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-2">Usuarios de prueba:</p>
-            <div className="text-xs space-y-1 text-muted-foreground">
-              <p>• admin@empresa.com (Admin)</p>
-              <p>• supervisor@empresa.com (Supervisor)</p>
-              <p>• operario@empresa.com (Operario)</p>
-              <p className="font-medium">Contraseña: 123456</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
