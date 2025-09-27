@@ -51,12 +51,12 @@ export default function DashboardPage() {
 
   return (
     <MainLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-balance">Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-balance">Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               {userProfile?.role === 'admin' 
                 ? 'Panel de administración - Gestión completa del sistema'
                 : 'Resumen general del sistema de gestión de operarios'
@@ -66,15 +66,15 @@ export default function DashboardPage() {
           
           {/* Admin Quick Actions */}
           {userProfile?.role === 'admin' && (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Link href="/admin/users">
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 w-full sm:w-auto">
                   <Shield className="h-4 w-4" />
                   Gestión de Usuarios
                 </Button>
               </Link>
               <Link href="/admin/users">
-                <Button className="gap-2">
+                <Button className="gap-2 w-full sm:w-auto">
                   <UserPlus className="h-4 w-4" />
                   Crear Usuario
                 </Button>
@@ -84,7 +84,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -220,7 +220,7 @@ export default function DashboardPage() {
               <CardDescription>Gestión de usuarios y control del sistema</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium">Control de Usuarios</h3>

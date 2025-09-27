@@ -49,34 +49,36 @@ export function UserTable({
         />
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader >
-            <TableRow className="hover:bg-background">
-              <TableHead>Usuario</TableHead>
-              <TableHead className="text-center">Rol</TableHead>
-              <TableHead className="text-center">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="text-center py-8 text-muted-foreground">
-                  No se encontraron usuarios
-                </td>
-              </tr>
-            ) : (
-              users.map((user) => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  currentUserId={currentUserId}
-                  onEdit={onEditUser}
-                  onDelete={onDeleteUser}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader >
+              <TableRow className="hover:bg-background">
+                <TableHead className="min-w-[200px]">Usuario</TableHead>
+                <TableHead className="text-center min-w-[120px]">Rol</TableHead>
+                <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="text-center py-8 text-muted-foreground">
+                    No se encontraron usuarios
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    currentUserId={currentUserId}
+                    onEdit={onEditUser}
+                    onDelete={onDeleteUser}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   )

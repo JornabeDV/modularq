@@ -23,11 +23,11 @@ export function UserFilters({
           placeholder="Buscar por nombre..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
       </div>
       <Select value={roleFilter} onValueChange={onRoleFilterChange}>
-        <SelectTrigger className="w-48">
+        <SelectTrigger className="w-full sm:w-48">
           <SelectValue placeholder="Filtrar por rol" />
         </SelectTrigger>
         <SelectContent>

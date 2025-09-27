@@ -31,7 +31,7 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-auto max-w-md">
+      <DialogContent className="w-[95vw] max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
