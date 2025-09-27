@@ -35,14 +35,6 @@ export function TaskRow({
         </Badge>
       </TableCell>
       <TableCell className="text-center">
-        <Badge 
-          variant={task.type === 'standard' ? 'default' : 'outline'}
-          className={task.type === 'standard' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
-        >
-          {task.type === 'standard' ? 'Estándar' : 'Personalizada'}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-center">
         <div className="text-sm">
           <div className="font-medium">{task.estimatedHours}h</div>
         </div>

@@ -125,9 +125,6 @@ export function ProjectTaskManager({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Gestión de Tareas del Proyecto</h3>
-          <p className="text-sm text-muted-foreground">
-            Asigna tareas existentes o crea nuevas tareas personalizadas para este proyecto
-          </p>
         </div>
         <div className="flex gap-2">
           {onCreateTask && (
@@ -176,12 +173,11 @@ export function ProjectTaskManager({
                 {standardTasks.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <Badge variant="default">Estándar</Badge>
                       Tareas Reutilizables ({standardTasks.length})
                     </h4>
                     <div className="grid gap-2">
                       {standardTasks.map(task => (
-                        <Card key={task.id} className="p-3 hover:bg-gray-50 cursor-pointer"
+                        <Card key={task.id} className="p-3 hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer"
                               onClick={() => {
                                 onAssignTask(task.id)
                                 setIsDialogOpen(false)
@@ -210,12 +206,11 @@ export function ProjectTaskManager({
                 {customTasks.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <Badge variant="secondary">Personalizada</Badge>
                       Tareas Específicas ({customTasks.length})
                     </h4>
                     <div className="grid gap-2">
                       {customTasks.map(task => (
-                        <Card key={task.id} className="p-3 hover:bg-gray-50 cursor-pointer"
+                        <Card key={task.id} className="p-3 hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer"
                               onClick={() => {
                                 onAssignTask(task.id)
                                 setIsDialogOpen(false)

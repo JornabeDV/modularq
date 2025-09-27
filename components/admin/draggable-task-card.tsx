@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Clock, AlertCircle, GripVertical } from 'lucide-react'
+import { GripVertical } from 'lucide-react'
 import type { ProjectTask } from '@/lib/types'
 
 interface DraggableTaskCardProps {
@@ -32,41 +32,14 @@ export function DraggableTaskCard({
 }: DraggableTaskCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'in_progress': return <Clock className="h-4 w-4 text-blue-500" />
-      case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      default: return <AlertCircle className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'in_progress': return 'bg-blue-100 text-blue-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Pendiente'
-      case 'in_progress': return 'En Progreso'
-      case 'completed': return 'Completada'
-      case 'cancelled': return 'Cancelada'
-      default: return 'Desconocido'
-    }
-  }
 
   return (
     <Card 
       className={`p-4 transition-all duration-200 cursor-move select-none ${
         isDragging 
-          ? 'opacity-50 scale-95 shadow-lg' 
+          ? 'opacity-50 shadow-lg' 
           : isHovered 
-            ? 'shadow-md scale-[1.02]' 
+            ? 'shadow-md' 
             : 'hover:shadow-sm'
       }`}
       draggable
@@ -90,11 +63,6 @@ export function DraggableTaskCard({
               <GripVertical className="h-5 w-5" />
             </div>
             
-            {/* Status Icon */}
-            <div className="flex-shrink-0">
-              {getStatusIcon(projectTask.status)}
-            </div>
-            
             {/* Task Info */}
             <div className="flex-1 min-w-0">
               <h5 className="font-medium truncate">{projectTask.task?.title}</h5>
@@ -102,20 +70,12 @@ export function DraggableTaskCard({
                 <Badge variant="outline" className="text-xs">
                   {projectTask.task?.category}
                 </Badge>
-                <Badge 
-                  variant={projectTask.task?.type === 'standard' ? 'default' : 'secondary'}
-                  className="text-xs"
-                >
-                  {projectTask.task?.type === 'standard' ? 'Estándar' : 'Personalizada'}
-                </Badge>
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(projectTask.status)}`}>
-                  {getStatusLabel(projectTask.status)}
-                </span>
               </div>
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                 <span>{projectTask.task?.estimatedHours}h estimadas</span>
-                <span>{projectTask.actualHours}h reales</span>
-                <span>{projectTask.progressPercentage}% completado</span>
+                {projectTask.actualHours > 0 && (
+                  <span>{projectTask.actualHours}h reales</span>
+                )}
                 {projectTask.assignedUser && (
                   <span>Asignado a: {projectTask.assignedUser.name}</span>
                 )}
