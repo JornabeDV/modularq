@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, Users, Clock, FileText, Settings, LogOut, Shield } from "lucide-react"
+import { LayoutDashboard, FolderKanban, Users, Clock, FileText, Settings, LogOut, Shield, CheckSquare } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -19,6 +19,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: "Gestión de Usuarios", href: "/admin/users", icon: Shield },
+  { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
 ]
 
 export function Sidebar() {
@@ -46,7 +47,7 @@ export function Sidebar() {
               {userProfile?.name && typeof userProfile.name === 'string'
                 ? userProfile.name
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join("")
                     .toUpperCase()
                 : "U"}

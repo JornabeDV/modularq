@@ -1,0 +1,62 @@
+"use client"
+
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TASK_CATEGORIES, TASK_PRIORITIES } from '@/lib/constants'
+
+interface TaskFiltersProps {
+  searchTerm: string
+  onSearchChange: (value: string) => void
+  categoryFilter: string
+  onCategoryFilterChange: (value: string) => void
+  priorityFilter: string
+  onPriorityFilterChange: (value: string) => void
+}
+
+export function TaskFilters({ 
+  searchTerm, 
+  onSearchChange, 
+  categoryFilter, 
+  onCategoryFilterChange,
+  priorityFilter,
+  onPriorityFilterChange
+}: TaskFiltersProps) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-4 mt-4">
+      <div className="flex-1">
+        <Input
+          placeholder="Buscar por título o descripción..."
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full sm:max-w-sm"
+        />
+      </div>
+      <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
+        <SelectTrigger className="w-full sm:w-48">
+          <SelectValue placeholder="Filtrar por categoría" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas las categorías</SelectItem>
+          {TASK_CATEGORIES.map((category) => (
+            <SelectItem key={category} value={category}>
+              {category}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={priorityFilter} onValueChange={onPriorityFilterChange}>
+        <SelectTrigger className="w-full sm:w-48">
+          <SelectValue placeholder="Filtrar por prioridad" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas las prioridades</SelectItem>
+          {TASK_PRIORITIES.map((priority) => (
+            <SelectItem key={priority.value} value={priority.value}>
+              {priority.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}

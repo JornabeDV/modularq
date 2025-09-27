@@ -35,12 +35,7 @@ export function UserTable({
 }: UserTableProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Lista de Usuarios</CardTitle>
-        <CardDescription>
-          Gestiona usuarios, roles y permisos del sistema
-        </CardDescription>
-        
+      <CardHeader>        
         <UserFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}

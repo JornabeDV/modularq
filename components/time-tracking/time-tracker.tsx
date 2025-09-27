@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Play, Pause, Square, Clock } from "lucide-react"
@@ -21,7 +19,6 @@ export function TimeTracker({ operarioId, onTimeEntryCreate }: TimeTrackerProps)
   const [startTime, setStartTime] = useState<Date | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [selectedTaskId, setSelectedTaskId] = useState("")
-  const [description, setDescription] = useState("")
 
   // Get tasks assigned to this operario
   const assignedTasks = mockTasks.filter((task) => task.assignedTo === operarioId)
@@ -78,7 +75,7 @@ export function TimeTracker({ operarioId, onTimeEntryCreate }: TimeTrackerProps)
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       hours: Math.round(hours * 100) / 100,
-      description: description || "Trabajo registrado",
+      description: "",
       date: startTime.toISOString().split("T")[0],
     }
 
@@ -88,7 +85,6 @@ export function TimeTracker({ operarioId, onTimeEntryCreate }: TimeTrackerProps)
     setIsTracking(false)
     setStartTime(null)
     setElapsedTime(0)
-    setDescription("")
     setSelectedTaskId("")
   }
 
@@ -172,18 +168,6 @@ export function TimeTracker({ operarioId, onTimeEntryCreate }: TimeTrackerProps)
           </div>
         </div>
 
-        {/* Description */}
-        <div className="space-y-2">
-          <Label htmlFor="description">Descripción del Trabajo (Opcional)</Label>
-          <Textarea
-            id="description"
-            placeholder="Describe el trabajo realizado..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isTracking}
-            rows={3}
-          />
-        </div>
 
         {/* Manual Time Entry */}
         <div className="pt-4 border-t">

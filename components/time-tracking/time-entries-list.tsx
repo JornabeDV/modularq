@@ -109,7 +109,6 @@ export function TimeEntriesList({ operarioId, limit, showOperario = false }: Tim
                         </div>
                       )}
 
-                      <p className="text-sm text-muted-foreground">{entry.description}</p>
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
