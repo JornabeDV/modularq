@@ -16,7 +16,6 @@ import { TaskRow } from './task-row'
 import { TaskForm } from './task-form'
 import { DeleteProjectButton } from './delete-project-button'
 import { ProjectTaskManager } from './project-task-manager'
-import { TaskAssignmentDialog } from './task-assignment-dialog'
 import { useProjects } from '@/hooks/use-projects'
 import { useProjectTasks } from '@/hooks/use-project-tasks'
 import { useTasks } from '@/hooks/use-tasks'
@@ -40,7 +39,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [project, setProject] = useState<Project | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
-  const [isTaskAssignmentDialogOpen, setIsTaskAssignmentDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null)
 
   useEffect(() => {
@@ -240,14 +238,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setIsTaskAssignmentDialogOpen(true)}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Gestionar Tareas
-          </Button>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -440,13 +430,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </Dialog>
       )}
 
-      {/* Task Assignment Dialog */}
-      <TaskAssignmentDialog
-        isOpen={isTaskAssignmentDialogOpen}
-        onClose={() => setIsTaskAssignmentDialogOpen(false)}
-        projectId={project.id}
-        projectName={project.name}
-      />
     </div>
   )
 }
