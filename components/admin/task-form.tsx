@@ -7,10 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import type { Task } from '@/lib/types'
 import { TASK_CATEGORIES } from '@/lib/constants'
-import { useUsers } from '@/hooks/use-users'
 import { useAuth } from '@/lib/auth-context'
 
 interface TaskFormProps {
@@ -20,19 +18,21 @@ interface TaskFormProps {
   isEditing: boolean
   initialData?: Task | null
   projectId?: string
+  isLoading?: boolean
 }
 
-export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, projectId }: TaskFormProps) {
-  const { users } = useUsers()
+export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, projectId, isLoading = false }: TaskFormProps) {
   const { user } = useAuth()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     estimatedHours: 0 as number,
     category: '',
-    assignedUsers: [] as string[],
-    isTemplate: true
+    type: 'custom' as 'standard' | 'custom'
   })
+  
+  // Si es para un proyecto, siempre es personalizada
+  const isProjectTask = !!projectId
 
   useEffect(() => {
     if (isEditing && initialData) {
@@ -41,8 +41,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
         description: initialData.description,
         estimatedHours: initialData.estimatedHours,
         category: initialData.category,
-        assignedUsers: initialData.assignedUsers?.map(u => u.id) || [],
-        isTemplate: initialData.isTemplate
+        type: initialData.type
       })
     } else {
       setFormData({
@@ -50,54 +49,38 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
         description: '',
         estimatedHours: 0,
         category: '',
-        assignedUsers: [],
-        isTemplate: true
+        type: isProjectTask ? 'custom' : 'standard'
       })
     }
-  }, [isEditing, initialData])
+  }, [isEditing, initialData?.id, isProjectTask])
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleUserToggle = (userId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      assignedUsers: prev.assignedUsers.includes(userId)
-        ? prev.assignedUsers.filter(id => id !== userId)
-        : [...prev.assignedUsers, userId]
-    }))
-  }
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Convertir IDs de usuarios a objetos con información completa
-    const assignedUsersWithDetails = formData.assignedUsers.map(userId => {
-      const user = users.find(u => u.id === userId)
-      return {
-        id: userId,
-        name: user?.name || 'Usuario desconocido',
-        role: user?.role || 'operario'
-      }
-    })
-    
     onSubmit({
-      ...formData,
-      assignedUsers: assignedUsersWithDetails,
-      actualHours: 0,
-      projectId: projectId || undefined,
-      createdBy: user?.id || '00000000-0000-0000-0000-000000000000', // UUID por defecto si no hay usuario
-      skills: [] // Array vacío por defecto
+      title: formData.title,
+      description: formData.description,
+      estimatedHours: formData.estimatedHours,
+      category: formData.category,
+      type: formData.type,
+      createdBy: user?.id || '00000000-0000-0000-0000-000000000000'
     })
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isLoading) {
+        onClose()
+      }
+    }}>
       <DialogContent className="w-auto max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Editar Tarea' : 'Crear Nueva Tarea'}
+            {isEditing ? 'Editar Tarea' : (isProjectTask ? 'Crear Tarea Personalizada' : 'Crear Nueva Tarea Estándar')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -132,6 +115,47 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {!isProjectTask && (
+              <div>
+                <Label htmlFor="type" className="mb-2">Tipo de Tarea</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value) => handleInputChange('type', value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">
+                      Estándar (aparece en todos los proyectos)
+                    </SelectItem>
+                    <SelectItem value="custom">
+                      Personalizada (asignada manualmente)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label htmlFor="estimatedHours" className="mb-2">Horas Estimadas</Label>
+              <Input
+                id="estimatedHours"
+                type="number"
+                value={formData.estimatedHours === 0 ? '' : formData.estimatedHours}
+                onChange={(e) => {
+                  const value = e.target.value
+                  const numValue = value === '' ? 0 : parseFloat(value)
+                  handleInputChange('estimatedHours', isNaN(numValue) ? 0 : numValue)
+                }}
+                required
+                min="0"
+                step="0.1"
+                placeholder="Ej: 8.5"
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="description" className="mb-2">Descripción</Label>
             <Textarea
@@ -144,65 +168,31 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
             />
           </div>
 
-          <div>
-            <Label htmlFor="estimatedHours" className="mb-2">Horas Estimadas</Label>
-            <Input
-              id="estimatedHours"
-              type="number"
-              value={formData.estimatedHours === 0 ? '' : formData.estimatedHours}
-              onChange={(e) => {
-                const value = e.target.value
-                const numValue = value === '' ? 0 : parseFloat(value)
-                handleInputChange('estimatedHours', isNaN(numValue) ? 0 : numValue)
-              }}
-              required
-              min="0"
-              step="0.1"
-              placeholder="Ej: 8.5"
-            />
-          </div>
 
-          <div>
-            <Label className="mb-2">Asignar a Usuarios</Label>
-            <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
-              {users.filter(user => user.role === 'operario').length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay operarios disponibles</p>
-              ) : (
-                <div className="space-y-2">
-                  {users
-                    .filter(user => user.role === 'operario')
-                    .map((user) => (
-                      <div key={user.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`user-${user.id}`}
-                          checked={formData.assignedUsers.includes(user.id || '')}
-                          onCheckedChange={() => handleUserToggle(user.id || '')}
-                        />
-                        <Label
-                          htmlFor={`user-${user.id}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          {user.name} ({user.role})
-                        </Label>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-            {formData.assignedUsers.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {formData.assignedUsers.length} usuario(s) seleccionado(s)
+          {formData.type === 'standard' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <p className="text-sm text-blue-800">
+                <strong>Tarea Estándar:</strong> Esta tarea aparecerá automáticamente en todos los proyectos nuevos que se creen.
               </p>
-            )}
-          </div>
+            </div>
+          )}
+
+          {formData.type === 'custom' && projectId && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3">
+              <p className="text-sm text-green-800">
+                <strong>Tarea Personalizada:</strong> Esta tarea será asignada únicamente al proyecto actual.
+              </p>
+            </div>
+          )}
+
 
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {isEditing ? 'Actualizar Tarea' : 'Crear Tarea'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Guardando...' : (isEditing ? 'Actualizar Tarea' : 'Crear Tarea')}
             </Button>
           </div>
         </form>

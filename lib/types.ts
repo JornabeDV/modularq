@@ -12,28 +12,54 @@ export interface Project {
   createdBy: string
   createdAt: string
   updatedAt: string
-  tasks: Task[]
+  projectTasks: ProjectTask[]
 }
 
+// Tarea base (solo información, sin evolución)
 export interface Task {
   id: string
-  projectId?: string
   title: string
   description: string
+  category: string
+  type: 'standard' | 'custom'
+  estimatedHours: number
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Evolución de tarea en un proyecto específico
+export interface ProjectTask {
+  id: string
+  projectId: string
+  taskId: string
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  actualHours: number
+  assignedTo?: string
+  startDate?: string
+  endDate?: string
+  progressPercentage: number
+  notes?: string
+  assignedAt: string
+  assignedBy?: string
+  createdAt: string
+  updatedAt: string
+  taskOrder: number
+  // Relaciones
+  task?: Task
+  assignedUser?: { id: string; name: string; role: string }
+}
+
+// Para compatibilidad con componentes existentes
+export interface TaskWithProject extends Task {
+  projectId: string
   status: 'pending' | 'in-progress' | 'completed' | 'blocked'
   assignedTo?: string
   assignedUsers?: Array<{ id: string; name: string; role: string }>
-  estimatedHours: number
   actualHours: number
   startDate?: string
   endDate?: string
   dependencies?: string[]
-  category: string
-  skills?: string[]
-  isTemplate: boolean
-  createdBy: string
-  createdAt: string
-  updatedAt: string
 }
 
 export interface Operario {

@@ -9,13 +9,17 @@ interface TaskFiltersProps {
   onSearchChange: (value: string) => void
   categoryFilter: string
   onCategoryFilterChange: (value: string) => void
+  typeFilter: string
+  onTypeFilterChange: (value: string) => void
 }
 
 export function TaskFilters({ 
   searchTerm, 
   onSearchChange, 
   categoryFilter, 
-  onCategoryFilterChange
+  onCategoryFilterChange,
+  typeFilter,
+  onTypeFilterChange
 }: TaskFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4 mt-4">
@@ -38,6 +42,16 @@ export function TaskFilters({
               {category}
             </SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+      <Select value={typeFilter} onValueChange={onTypeFilterChange}>
+        <SelectTrigger className="w-full sm:w-48">
+          <SelectValue placeholder="Filtrar por tipo" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos los tipos</SelectItem>
+          <SelectItem value="standard">Estándar</SelectItem>
+          <SelectItem value="custom">Personalizada</SelectItem>
         </SelectContent>
       </Select>
     </div>

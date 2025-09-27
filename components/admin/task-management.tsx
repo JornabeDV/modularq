@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, FolderOpen, Clock, Users, CheckCircle } from 'lucide-react'
 import { TaskStats } from './task-stats'
 import { TaskTable } from './task-table'
 import { TaskForm } from './task-form'
+import { TaskFlowInfo } from './task-flow-info'
 import { useTasks, type CreateTaskData } from '@/hooks/use-tasks'
 import { useAuth } from '@/lib/auth-context'
 import type { Task } from '@/lib/types'
@@ -16,8 +17,11 @@ export function TaskManagement() {
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  
+  const [isUpdating, setIsUpdating] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
 
   const handleCreateTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user?.id) return
@@ -26,15 +30,9 @@ export function TaskManagement() {
       title: taskData.title,
       description: taskData.description,
       estimatedHours: taskData.estimatedHours,
-      actualHours: taskData.actualHours,
       category: taskData.category,
-      isTemplate: taskData.isTemplate,
-      createdBy: user.id,
-      projectId: taskData.projectId,
-      assignedUsers: taskData.assignedUsers,
-      startDate: taskData.startDate,
-      endDate: taskData.endDate,
-      dependencies: taskData.dependencies
+      type: taskData.type,
+      createdBy: user.id
     }
 
     const result = await createTask(createData)
@@ -44,9 +42,19 @@ export function TaskManagement() {
   }
 
   const handleUpdateTask = async (taskId: string, taskData: Partial<Task>) => {
-    const result = await updateTask(taskId, taskData)
-    if (result.success) {
-      setEditingTask(null)
+    if (isUpdating) return // Evitar múltiples actualizaciones simultáneas
+    
+    setIsUpdating(true)
+    
+    try {
+      const result = await updateTask(taskId, taskData)
+      if (result.success) {
+        setEditingTask(null)
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -65,15 +73,18 @@ export function TaskManagement() {
       task.description.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter
+    const matchesType = typeFilter === 'all' || task.type === typeFilter
     
-    return matchesSearch && matchesCategory
+    return matchesSearch && matchesCategory && matchesType
   })
 
   // Calcular estadísticas
   const totalTasks = tasks.length
-  const templateTasks = tasks.filter(t => t.isTemplate).length
-  const assignedTasks = tasks.filter(t => t.assignedUsers && t.assignedUsers.length > 0).length
-  const unassignedTasks = tasks.filter(t => !t.assignedUsers || t.assignedUsers.length === 0).length
+  const standardTasks = tasks.filter(t => t.type === 'standard').length
+  const customTasks = tasks.filter(t => t.type === 'custom').length
+  // Las tareas base no tienen información de asignación, eso se maneja en project_tasks
+  const assignedTasks = 0
+  const unassignedTasks = totalTasks
 
   if (loading) {
     return (
@@ -103,7 +114,9 @@ export function TaskManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Gestión de Tareas</h2>
-          <p className="text-sm sm:text-base text-muted-foreground">Administra las tareas del sistema que se pueden asignar a proyectos</p>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Crea y administra tareas estándar (se asignan automáticamente a proyectos nuevos) y personalizadas (se asignan manualmente)
+          </p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -116,10 +129,14 @@ export function TaskManagement() {
         </Dialog>
       </div>
 
+      {/* Task Flow Info */}
+      <TaskFlowInfo />
+
       {/* Stats Cards */}
       <TaskStats 
         totalTasks={totalTasks}
-        templateTasks={templateTasks}
+        standardTasks={standardTasks}
+        customTasks={customTasks}
         assignedTasks={assignedTasks}
         unassignedTasks={unassignedTasks}
       />
@@ -131,6 +148,8 @@ export function TaskManagement() {
         onSearchChange={setSearchTerm}
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
+        typeFilter={typeFilter}
+        onTypeFilterChange={setTypeFilter}
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
       />
@@ -146,10 +165,15 @@ export function TaskManagement() {
       {/* Edit Task Dialog */}
       <TaskForm
         isOpen={!!editingTask}
-        onClose={() => setEditingTask(null)}
+        onClose={() => {
+          if (!isUpdating) {
+            setEditingTask(null)
+          }
+        }}
         onSubmit={(data) => editingTask && handleUpdateTask(editingTask.id, data)}
         isEditing={true}
         initialData={editingTask}
+        isLoading={isUpdating}
       />
     </div>
   )
