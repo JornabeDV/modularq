@@ -13,8 +13,6 @@ interface TaskTableProps {
   onSearchChange: (value: string) => void
   categoryFilter: string
   onCategoryFilterChange: (value: string) => void
-  priorityFilter: string
-  onPriorityFilterChange: (value: string) => void
   onEditTask: (task: Task) => void
   onDeleteTask: (taskId: string) => void
 }
@@ -25,8 +23,6 @@ export function TaskTable({
   onSearchChange,
   categoryFilter,
   onCategoryFilterChange,
-  priorityFilter,
-  onPriorityFilterChange,
   onEditTask,
   onDeleteTask
 }: TaskTableProps) {
@@ -39,8 +35,6 @@ export function TaskTable({
           onSearchChange={onSearchChange}
           categoryFilter={categoryFilter}
           onCategoryFilterChange={onCategoryFilterChange}
-          priorityFilter={priorityFilter}
-          onPriorityFilterChange={onPriorityFilterChange}
         />
       </CardHeader>
       <CardContent>
@@ -50,7 +44,6 @@ export function TaskTable({
               <TableRow className="hover:bg-background">
                 <TableHead className="min-w-[200px]">Tarea</TableHead>
                 <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
-                <TableHead className="text-center min-w-[100px]">Prioridad</TableHead>
                 <TableHead className="text-center min-w-[100px]">Horas</TableHead>
                 <TableHead className="text-center min-w-[120px]">Asignado a</TableHead>
                 <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
@@ -59,7 +52,7 @@ export function TaskTable({
             <TableBody>
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={5} className="text-center py-8 text-muted-foreground">
                     No se encontraron tareas
                   </td>
                 </tr>
@@ -70,7 +63,11 @@ export function TaskTable({
                     task={task}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
-                    users={users}
+                    users={users.map(user => ({
+                      id: user.id || '',
+                      name: user.name || 'Usuario desconocido',
+                      role: user.role || 'operario'
+                    }))}
                   />
                 ))
               )}

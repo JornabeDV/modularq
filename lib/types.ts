@@ -19,8 +19,6 @@ export interface Task {
   projectId?: string
   title: string
   description: string
-  status: "pending" | "in-progress" | "completed" | "blocked"
-  priority: "low" | "medium" | "high" | "critical"
   assignedTo?: string
   assignedUsers?: Array<{ id: string; name: string; role: string }>
   estimatedHours: number
@@ -29,7 +27,7 @@ export interface Task {
   endDate?: string
   dependencies?: string[]
   category: string
-  skills: string[]
+  skills?: string[]
   isTemplate: boolean
   createdBy: string
   createdAt: string

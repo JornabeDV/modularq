@@ -7,8 +7,6 @@ import type { Task } from '@/lib/types'
 export interface CreateTaskData {
   title: string
   description: string
-  status: 'pending' | 'in-progress' | 'completed' | 'blocked'
-  priority: 'low' | 'medium' | 'high' | 'critical'
   estimatedHours: number
   actualHours?: number
   category: string
@@ -60,10 +58,8 @@ export function useTasks() {
         projectId: task.project_id,
         title: task.title,
         description: task.description || '',
-        status: task.status as Task['status'],
-        priority: task.priority as Task['priority'],
-        assignedTo: task.task_assignments?.map(assignment => assignment.users?.id).filter(Boolean).join(',') || undefined,
-        assignedUsers: task.task_assignments?.map(assignment => ({
+        assignedTo: task.task_assignments?.map((assignment: any) => assignment.users?.id).filter(Boolean).join(',') || undefined,
+        assignedUsers: task.task_assignments?.map((assignment: any) => ({
           id: assignment.users?.id || '',
           name: assignment.users?.name || '',
           role: assignment.users?.role || ''
@@ -74,6 +70,7 @@ export function useTasks() {
         endDate: task.end_date,
         dependencies: task.dependencies || [],
         category: task.category || '',
+        skills: task.skills || [],
         isTemplate: task.is_template || false,
         createdBy: task.created_by || '',
         createdAt: task.created_at,
@@ -101,8 +98,6 @@ export function useTasks() {
           project_id: taskData.projectId || null,
           title: taskData.title,
           description: taskData.description,
-          status: taskData.status,
-          priority: taskData.priority,
           assigned_to: null, // Ya no usamos este campo
           estimated_hours: taskData.estimatedHours,
           actual_hours: taskData.actualHours || 0,
@@ -159,8 +154,6 @@ export function useTasks() {
       
       if (taskData.title !== undefined) updateData.title = taskData.title
       if (taskData.description !== undefined) updateData.description = taskData.description
-      if (taskData.status !== undefined) updateData.status = taskData.status
-      if (taskData.priority !== undefined) updateData.priority = taskData.priority
       if (taskData.estimatedHours !== undefined) updateData.estimated_hours = taskData.estimatedHours
       if (taskData.actualHours !== undefined) updateData.actual_hours = taskData.actualHours
       if (taskData.startDate !== undefined) updateData.start_date = taskData.startDate

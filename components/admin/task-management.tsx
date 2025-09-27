@@ -18,7 +18,6 @@ export function TaskManagement() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [priorityFilter, setPriorityFilter] = useState('all')
 
   const handleCreateTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user?.id) return
@@ -26,8 +25,6 @@ export function TaskManagement() {
     const createData: CreateTaskData = {
       title: taskData.title,
       description: taskData.description,
-      status: taskData.status,
-      priority: taskData.priority,
       estimatedHours: taskData.estimatedHours,
       actualHours: taskData.actualHours,
       category: taskData.category,
@@ -68,16 +65,15 @@ export function TaskManagement() {
       task.description.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter
     
-    return matchesSearch && matchesCategory && matchesPriority
+    return matchesSearch && matchesCategory
   })
 
   // Calcular estadísticas
   const totalTasks = tasks.length
   const templateTasks = tasks.filter(t => t.isTemplate).length
-  const pendingTasks = tasks.filter(t => t.status === 'pending').length
-  const highPriorityTasks = tasks.filter(t => t.priority === 'high' || t.priority === 'critical').length
+  const assignedTasks = tasks.filter(t => t.assignedUsers && t.assignedUsers.length > 0).length
+  const unassignedTasks = tasks.filter(t => !t.assignedUsers || t.assignedUsers.length === 0).length
 
   if (loading) {
     return (
@@ -124,8 +120,8 @@ export function TaskManagement() {
       <TaskStats 
         totalTasks={totalTasks}
         templateTasks={templateTasks}
-        pendingTasks={pendingTasks}
-        highPriorityTasks={highPriorityTasks}
+        assignedTasks={assignedTasks}
+        unassignedTasks={unassignedTasks}
       />
 
       {/* Tasks Table */}
@@ -135,8 +131,6 @@ export function TaskManagement() {
         onSearchChange={setSearchTerm}
         categoryFilter={categoryFilter}
         onCategoryFilterChange={setCategoryFilter}
-        priorityFilter={priorityFilter}
-        onPriorityFilterChange={setPriorityFilter}
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
       />

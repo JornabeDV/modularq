@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Task } from '@/lib/types'
-import { TASK_CATEGORIES, TASK_PRIORITIES } from '@/lib/constants'
+import { TASK_CATEGORIES } from '@/lib/constants'
 import { useUsers } from '@/hooks/use-users'
 import { useAuth } from '@/lib/auth-context'
 
@@ -27,7 +27,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
     estimatedHours: 0 as number,
     category: '',
     assignedUsers: [] as string[],
@@ -39,7 +38,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: 
       setFormData({
         title: initialData.title,
         description: initialData.description,
-        priority: initialData.priority,
         estimatedHours: initialData.estimatedHours,
         category: initialData.category,
         assignedUsers: initialData.assignedUsers?.map(u => u.id) || [],
@@ -49,7 +47,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: 
       setFormData({
         title: '',
         description: '',
-        priority: 'medium',
         estimatedHours: 0,
         category: '',
         assignedUsers: [],
@@ -87,7 +84,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: 
     onSubmit({
       ...formData,
       assignedUsers: assignedUsersWithDetails,
-      status: 'pending',
       actualHours: 0,
       createdBy: user?.id || '00000000-0000-0000-0000-000000000000', // UUID por defecto si no hay usuario
       skills: [] // Array vacío por defecto
@@ -146,42 +142,22 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: 
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="priority" className="mb-2">Prioridad</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => handleInputChange('priority', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_PRIORITIES.map((priority) => (
-                    <SelectItem key={priority.value} value={priority.value}>
-                      {priority.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="estimatedHours" className="mb-2">Horas Estimadas</Label>
-              <Input
-                id="estimatedHours"
-                type="number"
-                value={formData.estimatedHours === 0 ? '' : formData.estimatedHours}
-                onChange={(e) => {
-                  const value = e.target.value
-                  const numValue = value === '' ? 0 : parseFloat(value)
-                  handleInputChange('estimatedHours', isNaN(numValue) ? 0 : numValue)
-                }}
-                required
-                min="0"
-                step="0.1"
-                placeholder="Ej: 8.5"
-              />
-            </div>
+          <div>
+            <Label htmlFor="estimatedHours" className="mb-2">Horas Estimadas</Label>
+            <Input
+              id="estimatedHours"
+              type="number"
+              value={formData.estimatedHours === 0 ? '' : formData.estimatedHours}
+              onChange={(e) => {
+                const value = e.target.value
+                const numValue = value === '' ? 0 : parseFloat(value)
+                handleInputChange('estimatedHours', isNaN(numValue) ? 0 : numValue)
+              }}
+              required
+              min="0"
+              step="0.1"
+              placeholder="Ej: 8.5"
+            />
           </div>
 
           <div>

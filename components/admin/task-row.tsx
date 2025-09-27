@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Edit, Trash2 } from 'lucide-react'
 import { DeleteTaskButton } from './delete-task-button'
 import type { Task } from '@/lib/types'
-import { TASK_PRIORITIES } from '@/lib/constants'
 
 interface TaskRowProps {
   task: Task
@@ -16,11 +15,6 @@ interface TaskRowProps {
 }
 
 export function TaskRow({ task, onEdit, onDelete, users = [] }: TaskRowProps) {
-  const getPriorityInfo = (priority: string) => {
-    const priorityInfo = TASK_PRIORITIES.find(p => p.value === priority)
-    return priorityInfo || { value: priority, label: priority, color: 'default' }
-  }
-
   const handleEdit = () => {
     onEdit(task)
   }
@@ -33,11 +27,6 @@ export function TaskRow({ task, onEdit, onDelete, users = [] }: TaskRowProps) {
       <TableCell className="text-center">
         <Badge variant="secondary">
           {task.category}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-center">
-        <Badge variant={getPriorityInfo(task.priority).color}>
-          {getPriorityInfo(task.priority).label}
         </Badge>
       </TableCell>
       <TableCell className="text-center">
