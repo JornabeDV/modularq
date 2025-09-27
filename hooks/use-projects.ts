@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Project, Task } from '@/lib/types'
+import type { Project, ProjectTask } from '@/lib/types'
 
 export interface CreateProjectData {
   name: string
@@ -35,18 +35,35 @@ export function useProjects() {
         .select(`
           *,
           project_tasks (
+            id,
+            project_id,
             task_id,
-            tasks (
+            status,
+            actual_hours,
+            assigned_to,
+            start_date,
+            end_date,
+            progress_percentage,
+            notes,
+            assigned_at,
+            assigned_by,
+            created_at,
+            updated_at,
+            task:task_id (
               id,
               title,
               description,
-              estimated_hours,
-              actual_hours,
               category,
-              is_template,
+              type,
+              estimated_hours,
               created_by,
               created_at,
               updated_at
+            ),
+            assigned_user:assigned_to (
+              id,
+              name,
+              role
             )
           )
         `)
@@ -66,30 +83,42 @@ export function useProjects() {
         endDate: project.end_date,
         supervisor: project.supervisor,
         department: project.department,
-        progress: project.progress,
+        progress: project.progress || 0,
         createdBy: project.created_by,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
-        tasks: project.project_tasks?.map((pt: any) => ({
-          id: pt.tasks.id,
-          projectId: project.id,
-          title: pt.tasks.title,
-          description: pt.tasks.description || '',
-          status: pt.tasks.status || 'pending',
-          assignedTo: undefined,
-          assignedUsers: [],
-          estimatedHours: parseFloat(pt.tasks.estimated_hours) || 0,
-          actualHours: parseFloat(pt.tasks.actual_hours) || 0,
-          startDate: undefined,
-          endDate: undefined,
-          dependencies: [],
-          category: pt.tasks.category || '',
-          skills: [],
-          isTemplate: pt.tasks.is_template || false,
-          createdBy: pt.tasks.created_by || '',
-          createdAt: pt.tasks.created_at,
-          updatedAt: pt.tasks.updated_at
-        })) || []
+        projectTasks: (project.project_tasks || []).map((pt: any) => ({
+          id: pt.id,
+          projectId: pt.project_id,
+          taskId: pt.task_id,
+          status: pt.status,
+          actualHours: parseFloat(pt.actual_hours) || 0,
+          assignedTo: pt.assigned_to,
+          startDate: pt.start_date,
+          endDate: pt.end_date,
+          progressPercentage: pt.progress_percentage || 0,
+          notes: pt.notes,
+          assignedAt: pt.assigned_at,
+          assignedBy: pt.assigned_by,
+          createdAt: pt.created_at,
+          updatedAt: pt.updated_at,
+          task: pt.task ? {
+            id: pt.task.id,
+            title: pt.task.title,
+            description: pt.task.description || '',
+            category: pt.task.category || '',
+            type: pt.task.type || 'custom',
+            estimatedHours: parseFloat(pt.task.estimated_hours) || 0,
+            createdBy: pt.task.created_by || '',
+            createdAt: pt.task.created_at,
+            updatedAt: pt.task.updated_at
+          } : undefined,
+          assignedUser: pt.assigned_user ? {
+            id: pt.assigned_user.id,
+            name: pt.assigned_user.name,
+            role: pt.assigned_user.role
+          } : undefined
+        }))
       }))
 
       setProjects(formattedProjects)
@@ -126,9 +155,25 @@ export function useProjects() {
         throw insertError
       }
 
-      // Asignar tareas si se proporcionan
-      if (projectData.tasks && projectData.tasks.length > 0) {
-        const projectTasks = projectData.tasks.map(taskId => ({
+      // Obtener todas las tareas estándar
+      const { data: standardTasks, error: standardTasksError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('type', 'standard')
+
+      if (standardTasksError) {
+        console.error('Error fetching standard tasks:', standardTasksError)
+      }
+
+      // Combinar tareas estándar con tareas personalizadas proporcionadas
+      const allTaskIds = [
+        ...(standardTasks?.map(task => task.id) || []),
+        ...(projectData.tasks || [])
+      ]
+
+      // Asignar todas las tareas al proyecto
+      if (allTaskIds.length > 0) {
+        const projectTasks = allTaskIds.map(taskId => ({
           project_id: projectResult.id,
           task_id: taskId
         }))

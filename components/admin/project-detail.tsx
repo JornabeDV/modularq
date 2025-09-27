@@ -5,18 +5,25 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, Plus, Users, Calendar, FolderOpen, Edit, Trash2 } from 'lucide-react'
 import { ProjectForm } from './project-form'
 import { TaskRow } from './task-row'
 import { TaskForm } from './task-form'
 import { DeleteProjectButton } from './delete-project-button'
+import { ProjectTaskManager } from './project-task-manager'
+import { TaskAssignmentDialog } from './task-assignment-dialog'
 import { useProjects } from '@/hooks/use-projects'
+import { useProjectTasks } from '@/hooks/use-project-tasks'
 import { useTasks } from '@/hooks/use-tasks'
 import { useUsers } from '@/hooks/use-users'
 import { useAuth } from '@/lib/auth-context'
-import type { Project, Task } from '@/lib/types'
+import { supabase } from '@/lib/supabase'
+import type { Project, ProjectTask, Task } from '@/lib/types'
 
 interface ProjectDetailProps {
   projectId: string
@@ -25,14 +32,16 @@ interface ProjectDetailProps {
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { projects, loading: projectsLoading, error: projectsError, updateProject, deleteProject } = useProjects()
-  const { tasks, createTask, updateTask, deleteTask } = useTasks()
+  const { projects, loading: projectsLoading, error: projectsError, updateProject, deleteProject, refetch: refetchProjects } = useProjects()
+  const { projectTasks, loading: projectTasksLoading, createProjectTask, updateProjectTask, deleteProjectTask, updateTaskOrder, assignStandardTaskToProject } = useProjectTasks(projectId)
+  const { tasks: allTasks, createTask } = useTasks()
   const { users } = useUsers()
   
   const [project, setProject] = useState<Project | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [isTaskAssignmentDialogOpen, setIsTaskAssignmentDialogOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null)
 
   useEffect(() => {
     if (projects.length > 0) {
@@ -40,6 +49,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       setProject(foundProject || null)
     }
   }, [projects, projectId])
+
 
   const handleUpdateProject = async (projectData: Partial<Project>) => {
     if (!project) return
@@ -59,34 +69,89 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const handleCreateTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user?.id) return
 
-    const result = await createTask({
-      ...taskData,
-      projectId: project.id,
-      createdBy: user.id
-    })
-    
-    if (result.success) {
-      setIsTaskDialogOpen(false)
+    try {
+      // Primero crear la tarea base
+      const { data: createdTask, error: taskError } = await supabase
+        .from('tasks')
+        .insert({
+          title: taskData.title,
+          description: taskData.description,
+          estimated_hours: taskData.estimatedHours,
+          category: taskData.category,
+          type: taskData.type || 'custom',
+          created_by: user.id
+        })
+        .select()
+        .single()
+
+      if (taskError) {
+        console.error('Error creating task:', taskError)
+        return
+      }
+
+      // Luego asignarla al proyecto
+      const projectTaskResult = await createProjectTask({
+        projectId: project.id,
+        taskId: createdTask.id, // Usar el ID de la tarea recién creada
+        assignedBy: user.id
+      })
+      
+      if (projectTaskResult.success) {
+        setIsTaskDialogOpen(false)
+      }
+    } catch (error) {
+      console.error('Error in handleCreateTask:', error)
     }
   }
 
-  const handleUpdateTask = async (taskId: string, taskData: Partial<Task>) => {
-    const result = await updateTask(taskId, taskData)
+  const handleUpdateTask = async (projectTaskId: string, taskData: Partial<ProjectTask>) => {
+    console.log('Updating project task:', projectTaskId, taskData)
+    const result = await updateProjectTask(projectTaskId, taskData)
+    console.log('Update result:', result)
     if (result.success) {
       setEditingTask(null)
     }
   }
 
-  const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId)
+  const handleDeleteTask = async (projectTaskId: string) => {
+    await deleteProjectTask(projectTaskId)
   }
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = (task: ProjectTask) => {
     setEditingTask(task)
   }
 
-  // Filtrar tareas del proyecto
-  const projectTasks = tasks.filter(task => task.projectId === projectId)
+  const handleAssignTask = async (taskId: string) => {
+    if (!user?.id) return
+    
+    const result = await createProjectTask({
+      projectId: project.id,
+      taskId: taskId,
+      assignedBy: user.id
+    })
+    
+    if (result.success) {
+      console.log('Tarea asignada exitosamente')
+    }
+  }
+
+  const handleUnassignTask = async (projectTaskId: string) => {
+    const result = await deleteProjectTask(projectTaskId)
+    
+    if (result.success) {
+      console.log('Tarea desasignada exitosamente')
+    }
+  }
+
+  const handleReorderTasks = async (taskOrders: { id: string; taskOrder: number }[]) => {
+    const result = await updateTaskOrder(taskOrders)
+    
+    if (result.success) {
+      console.log('Orden de tareas actualizado exitosamente')
+    } else {
+      console.error('Error actualizando orden de tareas:', result.error)
+    }
+  }
 
   const getStatusInfo = (status: string) => {
     const statusMap = {
@@ -102,10 +167,25 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
+    
+    // Si la fecha viene en formato ISO (YYYY-MM-DD), la parseamos directamente
+    // para evitar problemas de zona horaria
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-')
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+    }
+    
+    // Para fechas con timestamp o formato ISO completo, usar el método normal
     return new Date(dateString).toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC' // Forzar UTC para evitar cambios de zona horaria
     })
   }
 
@@ -160,6 +240,14 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsTaskAssignmentDialogOpen(true)}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Gestionar Tareas
+          </Button>
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -177,7 +265,36 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       </div>
 
       {/* Project Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Información del Proyecto</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Creado</label>
+                <p className="text-sm">{formatDate(project.createdAt)}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Última Actualización</label>
+                <p className="text-sm">{formatDate(project.updatedAt)}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Fecha de Inicio</label>
+                <p className="text-sm">{formatDate(project.startDate)}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Fecha de Finalización</label>
+                <p className="text-sm">{formatDate(project.endDate)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Estado</CardTitle>
@@ -200,92 +317,18 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             <p className="text-xs text-muted-foreground">tareas asignadas</p>
           </CardContent>
         </Card>
-
-
       </div>
 
-      {/* Project Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Tareas del Proyecto</CardTitle>
-                <CardDescription>
-                  Gestiona las tareas asignadas a este proyecto
-                </CardDescription>
-              </div>
-              <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Tarea
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-background">
-                    <TableHead className="min-w-[200px]">Tarea</TableHead>
-                    <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
-                    <TableHead className="text-center min-w-[100px]">Horas Est.</TableHead>
-                    <TableHead className="text-center min-w-[100px]">Horas Real</TableHead>
-                    <TableHead className="text-center min-w-[150px]">Asignado a</TableHead>
-                    <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {projectTasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No hay tareas asignadas a este proyecto
-                      </td>
-                    </tr>
-                  ) : (
-                    projectTasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        users={users}
-                        onEdit={handleEditTask}
-                        onDelete={handleDeleteTask}
-                      />
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Información del Proyecto</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Fecha de Inicio</label>
-              <p className="text-sm">{formatDate(project.startDate)}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Fecha de Fin</label>
-              <p className="text-sm">{formatDate(project.endDate)}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Creado</label>
-              <p className="text-sm">{formatDate(project.createdAt)}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Última Actualización</label>
-              <p className="text-sm">{formatDate(project.updatedAt)}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Project Task Manager */}
+      <ProjectTaskManager
+        projectId={project.id}
+        projectTasks={projectTasks}
+        onAssignTask={handleAssignTask}
+        onUnassignTask={handleUnassignTask}
+        onEditTask={handleEditTask}
+        onCreateTask={() => setIsTaskDialogOpen(true)}
+        onReorderTasks={handleReorderTasks}
+      />
 
       {/* Edit Project Dialog */}
       <ProjectForm
@@ -305,14 +348,104 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         projectId={project.id}
       />
 
-      {/* Edit Task Dialog */}
-      <TaskForm
-        isOpen={!!editingTask}
-        onClose={() => setEditingTask(null)}
-        onSubmit={(data) => editingTask && handleUpdateTask(editingTask.id, data)}
-        isEditing={true}
-        initialData={editingTask}
+      {/* Edit Project Task Dialog */}
+      {editingTask && (
+        <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Tarea del Proyecto</DialogTitle>
+              <DialogDescription>
+                Actualiza la evolución de esta tarea en el proyecto
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Tarea</label>
+                <p className="text-sm text-muted-foreground">{editingTask.task?.title}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Estado</label>
+                <Select value={editingTask.status} onValueChange={(value) => setEditingTask({...editingTask, status: value as any})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="in_progress">En Progreso</SelectItem>
+                    <SelectItem value="completed">Completada</SelectItem>
+                    <SelectItem value="cancelled">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Horas Reales</label>
+                <Input
+                  type="number"
+                  value={editingTask.actualHours}
+                  onChange={(e) => setEditingTask({...editingTask, actualHours: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Progreso (%)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={editingTask.progressPercentage}
+                  onChange={(e) => setEditingTask({...editingTask, progressPercentage: parseInt(e.target.value) || 0})}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Asignado a</label>
+                <Select value={editingTask.assignedTo || ''} onValueChange={(value) => setEditingTask({...editingTask, assignedTo: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar usuario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(user => (
+                      <SelectItem key={user.id} value={user.id || ''}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Notas</label>
+                <Textarea
+                  value={editingTask.notes || ''}
+                  onChange={(e) => setEditingTask({...editingTask, notes: e.target.value})}
+                  placeholder="Notas adicionales sobre la tarea..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingTask(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => {
+                const updateData = {
+                  status: editingTask.status,
+                  actualHours: editingTask.actualHours,
+                  progressPercentage: editingTask.progressPercentage,
+                  assignedTo: editingTask.assignedTo,
+                  notes: editingTask.notes
+                }
+                handleUpdateTask(editingTask.id, updateData)
+              }}>
+                Guardar Cambios
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Task Assignment Dialog */}
+      <TaskAssignmentDialog
+        isOpen={isTaskAssignmentDialogOpen}
+        onClose={() => setIsTaskAssignmentDialogOpen(false)}
         projectId={project.id}
+        projectName={project.name}
       />
     </div>
   )

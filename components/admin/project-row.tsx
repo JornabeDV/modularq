@@ -60,7 +60,7 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
       </TableCell>
       <TableCell className="text-center">
         <div className="text-sm">
-          <div className="font-medium">{project.tasks.length}</div>
+          <div className="font-medium">{project.projectTasks.length}</div>
           <div className="text-muted-foreground">tareas</div>
         </div>
       </TableCell>

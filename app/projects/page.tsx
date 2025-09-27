@@ -168,7 +168,7 @@ export default function ProjectsPage() {
 
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{project.tasks.length} tareas asignadas</span>
+                    <span>{project.projectTasks.length} tareas asignadas</span>
                   </div>
 
                   {project.supervisor && (
@@ -190,8 +190,8 @@ export default function ProjectsPage() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Tareas del Proyecto:</p>
                   <div className="text-sm text-muted-foreground">
-                    {project.tasks.length > 0 ? (
-                      <span>{project.tasks.length} tareas asignadas</span>
+                    {project.projectTasks.length > 0 ? (
+                      <span>{project.projectTasks.length} tareas asignadas</span>
                     ) : (
                       <span>Sin tareas asignadas</span>
                     )}

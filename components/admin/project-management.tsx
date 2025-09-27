@@ -62,7 +62,7 @@ export function ProjectManagement() {
   const totalProjects = projects.length
   const activeProjects = projects.filter(p => p.status === 'active').length
   const completedProjects = projects.filter(p => p.status === 'completed').length
-  const totalTasks = projects.reduce((sum, project) => sum + project.tasks.length, 0)
+  const totalTasks = projects.reduce((sum, project) => sum + project.projectTasks.length, 0)
 
   if (loading) {
     return (
