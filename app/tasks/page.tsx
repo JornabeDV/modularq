@@ -7,48 +7,78 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TaskCard } from "@/components/tasks/task-card"
 import { TaskFilters } from "@/components/tasks/task-filters"
 import { Plus, ListTodo, Clock, CheckCircle, AlertTriangle } from "lucide-react"
+import { useTasks } from "@/hooks/use-tasks"
+import { useAuth } from "@/lib/auth-context"
 import type { Task } from "@/lib/types"
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([])
+  const { tasks, loading, error, getStandardTasks } = useTasks()
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [assigneeFilter, setAssigneeFilter] = useState("all")
-
-  const handleStatusChange = (taskId: string, newStatus: Task["status"]) => {
-    setTasks((prevTasks) => prevTasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
-  }
+  
+  // Mostrar todas las tareas (estándar y personalizadas)
+  const allTasks = tasks
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    return standardTasks.filter((task) => {
       const matchesSearch =
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = statusFilter === "all" || task.status === statusFilter
-      const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter
-      const matchesAssignee = assigneeFilter === "all" || task.assignedTo === assigneeFilter
+      const matchesCategory = statusFilter === "all" || task.category === statusFilter
+      const matchesType = priorityFilter === "all" || task.type === priorityFilter
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesAssignee
+      return matchesSearch && matchesCategory && matchesType
     })
-  }, [tasks, searchTerm, statusFilter, priorityFilter, assigneeFilter])
+  }, [standardTasks, searchTerm, statusFilter, priorityFilter])
 
-  const activeFiltersCount = [statusFilter, priorityFilter, assigneeFilter].filter((f) => f !== "all").length
+  const activeFiltersCount = [statusFilter, priorityFilter].filter((f) => f !== "all").length
 
   const clearFilters = () => {
     setStatusFilter("all")
     setPriorityFilter("all")
-    setAssigneeFilter("all")
     setSearchTerm("")
   }
 
   // Task statistics
   const taskStats = {
-    total: tasks.length,
-    pending: tasks.filter((t) => t.status === "pending").length,
-    inProgress: tasks.filter((t) => t.status === "in-progress").length,
-    completed: tasks.filter((t) => t.status === "completed").length,
-    blocked: tasks.filter((t) => t.status === "blocked").length,
+    total: standardTasks.length,
+    analysis: standardTasks.filter((t) => t.category === "Análisis").length,
+    design: standardTasks.filter((t) => t.category === "Diseño").length,
+    development: standardTasks.filter((t) => t.category === "Desarrollo").length,
+    testing: standardTasks.filter((t) => t.category === "Testing").length,
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Cargando tareas...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-destructive">Error</h2>
+              <p className="text-muted-foreground mt-2">{error}</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (
@@ -57,12 +87,12 @@ export default function TasksPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-balance">Gestión de Tareas</h1>
-            <p className="text-muted-foreground">Administra y supervisa todas las tareas del sistema</p>
+            <h1 className="text-3xl font-bold text-balance">Tareas Estándar</h1>
+            <p className="text-muted-foreground">Gestiona las tareas reutilizables del sistema</p>
           </div>
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Nueva Tarea
+            Nueva Tarea Estándar
           </Button>
         </div>
 
@@ -83,10 +113,10 @@ export default function TasksPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-yellow-500" />
+                <Clock className="h-4 w-4 text-blue-500" />
                 <div>
-                  <div className="text-2xl font-bold text-yellow-500">{taskStats.pending}</div>
-                  <p className="text-sm text-muted-foreground">Pendientes</p>
+                  <div className="text-2xl font-bold text-blue-500">{taskStats.analysis}</div>
+                  <p className="text-sm text-muted-foreground">Análisis</p>
                 </div>
               </div>
             </CardContent>
@@ -95,10 +125,10 @@ export default function TasksPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-500" />
+                <Clock className="h-4 w-4 text-purple-500" />
                 <div>
-                  <div className="text-2xl font-bold text-blue-500">{taskStats.inProgress}</div>
-                  <p className="text-sm text-muted-foreground">En Progreso</p>
+                  <div className="text-2xl font-bold text-purple-500">{taskStats.design}</div>
+                  <p className="text-sm text-muted-foreground">Diseño</p>
                 </div>
               </div>
             </CardContent>
@@ -109,8 +139,8 @@ export default function TasksPage() {
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
                 <div>
-                  <div className="text-2xl font-bold text-green-500">{taskStats.completed}</div>
-                  <p className="text-sm text-muted-foreground">Completadas</p>
+                  <div className="text-2xl font-bold text-green-500">{taskStats.development}</div>
+                  <p className="text-sm text-muted-foreground">Desarrollo</p>
                 </div>
               </div>
             </CardContent>
@@ -119,10 +149,10 @@ export default function TasksPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
                 <div>
-                  <div className="text-2xl font-bold text-red-500">{taskStats.blocked}</div>
-                  <p className="text-sm text-muted-foreground">Bloqueadas</p>
+                  <div className="text-2xl font-bold text-orange-500">{taskStats.testing}</div>
+                  <p className="text-sm text-muted-foreground">Testing</p>
                 </div>
               </div>
             </CardContent>
@@ -154,7 +184,7 @@ export default function TasksPage() {
         {/* Tasks Grid */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Tareas ({filteredTasks.length})</h2>
+            <h2 className="text-xl font-semibold">Tareas Estándar ({filteredTasks.length})</h2>
           </div>
 
           {filteredTasks.length === 0 ? (
@@ -165,14 +195,39 @@ export default function TasksPage() {
                 <p className="text-muted-foreground">
                   {searchTerm || activeFiltersCount > 0
                     ? "Intenta ajustar los filtros de búsqueda"
-                    : "Aún no hay tareas creadas en el sistema"}
+                    : "Aún no hay tareas estándar creadas en el sistema"}
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredTasks.map((task) => (
-                <TaskCard key={task.id} task={task} onStatusChange={handleStatusChange} />
+                <Card key={task.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-lg">{task.title}</CardTitle>
+                    <CardDescription>{task.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Categoría:</span>
+                      <span className="text-sm text-muted-foreground">{task.category}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Tipo:</span>
+                      <span className="text-sm text-muted-foreground capitalize">{task.type}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Horas Estimadas:</span>
+                      <span className="text-sm text-muted-foreground">{task.estimatedHours}h</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Creada:</span>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(task.createdAt).toLocaleDateString('es-ES')}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
