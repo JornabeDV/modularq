@@ -8,7 +8,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Clock, User, Calendar, MoreHorizontal, Play, Pause, CheckCircle } from "lucide-react"
 import type { Task } from "@/lib/types"
-import { mockOperarios, mockProjects } from "@/lib/mock-data"
 
 interface TaskCardProps {
   task: Task
@@ -16,8 +15,8 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onStatusChange }: TaskCardProps) {
-  const operario = mockOperarios.find((op) => op.id === task.assignedTo)
-  const project = mockProjects.find((proj) => proj.id === task.projectId)
+  const operario = null
+  const project = null
 
   const getStatusColor = (status: string) => {
     switch (status) {
