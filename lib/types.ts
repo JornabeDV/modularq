@@ -16,17 +16,24 @@ export interface Project {
 
 export interface Task {
   id: string
-  projectId: string
+  projectId?: string
   title: string
   description: string
   status: "pending" | "in-progress" | "completed" | "blocked"
   priority: "low" | "medium" | "high" | "critical"
-  assignedTo: string
+  assignedTo?: string
+  assignedUsers?: Array<{ id: string; name: string; role: string }>
   estimatedHours: number
   actualHours: number
   startDate?: string
   endDate?: string
   dependencies?: string[]
+  category: string
+  skills: string[]
+  isTemplate: boolean
+  createdBy: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Operario {
