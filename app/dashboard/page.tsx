@@ -5,19 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { mockProjects, mockOperarios, mockTasks } from "@/lib/mock-data"
 import { useAuth } from "@/lib/auth-context"
 import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
   const { userProfile } = useAuth()
-  const activeProjects = mockProjects.filter((p) => p.status === "active")
-  const totalOperarios = mockOperarios.length
-  const activeTasks = mockTasks.filter((t) => t.status === "in-progress").length
-  const completedTasks = mockTasks.filter((t) => t.status === "completed").length
-  const pendingTasks = mockTasks.filter((t) => t.status === "pending").length
-  const blockedTasks = mockTasks.filter((t) => t.status === "blocked").length
+  
+  // Datos estáticos para el dashboard
+  const activeProjects: any[] = []
+  const totalOperarios = 0
+  const activeTasks = 0
+  const completedTasks = 0
+  const pendingTasks = 0
+  const blockedTasks = 0
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -92,7 +93,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeProjects.length}</div>
-              <p className="text-xs text-muted-foreground">de {mockProjects.length} proyectos totales</p>
+              <p className="text-xs text-muted-foreground">de 0 proyectos totales</p>
             </CardContent>
           </Card>
 
@@ -125,7 +126,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {Math.round(mockOperarios.reduce((acc, op) => acc + op.efficiency, 0) / mockOperarios.length)}%
+                0%
               </div>
               <p className="text-xs text-muted-foreground">promedio general</p>
             </CardContent>
@@ -141,7 +142,7 @@ export default function DashboardPage() {
               <CardDescription>Estado actual de los proyectos en curso</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {activeProjects.map((project) => (
+              {activeProjects.map((project: any) => (
                 <div key={project.id} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

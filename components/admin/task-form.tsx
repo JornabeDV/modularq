@@ -19,9 +19,10 @@ interface TaskFormProps {
   onSubmit: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void
   isEditing: boolean
   initialData?: Task | null
+  projectId?: string
 }
 
-export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: TaskFormProps) {
+export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, projectId }: TaskFormProps) {
   const { users } = useUsers()
   const { user } = useAuth()
   const [formData, setFormData] = useState({
@@ -85,6 +86,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData }: 
       ...formData,
       assignedUsers: assignedUsersWithDetails,
       actualHours: 0,
+      projectId: projectId || undefined,
       createdBy: user?.id || '00000000-0000-0000-0000-000000000000', // UUID por defecto si no hay usuario
       skills: [] // Array vacío por defecto
     })

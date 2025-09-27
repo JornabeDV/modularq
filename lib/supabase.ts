@@ -57,7 +57,6 @@ export interface Database {
           progress: number
           supervisor_id: string | null
           department: string | null
-          budget: number | null
           created_at: string
           updated_at: string
         }
@@ -72,7 +71,6 @@ export interface Database {
           progress?: number
           supervisor_id?: string | null
           department?: string | null
-          budget?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -87,7 +85,6 @@ export interface Database {
           progress?: number
           supervisor_id?: string | null
           department?: string | null
-          budget?: number | null
           created_at?: string
           updated_at?: string
         }

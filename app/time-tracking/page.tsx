@@ -8,14 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TimeTracker } from "@/components/time-tracking/time-tracker"
 import { TimeEntriesList } from "@/components/time-tracking/time-entries-list"
 import { useAuth } from "@/lib/auth-context"
-import { mockTimeEntries, mockOperarios } from "@/lib/mock-data"
 import { Clock, TrendingUp, Calendar, Users, Download } from "lucide-react"
 import type { TimeEntry } from "@/lib/types"
 
 export default function TimeTrackingPage() {
   const { user } = useAuth()
   const [selectedOperario, setSelectedOperario] = useState("all")
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(mockTimeEntries)
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
 
   const handleTimeEntryCreate = (entry: Omit<TimeEntry, "id">) => {
     const newEntry: TimeEntry = {

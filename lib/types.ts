@@ -2,15 +2,15 @@ export interface Project {
   id: string
   name: string
   description: string
-  status: "planning" | "active" | "paused" | "completed"
-  priority: "low" | "medium" | "high" | "critical"
-  startDate: string
+  status: "planning" | "active" | "on-hold" | "completed" | "cancelled"
+  startDate?: string
   endDate?: string
-  progress: number
-  assignedOperarios: string[]
-  supervisor: string
-  department: string
+  supervisor?: string
+  department?: string
   budget?: number
+  createdBy: string
+  createdAt: string
+  updatedAt: string
   tasks: Task[]
 }
 

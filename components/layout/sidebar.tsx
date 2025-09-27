@@ -20,6 +20,7 @@ const navigation = [
 const adminNavigation = [
   { name: "Gestión de Usuarios", href: "/admin/users", icon: Shield },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
+  { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
 ]
 
 export function Sidebar() {
