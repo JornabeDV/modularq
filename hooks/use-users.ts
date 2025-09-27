@@ -54,6 +54,7 @@ export function useUsers() {
       setLoading(true)
       
       // Generar email único basado en el nombre y timestamp
+      // Generar email automáticamente basado en el nombre
       const generateEmail = (name: string) => {
         const cleanName = name.toLowerCase()
           .replace(/[^a-z\s]/g, '') // Solo letras y espacios
@@ -138,27 +139,32 @@ export function useUsers() {
   }
 
   // Eliminar usuario
-  const deleteUser = async (userId: string) => {
+  const deleteUser = async (userId: string, currentUserId?: string) => {
     try {
       setLoading(true)
       
-      // Eliminar de Supabase Auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-      if (authError) throw authError
-
-      // Eliminar de nuestra tabla (esto se hará automáticamente por CASCADE)
+      // Verificar si el usuario está intentando eliminarse a sí mismo
+      if (currentUserId && userId === currentUserId) {
+        throw new Error('No puedes eliminarte a ti mismo')
+      }
+      
+      // Eliminar directamente de nuestra tabla users
       const { error } = await supabase
         .from('users')
         .delete()
         .eq('id', userId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error eliminando usuario:', error)
+        throw error
+      }
 
       // Actualizar lista de usuarios
       await fetchUsers()
       
       return { success: true }
     } catch (err) {
+      console.error('Error en deleteUser:', err)
       setError(err instanceof Error ? err.message : 'Error al eliminar usuario')
       return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' }
     } finally {
