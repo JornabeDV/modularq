@@ -27,8 +27,8 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r">
-      {/* Header */}
-      <div className="flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
+      {/* Header - Solo en desktop */}
+      <div className="hidden lg:flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
         <Image
           src="/assets/logo.png"
           alt="MODULARQ Logo"

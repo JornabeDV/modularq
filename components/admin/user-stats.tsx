@@ -11,35 +11,35 @@ interface UserStatsProps {
 
 export function UserStats({ totalUsers, adminCount, operarioCount }: UserStatsProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
+    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <Card className="p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-lg font-bold">{totalUsers}</p>
+          </div>
           <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{totalUsers}</div>
-        </CardContent>
+        </div>
       </Card>
       
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+      <Card className="p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Admins</p>
+            <p className="text-lg font-bold">{adminCount}</p>
+          </div>
           <Shield className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{adminCount}</div>
-        </CardContent>
+        </div>
       </Card>
       
-      <Card className="sm:col-span-2 lg:col-span-1">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Operarios</CardTitle>
+      <Card className="p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Operarios</p>
+            <p className="text-lg font-bold">{operarioCount}</p>
+          </div>
           <Wrench className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{operarioCount}</div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   )

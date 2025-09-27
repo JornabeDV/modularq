@@ -10,6 +10,7 @@ import { useEffect } from "react"
 import { Loader2, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import Image from "next/image"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -47,24 +48,36 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b">
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-4 h-20">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Menu className="h-5 w-5" />
+              <Button 
+                variant="ghost" 
+                className="p-4 min-w-[48px] min-h-[48px]"
+                style={{ fontSize: '24px' }}
+              >
+                <Menu style={{ width: '28px', height: '28px' }} />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
               <Sidebar />
             </SheetContent>
           </Sheet>
-          <h1 className="text-lg font-semibold">MODULARQ</h1>
-          <div className="w-9" /> {/* Spacer */}
+          <div className="flex items-center justify-center flex-1 py-2">
+            <Image
+              src="/assets/logo.png"
+              alt="MODULARQ Logo"
+              width={120}
+              height={40}
+              className="object-contain"
+            />
+          </div>
+          <div className="w-12" /> {/* Spacer */}
         </div>
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:ml-0 pt-16 lg:pt-0">
+      <main className="flex-1 overflow-auto lg:ml-0 pt-20 lg:pt-0">
         {children}
       </main>
     </div>
