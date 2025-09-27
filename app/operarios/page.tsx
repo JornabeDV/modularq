@@ -6,24 +6,29 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { mockOperarios, mockTasks } from "@/lib/mock-data"
 import { Plus, Clock, TrendingUp, Mail, Wrench } from "lucide-react"
 import Link from "next/link"
+import { useOperarios } from "@/hooks/use-operarios"
+import { useState, useEffect } from "react"
 
 export default function OperariosPage() {
-  const getOperarioTasks = (operarioId: string) => {
-    return mockTasks.filter((task) => task.assignedTo === operarioId)
-  }
+  const { operarios, loading, error, getOperarioStats } = useOperarios()
+  const [operarioStats, setOperarioStats] = useState<Record<string, any>>({})
 
-  const getOperarioStats = (operarioId: string) => {
-    const tasks = getOperarioTasks(operarioId)
-    return {
-      total: tasks.length,
-      completed: tasks.filter((t) => t.status === "completed").length,
-      inProgress: tasks.filter((t) => t.status === "in-progress").length,
-      pending: tasks.filter((t) => t.status === "pending").length,
+  // Cargar estadísticas de cada operario
+  useEffect(() => {
+    const loadStats = async () => {
+      const stats: Record<string, any> = {}
+      for (const operario of operarios) {
+        stats[operario.id!] = await getOperarioStats(operario.id!)
+      }
+      setOperarioStats(stats)
     }
-  }
+    
+    if (operarios.length > 0) {
+      loadStats()
+    }
+  }, [operarios, getOperarioStats])
 
   return (
     <MainLayout>
@@ -83,11 +88,34 @@ export default function OperariosPage() {
           </CardContent>
         </Card>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Cargando operarios...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <p className="text-destructive mb-4">Error al cargar operarios: {error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Reintentar
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Operarios Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {mockOperarios.map((operario) => {
-            const stats = getOperarioStats(operario.id)
-            const completionRate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0
+        {!loading && !error && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {operarios.map((operario) => {
+              const stats = operarioStats[operario.id!] || { total: 0, completed: 0, inProgress: 0, pending: 0 }
+              const completionRate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0
 
             return (
               <Card key={operario.id} className="hover:shadow-lg transition-shadow">
@@ -108,7 +136,7 @@ export default function OperariosPage() {
                         {operario.email}
                       </CardDescription>
                       <Badge variant="outline" className="mt-2">
-                        {operario.department}
+                        {operario.department || 'Sin departamento'}
                       </Badge>
                     </div>
                   </div>
@@ -122,9 +150,9 @@ export default function OperariosPage() {
                         <TrendingUp className="h-4 w-4" />
                         Eficiencia
                       </span>
-                      <span className="font-medium">{operario.efficiency}%</span>
+                      <span className="font-medium">{operario.efficiency || 0}%</span>
                     </div>
-                    <Progress value={operario.efficiency} className="h-2" />
+                    <Progress value={operario.efficiency || 0} className="h-2" />
                   </div>
 
                   {/* Task Statistics */}
@@ -146,11 +174,14 @@ export default function OperariosPage() {
                       Habilidades
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {operario.skills.map((skill) => (
+                      {(operario.skills || []).map((skill) => (
                         <Badge key={skill} variant="secondary" className="text-xs">
                           {skill}
                         </Badge>
                       ))}
+                      {(!operario.skills || operario.skills.length === 0) && (
+                        <span className="text-xs text-muted-foreground">Sin habilidades asignadas</span>
+                      )}
                     </div>
                   </div>
 
@@ -161,7 +192,7 @@ export default function OperariosPage() {
                         <Clock className="h-4 w-4" />
                         Horas totales
                       </span>
-                      <span className="font-medium">{operario.totalHours}h</span>
+                      <span className="font-medium">{operario.total_hours || 0}h</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Tasa de finalización</span>
@@ -184,71 +215,79 @@ export default function OperariosPage() {
               </Card>
             )
           })}
-        </div>
+          </div>
+        )}
 
         {/* Summary Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Resumen General</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total Operarios</span>
-                <span className="text-2xl font-bold">{mockOperarios.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Eficiencia Promedio</span>
-                <span className="text-2xl font-bold">
-                  {Math.round(mockOperarios.reduce((acc, op) => acc + op.efficiency, 0) / mockOperarios.length)}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Horas Totales</span>
-                <span className="text-2xl font-bold">{mockOperarios.reduce((acc, op) => acc + op.totalHours, 0)}h</span>
-              </div>
-            </CardContent>
-          </Card>
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Resumen General</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Operarios</span>
+                  <span className="text-2xl font-bold">{operarios.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Eficiencia Promedio</span>
+                  <span className="text-2xl font-bold">
+                    {operarios.length > 0 ? Math.round(operarios.reduce((acc, op) => acc + (op.efficiency || 0), 0) / operarios.length) : 0}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Horas Totales</span>
+                  <span className="text-2xl font-bold">{operarios.reduce((acc, op) => acc + (op.total_hours || 0), 0)}h</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Por Departamento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Array.from(new Set(mockOperarios.map((op) => op.department))).map((dept) => {
-                const count = mockOperarios.filter((op) => op.department === dept).length
-                return (
-                  <div key={dept} className="flex items-center justify-between">
-                    <span className="text-sm">{dept}</span>
-                    <Badge variant="outline">{count}</Badge>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Por Departamento</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from(new Set(operarios.map((op) => op.department).filter(Boolean))).map((dept) => {
+                  const count = operarios.filter((op) => op.department === dept).length
+                  return (
+                    <div key={dept} className="flex items-center justify-between">
+                      <span className="text-sm">{dept}</span>
+                      <Badge variant="outline">{count}</Badge>
+                    </div>
+                  )
+                })}
+                {operarios.filter(op => !op.department).length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Sin departamento</span>
+                    <Badge variant="outline">{operarios.filter(op => !op.department).length}</Badge>
                   </div>
-                )
-              })}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Carga de Trabajo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {mockOperarios.map((operario) => {
-                const activeTasks = mockTasks.filter(
-                  (t) => t.assignedTo === operario.id && (t.status === "in-progress" || t.status === "pending"),
-                ).length
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Carga de Trabajo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {operarios.map((operario) => {
+                  const stats = operarioStats[operario.id!] || { total: 0, completed: 0, inProgress: 0, pending: 0 }
+                  const activeTasks = stats.inProgress + stats.pending
 
-                return (
-                  <div key={operario.id} className="flex items-center justify-between">
-                    <span className="text-sm truncate">{operario.name}</span>
-                    <Badge variant={activeTasks > 2 ? "destructive" : activeTasks > 1 ? "default" : "secondary"}>
-                      {activeTasks} tareas
-                    </Badge>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-        </div>
+                  return (
+                    <div key={operario.id} className="flex items-center justify-between">
+                      <span className="text-sm truncate">{operario.name}</span>
+                      <Badge variant={activeTasks > 2 ? "destructive" : activeTasks > 1 ? "default" : "secondary"}>
+                        {activeTasks} tareas
+                      </Badge>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </MainLayout>
   )
