@@ -58,6 +58,7 @@ export function useTasks() {
         projectId: task.project_id,
         title: task.title,
         description: task.description || '',
+        status: task.status,
         assignedTo: task.task_assignments?.map((assignment: any) => assignment.users?.id).filter(Boolean).join(',') || undefined,
         assignedUsers: task.task_assignments?.map((assignment: any) => ({
           id: assignment.users?.id || '',

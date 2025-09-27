@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Play, Pause, Square, Clock } from "lucide-react"
-import { mockTasks, mockProjects } from "@/lib/mock-data"
 import type { TimeEntry } from "@/lib/types"
 
 interface TimeTrackerProps {

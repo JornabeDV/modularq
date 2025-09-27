@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TaskCard } from "@/components/tasks/task-card"
 import { TaskFilters } from "@/components/tasks/task-filters"
-import { mockTasks } from "@/lib/mock-data"
 import { Plus, ListTodo, Clock, CheckCircle, AlertTriangle } from "lucide-react"
 import type { Task } from "@/lib/types"
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const [tasks, setTasks] = useState<Task[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [priorityFilter, setPriorityFilter] = useState("all")

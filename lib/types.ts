@@ -8,6 +8,7 @@ export interface Project {
   supervisor?: string
   department?: string
   budget?: number
+  progress?: number
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -19,6 +20,7 @@ export interface Task {
   projectId?: string
   title: string
   description: string
+  status: 'pending' | 'in-progress' | 'completed' | 'blocked'
   assignedTo?: string
   assignedUsers?: Array<{ id: string; name: string; role: string }>
   estimatedHours: number

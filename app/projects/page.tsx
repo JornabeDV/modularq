@@ -5,11 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { mockProjects, mockOperarios } from "@/lib/mock-data"
-import { Plus, Calendar, Users, DollarSign, MoreHorizontal } from "lucide-react"
+import { Plus, Calendar, Users, DollarSign, MoreHorizontal, FolderOpen } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useProjects } from "@/hooks/use-projects"
+import Link from "next/link"
 
 export default function ProjectsPage() {
+  const { projects, loading, error } = useProjects()
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -40,23 +43,48 @@ export default function ProjectsPage() {
     }
   }
 
-  const getOperarioName = (id: string) => {
-    return mockOperarios.find((op) => op.id === id)?.name || "Desconocido"
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-ES", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount)
-  }
-
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Sin fecha"
     return new Date(dateString).toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     })
+  }
+
+  // Filtrar proyectos por estado
+  const activeProjects = projects.filter(p => p.status === "active")
+  const planningProjects = projects.filter(p => p.status === "planning")
+  const completedProjects = projects.filter(p => p.status === "completed")
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Cargando proyectos...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-destructive">Error</h2>
+              <p className="text-muted-foreground mt-2">{error}</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (
@@ -68,23 +96,45 @@ export default function ProjectsPage() {
             <h1 className="text-3xl font-bold text-balance">Proyectos</h1>
             <p className="text-muted-foreground">Gestión y seguimiento de todos los proyectos</p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Proyecto
-          </Button>
+          <Link href="/admin/projects">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Gestionar Proyectos
+            </Button>
+          </Link>
         </div>
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {mockProjects.map((project) => (
+          {projects.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+              <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay proyectos</h3>
+              <p className="text-muted-foreground mb-4">
+                Comienza creando tu primer proyecto desde la administración
+              </p>
+              <Link href="/admin/projects">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Crear Proyecto
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            projects.map((project) => (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant={getStatusColor(project.status)}>{project.status}</Badge>
-                      <Badge variant={getPriorityColor(project.priority)}>{project.priority}</Badge>
+                      <Badge variant={getStatusColor(project.status)}>
+                        {project.status === "active" ? "Activo" : 
+                         project.status === "planning" ? "Planificación" :
+                         project.status === "on-hold" ? "En Pausa" :
+                         project.status === "completed" ? "Completado" :
+                         project.status === "cancelled" ? "Cancelado" : project.status}
+                      </Badge>
                     </div>
                   </div>
                   <DropdownMenu>
@@ -94,10 +144,12 @@ export default function ProjectsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuItem>Asignar operarios</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
+                      <Link href={`/admin/projects/${project.id}`}>
+                        <DropdownMenuItem>Ver detalles</DropdownMenuItem>
+                      </Link>
+                      <Link href="/admin/projects">
+                        <DropdownMenuItem>Gestionar</DropdownMenuItem>
+                      </Link>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -105,15 +157,6 @@ export default function ProjectsPage() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {/* Progress */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">Progreso</span>
-                    <span>{project.progress}%</span>
-                  </div>
-                  <Progress value={project.progress} className="h-2" />
-                </div>
-
                 {/* Project Info */}
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -125,37 +168,39 @@ export default function ProjectsPage() {
 
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{project.assignedOperarios.length} operarios asignados</span>
+                    <span>{project.tasks.length} tareas asignadas</span>
                   </div>
 
-                  {project.budget && (
+                  {project.supervisor && (
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="h-4 w-4" />
-                      <span>{formatCurrency(project.budget)}</span>
+                      <Users className="h-4 w-4" />
+                      <span>Supervisor: {project.supervisor}</span>
+                    </div>
+                  )}
+
+                  {project.department && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <FolderOpen className="h-4 w-4" />
+                      <span>Dept: {project.department}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Assigned Operarios */}
+                {/* Tasks Summary */}
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Operarios Asignados:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {project.assignedOperarios.map((operarioId) => (
-                      <Badge key={operarioId} variant="outline" className="text-xs">
-                        {getOperarioName(operarioId)}
-                      </Badge>
-                    ))}
+                  <p className="text-sm font-medium">Tareas del Proyecto:</p>
+                  <div className="text-sm text-muted-foreground">
+                    {project.tasks.length > 0 ? (
+                      <span>{project.tasks.length} tareas asignadas</span>
+                    ) : (
+                      <span>Sin tareas asignadas</span>
+                    )}
                   </div>
-                </div>
-
-                {/* Department and Supervisor */}
-                <div className="pt-2 border-t text-xs text-muted-foreground">
-                  <p>Departamento: {project.department}</p>
-                  <p>Supervisor: {project.supervisor}</p>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Project Statistics */}
@@ -164,7 +209,7 @@ export default function ProjectsPage() {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-500">
-                  {mockProjects.filter((p) => p.status === "completed").length}
+                  {completedProjects.length}
                 </div>
                 <p className="text-sm text-muted-foreground">Completados</p>
               </div>
@@ -175,7 +220,7 @@ export default function ProjectsPage() {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-500">
-                  {mockProjects.filter((p) => p.status === "active").length}
+                  {activeProjects.length}
                 </div>
                 <p className="text-sm text-muted-foreground">Activos</p>
               </div>
@@ -186,7 +231,7 @@ export default function ProjectsPage() {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-500">
-                  {mockProjects.filter((p) => p.status === "planning").length}
+                  {planningProjects.length}
                 </div>
                 <p className="text-sm text-muted-foreground">En Planificación</p>
               </div>
@@ -197,7 +242,7 @@ export default function ProjectsPage() {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-500">
-                  {mockProjects.filter((p) => p.status === "paused").length}
+                  {projects.filter((p) => p.status === "on-hold").length}
                 </div>
                 <p className="text-sm text-muted-foreground">Pausados</p>
               </div>
