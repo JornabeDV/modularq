@@ -3,24 +3,23 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, Users, Clock, FileText, Settings, LogOut, Shield, CheckSquare } from "lucide-react"
+import { LayoutDashboard, FolderKanban, Users, FileText, Settings, LogOut, Shield, CheckSquare } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Proyectos Activos", href: "/projects", icon: FolderKanban },
-  { name: "Operarios", href: "/operarios", icon: Users },
-  { name: "Tiempo", href: "/time-tracking", icon: Clock },
-  { name: "Reportes", href: "/reports", icon: FileText },
-  { name: "Configuración", href: "/settings", icon: Settings },
 ]
 
 const adminNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Gestión de Usuarios", href: "/admin/users", icon: Shield },
+  { name: "Gestión de Operarios", href: "/admin/workers", icon: Users },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
+  { name: "Reportes", href: "/reports", icon: FileText },
+  { name: "Configuración", href: "/settings", icon: Settings },
 ]
 
 export function Sidebar() {

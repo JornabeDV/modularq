@@ -6,12 +6,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { Plus, Clock, TrendingUp, Mail, Wrench } from "lucide-react"
+import { Plus, Clock, TrendingUp, Mail, Wrench, FolderOpen } from "lucide-react"
 import Link from "next/link"
 import { useOperarios } from "@/hooks/use-operarios"
 import { useState, useEffect } from "react"
 
-export default function OperariosPage() {
+export default function AdminWorkersPage() {
   const { operarios, loading, error, getOperarioStats } = useOperarios()
   const [operarioStats, setOperarioStats] = useState<Record<string, any>>({})
 
@@ -36,10 +36,16 @@ export default function OperariosPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-balance">Operarios</h1>
-            <p className="text-muted-foreground">Gestión del personal y asignación de tareas</p>
+            <h1 className="text-3xl font-bold text-balance">Gestión de Operarios</h1>
+            <p className="text-muted-foreground">Administración del personal y asignación de tareas</p>
           </div>
           <div className="flex gap-2">
+            <Link href="/projects">
+              <Button variant="outline">
+                <FolderOpen className="mr-2 h-4 w-4" />
+                Ver Proyectos Activos
+              </Button>
+            </Link>
             <Link href="/admin/users">
               <Button variant="outline">
                 <Wrench className="mr-2 h-4 w-4" />
