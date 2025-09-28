@@ -16,6 +16,7 @@ import { TaskRow } from './task-row'
 import { TaskForm } from './task-form'
 import { DeleteProjectButton } from './delete-project-button'
 import { ProjectTaskManager } from './project-task-manager'
+import { ProjectOperariosManager } from './project-operarios-manager'
 import { useProjects } from '@/hooks/use-projects'
 import { useProjectTasks } from '@/hooks/use-project-tasks'
 import { useTasks } from '@/hooks/use-tasks'
@@ -316,6 +317,9 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </Card>
       </div>
 
+      {/* Project Operarios Manager */}
+      <ProjectOperariosManager projectId={project.id} />
+
       {/* Project Task Manager */}
       <ProjectTaskManager
         projectId={project.id}
@@ -394,21 +398,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Asignado a</label>
-                <Select value={editingTask.assignedTo || ''} onValueChange={(value) => setEditingTask({...editingTask, assignedTo: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar usuario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map(user => (
-                      <SelectItem key={user.id} value={user.id || ''}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <label className="text-sm font-medium">Notas</label>
                 <Textarea
                   value={editingTask.notes || ''}
@@ -426,7 +415,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   status: editingTask.status,
                   actualHours: editingTask.actualHours,
                   progressPercentage: editingTask.progressPercentage,
-                  assignedTo: editingTask.assignedTo,
                   notes: editingTask.notes
                 }
                 handleUpdateTask(editingTask.id, updateData)

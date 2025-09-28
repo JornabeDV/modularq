@@ -8,10 +8,14 @@ import { Progress } from "@/components/ui/progress"
 import { Calendar, Users, DollarSign, MoreHorizontal, FolderOpen, Eye } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useProjects } from "@/hooks/use-projects"
+import { useProjectOperarios } from "@/hooks/use-project-operarios"
+import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 
 export default function ProjectsPage() {
+  const { user } = useAuth()
   const { projects, loading, error } = useProjects()
+  const { projectOperarios } = useProjectOperarios()
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -52,8 +56,14 @@ export default function ProjectsPage() {
     })
   }
 
-  // Filtrar solo proyectos activos para operarios
-  const activeProjects = projects.filter(p => p.status === "active")
+  // Filtrar proyectos activos donde el operario está asignado
+  const userAssignedProjectIds = projectOperarios
+    .filter(po => po.userId === user?.id)
+    .map(po => po.projectId)
+  
+  const activeProjects = projects.filter(p => 
+    p.status === "active" && userAssignedProjectIds.includes(p.id)
+  )
   
 
   if (loading) {
@@ -164,7 +174,7 @@ export default function ProjectsPage() {
 
                 {/* Botón para ver detalles */}
                 <div className="pt-2 border-t">
-                  <Link href={`/admin/projects/${project.id}`}>
+                  <Link href={`/projects/${project.id}`}>
                     <Button variant="outline" className="w-full">
                       <Eye className="h-4 w-4 mr-2" />
                       Ver Detalles del Proyecto

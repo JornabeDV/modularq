@@ -12,7 +12,6 @@ export interface CreateProjectData {
   endDate?: string
   budget?: number
   supervisor?: string
-  department?: string
   createdBy: string
   tasks?: string[] // Array de IDs de tareas
 }
@@ -82,7 +81,6 @@ export function useProjects() {
         startDate: project.start_date,
         endDate: project.end_date,
         supervisor: project.supervisor,
-        department: project.department,
         progress: project.progress || 0,
         createdBy: project.created_by,
         createdAt: project.created_at,
@@ -145,7 +143,6 @@ export function useProjects() {
           start_date: projectData.startDate || null,
           end_date: projectData.endDate || null,
           supervisor: projectData.supervisor,
-          department: projectData.department,
           created_by: projectData.createdBy
         })
         .select()
@@ -213,7 +210,6 @@ export function useProjects() {
       if (projectData.startDate !== undefined) updateData.start_date = projectData.startDate
       if (projectData.endDate !== undefined) updateData.end_date = projectData.endDate
       if (projectData.supervisor !== undefined) updateData.supervisor = projectData.supervisor
-      if (projectData.department !== undefined) updateData.department = projectData.department
 
       // Actualizar el proyecto
       const { error: updateError } = await supabase

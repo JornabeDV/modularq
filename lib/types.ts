@@ -6,7 +6,6 @@ export interface Project {
   startDate?: string
   endDate?: string
   supervisor?: string
-  department?: string
   budget?: number
   progress?: number
   createdBy: string
@@ -66,7 +65,7 @@ export interface Operario {
   id: string
   name: string
   email: string
-  department: string
+  role: string
   skills: string[]
   currentTasks: string[]
   totalHours: number

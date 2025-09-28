@@ -7,7 +7,6 @@ export interface UserProfile {
   email: string
   name: string
   role: 'admin' | 'supervisor' | 'operario'
-  department?: string
   skills?: string[]
   password?: string
   total_hours?: number
@@ -21,7 +20,6 @@ export interface CreateUserData {
   password: string
   name: string
   role: 'admin' | 'supervisor' | 'operario'
-  department?: string
   skills?: string[]
 }
 
@@ -74,7 +72,6 @@ export function useUsers() {
           email: generatedEmail,
           name: userData.name,
           role: userData.role,
-          department: userData.department,
           skills: userData.skills || [],
           password: userData.password, // Almacenamos la contraseña temporalmente
           total_hours: 0,

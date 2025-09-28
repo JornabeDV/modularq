@@ -21,7 +21,6 @@ export function CreateUserForm() {
     password: '',
     name: '',
     role: 'operario',
-    department: '',
     skills: []
   })
 
@@ -90,7 +89,6 @@ export function CreateUserForm() {
         password: '',
         name: '',
         role: 'operario',
-        department: '',
         skills: []
       })
       setGeneratedPassword('')
@@ -150,47 +148,36 @@ export function CreateUserForm() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="role">Rol *</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value: any) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="destructive">Admin</Badge>
-                          <span>Administrador</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="supervisor">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">Supervisor</Badge>
-                          <span>Supervisor</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="operario">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">Operario</Badge>
-                          <span>Operario</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="department">Departamento</Label>
-                  <Input
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="Ej: Producción, Mantenimiento"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="role">Rol *</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value: any) => setFormData({ ...formData, role: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="destructive">Admin</Badge>
+                        <span>Administrador</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="supervisor">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default">Supervisor</Badge>
+                        <span>Supervisor</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="operario">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">Operario</Badge>
+                        <span>Operario</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

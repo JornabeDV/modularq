@@ -193,7 +193,7 @@ export function ProductivityReport() {
                       </div>
                       <div>
                         <h3 className="font-semibold">{operario.name}</h3>
-                        <p className="text-sm text-muted-foreground">{operario.department}</p>
+                        <p className="text-sm text-muted-foreground">{operario.role}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export function ProductivityReport() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="font-semibold">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground">{project.department}</p>
+                      <p className="text-sm text-muted-foreground">{project.status}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={project.status === "active" ? "default" : "secondary"}>{project.status}</Badge>

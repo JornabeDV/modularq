@@ -20,7 +20,6 @@ export function UserManagement() {
     password: '',
     name: '',
     role: 'operario',
-    department: undefined,
     skills: []
   })
   const [searchTerm, setSearchTerm] = useState('')
@@ -70,7 +69,6 @@ export function UserManagement() {
       password: '',
       name: user.name,
       role: user.role,
-      department: undefined,
       skills: user.skills || []
     })
   }
@@ -80,7 +78,6 @@ export function UserManagement() {
       password: '',
       name: '',
       role: 'operario',
-      department: undefined,
       skills: []
     })
   }

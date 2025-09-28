@@ -13,7 +13,6 @@ export interface Database {
           email: string
           name: string
           role: 'admin' | 'supervisor' | 'operario'
-          department: string | null
           skills: string[]
           total_hours: number
           efficiency: number
@@ -25,7 +24,6 @@ export interface Database {
           email: string
           name: string
           role: 'admin' | 'supervisor' | 'operario'
-          department?: string | null
           skills?: string[]
           total_hours?: number
           efficiency?: number
@@ -37,7 +35,6 @@ export interface Database {
           email?: string
           name?: string
           role?: 'admin' | 'supervisor' | 'operario'
-          department?: string | null
           skills?: string[]
           total_hours?: number
           efficiency?: number
@@ -56,7 +53,6 @@ export interface Database {
           end_date: string | null
           progress: number
           supervisor_id: string | null
-          department: string | null
           created_at: string
           updated_at: string
         }
@@ -70,7 +66,6 @@ export interface Database {
           end_date?: string | null
           progress?: number
           supervisor_id?: string | null
-          department?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -84,7 +79,6 @@ export interface Database {
           end_date?: string | null
           progress?: number
           supervisor_id?: string | null
-          department?: string | null
           created_at?: string
           updated_at?: string
         }

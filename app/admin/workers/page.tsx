@@ -142,7 +142,7 @@ export default function AdminWorkersPage() {
                         {operario.email}
                       </CardDescription>
                       <Badge variant="outline" className="mt-2">
-                        {operario.department || 'Sin departamento'}
+                        {operario.role || 'Sin rol'}
                       </Badge>
                     </div>
                   </div>
@@ -251,22 +251,22 @@ export default function AdminWorkersPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Por Departamento</CardTitle>
+                <CardTitle className="text-lg">Por Rol</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {Array.from(new Set(operarios.map((op) => op.department).filter(Boolean))).map((dept) => {
-                  const count = operarios.filter((op) => op.department === dept).length
+                {Array.from(new Set(operarios.map((op) => op.role).filter(Boolean))).map((role) => {
+                  const count = operarios.filter((op) => op.role === role).length
                   return (
-                    <div key={dept} className="flex items-center justify-between">
-                      <span className="text-sm">{dept}</span>
+                    <div key={role} className="flex items-center justify-between">
+                      <span className="text-sm">{role}</span>
                       <Badge variant="outline">{count}</Badge>
                     </div>
                   )
                 })}
-                {operarios.filter(op => !op.department).length > 0 && (
+                {operarios.filter(op => !op.role).length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Sin departamento</span>
-                    <Badge variant="outline">{operarios.filter(op => !op.department).length}</Badge>
+                    <span className="text-sm">Sin rol</span>
+                    <Badge variant="outline">{operarios.filter(op => !op.role).length}</Badge>
                   </div>
                 )}
               </CardContent>
