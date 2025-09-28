@@ -16,6 +16,7 @@ import type { Task, ProjectTask } from '@/lib/types'
 interface ProjectTaskManagerProps {
   projectId: string
   projectTasks: ProjectTask[]
+  projectStatus?: string
   onAssignTask: (taskId: string) => void
   onUnassignTask: (projectTaskId: string) => void
   onEditTask?: (task: ProjectTask) => void
@@ -26,6 +27,7 @@ interface ProjectTaskManagerProps {
 export function ProjectTaskManager({ 
   projectId, 
   projectTasks, 
+  projectStatus,
   onAssignTask, 
   onUnassignTask,
   onEditTask,
@@ -51,6 +53,9 @@ export function ProjectTaskManager({
 
   const standardTasks = availableTasks.filter(t => t.type === 'standard')
   const customTasks = availableTasks.filter(t => t.type === 'custom')
+  
+  // Determinar si el proyecto está activo
+  const isReadOnly = projectStatus === 'active'
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -127,19 +132,20 @@ export function ProjectTaskManager({
           <h3 className="text-lg font-semibold">Gestión de Tareas del Proyecto</h3>
         </div>
         <div className="flex gap-2">
-          {onCreateTask && (
+          {!isReadOnly && onCreateTask && (
             <Button variant="outline" onClick={onCreateTask}>
               <Plus className="h-4 w-4 mr-2" />
               Crear Tarea Personalizada
             </Button>
           )}
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Asignar Tarea Existente
-              </Button>
-            </DialogTrigger>
+          {!isReadOnly && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Asignar Tarea Existente
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Asignar Tarea al Proyecto</DialogTitle>
@@ -246,6 +252,7 @@ export function ProjectTaskManager({
             </div>
           </DialogContent>
         </Dialog>
+          )}
         </div>
       </div>
 
@@ -253,9 +260,11 @@ export function ProjectTaskManager({
       <div>
         <h4 className="font-medium mb-3">
           Tareas Asignadas ({projectTasks.length})
-          <span className="text-sm text-muted-foreground ml-2">
-            - Arrastra y suelta para reordenar
-          </span>
+          {!isReadOnly && (
+            <span className="text-sm text-muted-foreground ml-2">
+              - Arrastra y suelta para reordenar
+            </span>
+          )}
         </h4>
         <div className="space-y-3">
           {projectTasks.map((projectTask, index) => (
@@ -266,6 +275,7 @@ export function ProjectTaskManager({
               onUnassign={onUnassignTask}
               onEdit={onEditTask || (() => {})}
               isDragging={draggedTaskId === projectTask.id}
+              isReadOnly={isReadOnly}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}

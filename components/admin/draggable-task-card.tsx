@@ -13,6 +13,7 @@ interface DraggableTaskCardProps {
   onEdit: (task: ProjectTask) => void
   isDragging?: boolean
   taskNumber?: number
+  isReadOnly?: boolean
   onDragStart?: (e: React.DragEvent, taskId: string) => void
   onDragEnd?: (e: React.DragEvent) => void
   onDragOver?: (e: React.DragEvent) => void
@@ -25,6 +26,7 @@ export function DraggableTaskCard({
   onEdit,
   isDragging = false,
   taskNumber = 1,
+  isReadOnly = false,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -35,18 +37,22 @@ export function DraggableTaskCard({
 
   return (
     <Card 
-      className={`p-4 transition-all duration-200 cursor-move select-none ${
+      className={`p-4 transition-all duration-200 select-none ${
+        isReadOnly 
+          ? 'cursor-default' 
+          : 'cursor-move'
+      } ${
         isDragging 
           ? 'opacity-50 shadow-lg' 
           : isHovered 
             ? 'shadow-md' 
             : 'hover:shadow-sm'
       }`}
-      draggable
-      onDragStart={(e) => onDragStart?.(e, projectTask.id)}
-      onDragEnd={onDragEnd}
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop?.(e, projectTask.id)}
+      draggable={!isReadOnly}
+      onDragStart={!isReadOnly ? (e) => onDragStart?.(e, projectTask.id) : undefined}
+      onDragEnd={!isReadOnly ? onDragEnd : undefined}
+      onDragOver={!isReadOnly ? onDragOver : undefined}
+      onDrop={!isReadOnly ? (e) => onDrop?.(e, projectTask.id) : undefined}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -59,9 +65,11 @@ export function DraggableTaskCard({
             </div>
             
             {/* Drag Handle */}
-            <div className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors">
-              <GripVertical className="h-5 w-5" />
-            </div>
+            {!isReadOnly && (
+              <div className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors">
+                <GripVertical className="h-5 w-5" />
+              </div>
+            )}
             
             {/* Task Info */}
             <div className="flex-1 min-w-0">
@@ -85,20 +93,24 @@ export function DraggableTaskCard({
           
           {/* Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onEdit(projectTask)}
-            >
-              Editar
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={() => onUnassign(projectTask.id)}
-            >
-              Desasignar
-            </Button>
+            {!isReadOnly ? (
+              <>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => onEdit(projectTask)}
+                >
+                  Editar
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => onUnassign(projectTask.id)}
+                >
+                  Desasignar
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
       </CardContent>

@@ -20,7 +20,7 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
       'planning': { label: 'Planificación', color: 'secondary' as const },
       'active': { label: 'Activo', color: 'default' as const },
       'on-hold': { label: 'En Pausa', color: 'destructive' as const },
-      'completed': { label: 'Completado', color: 'success' as const },
+      'completed': { label: 'Completado', color: 'default' as const },
       'cancelled': { label: 'Cancelado', color: 'destructive' as const }
     }
     return statusMap[status as keyof typeof statusMap] || { label: status, color: 'default' as const }
@@ -75,19 +75,23 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
               <Eye className="h-4 w-4" />
             </Button>
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEdit}
-            title="Editar proyecto"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <DeleteProjectButton
-            projectId={project.id}
-            projectName={project.name}
-            onDelete={onDelete}
-          />
+          {project.status !== 'active' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                title="Editar proyecto"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <DeleteProjectButton
+                projectId={project.id}
+                projectName={project.name}
+                onDelete={onDelete}
+              />
+            </>
+          )}
         </div>
       </TableCell>
     </TableRow>

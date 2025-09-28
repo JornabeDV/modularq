@@ -89,7 +89,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
       // Luego asignarla al proyecto
       const projectTaskResult = await createProjectTask({
-        projectId: project.id,
+        projectId: project!.id,
         taskId: createdTask.id, // Usar el ID de la tarea recién creada
         assignedBy: user.id
       })
@@ -123,7 +123,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     if (!user?.id) return
     
     const result = await createProjectTask({
-      projectId: project.id,
+      projectId: project!.id,
       taskId: taskId,
       assignedBy: user.id
     })
@@ -156,7 +156,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       'planning': { label: 'Planificación', color: 'secondary' as const },
       'active': { label: 'Activo', color: 'default' as const },
       'on-hold': { label: 'En Pausa', color: 'destructive' as const },
-      'completed': { label: 'Completado', color: 'success' as const },
+      'completed': { label: 'Completado', color: 'default' as const },
       'cancelled': { label: 'Cancelado', color: 'destructive' as const }
     }
     return statusMap[status as keyof typeof statusMap] || { label: status, color: 'default' as const }
@@ -238,19 +238,27 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Editar Proyecto
-              </Button>
-            </DialogTrigger>
-          </Dialog>
-          <DeleteProjectButton
-            projectId={project.id}
-            projectName={project.name}
-            onDelete={handleDeleteProject}
-          />
+          {project.status !== 'active' ? (
+            <>
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Proyecto
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+              <DeleteProjectButton
+                projectId={project.id}
+                projectName={project.name}
+                onDelete={handleDeleteProject}
+              />
+            </>
+          ) : (
+            <div className="text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md">
+              <strong>Proyecto Activo</strong>
+            </div>
+          )}
         </div>
       </div>
 
@@ -313,6 +321,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       <ProjectTaskManager
         projectId={project.id}
         projectTasks={projectTasks}
+        projectStatus={project.status}
         onAssignTask={handleAssignTask}
         onUnassignTask={handleUnassignTask}
         onEditTask={handleEditTask}
