@@ -54,8 +54,9 @@ export function ProjectTaskManager({
   const standardTasks = availableTasks.filter(t => t.type === 'standard')
   const customTasks = availableTasks.filter(t => t.type === 'custom')
   
-  // Determinar si el proyecto está activo
-  const isReadOnly = projectStatus === 'active'
+  // Determinar si el proyecto está en modo solo lectura (solo para operarios)
+  // Los administradores siempre pueden editar
+  const isReadOnly = false
 
   const getStatusIcon = (status: string) => {
     switch (status) {

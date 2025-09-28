@@ -238,23 +238,22 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          {project.status !== 'active' ? (
-            <>
-              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar Proyecto
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-              <DeleteProjectButton
-                projectId={project.id}
-                projectName={project.name}
-                onDelete={handleDeleteProject}
-              />
-            </>
-          ) : (
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Editar Proyecto
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+          {project.status !== 'active' && (
+            <DeleteProjectButton
+              projectId={project.id}
+              projectName={project.name}
+              onDelete={handleDeleteProject}
+            />
+          )}
+          {project.status === 'active' && (
             <div className="text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md">
               <strong>Proyecto Activo</strong>
             </div>

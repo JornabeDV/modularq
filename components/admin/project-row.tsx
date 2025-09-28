@@ -75,22 +75,20 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
               <Eye className="h-4 w-4" />
             </Button>
           </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEdit}
+            title="Editar proyecto"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
           {project.status !== 'active' && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEdit}
-                title="Editar proyecto"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <DeleteProjectButton
-                projectId={project.id}
-                projectName={project.name}
-                onDelete={onDelete}
-              />
-            </>
+            <DeleteProjectButton
+              projectId={project.id}
+              projectName={project.name}
+              onDelete={onDelete}
+            />
           )}
         </div>
       </TableCell>
