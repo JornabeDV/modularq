@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { FileText } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { FileText, CheckCircle } from 'lucide-react'
 
 interface TaskDetailsProps {
   task: {
@@ -30,12 +31,33 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
     })
   }
 
+  const formatHours = (hours: number) => {
+    if (hours < 0.0001) {
+      return '< 1m'
+    }
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60)
+      return minutes < 1 ? '< 1m' : `${minutes}m`
+    }
+    return `${hours.toFixed(1)}h`
+  }
+
+  const isCompleted = task.status === 'completed'
+
   return (
-    <Card>
+    <Card className={isCompleted ? 'bg-green-50' : ''}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Detalles de la Tarea
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Detalles de la Tarea
+          </div>
+          {isCompleted && (
+            <Badge variant="outline" className="text-xs">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Completada
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -46,7 +68,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
           </div>
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Horas Reales</Label>
-            <p className="text-lg font-semibold">{task.actualHours}h</p>
+            <p className="text-lg font-semibold">{formatHours(task.actualHours)}</p>
           </div>
         </div>
         
@@ -64,15 +86,22 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         <div>
           <Label className="text-sm font-medium text-muted-foreground">Progreso</Label>
           <div className="mt-2">
-            <Progress value={task.progressPercentage} className="h-2" />
-            <p className="text-sm text-muted-foreground mt-1">{task.progressPercentage}% completado</p>
+            <Progress 
+              value={task.progressPercentage} 
+              className="h-2"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              {task.progressPercentage}% completado
+            </p>
           </div>
         </div>
 
         {task.notes && (
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Notas</Label>
-            <p className="text-sm mt-1 p-3 bg-muted rounded-lg">{task.notes}</p>
+            <p className="text-sm mt-1 p-3 bg-muted rounded-lg">
+              {task.notes}
+            </p>
           </div>
         )}
 

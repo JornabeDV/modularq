@@ -82,7 +82,19 @@ export default function TaskDetailPage() {
   const handleTimeEntryCreate = useCallback((entry: any) => {
     console.log('Time entry created:', entry)
     setRefreshTimeEntries(prev => prev + 1)
-  }, [])
+    
+    // Actualizar las horas reales trabajadas
+    if (entry.hours && task) {
+      const newActualHours = (task.actualHours || 0) + entry.hours
+      setActualHours(newActualHours)
+      
+      // Actualizar el estado local del task
+      setTask({ ...task, actualHours: newActualHours })
+      
+      // Actualizar en la base de datos
+      updateProjectTask(task.id, { actualHours: newActualHours }, true)
+    }
+  }, [task, updateProjectTask])
 
   const handleProgressUpdate = useCallback(async (progress: number) => {
     console.log('Progress updated:', progress)

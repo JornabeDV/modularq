@@ -5,10 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { CheckCircle, Clock, Play, Square, User, ExternalLink } from 'lucide-react'
 import { useTaskSelfAssignment } from '@/hooks/use-task-self-assignment'
 import { useAuth } from '@/lib/auth-context'
@@ -85,6 +81,17 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
       case 'pending': return 'bg-yellow-100 text-yellow-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const formatHours = (hours: number) => {
+    if (hours < 0.0001) {
+      return '< 1m'
+    }
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60)
+      return minutes < 1 ? '< 1m' : `${minutes}m`
+    }
+    return `${hours.toFixed(1)}h`
   }
 
   return (
@@ -226,7 +233,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
           <CardContent>
             <div className="space-y-3">
               {completedTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
+                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -240,7 +247,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
                         Completada
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {task.actualHours}h trabajadas
+                        {formatHours(task.actualHours)} trabajadas
                       </span>
                     </div>
                   </div>

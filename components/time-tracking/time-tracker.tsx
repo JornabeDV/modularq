@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Play, Pause, Square, Clock } from 'lucide-react'
-import { useProjectTasks } from '@/hooks/use-project-tasks'
+import { Play, Square } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
+import { StopTaskModal } from './stop-task-modal'
 
 interface TimeTrackerProps {
   operarioId: string
@@ -102,18 +101,23 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
               estimated_hours
             )
           `)
-          .eq('id', taskId)
+          .eq('task_id', taskId)
           .single()
 
-        if (error) throw error
-        console.log('TimeTracker - Current task loaded:', data)
+        if (error) {
+          console.error('TimeTracker - Supabase error:', error)
+          throw error
+        }
         setCurrentTask(data)
       } catch (err) {
-        console.error('Error fetching current task:', err)
+        console.error('TimeTracker - Error fetching current task:', err)
+        setCurrentTask(null)
       }
     }
 
-    fetchCurrentTask()
+    if (taskId) {
+      fetchCurrentTask()
+    }
   }, [taskId])
 
   // Cargar estado del cronómetro al montar el componente
@@ -170,12 +174,40 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
     }
   }, [totalHoursWorked, currentTask?.task?.estimated_hours, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate])
 
+  // Refrescar horas trabajadas cuando se crea una nueva entrada
+  useEffect(() => {
+    const refreshHours = async () => {
+      if (!currentTask?.task_id) return
+
+      try {
+        const { data, error } = await supabase
+          .from('time_entries')
+          .select('hours')
+          .eq('task_id', currentTask.task_id)
+          .eq('user_id', operarioId)
+
+        if (error) throw error
+
+        const totalHours = data?.reduce((sum, entry) => sum + (entry.hours || 0), 0) || 0
+        setTotalHoursWorked(totalHours)
+      } catch (err) {
+        console.error('Error refreshing hours:', err)
+      }
+    }
+
+    // Refrescar después de un breve delay para permitir que la BD se actualice
+    const timeoutId = setTimeout(refreshHours, 2000)
+    return () => clearTimeout(timeoutId)
+  }, [onTimeEntryCreate, currentTask?.task_id, operarioId])
+
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
 
     if (isTracking && startTime) {
       interval = setInterval(() => {
-        const newElapsedTime = Date.now() - startTime.getTime()
+        const now = Date.now()
+        const sessionElapsedTime = now - startTime.getTime()
+        const totalElapsedTime = elapsedTime + sessionElapsedTime
         
         // Verificar si se ha alcanzado el tiempo estimado de la tarea
         if (currentTask?.task?.estimated_hours) {
@@ -184,13 +216,13 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
           const warningThreshold = maxElapsedTime * 0.9 // 90% del tiempo estimado
           
           // Mostrar advertencia cuando se acerque al límite
-          if (newElapsedTime >= warningThreshold && newElapsedTime < maxElapsedTime) {
+          if (totalElapsedTime >= warningThreshold && totalElapsedTime < maxElapsedTime) {
             setIsNearLimit(true)
           } else {
             setIsNearLimit(false)
           }
           
-          if (newElapsedTime >= maxElapsedTime) {
+          if (totalElapsedTime >= maxElapsedTime) {
             // Detener automáticamente el cronómetro
             setIsTracking(false)
             setElapsedTime(maxElapsedTime)
@@ -201,9 +233,9 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
           }
         }
         
-        setElapsedTime(newElapsedTime)
+        setElapsedTime(totalElapsedTime)
         // Guardar estado cada segundo
-        saveTimerState(isTracking, startTime, newElapsedTime)
+        saveTimerState(isTracking, startTime, totalElapsedTime)
       }, 1000)
     }
 
@@ -233,76 +265,96 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
   }
 
   const handleStart = () => {
-    console.log('TimeTracker - handleStart called', { taskId, currentTask })
-    if (!taskId) {
-      console.log('TimeTracker - No taskId provided')
-      return
-    }
-    if (!currentTask) {
-      console.log('TimeTracker - No currentTask loaded')
+    if (!taskId || !currentTask) {
       return
     }
 
     const now = new Date()
     setStartTime(now)
     setIsTracking(true)
-    setElapsedTime(0)
-    saveTimerState(true, now, 0)
-    console.log('TimeTracker - Timer started')
+    // No resetear elapsedTime, mantener el tiempo acumulado
+    saveTimerState(true, now, elapsedTime)
   }
 
-  const handlePause = () => {
-    setIsTracking(false)
-    saveTimerState(false, startTime, elapsedTime)
+  // Estado para el modal de detener
+  const [showStopModal, setShowStopModal] = useState(false)
+
+  const handleStop = () => {
+    // Mostrar modal para escribir nota
+    setShowStopModal(true)
   }
 
-  const handleStop = async () => {
+  const handleConfirmStop = async (reason: string) => {
     if (!startTime || !taskId || !currentTask) return
 
     const endTime = new Date()
     const hours = elapsedTime / (1000 * 60 * 60)
 
-    const timeEntry = {
-      user_id: operarioId,
-      task_id: currentTask.task_id,
-      project_id: currentTask.project_id,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
-      description: "",
-      date: startTime.toISOString().split("T")[0],
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('time_entries')
-        .insert(timeEntry)
-        .select()
-
-      if (error) {
-        console.error('Error creating time entry:', error)
-        throw error
+    // Solo crear entrada si hay tiempo transcurrido
+    if (hours > 0) {
+      const timeEntry = {
+        user_id: operarioId,
+        task_id: currentTask.task_id,
+        project_id: currentTask.project_id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        description: reason,
+        date: startTime.toISOString().split("T")[0],
       }
 
-      console.log('Time entry created successfully:', data)
-      onTimeEntryCreate?.(timeEntry)
+      try {
+        const { data, error } = await supabase
+          .from('time_entries')
+          .insert(timeEntry)
+          .select()
 
-      // Actualizar horas trabajadas y progreso
-      const newTotalHours = totalHoursWorked + hours
-      setTotalHoursWorked(newTotalHours)
+        if (error) {
+          console.error('Error creating time entry on stop:', error)
+          throw error
+        }
 
-      if (currentTask.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
-        const progress = Math.min((newTotalHours / currentTask.task.estimated_hours) * 100, 100)
-        onProgressUpdate?.(Math.round(progress))
+        onTimeEntryCreate?.(timeEntry)
+
+        // Actualizar horas trabajadas
+        const newTotalHours = totalHoursWorked + hours
+        setTotalHoursWorked(newTotalHours)
+
+        // Actualizar actual_hours en la tabla project_tasks
+        try {
+          const { error: updateError } = await supabase
+            .from('project_tasks')
+            .update({ 
+              actual_hours: newTotalHours,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', currentTask.id)
+
+          if (updateError) {
+            console.error('Error updating actual_hours:', updateError)
+          }
+        } catch (err) {
+          console.error('Error updating actual_hours:', err)
+        }
+
+        if (currentTask.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
+          const progress = Math.min((newTotalHours / currentTask.task.estimated_hours) * 100, 100)
+          onProgressUpdate?.(Math.round(progress))
+        }
+      } catch (err) {
+        console.error('Error creating time entry on stop:', err)
       }
-
-      // Reset state
-      setIsTracking(false)
-      setStartTime(null)
-      setElapsedTime(0)
-      clearTimerState()
-    } catch (err) {
-      console.error('Error creating time entry:', err)
     }
+
+    // Reset state
+    setIsTracking(false)
+    setStartTime(null)
+    setElapsedTime(0)
+    setShowStopModal(false)
+    clearTimerState()
+  }
+
+  const handleCancelStop = () => {
+    setShowStopModal(false)
   }
 
   return (
@@ -338,30 +390,29 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
                 className="flex items-center gap-2"
               >
                 <Play className="h-4 w-4" />
-                Iniciar
+                Iniciar {!currentTask ? '(Cargando...)' : ''}
               </Button>
             ) : (
-              <>
-                <Button 
-                  onClick={handlePause}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Pause className="h-4 w-4" />
-                  Pausar
-                </Button>
-                <Button 
-                  onClick={handleStop}
-                  variant="destructive"
-                  className="flex items-center gap-2"
-                >
-                  <Square className="h-4 w-4" />
-                  Detener
-                </Button>
-              </>
+              <Button 
+                onClick={handleStop}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <Square className="h-4 w-4" />
+                Detener
+              </Button>
             )}
           </div>
         </div>
+
+        {/* Modal de Detener */}
+        <StopTaskModal
+          isOpen={showStopModal}
+          onClose={handleCancelStop}
+          onConfirm={handleConfirmStop}
+          elapsedTime={elapsedTime}
+          formatTime={formatTime}
+        />
 
     </div>
   )

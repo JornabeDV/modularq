@@ -54,13 +54,13 @@ export function TimeEntriesList({ operarioId, taskId, limit, showOperario = fals
         const { data, error } = await query
 
         if (error) {
-          console.error('Error in query:', error)
+          console.error('TimeEntriesList - Error in query:', error)
           throw error
         }
         
         setEntries(data || [])
       } catch (err) {
-        console.error('Error loading time entries:', err)
+        console.error('TimeEntriesList - Error loading time entries:', err)
       } finally {
         setLoading(false)
       }
