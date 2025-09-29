@@ -117,7 +117,6 @@ export function useProjectOperarios(projectId?: string) {
           name: data.user.name,
           email: data.user.email,
           role: data.user.role,
-          department: data.user.department
         } : undefined
       }
 

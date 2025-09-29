@@ -1,0 +1,176 @@
+"use client"
+
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { MainLayout } from '@/components/layout/main-layout'
+import { useProjectTasks } from '@/hooks/use-project-tasks'
+import { useProjectOperarios } from '@/hooks/use-project-operarios'
+import { useAuth } from '@/lib/auth-context'
+import { TaskHeader } from '@/components/tasks/task-header'
+import { TaskDetails } from '@/components/tasks/task-details'
+import { TaskActions } from '@/components/tasks/task-actions'
+import { EditTaskModal } from '@/components/tasks/edit-task-modal'
+import { TaskLoadingStates } from '@/components/tasks/task-loading-states'
+
+export default function TaskDetailPage() {
+  const router = useRouter()
+  const params = useParams()
+  const { user } = useAuth()
+  const projectId = params.id as string
+  const taskId = params.taskId as string
+  
+  const { projectTasks, updateProjectTask, loading } = useProjectTasks(projectId)
+  const { projectOperarios, loading: operariosLoading } = useProjectOperarios(projectId)
+  
+  const [task, setTask] = useState<any>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [actualHours, setActualHours] = useState(0)
+  const [progressPercentage, setProgressPercentage] = useState(0)
+  const [notes, setNotes] = useState('')
+  const [isTracking, setIsTracking] = useState(false)
+  const [refreshTimeEntries, setRefreshTimeEntries] = useState(0)
+
+  // Verificar si el operario está asignado al proyecto
+  const isAssignedToProject = projectOperarios.some(po => po.userId === user?.id)
+
+  useEffect(() => {
+    if (projectTasks.length > 0) {
+      const foundTask = projectTasks.find(pt => pt.id === taskId)
+      if (foundTask) {
+        setTask(foundTask)
+        setActualHours(foundTask.actualHours || 0)
+        setProgressPercentage(foundTask.progressPercentage || 0)
+        setNotes(foundTask.notes || '')
+      }
+    }
+  }, [projectTasks, taskId])
+
+  const handleUpdateTask = async () => {
+    if (!task) return
+
+    const updateData = {
+      actualHours,
+      progressPercentage,
+      notes
+    }
+
+    const result = await updateProjectTask(task.id, updateData)
+    if (result.success) {
+      setIsEditing(false)
+      // Actualizar el estado local
+      setTask({ ...task, ...updateData })
+    }
+  }
+
+  const handleCompleteTask = async () => {
+    if (!task) return
+
+    const updateData = {
+      status: 'completed' as const,
+      actualHours,
+      progressPercentage: 100,
+      notes,
+      endDate: new Date().toISOString().split('T')[0]
+    }
+
+    const result = await updateProjectTask(task.id, updateData)
+    if (result.success) {
+      router.push(`/projects/${projectId}`)
+    }
+  }
+
+  const handleTimeEntryCreate = useCallback((entry: any) => {
+    console.log('Time entry created:', entry)
+    setRefreshTimeEntries(prev => prev + 1)
+  }, [])
+
+  const handleProgressUpdate = useCallback(async (progress: number) => {
+    console.log('Progress updated:', progress)
+    setProgressPercentage(progress)
+    
+    // Actualizar el progreso en la base de datos sin refetch
+    if (task) {
+      try {
+        await updateProjectTask(task.id, { progressPercentage: progress }, true)
+      } catch (err) {
+        console.error('Error updating progress:', err)
+      }
+    }
+  }, [task, updateProjectTask])
+
+  // Estados de carga y error
+  if (loading || operariosLoading) {
+    return (
+      <MainLayout>
+        <TaskLoadingStates state="loading" />
+      </MainLayout>
+    )
+  }
+
+  if (!task) {
+    return (
+      <MainLayout>
+        <TaskLoadingStates 
+          state="not-found" 
+          onBackToProject={() => router.push(`/projects/${projectId}`)}
+        />
+      </MainLayout>
+    )
+  }
+
+  if (!operariosLoading && !isAssignedToProject) {
+    return (
+      <MainLayout>
+        <TaskLoadingStates 
+          state="access-denied" 
+          onBackToProjects={() => router.push('/projects')}
+        />
+      </MainLayout>
+    )
+  }
+
+  return (
+    <MainLayout>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <TaskHeader 
+          task={task}
+          onBack={() => router.push(`/projects/${projectId}`)}
+        />
+
+        <div className="space-y-6">
+          {/* Detalles de la Tarea */}
+          <TaskDetails 
+            task={task}
+            onComplete={handleCompleteTask}
+          />
+
+          {/* Acciones de la Tarea (Time Tracker + Historial) */}
+          <TaskActions
+            task={{
+              status: task.status,
+              taskId: task?.taskId || ''
+            }}
+            operarioId={user?.id}
+            onTimeEntryCreate={handleTimeEntryCreate}
+            onProgressUpdate={handleProgressUpdate}
+            refreshTimeEntries={refreshTimeEntries}
+          />
+        </div>
+
+        {/* Modal de Edición */}
+        <EditTaskModal
+          isOpen={isEditing}
+          onClose={() => setIsEditing(false)}
+          actualHours={actualHours}
+          progressPercentage={progressPercentage}
+          notes={notes}
+          onActualHoursChange={setActualHours}
+          onProgressChange={setProgressPercentage}
+          onNotesChange={setNotes}
+          onSave={handleUpdateTask}
+        />
+      </div>
+    </MainLayout>
+  )
+}
