@@ -84,9 +84,6 @@ export function DraggableTaskCard({
                 {projectTask.actualHours > 0 && (
                   <span>{projectTask.actualHours}h reales</span>
                 )}
-                {projectTask.assignedUser && (
-                  <span>Asignado a: {projectTask.assignedUser.name}</span>
-                )}
               </div>
             </div>
           </div>

@@ -63,7 +63,6 @@ export function useProjectTasks(projectId?: string) {
         throw fetchError
       }
 
-      console.log('Raw data from Supabase:', data)
       
       // Convertir datos de Supabase al formato ProjectTask
       const formattedProjectTasks: ProjectTask[] = (data || []).map(pt => ({
@@ -100,7 +99,6 @@ export function useProjectTasks(projectId?: string) {
         } : undefined
       }))
 
-      console.log('Formatted project tasks:', formattedProjectTasks)
       setProjectTasks(formattedProjectTasks)
     } catch (err) {
       console.error('Error fetching project tasks:', err)
@@ -149,7 +147,7 @@ export function useProjectTasks(projectId?: string) {
   }
 
   // Actualizar project_task
-  const updateProjectTask = async (projectTaskId: string, projectTaskData: UpdateProjectTaskData): Promise<{ success: boolean; error?: string }> => {
+  const updateProjectTask = async (projectTaskId: string, projectTaskData: UpdateProjectTaskData, skipRefetch: boolean = false): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       
@@ -163,8 +161,6 @@ export function useProjectTasks(projectId?: string) {
       if (projectTaskData.progressPercentage !== undefined) updateData.progress_percentage = projectTaskData.progressPercentage
       if (projectTaskData.notes !== undefined) updateData.notes = projectTaskData.notes
 
-      console.log('Updating project_tasks with data:', updateData, 'for ID:', projectTaskId)
-
       const { error: updateError } = await supabase
         .from('project_tasks')
         .update(updateData)
@@ -175,9 +171,17 @@ export function useProjectTasks(projectId?: string) {
         throw updateError
       }
 
-      console.log('Update successful, refreshing data...')
-      // Actualizar estado local
-      await fetchProjectTasks(projectId)
+      // Actualizar estado local solo si no se omite el refetch
+      if (!skipRefetch) {
+        await fetchProjectTasks(projectId)
+      } else {
+        // Actualizar solo el elemento específico en el estado local
+        setProjectTasks(prev => prev.map(pt => 
+          pt.id === projectTaskId 
+            ? { ...pt, ...projectTaskData }
+            : pt
+        ))
+      }
       
       return { success: true }
     } catch (err) {

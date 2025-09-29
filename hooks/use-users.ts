@@ -59,8 +59,7 @@ export function useUsers() {
           .replace(/\s+/g, '.') // Espacios a puntos
           .substring(0, 15) // Máximo 15 caracteres
         
-        const timestamp = Date.now().toString().slice(-6) // Últimos 6 dígitos del timestamp
-        return `${cleanName}.${timestamp}@modularq.local`
+        return `${cleanName}@modularq.local`
       }
       
       const generatedEmail = generateEmail(userData.name)

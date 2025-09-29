@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -8,17 +9,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { CheckCircle, Clock, Play, Square, User } from 'lucide-react'
+import { CheckCircle, Clock, Play, Square, User, ExternalLink } from 'lucide-react'
 import { useTaskSelfAssignment } from '@/hooks/use-task-self-assignment'
 import { useAuth } from '@/lib/auth-context'
 import type { ProjectTask } from '@/lib/types'
 
 interface TaskSelfAssignmentProps {
   projectTasks: ProjectTask[]
+  projectId: string
   onTaskUpdate?: () => void
 }
 
-export function TaskSelfAssignment({ projectTasks, onTaskUpdate }: TaskSelfAssignmentProps) {
+export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: TaskSelfAssignmentProps) {
+  const router = useRouter()
   const { user } = useAuth()
   const { loading, selfAssignTask, unassignTask, completeTask } = useTaskSelfAssignment()
   const [completingTask, setCompletingTask] = useState<ProjectTask | null>(null)
@@ -181,56 +184,16 @@ export function TaskSelfAssignment({ projectTasks, onTaskUpdate }: TaskSelfAssig
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Completar
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Completar Tarea</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="hours">Horas Reales Trabajadas</Label>
-                            <Input
-                              id="hours"
-                              type="number"
-                              step="0.5"
-                              min="0"
-                              value={actualHours}
-                              onChange={(e) => setActualHours(parseFloat(e.target.value) || 0)}
-                              placeholder="Ej: 2.5"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="notes">Notas (opcional)</Label>
-                            <Textarea
-                              id="notes"
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
-                              placeholder="Comentarios sobre la tarea..."
-                            />
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setCompletingTask(null)}>
-                              Cancelar
-                            </Button>
-                            <Button 
-                              onClick={() => {
-                                setCompletingTask(task)
-                                handleComplete()
-                              }}
-                              disabled={loading}
-                            >
-                              Marcar como Completada
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        router.push(`/projects/${projectId}/task/${task.id}`)
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Ver Detalles
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"

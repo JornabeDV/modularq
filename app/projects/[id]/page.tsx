@@ -25,7 +25,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const { user } = useAuth()
   const { projects, loading: projectsLoading } = useProjects()
   const { projectTasks, refetch: refetchTasks } = useProjectTasks(params.id)
-  const { projectOperarios } = useProjectOperarios(params.id)
+  const { projectOperarios, loading: operariosLoading } = useProjectOperarios(params.id)
   const [project, setProject] = useState<any>(null)
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     })
   }
 
-  if (projectsLoading) {
+  if (projectsLoading || operariosLoading) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center p-8">
@@ -92,7 +92,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     )
   }
 
-  if (!isAssignedToProject) {
+  if (!operariosLoading && !isAssignedToProject) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center p-8">
@@ -189,6 +189,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         {/* Task Self Assignment */}
         <TaskSelfAssignment 
           projectTasks={projectTasks} 
+          projectId={params.id}
           onTaskUpdate={refetchTasks}
         />
       </div>

@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Clock, User, Calendar, MoreHorizontal, Play, Pause, CheckCircle } from "lucide-react"
+import { Clock, Calendar, MoreHorizontal, Play, Pause, CheckCircle } from "lucide-react"
 import type { Task } from "@/lib/types"
 
 interface TaskCardProps {
@@ -131,21 +130,6 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
 
         {/* Task Details */}
         <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <User className="h-4 w-4" />
-            <span>Asignado a:</span>
-            <div className="flex items-center gap-2">
-              <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-xs">
-                  {operario?.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("") || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <span className="font-medium">{operario?.name || "Sin asignar"}</span>
-            </div>
-          </div>
 
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
