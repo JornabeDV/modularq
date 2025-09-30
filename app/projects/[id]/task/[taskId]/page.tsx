@@ -80,7 +80,6 @@ export default function TaskDetailPage() {
   }
 
   const handleTimeEntryCreate = useCallback((entry: any) => {
-    console.log('Time entry created:', entry)
     setRefreshTimeEntries(prev => prev + 1)
     
     // Actualizar las horas reales trabajadas
@@ -97,7 +96,6 @@ export default function TaskDetailPage() {
   }, [task, updateProjectTask])
 
   const handleProgressUpdate = useCallback(async (progress: number) => {
-    console.log('Progress updated:', progress)
     setProgressPercentage(progress)
     
     // Actualizar el progreso en la base de datos sin refetch
