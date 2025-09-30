@@ -185,8 +185,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
         return false
       }
+      
+      // Crear un objeto de usuario simulado compatible con Supabase User
+      const mockUser = createMockUser(userData)
 
-
+      setUser(mockUser)
       setUserProfile(userData)
       setIsLoading(false)
       return true

@@ -10,11 +10,12 @@ import { StopTaskModal } from './stop-task-modal'
 interface TimeTrackerProps {
   operarioId: string
   taskId: string
+  projectId: string
   onTimeEntryCreate?: (entry: any) => void
   onProgressUpdate?: (progress: number) => void
 }
 
-export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressUpdate }: TimeTrackerProps) {
+export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, onProgressUpdate }: TimeTrackerProps) {
   const { user } = useAuth()
   const [isTracking, setIsTracking] = useState(false)
   const [startTime, setStartTime] = useState<Date | null>(null)
@@ -24,8 +25,8 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
   const [lastSentProgress, setLastSentProgress] = useState<number | null>(null)
   const [isNearLimit, setIsNearLimit] = useState(false)
 
-  // Clave única para localStorage basada en operario y tarea
-  const timerStorageKey = `timer_${operarioId}_${taskId}`
+  // Clave única para localStorage basada en operario, proyecto y tarea
+  const timerStorageKey = `timer_${operarioId}_${projectId}_${taskId}`
 
   // Funciones para persistir el estado del cronómetro
   const saveTimerState = (isTracking: boolean, startTime: Date | null, elapsedTime: number) => {
@@ -101,7 +102,7 @@ export function TimeTracker({ operarioId, taskId, onTimeEntryCreate, onProgressU
               estimated_hours
             )
           `)
-          .eq('task_id', taskId)
+          .eq('id', taskId)
           .single()
 
         if (error) {

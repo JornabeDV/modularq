@@ -9,7 +9,9 @@ interface TaskActionsProps {
   task: {
     status: string
     taskId: string
+    projectTaskId: string
   }
+  projectId: string
   operarioId?: string
   onTimeEntryCreate: (entry: any) => void
   onProgressUpdate: (progress: number) => void
@@ -18,6 +20,7 @@ interface TaskActionsProps {
 
 export function TaskActions({
   task,
+  projectId,
   operarioId,
   onTimeEntryCreate,
   onProgressUpdate,
@@ -40,7 +43,8 @@ export function TaskActions({
           <CardContent>
             <TimeTracker 
               operarioId={operarioId || ''} 
-              taskId={task.taskId}
+              taskId={task.projectTaskId}
+              projectId={projectId}
               onTimeEntryCreate={onTimeEntryCreate}
               onProgressUpdate={onProgressUpdate}
             />
@@ -63,6 +67,7 @@ export function TaskActions({
           <TimeEntriesList 
             operarioId={operarioId} 
             taskId={task.taskId}
+            projectId={projectId}
             limit={10}
             refreshTrigger={refreshTimeEntries}
           />

@@ -159,8 +159,10 @@ export default function TaskDetailPage() {
           <TaskActions
             task={{
               status: task.status,
-              taskId: task?.taskId || ''
+              taskId: task?.taskId || '',
+              projectTaskId: task?.id || ''
             }}
+            projectId={projectId}
             operarioId={user?.id}
             onTimeEntryCreate={handleTimeEntryCreate}
             onProgressUpdate={handleProgressUpdate}

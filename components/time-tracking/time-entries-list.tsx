@@ -9,12 +9,13 @@ import { supabase } from '@/lib/supabase'
 interface TimeEntriesListProps {
   operarioId?: string
   taskId?: string
+  projectId?: string
   limit?: number
   showOperario?: boolean
   refreshTrigger?: number
 }
 
-export function TimeEntriesList({ operarioId, taskId, limit, showOperario = false, refreshTrigger }: TimeEntriesListProps) {
+export function TimeEntriesList({ operarioId, taskId, projectId, limit, showOperario = false, refreshTrigger }: TimeEntriesListProps) {
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -47,6 +48,10 @@ export function TimeEntriesList({ operarioId, taskId, limit, showOperario = fals
           query = query.eq('task_id', taskId)
         }
 
+        if (projectId) {
+          query = query.eq('project_id', projectId)
+        }
+
         if (limit) {
           query = query.limit(limit)
         }
@@ -67,7 +72,7 @@ export function TimeEntriesList({ operarioId, taskId, limit, showOperario = fals
     }
 
     fetchTimeEntries()
-  }, [operarioId, taskId, limit, refreshTrigger])
+  }, [operarioId, taskId, projectId, limit, refreshTrigger])
 
   const formatTime = useCallback((hours: number) => {
     const h = Math.floor(hours)
