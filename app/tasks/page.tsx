@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
+import { OperarioOnly } from "@/components/auth/route-guard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TaskCard } from "@/components/tasks/task-card"
@@ -12,6 +13,14 @@ import { useAuth } from "@/lib/auth-context"
 import type { Task } from "@/lib/types"
 
 export default function TasksPage() {
+  return (
+    <OperarioOnly>
+      <TasksContent />
+    </OperarioOnly>
+  )
+}
+
+function TasksContent() {
   const { tasks, loading, error, getStandardTasks } = useTasks()
   const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
@@ -23,7 +32,7 @@ export default function TasksPage() {
   const allTasks = tasks
 
   const filteredTasks = useMemo(() => {
-    return standardTasks.filter((task) => {
+    return allTasks.filter((task: any) => {
       const matchesSearch =
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -32,7 +41,7 @@ export default function TasksPage() {
 
       return matchesSearch && matchesCategory && matchesType
     })
-  }, [standardTasks, searchTerm, statusFilter, priorityFilter])
+  }, [allTasks, searchTerm, statusFilter, priorityFilter])
 
   const activeFiltersCount = [statusFilter, priorityFilter].filter((f) => f !== "all").length
 
@@ -44,11 +53,11 @@ export default function TasksPage() {
 
   // Task statistics
   const taskStats = {
-    total: standardTasks.length,
-    analysis: standardTasks.filter((t) => t.category === "Análisis").length,
-    design: standardTasks.filter((t) => t.category === "Diseño").length,
-    development: standardTasks.filter((t) => t.category === "Desarrollo").length,
-    testing: standardTasks.filter((t) => t.category === "Testing").length,
+    total: allTasks.length,
+    analysis: allTasks.filter((t: any) => t.category === "Análisis").length,
+    design: allTasks.filter((t: any) => t.category === "Diseño").length,
+    development: allTasks.filter((t: any) => t.category === "Desarrollo").length,
+    testing: allTasks.filter((t: any) => t.category === "Testing").length,
   }
 
   if (loading) {
@@ -201,7 +210,7 @@ export default function TasksPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredTasks.map((task) => (
+              {filteredTasks.map((task: any) => (
                 <Card key={task.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="text-lg">{task.title}</CardTitle>

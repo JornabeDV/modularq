@@ -1,6 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
+import { AdminOnly } from "@/components/auth/route-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,14 @@ import { useOperarios } from "@/hooks/use-operarios"
 import { useState, useEffect } from "react"
 
 export default function AdminWorkersPage() {
+  return (
+    <AdminOnly>
+      <AdminWorkersContent />
+    </AdminOnly>
+  )
+}
+
+function AdminWorkersContent() {
   const { operarios, loading, error, getOperarioStats } = useOperarios()
   const [operarioStats, setOperarioStats] = useState<Record<string, any>>({})
 

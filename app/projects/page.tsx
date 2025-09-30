@@ -1,6 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
+import { OperarioOnly } from "@/components/auth/route-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,14 @@ import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 
 export default function ProjectsPage() {
+  return (
+    <OperarioOnly>
+      <ProjectsContent />
+    </OperarioOnly>
+  )
+}
+
+function ProjectsContent() {
   const { user } = useAuth()
   const { projects, loading, error } = useProjects()
   const { projectOperarios } = useProjectOperarios()
