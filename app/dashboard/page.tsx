@@ -138,22 +138,21 @@ export default function DashboardPage() {
                 <Shield className="h-5 w-5" />
                 Panel de Administración
               </CardTitle>
-              <CardDescription>Gestión de usuarios y control del sistema</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Control de Usuarios</h3>
+                    <h3 className="font-medium">Control del Personal</h3>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Crea, edita y gestiona todos los usuarios del sistema
+                    Crea, edita y gestiona todo el personal del sistema
                   </p>
                   <Link href="/admin/users">
                     <Button size="sm" className="w-full">
                       <Users className="h-3 w-3 mr-1" />
-                      Gestionar Usuarios
+                      Gestionar personal
                     </Button>
                   </Link>
                 </div>
