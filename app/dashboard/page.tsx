@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useProjects } from "@/hooks/use-projects"
 import { useOperarios } from "@/hooks/use-operarios"
 import { AdminOnly } from "@/components/auth/route-guard"
-import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings } from "lucide-react"
+import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
@@ -32,6 +32,52 @@ export default function DashboardPage() {
   const cancelledTasks = projects.reduce((sum, project) => 
     sum + project.projectTasks.filter(pt => pt.status === 'cancelled').length, 0
   )
+
+  // Función para calcular el progreso real del proyecto basado en tareas completadas
+  const calculateProjectProgress = (project: any) => {
+    const totalTasks = project.projectTasks.length
+    if (totalTasks === 0) return 0
+    
+    const completedTasks = project.projectTasks.filter((pt: any) => pt.status === 'completed').length
+    return Math.round((completedTasks / totalTasks) * 100)
+  }
+
+  // Función para calcular métricas del proyecto
+  const getProjectMetrics = (project: any) => {
+    const totalTasks = project.projectTasks.length
+    const completedTasks = project.projectTasks.filter((pt: any) => pt.status === 'completed').length
+    const inProgressTasks = project.projectTasks.filter((pt: any) => pt.status === 'in_progress').length
+    const pendingTasks = project.projectTasks.filter((pt: any) => pt.status === 'pending').length
+    const totalOperarios = project.projectOperarios.length
+    
+    // Calcular horas totales estimadas y trabajadas
+    const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => 
+      sum + (pt.task?.estimatedHours || 0), 0
+    )
+    const actualHours = project.projectTasks.reduce((sum: number, pt: any) => 
+      sum + (pt.actualHours || 0), 0
+    )
+
+    return {
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      pendingTasks,
+      totalOperarios,
+      estimatedHours: Math.round(estimatedHours * 10) / 10,
+      actualHours: Math.round(actualHours * 10) / 10
+    }
+  }
+
+  // Función para formatear fechas
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Sin fecha'
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -204,32 +250,117 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : activeProjects.length > 0 ? (
-              activeProjects.map((project) => (
-                <div key={project.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(project.status)}`} />
-                      <span className="font-medium">{project.name}</span>
-                    </div>
-                    <Badge variant="default">{project.status}</Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Progreso</span>
-                      <span>{project.progress}%</span>
-                    </div>
-                    <Progress value={project.progress} className="h-2" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {project.projectTasks.length} tareas asignadas
-                  </p>
-                  {project.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeProjects.map((project) => {
+                  const metrics = getProjectMetrics(project)
+                  const progress = calculateProjectProgress(project)
+                  
+                  return (
+                    <Card key={project.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
+                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                          </div>
+                          <Badge variant="default" className="text-xs">
+                            {project.status}
+                          </Badge>
+                        </div>
+                        {project.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {project.description}
+                          </p>
+                        )}
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-4">
+                        {/* Progreso */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <Target className="h-4 w-4" />
+                              Progreso
+                            </span>
+                            <span className="font-semibold">{progress}%</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
+                        </div>
+
+                        {/* Métricas de tareas */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-muted-foreground">Completadas</span>
+                            <span className="font-semibold">{metrics.completedTasks}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-blue-500" />
+                            <span className="text-muted-foreground">En progreso</span>
+                            <span className="font-semibold">{metrics.inProgressTasks}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                            <span className="text-muted-foreground">Pendientes</span>
+                            <span className="font-semibold">{metrics.pendingTasks}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-purple-500" />
+                            <span className="text-muted-foreground">Operarios</span>
+                            <span className="font-semibold">{metrics.totalOperarios}</span>
+                          </div>
+                        </div>
+
+                        {/* Horas trabajadas */}
+                        <div className="space-y-2 pt-2 border-t">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <Timer className="h-4 w-4" />
+                              Horas
+                            </span>
+                            <span className="text-muted-foreground">
+                              {metrics.actualHours}h de {metrics.estimatedHours}h
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-1.5">
+                            <div 
+                              className="bg-primary h-1.5 rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: metrics.estimatedHours > 0 
+                                  ? `${Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)}%` 
+                                  : '0%' 
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Fechas */}
+                        <div className="space-y-1 pt-2 border-t text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>Inicio: {formatDate(project.startDate)}</span>
+                          </div>
+                          {project.endDate && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>Fin: {formatDate(project.endDate)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Botón de acción */}
+                        <div className="pt-2">
+                          <Link href={`/admin/projects/${project.id}`}>
+                            <Button variant="outline" size="sm" className="w-full">
+                              Ver Detalles
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
             ) : (
               <div className="text-center py-8">
                 <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
