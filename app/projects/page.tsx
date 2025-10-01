@@ -1,15 +1,31 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
+import { OperarioOnly } from "@/components/auth/route-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { mockProjects, mockOperarios } from "@/lib/mock-data"
-import { Plus, Calendar, Users, DollarSign, MoreHorizontal } from "lucide-react"
+import { Calendar, Users, DollarSign, MoreHorizontal, FolderOpen, Eye } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useProjects } from "@/hooks/use-projects"
+import { useProjectOperarios } from "@/hooks/use-project-operarios"
+import { useAuth } from "@/lib/auth-context"
+import Link from "next/link"
 
 export default function ProjectsPage() {
+  return (
+    <OperarioOnly>
+      <ProjectsContent />
+    </OperarioOnly>
+  )
+}
+
+function ProjectsContent() {
+  const { user } = useAuth()
+  const { projects, loading, error } = useProjects()
+  const { projectOperarios } = useProjectOperarios()
+  
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -40,23 +56,53 @@ export default function ProjectsPage() {
     }
   }
 
-  const getOperarioName = (id: string) => {
-    return mockOperarios.find((op) => op.id === id)?.name || "Desconocido"
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-ES", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount)
-  }
-
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Sin fecha"
     return new Date(dateString).toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     })
+  }
+
+  // Filtrar proyectos activos donde el operario está asignado
+  const userAssignedProjectIds = projectOperarios
+    .filter(po => po.userId === user?.id)
+    .map(po => po.projectId)
+  
+  const activeProjects = projects.filter(p => 
+    p.status === "active" && userAssignedProjectIds.includes(p.id)
+  )
+  
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Cargando proyectos...</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-destructive">Error</h2>
+              <p className="text-muted-foreground mt-2">{error}</p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (
@@ -65,145 +111,92 @@ export default function ProjectsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-balance">Proyectos</h1>
-            <p className="text-muted-foreground">Gestión y seguimiento de todos los proyectos</p>
+            <h1 className="text-3xl font-bold text-balance">Proyectos Activos</h1>
+            <p className="text-muted-foreground">Proyectos en curso</p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Proyecto
-          </Button>
+          <div className="text-sm text-muted-foreground flex items-center">
+            {activeProjects.length} proyecto{activeProjects.length !== 1 ? 's' : ''} activo{activeProjects.length !== 1 ? 's' : ''}
+          </div>
         </div>
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {mockProjects.map((project) => (
+          {activeProjects.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+              <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay proyectos activos</h3>
+              <p className="text-muted-foreground mb-4">
+                No hay proyectos en estado activo en este momento.
+              </p>
+            </div>
+          ) : (
+            activeProjects.map((project) => {
+              const completedTasks = project.projectTasks.filter((task: any) => task.status === 'completed').length
+              const totalTasks = project.projectTasks.length
+              const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+
+              return (
             <Card key={project.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{project.name}</CardTitle>
+                  <div className="flex-1">
+                    <CardTitle className="text-lg mb-2">{project.name}</CardTitle>
+                    <CardDescription className="mb-3">
+                      {project.description}
+                    </CardDescription>
                     <div className="flex items-center gap-2">
-                      <Badge variant={getStatusColor(project.status)}>{project.status}</Badge>
-                      <Badge variant={getPriorityColor(project.priority)}>{project.priority}</Badge>
+                      <Badge variant="default">
+                        Activo
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {totalTasks} tarea{totalTasks !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                      <DropdownMenuItem>Editar</DropdownMenuItem>
-                      <DropdownMenuItem>Asignar operarios</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
-                <CardDescription className="text-sm">{project.description}</CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {/* Progress */}
+                {/* Progreso del proyecto */}
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">Progreso</span>
-                    <span>{project.progress}%</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Progreso del proyecto</span>
+                    <span className="font-medium">{Math.round(progressPercentage)}%</span>
                   </div>
-                  <Progress value={project.progress} className="h-2" />
+                  <Progress value={progressPercentage} className="h-2" />
                 </div>
 
-                {/* Project Info */}
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {formatDate(project.startDate)} - {project.endDate ? formatDate(project.endDate) : "Sin fecha"}
-                    </span>
+                {/* Información del proyecto */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Inicio:</span>
+                    <span>{formatDate(project.startDate)}</span>
                   </div>
-
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{project.assignedOperarios.length} operarios asignados</span>
-                  </div>
-
-                  {project.budget && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="h-4 w-4" />
-                      <span>{formatCurrency(project.budget)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Assigned Operarios */}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Operarios Asignados:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {project.assignedOperarios.map((operarioId) => (
-                      <Badge key={operarioId} variant="outline" className="text-xs">
-                        {getOperarioName(operarioId)}
-                      </Badge>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Fin:</span>
+                    <span>{formatDate(project.endDate)}</span>
                   </div>
                 </div>
 
-                {/* Department and Supervisor */}
-                <div className="pt-2 border-t text-xs text-muted-foreground">
-                  <p>Departamento: {project.department}</p>
-                  <p>Supervisor: {project.supervisor}</p>
+
+                {/* Botón para ver detalles */}
+                <div className="pt-2 border-t">
+                  <Link href={`/projects/${project.id}`}>
+                    <Button variant="outline" className="w-full">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver Detalles del Proyecto
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
-          ))}
+              )
+            })
+          )}
         </div>
 
-        {/* Project Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-500">
-                  {mockProjects.filter((p) => p.status === "completed").length}
-                </div>
-                <p className="text-sm text-muted-foreground">Completados</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-500">
-                  {mockProjects.filter((p) => p.status === "active").length}
-                </div>
-                <p className="text-sm text-muted-foreground">Activos</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-500">
-                  {mockProjects.filter((p) => p.status === "planning").length}
-                </div>
-                <p className="text-sm text-muted-foreground">En Planificación</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-500">
-                  {mockProjects.filter((p) => p.status === "paused").length}
-                </div>
-                <p className="text-sm text-muted-foreground">Pausados</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </MainLayout>
   )

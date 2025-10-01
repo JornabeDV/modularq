@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
+import { AdminOnly } from "@/components/auth/route-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,6 +11,14 @@ import { AuditLogComponent } from "@/components/reports/audit-log"
 import { FileText, TrendingUp, Activity, Download, Calendar, BarChart3 } from "lucide-react"
 
 export default function ReportsPage() {
+  return (
+    <AdminOnly>
+      <ReportsContent />
+    </AdminOnly>
+  )
+}
+
+function ReportsContent() {
   const [selectedDateRange, setSelectedDateRange] = useState("last-30-days")
 
   return (

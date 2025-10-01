@@ -3,22 +3,54 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { mockOperarios, mockTasks, mockTimeEntries, mockProjects } from "@/lib/mock-data"
 import { TrendingUp, Clock, Target, Award, AlertTriangle } from "lucide-react"
+import { useOperarios } from "@/hooks/use-operarios"
+import { useTasks } from "@/hooks/use-tasks"
+import { useProjects } from "@/hooks/use-projects"
+import { supabase } from "@/lib/supabase"
+import { useState, useEffect } from "react"
 
 export function ProductivityReport() {
+  const { operarios, loading: operariosLoading } = useOperarios()
+  const { tasks, loading: tasksLoading } = useTasks()
+  const { projects, loading: projectsLoading } = useProjects()
+  const [timeEntries, setTimeEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Cargar time entries desde la base de datos
+  useEffect(() => {
+    const fetchTimeEntries = async () => {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('time_entries')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        setTimeEntries(data || [])
+      } catch (err) {
+        console.error('Error loading time entries:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTimeEntries()
+  }, [])
+  
   // Calculate productivity metrics
   const calculateOperarioMetrics = (operarioId: string) => {
-    const operarioTasks = mockTasks.filter((task) => task.assignedTo === operarioId)
-    const operarioTimeEntries = mockTimeEntries.filter((entry) => entry.operarioId === operarioId)
+    const operarioTasks = tasks.filter((task) => task.assignedTo === operarioId)
+    const operarioTimeEntries = timeEntries.filter((entry) => entry.user_id === operarioId)
 
     const completedTasks = operarioTasks.filter((task) => task.status === "completed")
-    const totalEstimatedHours = operarioTasks.reduce((sum, task) => sum + task.estimatedHours, 0)
-    const totalActualHours = operarioTasks.reduce((sum, task) => sum + task.actualHours, 0)
-    const totalLoggedHours = operarioTimeEntries.reduce((sum, entry) => sum + entry.hours, 0)
+    const totalEstimatedHours = operarioTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
+    const totalActualHours = operarioTasks.reduce((sum, task) => sum + (task.actualHours || 0), 0)
+    const totalLoggedHours = operarioTimeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0)
 
     const completionRate = operarioTasks.length > 0 ? (completedTasks.length / operarioTasks.length) * 100 : 0
-    const timeEfficiency = totalEstimatedHours > 0 ? (totalEstimatedHours / totalActualHours) * 100 : 0
+    const timeEfficiency = totalActualHours > 0 ? (totalEstimatedHours / totalActualHours) * 100 : 0
     const hoursVariance = totalActualHours - totalEstimatedHours
 
     return {
@@ -35,18 +67,18 @@ export function ProductivityReport() {
     }
   }
 
-  const operarioMetrics = mockOperarios.map((operario) => ({
+  const operarioMetrics = operarios.map((operario) => ({
     ...operario,
-    metrics: calculateOperarioMetrics(operario.id),
+    metrics: calculateOperarioMetrics(operario.id!),
   }))
 
   // Overall statistics
   const overallStats = {
-    totalTasks: mockTasks.length,
-    completedTasks: mockTasks.filter((task) => task.status === "completed").length,
-    totalEstimatedHours: mockTasks.reduce((sum, task) => sum + task.estimatedHours, 0),
-    totalActualHours: mockTasks.reduce((sum, task) => sum + task.actualHours, 0),
-    totalLoggedHours: mockTimeEntries.reduce((sum, entry) => sum + entry.hours, 0),
+    totalTasks: tasks.length,
+    completedTasks: tasks.filter((task) => task.status === "completed").length,
+    totalEstimatedHours: tasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0),
+    totalActualHours: tasks.reduce((sum, task) => sum + (task.actualHours || 0), 0),
+    totalLoggedHours: timeEntries.reduce((sum, entry) => sum + (entry.hours || 0), 0),
   }
 
   const overallCompletionRate = (overallStats.completedTasks / overallStats.totalTasks) * 100
@@ -64,6 +96,23 @@ export function ProductivityReport() {
     return { variant: "destructive" as const, label: "Necesita mejora" }
   }
 
+  if (loading || operariosLoading || tasksLoading || projectsLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Cargando reporte de productividad...</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Overall Statistics */}
@@ -73,7 +122,7 @@ export function ProductivityReport() {
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-blue-500" />
               <div>
-                <div className="text-2xl font-bold">{Math.round(overallCompletionRate)}%</div>
+                <div className="text-2xl font-bold">{overallStats.totalTasks > 0 ? Math.round(overallCompletionRate) : 0}%</div>
                 <p className="text-sm text-muted-foreground">Tasa de Finalización</p>
               </div>
             </div>
@@ -86,7 +135,7 @@ export function ProductivityReport() {
               <TrendingUp className={`h-4 w-4 ${getEfficiencyColor(overallEfficiency)}`} />
               <div>
                 <div className={`text-2xl font-bold ${getEfficiencyColor(overallEfficiency)}`}>
-                  {Math.round(overallEfficiency)}%
+                  {overallStats.totalActualHours > 0 ? Math.round(overallEfficiency) : 0}%
                 </div>
                 <p className="text-sm text-muted-foreground">Eficiencia General</p>
               </div>
@@ -144,7 +193,7 @@ export function ProductivityReport() {
                       </div>
                       <div>
                         <h3 className="font-semibold">{operario.name}</h3>
-                        <p className="text-sm text-muted-foreground">{operario.department}</p>
+                        <p className="text-sm text-muted-foreground">{operario.role}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -216,8 +265,8 @@ export function ProductivityReport() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockProjects.map((project) => {
-              const projectTasks = mockTasks.filter((task) => task.projectId === project.id)
+            {projects.map((project) => {
+              const projectTasks = tasks.filter((task) => task.projectId === project.id)
               const completedTasks = projectTasks.filter((task) => task.status === "completed")
               const totalEstimated = projectTasks.reduce((sum, task) => sum + task.estimatedHours, 0)
               const totalActual = projectTasks.reduce((sum, task) => sum + task.actualHours, 0)
@@ -228,7 +277,7 @@ export function ProductivityReport() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h3 className="font-semibold">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground">{project.department}</p>
+                      <p className="text-sm text-muted-foreground">{project.status}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={project.status === "active" ? "default" : "secondary"}>{project.status}</Badge>

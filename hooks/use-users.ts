@@ -7,7 +7,6 @@ export interface UserProfile {
   email: string
   name: string
   role: 'admin' | 'supervisor' | 'operario'
-  department?: string
   skills?: string[]
   password?: string
   total_hours?: number
@@ -21,7 +20,6 @@ export interface CreateUserData {
   password: string
   name: string
   role: 'admin' | 'supervisor' | 'operario'
-  department?: string
   skills?: string[]
 }
 
@@ -54,14 +52,14 @@ export function useUsers() {
       setLoading(true)
       
       // Generar email único basado en el nombre y timestamp
+      // Generar email automáticamente basado en el nombre
       const generateEmail = (name: string) => {
         const cleanName = name.toLowerCase()
           .replace(/[^a-z\s]/g, '') // Solo letras y espacios
           .replace(/\s+/g, '.') // Espacios a puntos
           .substring(0, 15) // Máximo 15 caracteres
         
-        const timestamp = Date.now().toString().slice(-6) // Últimos 6 dígitos del timestamp
-        return `${cleanName}.${timestamp}@modularq.local`
+        return `${cleanName}@modularq.local`
       }
       
       const generatedEmail = generateEmail(userData.name)
@@ -73,7 +71,6 @@ export function useUsers() {
           email: generatedEmail,
           name: userData.name,
           role: userData.role,
-          department: userData.department,
           skills: userData.skills || [],
           password: userData.password, // Almacenamos la contraseña temporalmente
           total_hours: 0,
@@ -138,27 +135,32 @@ export function useUsers() {
   }
 
   // Eliminar usuario
-  const deleteUser = async (userId: string) => {
+  const deleteUser = async (userId: string, currentUserId?: string) => {
     try {
       setLoading(true)
       
-      // Eliminar de Supabase Auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-      if (authError) throw authError
-
-      // Eliminar de nuestra tabla (esto se hará automáticamente por CASCADE)
+      // Verificar si el usuario está intentando eliminarse a sí mismo
+      if (currentUserId && userId === currentUserId) {
+        throw new Error('No puedes eliminarte a ti mismo')
+      }
+      
+      // Eliminar directamente de nuestra tabla users
       const { error } = await supabase
         .from('users')
         .delete()
         .eq('id', userId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error eliminando usuario:', error)
+        throw error
+      }
 
       // Actualizar lista de usuarios
       await fetchUsers()
       
       return { success: true }
     } catch (err) {
+      console.error('Error en deleteUser:', err)
       setError(err instanceof Error ? err.message : 'Error al eliminar usuario')
       return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' }
     } finally {

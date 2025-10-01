@@ -27,7 +27,6 @@ const createMockUser = (userData: any): User => {
     user_metadata: {
       name: userData.name,
       role: userData.role,
-      department: userData.department,
       skills: userData.skills || [],
       total_hours: userData.total_hours || 0,
       efficiency: userData.efficiency || 0
@@ -99,8 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: userId,
               email: currentUser?.email || '',
               name: currentUser?.user_metadata?.name || currentUser?.email || 'Usuario',
-              role: currentUser?.user_metadata?.role || 'operario',
-              department: currentUser?.user_metadata?.department || 'General'
+              role: currentUser?.user_metadata?.role || 'operario'
             })
             .select()
             .single()
@@ -187,7 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
         return false
       }
-
+      
       // Crear un objeto de usuario simulado compatible con Supabase User
       const mockUser = createMockUser(userData)
 

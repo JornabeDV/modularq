@@ -1,47 +1,94 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Clock, Calendar, Edit, Trash2 } from "lucide-react"
-import { mockTimeEntries, mockTasks, mockProjects, mockOperarios } from "@/lib/mock-data"
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Clock, Calendar, FileText } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface TimeEntriesListProps {
   operarioId?: string
+  taskId?: string
+  projectId?: string
   limit?: number
   showOperario?: boolean
+  refreshTrigger?: number
 }
 
-export function TimeEntriesList({ operarioId, limit, showOperario = false }: TimeEntriesListProps) {
-  let entries = mockTimeEntries
+export function TimeEntriesList({ operarioId, taskId, projectId, limit, showOperario = false, refreshTrigger }: TimeEntriesListProps) {
+  const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  if (operarioId) {
-    entries = entries.filter((entry) => entry.operarioId === operarioId)
-  }
 
-  if (limit) {
-    entries = entries.slice(0, limit)
-  }
+  // Cargar time entries desde la base de datos
+  useEffect(() => {
+    const fetchTimeEntries = async () => {
+      try {
+        setLoading(true)
+        let query = supabase
+          .from('time_entries')
+          .select(`
+            *,
+            task:task_id (
+              id,
+              title
+            ),
+            project:project_id (
+              id,
+              name
+            )
+          `)
+          .order('created_at', { ascending: false })
 
-  // Sort by date descending
-  entries = entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        if (operarioId) {
+          query = query.eq('user_id', operarioId)
+        }
 
-  const formatTime = (hours: number) => {
+        if (taskId) {
+          query = query.eq('task_id', taskId)
+        }
+
+        if (projectId) {
+          query = query.eq('project_id', projectId)
+        }
+
+        if (limit) {
+          query = query.limit(limit)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          console.error('TimeEntriesList - Error in query:', error)
+          throw error
+        }
+        
+        setEntries(data || [])
+      } catch (err) {
+        console.error('TimeEntriesList - Error loading time entries:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTimeEntries()
+  }, [operarioId, taskId, projectId, limit, refreshTrigger])
+
+  const formatTime = useCallback((hours: number) => {
     const h = Math.floor(hours)
     const m = Math.round((hours - h) * 60)
     return `${h}h ${m}m`
-  }
+  }, [])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     })
-  }
+  }, [])
 
-  const formatTimeRange = (startTime: string, endTime?: string) => {
+  const formatTimeRange = useCallback((startTime: string, endTime?: string) => {
     const start = new Date(startTime).toLocaleTimeString("es-ES", {
       hour: "2-digit",
       minute: "2-digit",
@@ -55,95 +102,73 @@ export function TimeEntriesList({ operarioId, limit, showOperario = false }: Tim
     })
 
     return `${start} - ${end}`
+  }, [])
+
+  const renderedEntries = useMemo(() => {
+    return entries.map((entry) => (
+      <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Clock className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-medium">{entry.task?.title || 'Tarea eliminada'}</span>
+              <Badge variant="outline" className="text-xs">
+                {formatTime(entry.hours)}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>{formatDate(entry.date)}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>{formatTimeRange(entry.start_time, entry.end_time)}</span>
+              </div>
+              {entry.project && (
+                <div className="text-xs">
+                  {entry.project.name}
+                </div>
+              )}
+            </div>
+            {entry.description && (
+              <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                <FileText className="h-3 w-3" />
+                <span className="italic">{entry.description}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    ))
+  }, [entries, formatTime, formatDate, formatTimeRange])
+
+  if (loading) {
+    return (
+      <div className="text-center py-4">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+        <p className="text-sm text-muted-foreground mt-2">Cargando registros...</p>
+      </div>
+    )
+  }
+
+  if (entries.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">No hay registros de tiempo</h3>
+        <p className="text-muted-foreground">
+          {taskId ? 'No se han registrado horas para esta tarea' : 'No se han registrado horas de trabajo'}
+        </p>
+      </div>
+    )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Registro de Tiempo
-        </CardTitle>
-        <CardDescription>
-          {operarioId ? "Tus registros de tiempo recientes" : "Registros de tiempo del equipo"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {entries.length === 0 ? (
-          <div className="text-center py-8">
-            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No hay registros de tiempo</h3>
-            <p className="text-muted-foreground">
-              {operarioId ? "Aún no has registrado tiempo en ninguna tarea" : "No hay registros de tiempo disponibles"}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {entries.map((entry) => {
-              const task = mockTasks.find((t) => t.id === entry.taskId)
-              const project = mockProjects.find((p) => p.id === entry.projectId)
-              const operario = mockOperarios.find((o) => o.id === entry.operarioId)
-
-              return (
-                <div key={entry.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{task?.title || "Tarea desconocida"}</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {project?.name || "Proyecto desconocido"}
-                        </Badge>
-                      </div>
-
-                      {showOperario && operario && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Avatar className="h-5 w-5">
-                            <AvatarFallback className="text-xs">
-                              {operario.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{operario.name}</span>
-                        </div>
-                      )}
-
-                      <p className="text-sm text-muted-foreground">{entry.description}</p>
-
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDate(entry.date)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatTimeRange(entry.startTime, entry.endTime)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 ml-4">
-                      <div className="text-right">
-                        <div className="text-lg font-bold">{formatTime(entry.hours)}</div>
-                        <div className="text-xs text-muted-foreground">Tiempo total</div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      {renderedEntries}
+    </div>
   )
 }

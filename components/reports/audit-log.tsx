@@ -7,23 +7,25 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Download, Eye, Calendar, User, Activity } from "lucide-react"
-import { mockAuditLogs } from "@/lib/mock-data"
+import { useAuditLogs } from "@/hooks/use-audit-logs"
 
 export function AuditLogComponent() {
   const [searchTerm, setSearchTerm] = useState("")
   const [actionFilter, setActionFilter] = useState("all")
   const [entityFilter, setEntityFilter] = useState("all")
   const [userFilter, setUserFilter] = useState("all")
-
-  const filteredLogs = mockAuditLogs.filter((log) => {
+  
+  const { auditLogs, loading, error, fetchAuditLogs } = useAuditLogs()
+  
+  const filteredLogs = auditLogs.filter((log) => {
     const matchesSearch =
-      log.entityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.entity_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.userName.toLowerCase().includes(searchTerm.toLowerCase())
+      log.user_name.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesAction = actionFilter === "all" || log.action.toLowerCase().includes(actionFilter.toLowerCase())
-    const matchesEntity = entityFilter === "all" || log.entityType === entityFilter
-    const matchesUser = userFilter === "all" || log.userId === userFilter
+    const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter
+    const matchesUser = userFilter === "all" || log.user_id === userFilter
 
     return matchesSearch && matchesAction && matchesEntity && matchesUser
   })
@@ -130,7 +132,21 @@ export function AuditLogComponent() {
 
         {/* Audit Log Entries */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {filteredLogs.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Cargando logs de auditoría...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <Activity className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Error al cargar logs</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={fetchAuditLogs} variant="outline">
+                Reintentar
+              </Button>
+            </div>
+          ) : filteredLogs.length === 0 ? (
             <div className="text-center py-8">
               <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No se encontraron registros</h3>
@@ -141,23 +157,23 @@ export function AuditLogComponent() {
               <div key={log.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="text-lg">{getEntityIcon(log.entityType)}</div>
+                    <div className="text-lg">{getEntityIcon(log.entity_type)}</div>
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
                         <Badge variant={getActionColor(log.action)}>{log.action}</Badge>
-                        <span className="text-sm font-medium">{log.entityName}</span>
+                        <span className="text-sm font-medium">{log.entity_name}</span>
                       </div>
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          <span>{log.userName}</span>
+                          <span>{log.user_name}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{formatTimestamp(log.timestamp)}</span>
+                          <span>{formatTimestamp(log.created_at)}</span>
                         </div>
-                        {log.ipAddress && <span className="text-xs">IP: {log.ipAddress}</span>}
+                        {log.ip_address && <span className="text-xs">IP: {log.ip_address}</span>}
                       </div>
 
                       {log.changes && (
@@ -182,10 +198,10 @@ export function AuditLogComponent() {
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
-              Mostrando {filteredLogs.length} de {mockAuditLogs.length} registros
+              Mostrando {filteredLogs.length} de {auditLogs.length} registros
             </span>
             <span>
-              Última actualización: {formatTimestamp(mockAuditLogs[0]?.timestamp || new Date().toISOString())}
+              Última actualización: {formatTimestamp(auditLogs[0]?.created_at || new Date().toISOString())}
             </span>
           </div>
         </div>

@@ -2,27 +2,59 @@ export interface Project {
   id: string
   name: string
   description: string
-  status: "planning" | "active" | "paused" | "completed"
-  priority: "low" | "medium" | "high" | "critical"
-  startDate: string
+  status: "planning" | "active" | "on-hold" | "completed" | "cancelled"
+  startDate?: string
   endDate?: string
-  progress: number
-  assignedOperarios: string[]
-  supervisor: string
-  department: string
+  supervisor?: string
   budget?: number
-  tasks: Task[]
+  progress?: number
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  projectTasks: ProjectTask[]
 }
 
+// Tarea base (solo información, sin evolución)
 export interface Task {
   id: string
-  projectId: string
   title: string
   description: string
-  status: "pending" | "in-progress" | "completed" | "blocked"
-  priority: "low" | "medium" | "high" | "critical"
-  assignedTo: string
+  category: string
+  type: 'standard' | 'custom'
   estimatedHours: number
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Evolución de tarea en un proyecto específico
+export interface ProjectTask {
+  id: string
+  projectId: string
+  taskId: string
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  actualHours: number
+  assignedTo?: string
+  startDate?: string
+  endDate?: string
+  progressPercentage: number
+  notes?: string
+  assignedAt: string
+  assignedBy?: string
+  createdAt: string
+  updatedAt: string
+  taskOrder: number
+  // Relaciones
+  task?: Task
+  assignedUser?: { id: string; name: string; role: string }
+}
+
+// Para compatibilidad con componentes existentes
+export interface TaskWithProject extends Task {
+  projectId: string
+  status: 'pending' | 'in-progress' | 'completed' | 'blocked'
+  assignedTo?: string
+  assignedUsers?: Array<{ id: string; name: string; role: string }>
   actualHours: number
   startDate?: string
   endDate?: string
@@ -33,7 +65,7 @@ export interface Operario {
   id: string
   name: string
   email: string
-  department: string
+  role: string
   skills: string[]
   currentTasks: string[]
   totalHours: number

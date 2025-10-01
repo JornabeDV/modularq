@@ -3,22 +3,23 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, Users, Clock, FileText, Settings, LogOut, Shield } from "lucide-react"
+import { LayoutDashboard, FolderKanban, Users, FileText, Settings, LogOut, Shield, CheckSquare } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Proyectos", href: "/projects", icon: FolderKanban },
-  { name: "Operarios", href: "/operarios", icon: Users },
-  { name: "Tiempo", href: "/time-tracking", icon: Clock },
-  { name: "Reportes", href: "/reports", icon: FileText },
-  { name: "Configuración", href: "/settings", icon: Settings },
+  { name: "Proyectos Activos", href: "/projects", icon: FolderKanban },
 ]
 
 const adminNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Gestión de Usuarios", href: "/admin/users", icon: Shield },
+  { name: "Gestión de Operarios", href: "/admin/workers", icon: Users },
+  { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
+  { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
+  { name: "Reportes", href: "/reports", icon: FileText },
+  { name: "Configuración", href: "/settings", icon: Settings },
 ]
 
 export function Sidebar() {
@@ -27,8 +28,8 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r">
-      {/* Header */}
-      <div className="flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
+      {/* Header - Solo en desktop */}
+      <div className="hidden lg:flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
         <Image
           src="/assets/logo.png"
           alt="MODULARQ Logo"
@@ -46,7 +47,7 @@ export function Sidebar() {
               {userProfile?.name && typeof userProfile.name === 'string'
                 ? userProfile.name
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join("")
                     .toUpperCase()
                 : "U"}
@@ -66,7 +67,8 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {navigation.map((item) => {
+          {/* Solo operarios ven "Proyectos Activos" */}
+          {userProfile?.role === 'operario' && navigation.map((item) => {
             const isActive = pathname === item.href
             return (
               <li key={item.name}>
@@ -89,12 +91,6 @@ export function Sidebar() {
           {/* Admin Navigation */}
           {userProfile?.role === 'admin' && (
             <>
-              <div className="my-4 border-t border-border" />
-              <div className="px-3 py-2">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Administración
-                </h3>
-              </div>
               {adminNavigation.map((item) => {
                 const isActive = pathname === item.href
                 return (
