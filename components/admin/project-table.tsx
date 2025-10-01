@@ -43,13 +43,14 @@ export function ProjectTable({
                 <TableHead className="min-w-[200px]">Proyecto</TableHead>
                 <TableHead className="text-center min-w-[120px]">Estado</TableHead>
                 <TableHead className="text-center min-w-[100px]">Tareas</TableHead>
+                <TableHead className="text-center min-w-[100px]">Operarios</TableHead>
                 <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {projects.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={5} className="text-center py-8 text-muted-foreground">
                     No se encontraron proyectos
                   </td>
                 </tr>

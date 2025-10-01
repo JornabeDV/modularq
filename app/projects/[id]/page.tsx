@@ -152,12 +152,12 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Fecha de Inicio</label>
-                  <p className="text-sm">{formatDate(project.startDate)}</p>
+                  <label className="text-lg font-medium text-muted-foreground">Fecha de Inicio</label>
+                  <p className="text-lg font-semibold">{formatDate(project.startDate)}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Fecha de Finalización</label>
-                  <p className="text-sm">{formatDate(project.endDate)}</p>
+                  <label className="text-lg font-medium text-muted-foreground">Fecha de Finalización</label>
+                  <p className="text-lg font-semibold">{formatDate(project.endDate)}</p>
                 </div>
               </div>
             </CardContent>

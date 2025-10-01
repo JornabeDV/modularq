@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Project, ProjectTask } from '@/lib/types'
+import type { Project, ProjectTask, ProjectOperario } from '@/lib/types'
 
 export interface CreateProjectData {
   name: string
@@ -64,6 +64,18 @@ export function useProjects() {
               name,
               role
             )
+          ),
+          project_operarios (
+            id,
+            project_id,
+            user_id,
+            assigned_at,
+            assigned_by,
+            user:user_id (
+              id,
+              name,
+              role
+            )
           )
         `)
         .order('created_at', { ascending: false })
@@ -115,6 +127,18 @@ export function useProjects() {
             id: pt.assigned_user.id,
             name: pt.assigned_user.name,
             role: pt.assigned_user.role
+          } : undefined
+        })),
+        projectOperarios: (project.project_operarios || []).map((po: any) => ({
+          id: po.id,
+          projectId: po.project_id,
+          userId: po.user_id,
+          assignedAt: po.assigned_at,
+          assignedBy: po.assigned_by,
+          user: po.user ? {
+            id: po.user.id,
+            name: po.user.name,
+            role: po.user.role
           } : undefined
         }))
       }))

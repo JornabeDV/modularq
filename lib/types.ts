@@ -12,6 +12,17 @@ export interface Project {
   createdAt: string
   updatedAt: string
   projectTasks: ProjectTask[]
+  projectOperarios: ProjectOperario[]
+}
+
+export interface ProjectOperario {
+  id: string
+  projectId: string
+  userId: string
+  assignedAt: string
+  assignedBy?: string
+  // Relaciones
+  user?: { id: string; name: string; role: string }
 }
 
 // Tarea base (solo información, sin evolución)
