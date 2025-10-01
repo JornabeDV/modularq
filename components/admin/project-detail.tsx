@@ -104,9 +104,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   }
 
   const handleUpdateTask = async (projectTaskId: string, taskData: Partial<ProjectTask>) => {
-    console.log('Updating project task:', projectTaskId, taskData)
     const result = await updateProjectTask(projectTaskId, taskData)
-    console.log('Update result:', result)
     if (result.success) {
       setEditingTask(null)
     }
@@ -130,7 +128,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     })
     
     if (result.success) {
-      console.log('Tarea asignada exitosamente')
+      // Tarea asignada exitosamente
     }
   }
 
@@ -138,7 +136,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     const result = await deleteProjectTask(projectTaskId)
     
     if (result.success) {
-      console.log('Tarea desasignada exitosamente')
+      // Tarea desasignada exitosamente
     }
   }
 
@@ -146,7 +144,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     const result = await updateTaskOrder(taskOrders)
     
     if (result.success) {
-      console.log('Orden de tareas actualizado exitosamente')
+      // Orden de tareas actualizado exitosamente
     } else {
       console.error('Error actualizando orden de tareas:', result.error)
     }
