@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle, Clock, Play, Square, User, ExternalLink } from 'lucide-react'
 import { useTaskSelfAssignment } from '@/hooks/use-task-self-assignment'
 import { useAuth } from '@/lib/auth-context'
+import { supabase } from '@/lib/supabase'
 import type { ProjectTask } from '@/lib/types'
 
 interface TaskSelfAssignmentProps {
@@ -20,9 +21,30 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
   const router = useRouter()
   const { user } = useAuth()
   const { loading, selfAssignTask, unassignTask, completeTask } = useTaskSelfAssignment()
+  const [calculatedHours, setCalculatedHours] = useState<Record<string, number>>({})
   const [completingTask, setCompletingTask] = useState<ProjectTask | null>(null)
   const [actualHours, setActualHours] = useState(0)
   const [notes, setNotes] = useState('')
+
+  // Calcular horas reales desde time_entries
+  useEffect(() => {
+    const calculateAllHours = async () => {
+      const hoursMap: Record<string, number> = {}
+      
+      for (const task of projectTasks) {
+        if (task.taskId) {
+          const realHours = await calculateActualHours(task.taskId)
+          hoursMap[task.id] = realHours
+        }
+      }
+      
+      setCalculatedHours(hoursMap)
+    }
+
+    if (projectTasks.length > 0) {
+      calculateAllHours()
+    }
+  }, [projectTasks])
 
   // Filtrar tareas por estado
   const availableTasks = projectTasks.filter(task => task.status === 'pending')
@@ -87,11 +109,36 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
     if (hours < 0.0001) {
       return '< 1m'
     }
-    if (hours < 1) {
-      const minutes = Math.round(hours * 60)
-      return minutes < 1 ? '< 1m' : `${minutes}m`
+    
+    const totalMinutes = Math.round(hours * 60)
+    const totalHours = Math.floor(hours)
+    const minutes = totalMinutes % 60
+    
+    if (totalHours === 0) {
+      return `${minutes}m`
+    } else if (minutes === 0) {
+      return `${totalHours}h`
+    } else {
+      return `${totalHours}h ${minutes}m`
     }
-    return `${hours.toFixed(1)}h`
+  }
+
+  // Función para calcular horas reales desde time_entries
+  const calculateActualHours = async (taskId: string) => {
+    try {
+      const { data: timeEntries, error } = await supabase
+        .from('time_entries')
+        .select('hours')
+        .eq('task_id', taskId)
+
+      if (error) throw error
+
+      const totalHours = timeEntries?.reduce((sum, entry) => sum + parseFloat(entry.hours || 0), 0) || 0
+      return totalHours
+    } catch (err) {
+      console.error('Error calculating actual hours:', err)
+      return 0
+    }
   }
 
   return (
@@ -186,7 +233,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
                         En Progreso
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {task.task?.estimatedHours || 0}h estimadas
+                        {formatHours(calculatedHours[task.id] || 0)} trabajadas de {task.task?.estimatedHours || 0}h estimadas
                       </span>
                     </div>
                   </div>
@@ -247,7 +294,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
                         Completada
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {formatHours(task.actualHours)} trabajadas
+                        {formatHours(calculatedHours[task.id] || 0)} trabajadas
                       </span>
                     </div>
                   </div>

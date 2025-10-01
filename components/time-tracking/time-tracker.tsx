@@ -379,7 +379,18 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           {/* Horas trabajadas */}
           {currentTask?.task?.estimated_hours && (
             <div className="text-sm text-muted-foreground">
-              <span className="font-medium">{totalHoursWorked.toFixed(1)}h</span> trabajadas de {currentTask.task.estimated_hours}h estimadas
+              <span className="font-medium">{(() => {
+                const hours = Math.floor(totalHoursWorked)
+                const minutes = Math.round((totalHoursWorked - hours) * 60)
+                
+                if (hours === 0) {
+                  return `${minutes}min`
+                } else if (minutes === 0) {
+                  return `${hours}h`
+                } else {
+                  return `${hours}h ${minutes}min`
+                }
+              })()}</span> trabajadas de {currentTask.task.estimated_hours}h estimadas
             </div>
           )}
           
