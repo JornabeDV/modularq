@@ -172,10 +172,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Buscar usuario cuyo primer nombre coincida (case-insensitive)
       const userData = allUsers?.find(user => {
-        if (!user.name || !user.password) return false
+        if (!user.name) return false
         
         const firstName = user.name.split(' ')[0]?.toLowerCase().trim()
         const inputName = name.toLowerCase().trim()
+        
+        // Si el usuario no tiene contraseña, no permitir login
+        if (!user.password) return false
         
         return firstName === inputName && user.password === password
       })
