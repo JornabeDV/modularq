@@ -207,6 +207,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         <TaskSelfAssignment 
           projectTasks={projectTasks} 
           projectId={params.id}
+          projectOperarios={projectOperarios
+            .filter(po => po.user !== undefined)
+            .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
           onTaskUpdate={refetchTasks}
         />
       </div>

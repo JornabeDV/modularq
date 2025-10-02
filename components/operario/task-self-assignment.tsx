@@ -9,15 +9,17 @@ import { CheckCircle, Clock, Play, Square, User, ExternalLink } from 'lucide-rea
 import { useTaskSelfAssignment } from '@/hooks/use-task-self-assignment'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
+import { TaskCollaborators } from './task-collaborators'
 import type { ProjectTask } from '@/lib/types'
 
 interface TaskSelfAssignmentProps {
   projectTasks: ProjectTask[]
   projectId: string
+  projectOperarios: Array<{ id: string; name: string; role: string }>
   onTaskUpdate?: () => void
 }
 
-export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: TaskSelfAssignmentProps) {
+export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, onTaskUpdate }: TaskSelfAssignmentProps) {
   const router = useRouter()
   const { user } = useAuth()
   const { loading, selfAssignTask, unassignTask, completeTask } = useTaskSelfAssignment()
@@ -238,6 +240,11 @@ export function TaskSelfAssignment({ projectTasks, projectId, onTaskUpdate }: Ta
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <TaskCollaborators 
+                      projectTask={task} 
+                      projectOperarios={projectOperarios}
+                      onUpdate={onTaskUpdate}
+                    />
                     <Button 
                       size="sm" 
                       variant="outline"
