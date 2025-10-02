@@ -40,18 +40,18 @@ export function useOperarios() {
   // Obtener estadísticas de un operario específico
   const getOperarioStats = async (operarioId: string) => {
     try {
-      // Obtener tareas asignadas al operario
-      const { data: tasks, error: tasksError } = await supabase
-        .from('tasks')
+      // Obtener tareas asignadas al operario desde project_tasks
+      const { data: projectTasks, error: tasksError } = await supabase
+        .from('project_tasks')
         .select('*')
         .eq('assigned_to', operarioId)
 
       if (tasksError) throw tasksError
 
-      const total = tasks?.length || 0
-      const completed = tasks?.filter(task => task.status === 'completed').length || 0
-      const inProgress = tasks?.filter(task => task.status === 'in-progress').length || 0
-      const pending = tasks?.filter(task => task.status === 'pending').length || 0
+      const total = projectTasks?.length || 0
+      const completed = projectTasks?.filter(task => task.status === 'completed').length || 0
+      const inProgress = projectTasks?.filter(task => task.status === 'in_progress').length || 0
+      const pending = projectTasks?.filter(task => task.status === 'pending').length || 0
 
       return {
         total,

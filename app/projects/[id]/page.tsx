@@ -149,15 +149,15 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <CardTitle className="text-sm font-medium">Información del Proyecto</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Fecha de Inicio</label>
-                  <p className="text-sm">{formatDate(project.startDate)}</p>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Fecha de Inicio</span>
+                  <span className="text-lg font-semibold">{formatDate(project.startDate)}</span>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Fecha de Finalización</label>
-                  <p className="text-sm">{formatDate(project.endDate)}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Fecha de Finalización</span>
+                  <span className="text-lg font-semibold">{formatDate(project.endDate)}</span>
                 </div>
               </div>
             </CardContent>
@@ -169,8 +169,13 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Math.round(progressPercentage)}%</div>
-              <Progress value={progressPercentage} className="h-2 mt-2" />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Completado</span>
+                  <span className="text-lg font-semibold">{Math.round(progressPercentage)}%</span>
+                </div>
+                <Progress value={progressPercentage} className="h-2" />
+              </div>
             </CardContent>
           </Card>
 
@@ -180,8 +185,20 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalTasks}</div>
-              <p className="text-xs text-muted-foreground">tareas totales</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Totales</span>
+                  <span className="text-lg font-semibold">{totalTasks}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">En progreso</span>
+                  <span className="text-lg font-semibold text-blue-600">{projectTasks.filter(task => task.status === 'in_progress').length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Terminadas</span>
+                  <span className="text-lg font-semibold text-green-600">{completedTasks}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -190,6 +207,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         <TaskSelfAssignment 
           projectTasks={projectTasks} 
           projectId={params.id}
+          projectOperarios={projectOperarios
+            .filter(po => po.user !== undefined)
+            .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
           onTaskUpdate={refetchTasks}
         />
       </div>

@@ -12,6 +12,17 @@ export interface Project {
   createdAt: string
   updatedAt: string
   projectTasks: ProjectTask[]
+  projectOperarios: ProjectOperario[]
+}
+
+export interface ProjectOperario {
+  id: string
+  projectId: string
+  userId: string
+  assignedAt: string
+  assignedBy?: string
+  // Relaciones
+  user?: { id: string; name: string; role: string }
 }
 
 // Tarea base (solo información, sin evolución)
@@ -47,6 +58,21 @@ export interface ProjectTask {
   // Relaciones
   task?: Task
   assignedUser?: { id: string; name: string; role: string }
+  collaborators?: TaskCollaborator[]
+}
+
+// Colaboradores de una tarea
+export interface TaskCollaborator {
+  id: string
+  projectTaskId: string
+  userId: string
+  addedBy: string
+  addedAt: string
+  createdAt: string
+  updatedAt: string
+  // Relaciones
+  user?: { id: string; name: string; role: string }
+  addedByUser?: { id: string; name: string; role: string }
 }
 
 // Para compatibilidad con componentes existentes

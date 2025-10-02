@@ -117,15 +117,15 @@ export function UserManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold">Gestión de Usuarios</h2>
-          <p className="text-sm sm:text-base text-muted-foreground">Administra usuarios, roles y permisos del sistema</p>
+          <h2 className="text-xl sm:text-2xl font-bold">Gestión de Personal</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Administra personal, roles y permisos del sistema</p>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button type="button" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo Usuario
+              Nuevo Operario
             </Button>
           </DialogTrigger>
         </Dialog>
