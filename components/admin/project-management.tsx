@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, FolderOpen, Users, Calendar } from 'lucide-react'
@@ -12,6 +13,7 @@ import { useAuth } from '@/lib/auth-context'
 import type { Project } from '@/lib/types'
 
 export function ProjectManagement() {
+  const router = useRouter()
   const { user } = useAuth()
   const { projects, loading, error, createProject, updateProject, deleteProject } = useProjects()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -27,8 +29,10 @@ export function ProjectManagement() {
       createdBy: user.id
     })
     
-    if (result.success) {
+    if (result.success && result.projectId) {
       setIsCreateDialogOpen(false)
+      // Redirigir a la página de detalles del proyecto creado
+      router.push(`/admin/projects/${result.projectId}`)
     }
   }
 

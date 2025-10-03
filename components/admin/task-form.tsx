@@ -170,13 +170,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
 
 
 
-          {formData.type === 'custom' && projectId && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3">
-              <p className="text-sm text-green-800">
-                <strong>Tarea Personalizada:</strong> Esta tarea será asignada únicamente al proyecto actual.
-              </p>
-            </div>
-          )}
 
 
 
