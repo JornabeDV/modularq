@@ -10,7 +10,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Plus, Users, Calendar, FolderOpen, Edit, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Users, Calendar, FolderOpen, Edit, Trash2, Zap, ClipboardList } from 'lucide-react'
 import { ProjectForm } from './project-form'
 import { TaskRow } from './task-row'
 import { TaskForm } from './task-form'
@@ -41,6 +41,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null)
+  const [isActivateDialogOpen, setIsActivateDialogOpen] = useState(false)
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false)
 
   useEffect(() => {
     if (projects.length > 0) {
@@ -56,6 +58,42 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     const result = await updateProject(project.id, projectData)
     if (result.success) {
       setIsEditDialogOpen(false)
+    }
+  }
+
+  const handleActivateProject = () => {
+    setIsActivateDialogOpen(true)
+  }
+
+  const confirmActivateProject = async () => {
+    if (!project) return
+    
+    const result = await updateProject(project.id, { 
+      status: 'active',
+      startDate: new Date().toISOString().split('T')[0] // Establecer fecha de inicio al activar
+    })
+    
+    if (result.success) {
+      setIsActivateDialogOpen(false)
+      // El proyecto se actualizará automáticamente gracias al refetch
+    }
+  }
+
+  const handleDeactivateProject = () => {
+    setIsDeactivateDialogOpen(true)
+  }
+
+  const confirmDeactivateProject = async () => {
+    if (!project) return
+    
+    const result = await updateProject(project.id, { 
+      status: 'planning'
+      // No modificamos la fecha de inicio para mantener el historial
+    })
+    
+    if (result.success) {
+      setIsDeactivateDialogOpen(false)
+      // El proyecto se actualizará automáticamente gracias al refetch
     }
   }
 
@@ -245,6 +283,26 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
               </Button>
             </DialogTrigger>
           </Dialog>
+          {project.status === 'planning' && (
+            <Button 
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              size="sm"
+              onClick={handleActivateProject}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              ¡Activar Proyecto!
+            </Button>
+          )}
+          {project.status === 'active' && (
+            <Button 
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              size="sm"
+              onClick={handleDeactivateProject}
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Volver a Planificación
+            </Button>
+          )}
           {project.status !== 'active' && (
             <DeleteProjectButton
               projectId={project.id}
@@ -423,6 +481,70 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Modal de Confirmación para Activar Proyecto */}
+      <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-green-600" />
+              Activar Proyecto
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres activar este proyecto?
+            </DialogDescription>
+          </DialogHeader>
+          
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsActivateDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+              onClick={confirmActivateProject}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Sí, Activar Proyecto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmación para Desactivar Proyecto */}
+      <Dialog open={isDeactivateDialogOpen} onOpenChange={setIsDeactivateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-orange-600" />
+              Volver a Planificación
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres volver este proyecto a estado de planificación?
+            </DialogDescription>
+          </DialogHeader>
+          
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeactivateDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              onClick={confirmDeactivateProject}
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Sí, Volver a Planificación
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   )

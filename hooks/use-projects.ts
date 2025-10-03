@@ -153,7 +153,7 @@ export function useProjects() {
   }
 
   // Crear nuevo proyecto
-  const createProject = async (projectData: CreateProjectData): Promise<{ success: boolean; error?: string }> => {
+  const createProject = async (projectData: CreateProjectData): Promise<{ success: boolean; error?: string; projectId?: string }> => {
     try {
       setError(null)
       
@@ -212,7 +212,7 @@ export function useProjects() {
       // Actualizar estado local
       await fetchProjects()
       
-      return { success: true }
+      return { success: true, projectId: projectResult.id }
     } catch (err) {
       console.error('Error creating project:', err)
       const errorMessage = err instanceof Error ? err.message : 'Error al crear proyecto'

@@ -7,7 +7,6 @@ import { Plus, FolderOpen, Clock, Users, CheckCircle } from 'lucide-react'
 import { TaskStats } from './task-stats'
 import { TaskTable } from './task-table'
 import { TaskForm } from './task-form'
-import { TaskFlowInfo } from './task-flow-info'
 import { useTasks, type CreateTaskData } from '@/hooks/use-tasks'
 import { useAuth } from '@/lib/auth-context'
 import type { Task } from '@/lib/types'
@@ -129,8 +128,6 @@ export function TaskManagement() {
         </Dialog>
       </div>
 
-      {/* Task Flow Info */}
-      <TaskFlowInfo />
 
       {/* Stats Cards */}
       <TaskStats 

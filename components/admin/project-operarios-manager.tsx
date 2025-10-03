@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Plus, Users, X } from 'lucide-react'
 import { useProjectOperarios } from '@/hooks/use-project-operarios'
@@ -21,7 +21,8 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
   const { projectOperarios, loading, assignOperarioToProject, unassignOperarioFromProject } = useProjectOperarios(projectId)
   const { users } = useUsers()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedUserId, setSelectedUserId] = useState('')
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [isAssigning, setIsAssigning] = useState(false)
 
   // Filtrar solo operarios (no admins)
   const operarios = users.filter(user => user.role === 'operario')
@@ -30,18 +31,32 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
   const assignedUserIds = projectOperarios.map(po => po.userId)
   const availableOperarios = operarios.filter(operario => !assignedUserIds.includes(operario.id))
 
-  const handleAssignOperario = async () => {
-    if (!selectedUserId || !user?.id) return
+  const handleOperarioToggle = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    )
+  }
 
-    const result = await assignOperarioToProject({
-      projectId,
-      userId: selectedUserId,
-      assignedBy: user.id
-    })
+  const handleAssignSelected = async () => {
+    if (!user?.id || selectedUserIds.length === 0) return
 
-    if (result.success) {
-      setSelectedUserId('')
+    setIsAssigning(true)
+    try {
+      for (const userId of selectedUserIds) {
+        await assignOperarioToProject({
+          projectId,
+          userId,
+          assignedBy: user.id
+        })
+      }
+      setSelectedUserIds([])
       setIsDialogOpen(false)
+    } catch (error) {
+      console.error('Error assigning operarios:', error)
+    } finally {
+      setIsAssigning(false)
     }
   }
 
@@ -66,43 +81,78 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                Asignar Operario
+                Asignar Operarios
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Asignar Operario al Proyecto</DialogTitle>
+                <DialogTitle>Asignar Operarios al Proyecto</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Seleccionar Operario</label>
-                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un operario" />
-                    </SelectTrigger>
-                    <SelectContent>
+                {availableOperarios.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No hay operarios disponibles</h3>
+                    <p className="text-muted-foreground">
+                      Todos los operarios ya están asignados a este proyecto
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
                       {availableOperarios.map((operario) => (
-                        <SelectItem key={operario.id} value={operario.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{operario.name}</span>
-                            <span className="text-xs text-muted-foreground">({operario.role})</span>
-                          </div>
-                        </SelectItem>
+                        <div key={operario.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50">
+                          <Checkbox
+                            id={operario.id}
+                            checked={selectedUserIds.includes(operario.id)}
+                            onCheckedChange={() => handleOperarioToggle(operario.id)}
+                          />
+                          <label 
+                            htmlFor={operario.id}
+                            className="flex items-center gap-3 flex-1 cursor-pointer"
+                          >
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-sm">
+                                {operario.name
+                                  ?.split(' ')
+                                  .map(n => n[0])
+                                  .join('') || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{operario.name}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {operario.role}
+                              </Badge>
+                            </div>
+                          </label>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleAssignOperario}
-                    disabled={!selectedUserId}
-                  >
-                    Asignar
-                  </Button>
-                </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        {selectedUserIds.length} operario{selectedUserIds.length !== 1 ? 's' : ''} seleccionado{selectedUserIds.length !== 1 ? 's' : ''}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setSelectedUserIds([])
+                            setIsDialogOpen(false)
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button 
+                          onClick={handleAssignSelected}
+                          disabled={selectedUserIds.length === 0 || isAssigning}
+                        >
+                          {isAssigning ? 'Asignando...' : `Asignar ${selectedUserIds.length}`}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </DialogContent>
           </Dialog>

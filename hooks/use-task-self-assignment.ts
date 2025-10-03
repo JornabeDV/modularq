@@ -100,6 +100,9 @@ export function useTaskSelfAssignment() {
         throw error
       }
 
+      // Verificar si todas las tareas del proyecto están completadas
+      await checkAndUpdateProjectStatus(projectTaskId)
+
       return { success: true }
     } catch (err) {
       console.error('Error completing task:', err)
@@ -110,6 +113,59 @@ export function useTaskSelfAssignment() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Verificar si todas las tareas están completadas y actualizar el proyecto
+  const checkAndUpdateProjectStatus = async (projectTaskId: string) => {
+    try {
+      // Primero obtener el project_id de la tarea
+      const { data: taskData, error: taskError } = await supabase
+        .from('project_tasks')
+        .select('project_id')
+        .eq('id', projectTaskId)
+        .single()
+
+      if (taskError || !taskData) {
+        console.error('Error getting project_id:', taskError)
+        return
+      }
+
+      const projectId = taskData.project_id
+
+      // Obtener todas las tareas del proyecto
+      const { data: tasks, error } = await supabase
+        .from('project_tasks')
+        .select('status')
+        .eq('project_id', projectId)
+
+      if (error) {
+        console.error('Error checking project tasks:', error)
+        return
+      }
+
+      // Verificar si todas las tareas están completadas
+      const allTasksCompleted = tasks && tasks.length > 0 && tasks.every(task => task.status === 'completed')
+
+      if (allTasksCompleted) {
+        // Actualizar el proyecto a completado
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({
+            status: 'completed',
+            end_date: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', projectId)
+
+        if (updateError) {
+          console.error('Error updating project status:', updateError)
+        } else {
+          console.log(`Proyecto ${projectId} marcado como completado automáticamente`)
+        }
+      }
+    } catch (err) {
+      console.error('Error checking project status:', err)
     }
   }
 
