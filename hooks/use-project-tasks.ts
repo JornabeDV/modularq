@@ -209,6 +209,11 @@ export function useProjectTasks(projectId?: string) {
         throw updateError
       }
 
+      // Verificar si todas las tareas están completadas y actualizar el proyecto
+      if (projectTaskData.status === 'completed' && projectId) {
+        await checkAndUpdateProjectStatus(projectId)
+      }
+
       // Actualizar estado local solo si no se omite el refetch
       if (!skipRefetch) {
         await fetchProjectTasks(projectId)
@@ -227,6 +232,45 @@ export function useProjectTasks(projectId?: string) {
       const errorMessage = err instanceof Error ? err.message : 'Error al actualizar tarea del proyecto'
       setError(errorMessage)
       return { success: false, error: errorMessage }
+    }
+  }
+
+  // Verificar si todas las tareas están completadas y actualizar el proyecto
+  const checkAndUpdateProjectStatus = async (projectId: string) => {
+    try {
+      // Obtener todas las tareas del proyecto
+      const { data: tasks, error } = await supabase
+        .from('project_tasks')
+        .select('status')
+        .eq('project_id', projectId)
+
+      if (error) {
+        console.error('Error checking project tasks:', error)
+        return
+      }
+
+      // Verificar si todas las tareas están completadas
+      const allTasksCompleted = tasks && tasks.length > 0 && tasks.every(task => task.status === 'completed')
+
+      if (allTasksCompleted) {
+        // Actualizar el proyecto a completado
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({
+            status: 'completed',
+            end_date: new Date().toISOString().split('T')[0],
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', projectId)
+
+        if (updateError) {
+          console.error('Error updating project status:', updateError)
+        } else {
+          console.log(`Proyecto ${projectId} marcado como completado automáticamente`)
+        }
+      }
+    } catch (err) {
+      console.error('Error checking project status:', err)
     }
   }
 
