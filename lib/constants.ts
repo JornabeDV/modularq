@@ -2,24 +2,14 @@
 
 // Categorías de tareas
 export const TASK_CATEGORIES = [
-  'Instalación',
-  'Calidad',
-  'Mantenimiento',
-  'Producción',
-  'Logística',
-  'Seguridad',
-  'Administrativo',
-  'Investigación',
-  'Preparación',
-  'Corte',
-  'Ensamblaje',
-  'Perforado',
-  'Sellado',
+  'Estructura',
   'Pintura',
-  'Fijación',
-  'Eléctrico',
-  'Control de Calidad',
-  'Limpieza'
+  'Paneles',
+  'Carpintería',
+  'Zinguerías',
+  'Instalaciones',
+  'Acabados',
+  'Finalización'
 ] as const
 
 export type TaskCategory = typeof TASK_CATEGORIES[number]
