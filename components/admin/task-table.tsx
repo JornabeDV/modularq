@@ -4,9 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TaskRow } from './task-row'
 import { TaskFilters } from './task-filters'
-import { useTaskAssignments } from '@/hooks/use-task-assignments'
 import type { Task } from '@/lib/types'
-import { useUsers } from '@/hooks/use-users'
 
 interface TaskTableProps {
   tasks: Task[]
@@ -31,15 +29,6 @@ export function TaskTable({
   onEditTask,
   onDeleteTask
 }: TaskTableProps) {
-  const { users } = useUsers()
-  const { assignments } = useTaskAssignments()
-
-  const getAssignedUsers = (taskId: string) => {
-    return assignments
-      .filter(a => a.taskId === taskId)
-      .map(a => a.user)
-      .filter(Boolean) as Array<{ id: string; name: string; role: string }>
-  }
 
   return (
     <Card>
@@ -62,14 +51,13 @@ export function TaskTable({
                 <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
                 <TableHead className="text-center min-w-[100px]">Tipo</TableHead>
                 <TableHead className="text-center min-w-[100px]">Horas</TableHead>
-                <TableHead className="text-center min-w-[150px]">Operarios Asignados</TableHead>
                 <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={5} className="text-center py-8 text-muted-foreground">
                     No se encontraron tareas
                   </td>
                 </tr>
@@ -80,7 +68,6 @@ export function TaskTable({
                     task={task}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
-                    assignedUsers={getAssignedUsers(task.id)}
                   />
                 ))
               )}
