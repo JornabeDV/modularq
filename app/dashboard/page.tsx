@@ -33,13 +33,23 @@ export default function DashboardPage() {
     sum + project.projectTasks.filter(pt => pt.status === 'cancelled').length, 0
   )
 
-  // Función para calcular el progreso real del proyecto basado en tareas completadas
+  // Función para calcular el progreso real del proyecto basado en progreso de tareas
   const calculateProjectProgress = (project: any) => {
     const totalTasks = project.projectTasks.length
     if (totalTasks === 0) return 0
     
-    const completedTasks = project.projectTasks.filter((pt: any) => pt.status === 'completed').length
-    return Math.round((completedTasks / totalTasks) * 100)
+    // Calcular progreso total considerando el progreso de cada tarea
+    const totalProgress = project.projectTasks.reduce((sum: number, pt: any) => {
+      if (pt.status === 'completed') {
+        return sum + 100 // Tarea completada = 100%
+      } else if (pt.status === 'in_progress') {
+        return sum + (pt.progressPercentage || 0) // Progreso real de la tarea
+      } else {
+        return sum + 0 // Tarea pendiente = 0%
+      }
+    }, 0)
+    
+    return Math.round(totalProgress / totalTasks)
   }
 
   // Función para calcular métricas del proyecto
@@ -50,6 +60,7 @@ export default function DashboardPage() {
     const pendingTasks = project.projectTasks.filter((pt: any) => pt.status === 'pending').length
     const totalOperarios = project.projectOperarios.length
     
+    
     // Calcular horas totales estimadas y trabajadas
     const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => 
       sum + (pt.task?.estimatedHours || 0), 0
@@ -58,6 +69,18 @@ export default function DashboardPage() {
       sum + (pt.actualHours || 0), 0
     )
 
+    // Calcular progreso de tiempo estimado y eficiencia real
+    // Progreso de tiempo estimado: horas estimadas de tareas completadas vs total estimado
+    const completedEstimatedHours = project.projectTasks
+      .filter((pt: any) => pt.status === 'completed')
+      .reduce((sum: number, pt: any) => sum + (pt.task?.estimatedHours || 0), 0)
+    
+    // Eficiencia real: horas trabajadas de tareas completadas vs horas estimadas totales del proyecto
+    const completedActualHours = project.projectTasks
+      .filter((pt: any) => pt.status === 'completed')
+      .reduce((sum: number, pt: any) => sum + (pt.actualHours || 0), 0)
+
+
     return {
       totalTasks,
       completedTasks,
@@ -65,8 +88,22 @@ export default function DashboardPage() {
       pendingTasks,
       totalOperarios,
       estimatedHours: Math.round(estimatedHours * 10) / 10,
-      actualHours: Math.round(actualHours * 10) / 10
+      actualHours: Math.round(actualHours * 10) / 10,
+      completedEstimatedHours: Math.round(completedEstimatedHours * 10) / 10,
+      completedActualHours: Math.round(completedActualHours * 10) / 10,
+      hasEfficiencyData: completedEstimatedHours > 0
     }
+  }
+
+  // Función para determinar el color de eficiencia
+  const getEfficiencyColor = (actualHours: number, estimatedHours: number) => {
+    if (actualHours <= estimatedHours) return 'text-green-600' // Terminó antes o a tiempo
+    return 'text-red-600'                                      // Terminó después del estimado
+  }
+
+  const getEfficiencyBgColor = (actualHours: number, estimatedHours: number) => {
+    if (actualHours <= estimatedHours) return 'bg-green-100' // Terminó antes o a tiempo
+    return 'bg-red-100'                                      // Terminó después del estimado
   }
 
   // Función para formatear fechas
@@ -275,16 +312,87 @@ export default function DashboardPage() {
                       </CardHeader>
                       
                       <CardContent className="space-y-4">
-                        {/* Progreso */}
+                        {/* Progreso de Tareas */}
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="flex items-center gap-1">
                               <Target className="h-4 w-4" />
-                              Progreso
+                              Progreso de Tareas
                             </span>
-                            <span className="font-semibold">{progress}%</span>
+                            <span className="font-semibold">
+                              {metrics.totalTasks > 0 
+                                ? `${Math.round((metrics.completedTasks / metrics.totalTasks) * 100)}%`
+                                : '0%'
+                              }
+                            </span>
                           </div>
-                          <Progress value={progress} className="h-2" />
+                          <Progress 
+                            value={metrics.totalTasks > 0 
+                              ? (metrics.completedTasks / metrics.totalTasks) * 100
+                              : 0
+                            } 
+                            className="h-2" 
+                          />
+                        </div>
+
+                        {/* Tiempo Estimado Completado */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <Timer className="h-4 w-4" />
+                              Tiempo Estimado Completado
+                            </span>
+                            <span className="font-semibold">
+                              {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}h de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}h
+                            </span>
+                          </div>
+                          <Progress 
+                            value={metrics.estimatedHours > 0 
+                              ? Math.min((metrics.completedEstimatedHours / metrics.estimatedHours) * 100, 100)
+                              : 0
+                            } 
+                            className="h-2" 
+                          />
+                        </div>
+
+                        {/* Eficiencia Real */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              Eficiencia Real
+                            </span>
+                            {metrics.hasEfficiencyData ? (
+                              <div className="text-right">
+                                <span className={`font-semibold ${getEfficiencyColor(metrics.completedActualHours, metrics.completedEstimatedHours)}`}>
+                                  {metrics.completedActualHours % 1 === 0 ? metrics.completedActualHours : metrics.completedActualHours}h de {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}h
+                                </span>
+                              <div className={`text-xs px-2 py-1 rounded-full ${getEfficiencyBgColor(metrics.completedActualHours, metrics.completedEstimatedHours)} ${getEfficiencyColor(metrics.completedActualHours, metrics.completedEstimatedHours)}`}>
+                                {(() => {
+                                  const diff = metrics.completedActualHours - metrics.completedEstimatedHours
+                                  if (diff <= 0) {
+                                    const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
+                                    return `${diffFormatted}h menos del estimado`
+                                  } else {
+                                    const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
+                                    return `${diffFormatted}h más del estimado`
+                                  }
+                                })()}
+                              </div>
+                              </div>
+                            ) : (
+                              <span className="font-semibold text-gray-500">Sin datos</span>
+                            )}
+                          </div>
+                          {metrics.hasEfficiencyData ? (
+                            <Progress 
+                              value={Math.min((metrics.completedActualHours / metrics.completedEstimatedHours) * 100, 100)} 
+                              className="h-2" 
+                            />
+                          ) : (
+                            <div className="h-2 bg-primary/20 rounded-full">
+                            </div>
+                          )}
                         </div>
 
                         {/* Métricas de tareas */}
@@ -311,26 +419,16 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        {/* Horas trabajadas */}
-                        <div className="space-y-2 pt-2 border-t">
+                        {/* Resumen de Horas */}
+                        <div className="pt-2 border-t">
                           <div className="flex items-center justify-between text-sm">
                             <span className="flex items-center gap-1">
                               <Timer className="h-4 w-4" />
-                              Horas
+                              Horas Trabajadas
                             </span>
-                            <span className="text-muted-foreground">
+                            <span className="text-muted-foreground font-medium">
                               {metrics.actualHours}h de {metrics.estimatedHours}h
                             </span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-1.5">
-                            <div 
-                              className="bg-primary h-1.5 rounded-full transition-all duration-300" 
-                              style={{ 
-                                width: metrics.estimatedHours > 0 
-                                  ? `${Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)}%` 
-                                  : '0%' 
-                              }}
-                            />
                           </div>
                         </div>
 
@@ -348,11 +446,11 @@ export default function DashboardPage() {
                           )}
                         </div>
 
-                        {/* Botón de acción */}
+                        {/* Botones de acción */}
                         <div className="pt-2">
-                          <Link href={`/admin/projects/${project.id}`}>
+                          <Link href={`/admin/projects/${project.id}/metrics`}>
                             <Button variant="outline" size="sm" className="w-full">
-                              Ver Detalles
+                              Ver Métricas
                             </Button>
                           </Link>
                         </div>
