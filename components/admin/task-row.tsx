@@ -9,12 +9,14 @@ import type { Task } from '@/lib/types'
 
 interface TaskRowProps {
   task: Task
+  index: number
   onEdit: (task: Task) => void
   onDelete: (taskId: string) => void
 }
 
 export function TaskRow({ 
   task, 
+  index,
   onEdit, 
   onDelete
 }: TaskRowProps) {
@@ -24,6 +26,11 @@ export function TaskRow({
 
   return (
     <TableRow>
+      <TableCell className="text-center">
+        <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+          {index}
+        </div>
+      </TableCell>
       <TableCell>
         <div className="font-medium">{task.title}</div>
       </TableCell>
@@ -39,7 +46,7 @@ export function TaskRow({
       </TableCell>
       <TableCell className="text-center">
         <div className="text-sm">
-          <div className="font-medium">{task.estimatedHours}h</div>
+          <div className="font-medium">{task.estimatedHours}hs</div>
         </div>
       </TableCell>
       <TableCell className="text-center">
