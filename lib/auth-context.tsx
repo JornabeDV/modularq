@@ -27,7 +27,6 @@ const createMockUser = (userData: any): User => {
     user_metadata: {
       name: userData.name,
       role: userData.role,
-      skills: userData.skills || [],
       total_hours: userData.total_hours || 0,
       efficiency: userData.efficiency || 0
     },

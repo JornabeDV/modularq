@@ -19,8 +19,7 @@ export function UserManagement() {
   const [formData, setFormData] = useState<CreateUserData>({
     password: '',
     name: '',
-    role: 'operario',
-    skills: []
+    role: 'operario'
   })
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -68,8 +67,7 @@ export function UserManagement() {
     setFormData({
       password: '',
       name: user.name,
-      role: user.role,
-      skills: user.skills || []
+      role: user.role
     })
   }
 
@@ -77,8 +75,7 @@ export function UserManagement() {
     setFormData({
       password: '',
       name: '',
-      role: 'operario',
-      skills: []
+      role: 'operario'
     })
   }
 
