@@ -24,6 +24,7 @@ export function useTaskSelfAssignment() {
           assigned_to: data.userId,
           status: 'in_progress',
           assigned_at: new Date().toISOString(),
+          start_date: new Date().toISOString().split('T')[0],
           updated_at: new Date().toISOString()
         })
         .eq('id', data.projectTaskId)
@@ -57,6 +58,7 @@ export function useTaskSelfAssignment() {
           assigned_to: null,
           status: 'pending',
           assigned_at: null,
+          start_date: null,
           updated_at: new Date().toISOString()
         })
         .eq('id', projectTaskId)
@@ -90,7 +92,7 @@ export function useTaskSelfAssignment() {
           status: 'completed',
           actual_hours: actualHours,
           notes: notes,
-          end_date: new Date().toISOString(),
+          end_date: new Date().toISOString().split('T')[0],
           progress_percentage: 100,
           updated_at: new Date().toISOString()
         })

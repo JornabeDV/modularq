@@ -76,7 +76,13 @@ export default function ProjectMetricsPage() {
   // Función para formatear fechas
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    
+    // Si la fecha viene en formato YYYY-MM-DD (sin hora), agregar tiempo local para evitar problemas de zona horaria
+    const date = dateString.includes('T') 
+      ? new Date(dateString) 
+      : new Date(dateString + 'T00:00:00')
+    
+    return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -280,29 +286,24 @@ export default function ProjectMetricsPage() {
                 />
               </div>
 
-              {/* Eficiencia Real */}
+              {/* Progreso Real del Proyecto */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    Eficiencia Real
+                    Progreso Real
                   </span>
-                  {completedEstimatedHours > 0 ? (
+                  {estimatedHours > 0 ? (
                     <div className="text-right">
-                      <span className={`font-semibold ${getEfficiencyColor(completedActualHours, completedEstimatedHours)}`}>
-                        {completedActualHours % 1 === 0 ? completedActualHours : completedActualHours}h de {completedEstimatedHours % 1 === 0 ? completedEstimatedHours : completedEstimatedHours}h
+                      <span className="font-semibold text-blue-600">
+                        {actualHours % 1 === 0 ? actualHours : actualHours}h trabajadas
                       </span>
-                      <div className={`text-xs px-2 py-1 rounded-full ${getEfficiencyBgColor(completedActualHours, completedEstimatedHours)} ${getEfficiencyColor(completedActualHours, completedEstimatedHours)}`}>
+                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                         {(() => {
-                          const efficiency = (completedActualHours / completedEstimatedHours) * 100
-                          const diff = completedActualHours - completedEstimatedHours
-                          if (diff <= 0) {
-                            const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                            return `${Math.round(efficiency)}% (${diffFormatted}h menos del estimado)`
-                          } else {
-                            const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                            return `${Math.round(efficiency)}% (${diffFormatted}h más del estimado)`
-                          }
+                          const progress = (actualHours / estimatedHours) * 100
+                          const remainingHours = estimatedHours - actualHours
+                          const remainingFormatted = remainingHours % 1 === 0 ? remainingHours : remainingHours.toFixed(1)
+                          return `${Math.round(progress)}% completado (${remainingFormatted}h restantes)`
                         })()}
                       </div>
                     </div>
@@ -310,9 +311,9 @@ export default function ProjectMetricsPage() {
                     <span className="font-semibold text-gray-500">Sin datos</span>
                   )}
                 </div>
-                {completedEstimatedHours > 0 ? (
+                {estimatedHours > 0 ? (
                   <Progress 
-                    value={Math.min((completedActualHours / completedEstimatedHours) * 100, 100)} 
+                    value={Math.min((actualHours / estimatedHours) * 100, 100)} 
                     className="h-2" 
                   />
                 ) : (
@@ -372,7 +373,17 @@ export default function ProjectMetricsPage() {
                       }
                     }
                     acc[operarioName].total++
-                    acc[operarioName][pt.status]++
+                    
+                    // Mapear estados de la base de datos a propiedades del objeto
+                    const statusMap: Record<string, string> = {
+                      'completed': 'completed',
+                      'in_progress': 'inProgress',
+                      'pending': 'pending',
+                      'cancelled': 'cancelled'
+                    }
+                    const statusProperty = statusMap[pt.status] || pt.status
+                    acc[operarioName][statusProperty]++
+                    
                     acc[operarioName].totalHours += pt.task?.estimatedHours || 0
                     acc[operarioName].actualHours += calculatedHours[pt.id] || 0
                     return acc
@@ -517,26 +528,58 @@ export default function ProjectMetricsPage() {
                       </div>
 
                       {/* Operario asignado */}
-                      <div className="flex items-center gap-1 col-span-2">
+                      <div className="flex items-center gap-1">
                         <Users className="h-3 w-3 text-muted-foreground" />
                         <span className="text-muted-foreground">Operario:</span>
                         {projectTask.assignedUser ? (
-                          <div className="flex items-center gap-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {projectTask.assignedUser.name}
-                            </Badge>
-                            {projectTask.assignedAt && (
-                              <span className="text-xs text-muted-foreground">
-                                ({formatDate(projectTask.assignedAt)})
-                              </span>
-                            )}
-                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {projectTask.assignedUser.name}
+                          </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-muted-foreground">
                             Sin asignar
                           </Badge>
                         )}
                       </div>
+
+                      {/* Fechas de inicio y fin */}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Inicio:</span>
+                        <span className="text-xs font-semibold">
+                          {projectTask.startDate ? formatDate(projectTask.startDate) : 'Sin fecha'}
+                        </span>
+                      </div>
+                      
+                      {projectTask.endDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Fin:</span>
+                          <span className="text-xs font-semibold">
+                            {formatDate(projectTask.endDate)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Colaboradores */}
+                      {projectTask.collaborators && projectTask.collaborators.length > 0 && (
+                        <div className="flex items-center gap-1 col-span-2">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Colaboradores:</span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {projectTask.collaborators.slice(0, 2).map((collaborator: any) => (
+                              <Badge key={collaborator.id} variant="outline" className="text-xs">
+                                {collaborator.user?.name || 'Usuario'}
+                              </Badge>
+                            ))}
+                            {projectTask.collaborators.length > 2 && (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                +{projectTask.collaborators.length - 2} más
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Eficiencia (solo para completadas) */}
                       {projectTask.status === 'completed' && (

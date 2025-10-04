@@ -151,7 +151,10 @@ export default function TaskDetailPage() {
         <div className="space-y-6">
           {/* Detalles de la Tarea */}
           <TaskDetails 
-            task={task}
+            task={{
+              ...task,
+              collaborators: task.collaborators
+            }}
             onComplete={handleCompleteTask}
           />
 
