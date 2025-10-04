@@ -54,7 +54,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
       const minutes = Math.round(hours * 60)
       return minutes < 1 ? '< 1m' : `${minutes}m`
     }
-    return `${hours.toFixed(1)}h`
+    return `${hours % 1 === 0 ? hours : hours.toFixed(1)}hs`
   }
 
   const isCompleted = task.status === 'completed'
@@ -79,7 +79,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Horas Estimadas</Label>
-            <p className="text-lg font-semibold">{task.task?.estimatedHours}h</p>
+            <p className="text-lg font-semibold">{task.task?.estimatedHours}hs</p>
           </div>
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Horas Reales</Label>

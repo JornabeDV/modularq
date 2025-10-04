@@ -169,6 +169,10 @@ export default function TaskDetailPage() {
             operarioId={user?.id}
             onTimeEntryCreate={handleTimeEntryCreate}
             onProgressUpdate={handleProgressUpdate}
+            onTaskComplete={() => {
+              // Redirigir al proyecto cuando la tarea se complete automáticamente
+              router.push(`/projects/${projectId}`)
+            }}
             refreshTimeEntries={refreshTimeEntries}
           />
         </div>

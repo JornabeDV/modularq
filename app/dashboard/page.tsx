@@ -171,7 +171,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -205,18 +205,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Eficiencia</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                0%
-              </div>
-              <p className="text-xs text-muted-foreground">promedio general</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Admin Section */}
@@ -363,7 +351,7 @@ export default function DashboardPage() {
                               Tiempo Estimado Completado
                             </span>
                             <span className="font-semibold">
-                              {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}h de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}h
+                              {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
                             </span>
                           </div>
                           <Progress 
@@ -497,7 +485,7 @@ export default function DashboardPage() {
                               Horas Trabajadas
                             </span>
                             <span className="text-muted-foreground font-medium">
-                              {metrics.actualHours}h de {metrics.estimatedHours}h
+                              {metrics.actualHours % 1 === 0 ? metrics.actualHours : metrics.actualHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
                             </span>
                           </div>
                         </div>

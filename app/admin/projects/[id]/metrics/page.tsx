@@ -484,24 +484,34 @@ export default function ProjectMetricsPage() {
                 const progressPercentage = projectTask.progressPercentage || 0
                 
                 return (
-                  <div key={projectTask.id} className="border rounded-lg p-3 space-y-2">
+                  <div key={projectTask.id} className="border rounded-lg p-3 space-y-2 relative">
                     {/* Header compacto con numeración */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
                           {index + 1}
                         </div>
-                        <h3 className="font-semibold text-sm">{task?.title || 'Tarea sin título'}</h3>
-                        <Badge variant={projectTask.status === 'completed' ? 'default' : projectTask.status === 'in_progress' ? 'secondary' : 'outline'} className="text-xs">
-                          {projectTask.status === 'completed' ? 'Completada' : 
-                           projectTask.status === 'in_progress' ? 'En Progreso' : 
-                           projectTask.status === 'pending' ? 'Pendiente' : 
-                           projectTask.status}
-                        </Badge>
+                        <span className="font-semibold text-sm">
+                          {task?.title || 'Tarea sin título'}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}h estimadas
-                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs font-medium ${
+                          projectTask.status === 'completed' 
+                            ? 'bg-green-50 text-green-700 border-green-200' 
+                            : projectTask.status === 'in_progress' 
+                            ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                            : projectTask.status === 'pending'
+                            ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        {projectTask.status === 'completed' ? 'Completada' : 
+                         projectTask.status === 'in_progress' ? 'En Progreso' : 
+                         projectTask.status === 'pending' ? 'Pendiente' : 
+                         projectTask.status}
+                      </Badge>
                     </div>
 
                     {/* Información compacta */}
@@ -518,12 +528,12 @@ export default function ProjectMetricsPage() {
                         </span>
                       </div>
 
-                      {/* Tiempo trabajado */}
+                      {/* Tiempo estimado */}
                       <div className="flex items-center gap-1">
-                        <Timer className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">Trabajado:</span>
+                        <Target className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Estimado:</span>
                         <span className="font-semibold">
-                          {actualHours % 1 === 0 ? actualHours : actualHours}h
+                          {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
                         </span>
                       </div>
 
@@ -540,6 +550,15 @@ export default function ProjectMetricsPage() {
                             Sin asignar
                           </Badge>
                         )}
+                      </div>
+
+                      {/* Tiempo trabajado */}
+                      <div className="flex items-center gap-1">
+                        <Timer className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Trabajado:</span>
+                        <span className="font-semibold">
+                          {actualHours % 1 === 0 ? actualHours : actualHours}hs
+                        </span>
                       </div>
 
                       {/* Fechas de inicio y fin */}
@@ -587,22 +606,31 @@ export default function ProjectMetricsPage() {
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">Eficiencia:</span>
                           <span className={`font-semibold ${getEfficiencyColor(actualHours, estimatedHours)}`}>
-                            {actualHours % 1 === 0 ? actualHours : actualHours}h de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}h
+                            {actualHours % 1 === 0 ? actualHours : actualHours}hs de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
                           </span>
                           <Badge variant="outline" className={`text-xs ${getEfficiencyColor(actualHours, estimatedHours)} border-current`}>
                             {(() => {
                               const diff = estimatedHours - actualHours
                               if (diff >= 0) {
                                 const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                                return `Tiempo ahorrado: ${diffFormatted}h`
+                                return `Tiempo ahorrado: ${diffFormatted}hs`
                               } else {
                                 const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                                return `Tiempo extra: ${diffFormatted}h`
+                                return `Tiempo extra: ${diffFormatted}hs`
                               }
                             })()}
                           </Badge>
                         </div>
                       )}
+                    </div>
+
+                    {/* Botón Ver detalle */}
+                    <div className="flex justify-end pt-2">
+                      <Link href={`/admin/projects/${projectId}/metrics/task/${projectTask.id}`}>
+                        <Button variant="outline" size="sm" className="text-xs">
+                          Ver detalle
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 )
