@@ -29,7 +29,7 @@ export function useTasks() {
       const { data, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('task_order', { ascending: true })
 
       if (fetchError) {
         throw fetchError
@@ -43,6 +43,7 @@ export function useTasks() {
         category: task.category || '',
         type: task.type || 'custom',
         estimatedHours: parseFloat(task.estimated_hours) || 0,
+        taskOrder: task.task_order || 0,
         createdBy: task.created_by || '',
         createdAt: task.created_at,
         updatedAt: task.updated_at
@@ -62,6 +63,16 @@ export function useTasks() {
     try {
       setError(null)
       
+      // Obtener el siguiente orden
+      const { data: maxOrderData } = await supabase
+        .from('tasks')
+        .select('task_order')
+        .order('task_order', { ascending: false })
+        .limit(1)
+        .single()
+      
+      const nextOrder = (maxOrderData?.task_order || 0) + 1
+      
       const { data: taskData_result, error: insertError } = await supabase
         .from('tasks')
         .insert({
@@ -70,6 +81,7 @@ export function useTasks() {
           estimated_hours: taskData.estimatedHours,
           category: taskData.category,
           type: taskData.type,
+          task_order: nextOrder,
           created_by: taskData.createdBy
         })
         .select()
@@ -182,6 +194,49 @@ export function useTasks() {
     })
   }
 
+  // Reordenar tareas
+  const reorderTasks = async (taskOrders: { id: string; taskOrder: number }[]): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null)
+      
+      // Actualizar cada tarea con su nuevo orden
+      const updatePromises = taskOrders.map(({ id, taskOrder }) =>
+        supabase
+          .from('tasks')
+          .update({ task_order: taskOrder })
+          .eq('id', id)
+      )
+      
+      const results = await Promise.all(updatePromises)
+      
+      // Verificar si alguna actualización falló
+      const hasErrors = results.some(result => result.error)
+      if (hasErrors) {
+        throw new Error('Error al actualizar el orden de las tareas')
+      }
+      
+      // Actualizar estado local sin recargar toda la página
+      setTasks(prevTasks => {
+        const newTasks = [...prevTasks]
+        taskOrders.forEach(({ id, taskOrder }) => {
+          const taskIndex = newTasks.findIndex(task => task.id === id)
+          if (taskIndex !== -1) {
+            newTasks[taskIndex] = { ...newTasks[taskIndex], taskOrder }
+          }
+        })
+        // Reordenar el array según el nuevo taskOrder
+        return newTasks.sort((a, b) => a.taskOrder - b.taskOrder)
+      })
+      
+      return { success: true }
+    } catch (err) {
+      console.error('Error reordering tasks:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Error al reordenar tareas'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    }
+  }
+
   return {
     tasks,
     loading,
@@ -193,6 +248,7 @@ export function useTasks() {
     getStandardTasks,
     getCustomTasks,
     createStandardTask,
-    createCustomTask
+    createCustomTask,
+    reorderTasks
   }
 }

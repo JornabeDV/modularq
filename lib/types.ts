@@ -33,6 +33,7 @@ export interface Task {
   category: string
   type: 'standard' | 'custom'
   estimatedHours: number
+  taskOrder: number
   createdBy: string
   createdAt: string
   updatedAt: string
