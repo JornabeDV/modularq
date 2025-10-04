@@ -47,6 +47,7 @@ export function TaskTable({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-background">
+                <TableHead className="text-center min-w-[60px]">#</TableHead>
                 <TableHead className="min-w-[200px]">Tarea</TableHead>
                 <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
                 <TableHead className="text-center min-w-[100px]">Tipo</TableHead>
@@ -57,15 +58,16 @@ export function TaskTable({
             <TableBody>
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={6} className="text-center py-8 text-muted-foreground">
                     No se encontraron tareas
                   </td>
                 </tr>
               ) : (
-                tasks.map((task) => (
+                tasks.map((task, index) => (
                   <TaskRow
                     key={task.id}
                     task={task}
+                    index={index + 1}
                     onEdit={onEditTask}
                     onDelete={onDeleteTask}
                   />

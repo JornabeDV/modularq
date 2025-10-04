@@ -109,7 +109,13 @@ export default function DashboardPage() {
   // Función para formatear fechas
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    
+    // Si la fecha viene en formato YYYY-MM-DD (sin hora), agregar tiempo local para evitar problemas de zona horaria
+    const date = dateString.includes('T') 
+      ? new Date(dateString) 
+      : new Date(dateString + 'T00:00:00')
+    
+    return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -165,7 +171,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -199,18 +205,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Eficiencia</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                0%
-              </div>
-              <p className="text-xs text-muted-foreground">promedio general</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Admin Section */}
@@ -298,17 +292,31 @@ export default function DashboardPage() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
                             <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
-                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                            <CardTitle className="text-xl">{project.name}</CardTitle>
                           </div>
                           <Badge variant="default" className="text-xs">
                             {project.status}
                           </Badge>
                         </div>
                         {project.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">
+                          <p className="text-base text-muted-foreground line-clamp-2">
                             {project.description}
                           </p>
                         )}
+                        
+                        {/* Fechas */}
+                        <div className="grid grid-cols-2 gap-2 pt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>Inicio: {formatDate(project.startDate)}</span>
+                          </div>
+                          {project.endDate && (
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span>Fin: {formatDate(project.endDate)}</span>
+                            </div>
+                          )}
+                        </div>
                       </CardHeader>
                       
                       <CardContent className="space-y-4">
@@ -343,7 +351,7 @@ export default function DashboardPage() {
                               Tiempo Estimado Completado
                             </span>
                             <span className="font-semibold">
-                              {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}h de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}h
+                              {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
                             </span>
                           </div>
                           <Progress 
@@ -355,44 +363,94 @@ export default function DashboardPage() {
                           />
                         </div>
 
-                        {/* Eficiencia Real */}
+                        {/* Progreso Real del Proyecto */}
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              Eficiencia Real
+                              Progreso Real
                             </span>
-                            {metrics.hasEfficiencyData ? (
+                            {metrics.estimatedHours > 0 ? (
                               <div className="text-right">
-                                <span className={`font-semibold ${getEfficiencyColor(metrics.completedActualHours, metrics.completedEstimatedHours)}`}>
-                                  {metrics.completedActualHours % 1 === 0 ? metrics.completedActualHours : metrics.completedActualHours}h de {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}h
+                                <span className="font-semibold text-blue-600">
+                                  {metrics.actualHours % 1 === 0 ? metrics.actualHours : metrics.actualHours}h trabajadas
                                 </span>
-                              <div className={`text-xs px-2 py-1 rounded-full ${getEfficiencyBgColor(metrics.completedActualHours, metrics.completedEstimatedHours)} ${getEfficiencyColor(metrics.completedActualHours, metrics.completedEstimatedHours)}`}>
-                                {(() => {
-                                  const diff = metrics.completedActualHours - metrics.completedEstimatedHours
-                                  if (diff <= 0) {
-                                    const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                                    return `${diffFormatted}h menos del estimado`
-                                  } else {
-                                    const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                                    return `${diffFormatted}h más del estimado`
-                                  }
-                                })()}
-                              </div>
+                                <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                  {(() => {
+                                    const progress = (metrics.actualHours / metrics.estimatedHours) * 100
+                                    const remainingHours = metrics.estimatedHours - metrics.actualHours
+                                    const remainingFormatted = remainingHours % 1 === 0 ? remainingHours : remainingHours.toFixed(1)
+                                    return `${Math.round(progress)}% completado (${remainingFormatted}h restantes)`
+                                  })()}
+                                </div>
                               </div>
                             ) : (
                               <span className="font-semibold text-gray-500">Sin datos</span>
                             )}
                           </div>
-                          {metrics.hasEfficiencyData ? (
+                          {metrics.estimatedHours > 0 ? (
                             <Progress 
-                              value={Math.min((metrics.completedActualHours / metrics.completedEstimatedHours) * 100, 100)} 
+                              value={Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)} 
                               className="h-2" 
                             />
                           ) : (
                             <div className="h-2 bg-primary/20 rounded-full">
                             </div>
                           )}
+                        </div>
+
+                        {/* Estado Temporal del Proyecto */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <Timer className="h-4 w-4" />
+                              Estado Temporal
+                            </span>
+                            {(() => {
+                              const now = new Date()
+                              const startDate = project.startDate ? new Date(project.startDate) : null
+                              const endDate = project.endDate ? new Date(project.endDate) : null
+                              
+                              if (!startDate || !endDate) {
+                                return <span className="font-semibold text-gray-500">Sin fechas</span>
+                              }
+                              
+                              const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+                              const elapsedDays = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+                              const expectedProgress = Math.min((elapsedDays / totalDays) * 100, 100)
+                              const actualProgress = metrics.estimatedHours > 0 ? (metrics.actualHours / metrics.estimatedHours) * 100 : 0
+                              const timeDifference = actualProgress - expectedProgress
+                              
+                              if (timeDifference > 5) {
+                                return (
+                                  <div className="text-right">
+                                    <span className="font-semibold text-green-600">Adelantado</span>
+                                    <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                      {Math.round(timeDifference)}% adelantado
+                                    </div>
+                                  </div>
+                                )
+                              } else if (timeDifference < -5) {
+                                return (
+                                  <div className="text-right">
+                                    <span className="font-semibold text-red-600">Atrasado</span>
+                                    <div className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
+                                      {Math.round(Math.abs(timeDifference))}% atrasado
+                                    </div>
+                                  </div>
+                                )
+                              } else {
+                                return (
+                                  <div className="text-right">
+                                    <span className="font-semibold text-blue-600">En tiempo</span>
+                                    <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                      Según cronograma
+                                    </div>
+                                  </div>
+                                )
+                              }
+                            })()}
+                          </div>
                         </div>
 
                         {/* Métricas de tareas */}
@@ -427,24 +485,11 @@ export default function DashboardPage() {
                               Horas Trabajadas
                             </span>
                             <span className="text-muted-foreground font-medium">
-                              {metrics.actualHours}h de {metrics.estimatedHours}h
+                              {metrics.actualHours % 1 === 0 ? metrics.actualHours : metrics.actualHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
                             </span>
                           </div>
                         </div>
 
-                        {/* Fechas */}
-                        <div className="space-y-1 pt-2 border-t text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>Inicio: {formatDate(project.startDate)}</span>
-                          </div>
-                          {project.endDate && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>Fin: {formatDate(project.endDate)}</span>
-                            </div>
-                          )}
-                        </div>
 
                         {/* Botones de acción */}
                         <div className="pt-2">

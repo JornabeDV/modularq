@@ -20,8 +20,7 @@ export function CreateUserForm() {
   const [formData, setFormData] = useState<CreateUserData>({
     password: '',
     name: '',
-    role: 'operario',
-    skills: []
+    role: 'operario'
   })
 
   // Generar contraseña segura
@@ -88,8 +87,7 @@ export function CreateUserForm() {
       setFormData({
         password: '',
         name: '',
-        role: 'operario',
-        skills: []
+        role: 'operario'
       })
       setGeneratedPassword('')
     } else {

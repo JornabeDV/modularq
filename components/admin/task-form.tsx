@@ -162,7 +162,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              required
               placeholder="Describe detalladamente la tarea..."
               rows={3}
             />

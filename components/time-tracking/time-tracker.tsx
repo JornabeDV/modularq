@@ -13,9 +13,10 @@ interface TimeTrackerProps {
   projectId: string
   onTimeEntryCreate?: (entry: any) => void
   onProgressUpdate?: (progress: number) => void
+  onTaskComplete?: () => void
 }
 
-export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, onProgressUpdate }: TimeTrackerProps) {
+export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, onProgressUpdate, onTaskComplete }: TimeTrackerProps) {
   const { user } = useAuth()
   const [isTracking, setIsTracking] = useState(false)
   const [startTime, setStartTime] = useState<Date | null>(null)
@@ -82,6 +83,76 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
   const clearTimerState = () => {
     localStorage.removeItem(timerStorageKey)
+  }
+
+  // Función para completar tarea automáticamente cuando se alcanza el tiempo estimado
+  const completeTaskAutomatically = async () => {
+    if (!currentTask) return
+
+    try {
+      // Crear entrada de tiempo final
+      const endTime = new Date()
+      const hours = (elapsedTime + (endTime.getTime() - startTime!.getTime())) / (1000 * 60 * 60)
+      
+      if (hours > 0) {
+        const timeEntry = {
+          user_id: operarioId,
+          task_id: currentTask.task_id,
+          project_id: currentTask.project_id,
+          start_time: startTime!.toISOString(),
+          end_time: endTime.toISOString(),
+          description: 'Tarea completada automáticamente al alcanzar tiempo estimado',
+          date: startTime!.toISOString().split("T")[0],
+        }
+
+        // Insertar entrada de tiempo
+        const { error: timeError } = await supabase
+          .from('time_entries')
+          .insert(timeEntry)
+
+        if (timeError) {
+          console.error('Error creating final time entry:', timeError)
+        }
+
+        // Actualizar horas trabajadas en project_tasks
+        const newTotalHours = totalHoursWorked + hours
+        const { error: updateError } = await supabase
+          .from('project_tasks')
+          .update({ 
+            actual_hours: newTotalHours,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentTask.id)
+
+        if (updateError) {
+          console.error('Error updating actual_hours:', updateError)
+        }
+
+        // Marcar tarea como completada
+        const { error: completeError } = await supabase
+          .from('project_tasks')
+          .update({
+            status: 'completed',
+            actual_hours: newTotalHours,
+            end_date: new Date().toISOString().split('T')[0],
+            progress_percentage: 100,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentTask.id)
+
+        if (completeError) {
+          console.error('Error completing task:', completeError)
+        } else {
+          // Notificar al componente padre
+          onTaskComplete?.()
+          
+          // Mostrar notificación
+          alert('¡Tarea completada automáticamente! Se alcanzó el tiempo estimado.')
+        }
+      }
+    } catch (err) {
+      console.error('Error completing task automatically:', err)
+    }
   }
 
   // Cargar información de la tarea actual
@@ -224,12 +295,15 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           }
           
           if (totalElapsedTime >= maxElapsedTime) {
-            // Detener automáticamente el cronómetro
+            // Detener automáticamente el cronómetro y marcar tarea como completada
             setIsTracking(false)
             setElapsedTime(maxElapsedTime)
             setIsNearLimit(false)
             saveTimerState(false, startTime, maxElapsedTime)
             if (interval) clearInterval(interval)
+            
+            // Marcar tarea como completada automáticamente
+            completeTaskAutomatically()
             return
           }
         }
@@ -386,11 +460,11 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
                 if (hours === 0) {
                   return `${minutes}min`
                 } else if (minutes === 0) {
-                  return `${hours}h`
+                  return `${hours}hs`
                 } else {
-                  return `${hours}h ${minutes}min`
+                  return `${hours}hs ${minutes}min`
                 }
-              })()}</span> trabajadas de {currentTask.task.estimated_hours}h estimadas
+              })()}</span> trabajadas de {currentTask.task.estimated_hours}hs estimadas
             </div>
           )}
           

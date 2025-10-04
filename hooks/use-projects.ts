@@ -63,6 +63,25 @@ export function useProjects() {
               id,
               name,
               role
+            ),
+            collaborators:task_collaborators (
+              id,
+              project_task_id,
+              user_id,
+              added_by,
+              added_at,
+              created_at,
+              updated_at,
+              user:user_id (
+                id,
+                name,
+                role
+              ),
+              added_by_user:added_by (
+                id,
+                name,
+                role
+              )
             )
           ),
           project_operarios (
@@ -127,7 +146,26 @@ export function useProjects() {
             id: pt.assigned_user.id,
             name: pt.assigned_user.name,
             role: pt.assigned_user.role
-          } : undefined
+          } : undefined,
+          collaborators: (pt.collaborators || []).map((collaborator: any) => ({
+            id: collaborator.id,
+            projectTaskId: collaborator.project_task_id,
+            userId: collaborator.user_id,
+            addedBy: collaborator.added_by,
+            addedAt: collaborator.added_at,
+            createdAt: collaborator.created_at,
+            updatedAt: collaborator.updated_at,
+            user: collaborator.user ? {
+              id: collaborator.user.id,
+              name: collaborator.user.name,
+              role: collaborator.user.role
+            } : undefined,
+            addedByUser: collaborator.added_by_user ? {
+              id: collaborator.added_by_user.id,
+              name: collaborator.added_by_user.name,
+              role: collaborator.added_by_user.role
+            } : undefined
+          }))
         })),
         projectOperarios: (project.project_operarios || []).map((po: any) => ({
           id: po.id,

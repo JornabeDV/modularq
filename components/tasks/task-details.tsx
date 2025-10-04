@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { FileText, CheckCircle } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { FileText, CheckCircle, Users } from 'lucide-react'
 
 interface TaskDetailsProps {
   task: {
@@ -17,6 +18,20 @@ interface TaskDetailsProps {
     progressPercentage: number
     notes?: string
     status: string
+    collaborators?: Array<{
+      id: string
+      userId: string
+      user?: {
+        id: string
+        name: string
+        role: string
+      }
+      addedByUser?: {
+        id: string
+        name: string
+        role: string
+      }
+    }>
   }
   onComplete?: () => void
 }
@@ -39,7 +54,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
       const minutes = Math.round(hours * 60)
       return minutes < 1 ? '< 1m' : `${minutes}m`
     }
-    return `${hours.toFixed(1)}h`
+    return `${hours % 1 === 0 ? hours : hours.toFixed(1)}hs`
   }
 
   const isCompleted = task.status === 'completed'
@@ -64,7 +79,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Horas Estimadas</Label>
-            <p className="text-lg font-semibold">{task.task?.estimatedHours}h</p>
+            <p className="text-lg font-semibold">{task.task?.estimatedHours}hs</p>
           </div>
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Horas Reales</Label>
@@ -102,6 +117,36 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
             <p className="text-sm mt-1 p-3 bg-muted rounded-lg">
               {task.notes}
             </p>
+          </div>
+        )}
+
+        {/* Colaboradores */}
+        {task.collaborators && task.collaborators.length > 0 && (
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Colaboradores
+            </Label>
+            <div className="mt-2 space-y-2">
+              {task.collaborators.map((collaborator) => (
+                <div key={collaborator.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="text-xs">
+                      {collaborator.user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{collaborator.user?.name || 'Usuario'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Agregado por {collaborator.addedByUser?.name || 'Sistema'}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {collaborator.user?.role || 'operario'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

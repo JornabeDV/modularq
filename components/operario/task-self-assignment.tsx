@@ -145,59 +145,6 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
 
   return (
     <div className="space-y-6">
-      {/* Tareas Disponibles */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Play className="h-5 w-5" />
-            Tareas Disponibles
-          </CardTitle>
-          <CardDescription>
-            Tareas que puedes tomar para trabajar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {availableTasks.length === 0 ? (
-            <div className="text-center py-8">
-              <Play className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No hay tareas disponibles</h3>
-              <p className="text-muted-foreground">
-                Todas las tareas han sido asignadas o están en progreso
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {availableTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {task.task?.description || 'Sin descripción'}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">
-                        {task.task?.category || 'Sin categoría'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {task.task?.estimatedHours || 0}h estimadas
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleSelfAssign(task.id)}
-                    disabled={loading}
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Tomar Tarea
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Mis Tareas */}
       <Card>
         <CardHeader>
@@ -311,6 +258,59 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
           </CardContent>
         </Card>
       )}
+
+      {/* Tareas Disponibles */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="h-5 w-5" />
+            Tareas Disponibles
+          </CardTitle>
+          <CardDescription>
+            Tareas que puedes tomar para trabajar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {availableTasks.length === 0 ? (
+            <div className="text-center py-8">
+              <Play className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">No hay tareas disponibles</h3>
+              <p className="text-muted-foreground">
+                Todas las tareas han sido asignadas o están en progreso
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {availableTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {task.task?.description || 'Sin descripción'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {task.task?.category || 'Sin categoría'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {task.task?.estimatedHours || 0}h estimadas
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSelfAssign(task.id)}
+                    disabled={loading}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Tomar Tarea
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

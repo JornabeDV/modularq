@@ -13,7 +13,6 @@ export interface Database {
           email: string
           name: string
           role: 'admin' | 'supervisor' | 'operario'
-          skills: string[]
           total_hours: number
           efficiency: number
           created_at: string
@@ -24,7 +23,6 @@ export interface Database {
           email: string
           name: string
           role: 'admin' | 'supervisor' | 'operario'
-          skills?: string[]
           total_hours?: number
           efficiency?: number
           created_at?: string
@@ -35,7 +33,6 @@ export interface Database {
           email?: string
           name?: string
           role?: 'admin' | 'supervisor' | 'operario'
-          skills?: string[]
           total_hours?: number
           efficiency?: number
           created_at?: string

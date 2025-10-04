@@ -76,7 +76,13 @@ export default function ProjectMetricsPage() {
   // Función para formatear fechas
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    
+    // Si la fecha viene en formato YYYY-MM-DD (sin hora), agregar tiempo local para evitar problemas de zona horaria
+    const date = dateString.includes('T') 
+      ? new Date(dateString) 
+      : new Date(dateString + 'T00:00:00')
+    
+    return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -280,29 +286,24 @@ export default function ProjectMetricsPage() {
                 />
               </div>
 
-              {/* Eficiencia Real */}
+              {/* Progreso Real del Proyecto */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    Eficiencia Real
+                    Progreso Real
                   </span>
-                  {completedEstimatedHours > 0 ? (
+                  {estimatedHours > 0 ? (
                     <div className="text-right">
-                      <span className={`font-semibold ${getEfficiencyColor(completedActualHours, completedEstimatedHours)}`}>
-                        {completedActualHours % 1 === 0 ? completedActualHours : completedActualHours}h de {completedEstimatedHours % 1 === 0 ? completedEstimatedHours : completedEstimatedHours}h
+                      <span className="font-semibold text-blue-600">
+                        {actualHours % 1 === 0 ? actualHours : actualHours}h trabajadas
                       </span>
-                      <div className={`text-xs px-2 py-1 rounded-full ${getEfficiencyBgColor(completedActualHours, completedEstimatedHours)} ${getEfficiencyColor(completedActualHours, completedEstimatedHours)}`}>
+                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                         {(() => {
-                          const efficiency = (completedActualHours / completedEstimatedHours) * 100
-                          const diff = completedActualHours - completedEstimatedHours
-                          if (diff <= 0) {
-                            const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                            return `${Math.round(efficiency)}% (${diffFormatted}h menos del estimado)`
-                          } else {
-                            const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                            return `${Math.round(efficiency)}% (${diffFormatted}h más del estimado)`
-                          }
+                          const progress = (actualHours / estimatedHours) * 100
+                          const remainingHours = estimatedHours - actualHours
+                          const remainingFormatted = remainingHours % 1 === 0 ? remainingHours : remainingHours.toFixed(1)
+                          return `${Math.round(progress)}% completado (${remainingFormatted}h restantes)`
                         })()}
                       </div>
                     </div>
@@ -310,9 +311,9 @@ export default function ProjectMetricsPage() {
                     <span className="font-semibold text-gray-500">Sin datos</span>
                   )}
                 </div>
-                {completedEstimatedHours > 0 ? (
+                {estimatedHours > 0 ? (
                   <Progress 
-                    value={Math.min((completedActualHours / completedEstimatedHours) * 100, 100)} 
+                    value={Math.min((actualHours / estimatedHours) * 100, 100)} 
                     className="h-2" 
                   />
                 ) : (
@@ -372,7 +373,17 @@ export default function ProjectMetricsPage() {
                       }
                     }
                     acc[operarioName].total++
-                    acc[operarioName][pt.status]++
+                    
+                    // Mapear estados de la base de datos a propiedades del objeto
+                    const statusMap: Record<string, string> = {
+                      'completed': 'completed',
+                      'in_progress': 'inProgress',
+                      'pending': 'pending',
+                      'cancelled': 'cancelled'
+                    }
+                    const statusProperty = statusMap[pt.status] || pt.status
+                    acc[operarioName][statusProperty]++
+                    
                     acc[operarioName].totalHours += pt.task?.estimatedHours || 0
                     acc[operarioName].actualHours += calculatedHours[pt.id] || 0
                     return acc
@@ -473,24 +484,34 @@ export default function ProjectMetricsPage() {
                 const progressPercentage = projectTask.progressPercentage || 0
                 
                 return (
-                  <div key={projectTask.id} className="border rounded-lg p-3 space-y-2">
+                  <div key={projectTask.id} className="border rounded-lg p-3 space-y-2 relative">
                     {/* Header compacto con numeración */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
                           {index + 1}
                         </div>
-                        <h3 className="font-semibold text-sm">{task?.title || 'Tarea sin título'}</h3>
-                        <Badge variant={projectTask.status === 'completed' ? 'default' : projectTask.status === 'in_progress' ? 'secondary' : 'outline'} className="text-xs">
-                          {projectTask.status === 'completed' ? 'Completada' : 
-                           projectTask.status === 'in_progress' ? 'En Progreso' : 
-                           projectTask.status === 'pending' ? 'Pendiente' : 
-                           projectTask.status}
-                        </Badge>
+                        <span className="font-semibold text-sm">
+                          {task?.title || 'Tarea sin título'}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}h estimadas
-                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs font-medium ${
+                          projectTask.status === 'completed' 
+                            ? 'bg-green-50 text-green-700 border-green-200' 
+                            : projectTask.status === 'in_progress' 
+                            ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                            : projectTask.status === 'pending'
+                            ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        {projectTask.status === 'completed' ? 'Completada' : 
+                         projectTask.status === 'in_progress' ? 'En Progreso' : 
+                         projectTask.status === 'pending' ? 'Pendiente' : 
+                         projectTask.status}
+                      </Badge>
                     </div>
 
                     {/* Información compacta */}
@@ -507,30 +528,23 @@ export default function ProjectMetricsPage() {
                         </span>
                       </div>
 
-                      {/* Tiempo trabajado */}
+                      {/* Tiempo estimado */}
                       <div className="flex items-center gap-1">
-                        <Timer className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">Trabajado:</span>
+                        <Target className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Estimado:</span>
                         <span className="font-semibold">
-                          {actualHours % 1 === 0 ? actualHours : actualHours}h
+                          {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
                         </span>
                       </div>
 
                       {/* Operario asignado */}
-                      <div className="flex items-center gap-1 col-span-2">
+                      <div className="flex items-center gap-1">
                         <Users className="h-3 w-3 text-muted-foreground" />
                         <span className="text-muted-foreground">Operario:</span>
                         {projectTask.assignedUser ? (
-                          <div className="flex items-center gap-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {projectTask.assignedUser.name}
-                            </Badge>
-                            {projectTask.assignedAt && (
-                              <span className="text-xs text-muted-foreground">
-                                ({formatDate(projectTask.assignedAt)})
-                              </span>
-                            )}
-                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {projectTask.assignedUser.name}
+                          </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs text-muted-foreground">
                             Sin asignar
@@ -538,28 +552,85 @@ export default function ProjectMetricsPage() {
                         )}
                       </div>
 
+                      {/* Tiempo trabajado */}
+                      <div className="flex items-center gap-1">
+                        <Timer className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Trabajado:</span>
+                        <span className="font-semibold">
+                          {actualHours % 1 === 0 ? actualHours : actualHours}hs
+                        </span>
+                      </div>
+
+                      {/* Fechas de inicio y fin */}
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Inicio:</span>
+                        <span className="text-xs font-semibold">
+                          {projectTask.startDate ? formatDate(projectTask.startDate) : 'Sin fecha'}
+                        </span>
+                      </div>
+                      
+                      {projectTask.endDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Fin:</span>
+                          <span className="text-xs font-semibold">
+                            {formatDate(projectTask.endDate)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Colaboradores */}
+                      {projectTask.collaborators && projectTask.collaborators.length > 0 && (
+                        <div className="flex items-center gap-1 col-span-2">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Colaboradores:</span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {projectTask.collaborators.slice(0, 2).map((collaborator: any) => (
+                              <Badge key={collaborator.id} variant="outline" className="text-xs">
+                                {collaborator.user?.name || 'Usuario'}
+                              </Badge>
+                            ))}
+                            {projectTask.collaborators.length > 2 && (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                +{projectTask.collaborators.length - 2} más
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Eficiencia (solo para completadas) */}
                       {projectTask.status === 'completed' && (
                         <div className="flex items-center gap-1 col-span-2">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">Eficiencia:</span>
                           <span className={`font-semibold ${getEfficiencyColor(actualHours, estimatedHours)}`}>
-                            {actualHours % 1 === 0 ? actualHours : actualHours}h de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}h
+                            {actualHours % 1 === 0 ? actualHours : actualHours}hs de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
                           </span>
                           <Badge variant="outline" className={`text-xs ${getEfficiencyColor(actualHours, estimatedHours)} border-current`}>
                             {(() => {
                               const diff = estimatedHours - actualHours
                               if (diff >= 0) {
                                 const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                                return `Tiempo ahorrado: ${diffFormatted}h`
+                                return `Tiempo ahorrado: ${diffFormatted}hs`
                               } else {
                                 const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                                return `Tiempo extra: ${diffFormatted}h`
+                                return `Tiempo extra: ${diffFormatted}hs`
                               }
                             })()}
                           </Badge>
                         </div>
                       )}
+                    </div>
+
+                    {/* Botón Ver detalle */}
+                    <div className="flex justify-end pt-2">
+                      <Link href={`/admin/projects/${projectId}/metrics/task/${projectTask.id}`}>
+                        <Button variant="outline" size="sm" className="text-xs">
+                          Ver detalle
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 )

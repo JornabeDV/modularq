@@ -77,7 +77,7 @@ export function TimeEntriesList({ operarioId, taskId, projectId, limit, showOper
   const formatTime = useCallback((hours: number) => {
     const h = Math.floor(hours)
     const m = Math.round((hours - h) * 60)
-    return `${h}h ${m}m`
+    return `${h}hs ${m}m`
   }, [])
 
   const formatDate = useCallback((dateString: string) => {

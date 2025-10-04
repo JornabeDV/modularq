@@ -151,7 +151,10 @@ export default function TaskDetailPage() {
         <div className="space-y-6">
           {/* Detalles de la Tarea */}
           <TaskDetails 
-            task={task}
+            task={{
+              ...task,
+              collaborators: task.collaborators
+            }}
             onComplete={handleCompleteTask}
           />
 
@@ -166,6 +169,10 @@ export default function TaskDetailPage() {
             operarioId={user?.id}
             onTimeEntryCreate={handleTimeEntryCreate}
             onProgressUpdate={handleProgressUpdate}
+            onTaskComplete={() => {
+              // Redirigir al proyecto cuando la tarea se complete automáticamente
+              router.push(`/projects/${projectId}`)
+            }}
             refreshTimeEntries={refreshTimeEntries}
           />
         </div>

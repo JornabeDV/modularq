@@ -92,7 +92,6 @@ export interface Operario {
   name: string
   email: string
   role: string
-  skills: string[]
   currentTasks: string[]
   totalHours: number
   efficiency: number

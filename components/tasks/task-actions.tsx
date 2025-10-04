@@ -15,6 +15,7 @@ interface TaskActionsProps {
   operarioId?: string
   onTimeEntryCreate: (entry: any) => void
   onProgressUpdate: (progress: number) => void
+  onTaskComplete?: () => void
   refreshTimeEntries: number
 }
 
@@ -24,6 +25,7 @@ export function TaskActions({
   operarioId,
   onTimeEntryCreate,
   onProgressUpdate,
+  onTaskComplete,
   refreshTimeEntries
 }: TaskActionsProps) {
   return (
@@ -47,6 +49,7 @@ export function TaskActions({
               projectId={projectId}
               onTimeEntryCreate={onTimeEntryCreate}
               onProgressUpdate={onProgressUpdate}
+              onTaskComplete={onTaskComplete}
             />
           </CardContent>
         </Card>
