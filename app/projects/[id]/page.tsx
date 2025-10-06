@@ -7,7 +7,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Calendar, Users, FolderOpen } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Users, 
+  FolderOpen, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  Play, 
+  Pause, 
+  Target,
+  Timer,
+  TrendingUp,
+  AlertCircle,
+  Star,
+  Zap
+} from "lucide-react"
 import { TaskSelfAssignment } from "@/components/operario/task-self-assignment"
 import { useProjects } from "@/hooks/use-projects"
 import { useProjectTasks } from "@/hooks/use-project-tasks"
@@ -115,103 +133,91 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   }
 
   const completedTasks = projectTasks.filter(task => task.status === 'completed').length
+  const inProgressTasks = projectTasks.filter(task => task.status === 'in_progress').length
+  const pendingTasksArray = projectTasks.filter(task => task.status === 'pending')
+  const pendingTasks = pendingTasksArray.length
   const totalTasks = projectTasks.length
   const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
+  // Tareas del operario actual
+  const myTasks = projectTasks.filter(task => task.assignedTo === user?.id)
+  const myInProgressTasks = myTasks.filter(task => task.status === 'in_progress')
+  const myCompletedTasks = myTasks.filter(task => task.status === 'completed')
+  const myPendingTasks = myTasks.filter(task => task.status === 'pending')
+
+  // Calcular días restantes
+  const getDaysRemaining = () => {
+    if (!project.endDate) return null
+    const endDate = new Date(project.endDate)
+    const today = new Date()
+    const diffTime = endDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  const daysRemaining = getDaysRemaining()
+
   return (
     <MainLayout>
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Header */}
+      <div className="p-4 sm:p-6 space-y-6">
+        {/* Header Mejorado */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => router.push('/projects')}
+              className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver
             </Button>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">{project.name}</h1>
-              <p className="text-muted-foreground">{project.description}</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-balance">{project.name}</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">{project.description}</p>
             </div>
           </div>
-          <Badge variant="default">
-            Activo
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="text-xs">
+              <Zap className="h-3 w-3 mr-1" />
+              Activo
+            </Badge>
+            {daysRemaining !== null && (
+              <Badge 
+                variant={daysRemaining < 7 ? "destructive" : daysRemaining < 14 ? "secondary" : "outline"}
+                className="text-xs"
+              >
+                <Clock className="h-3 w-3 mr-1" />
+                {daysRemaining > 0 ? `${daysRemaining} días` : 'Vencido'}
+              </Badge>
+            )}
+          </div>
         </div>
 
-        {/* Project Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="md:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Información del Proyecto</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Fecha de Inicio</span>
-                  <span className="text-lg font-semibold">{formatDate(project.startDate)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Fecha de Finalización</span>
-                  <span className="text-lg font-semibold">{formatDate(project.endDate)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Progreso</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Completado</span>
-                  <span className="text-lg font-semibold">{Math.round(progressPercentage)}%</span>
-                </div>
-                <Progress value={progressPercentage} className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Gestión de Tareas - Sección Principal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Gestión de Tareas
+            </CardTitle>
+            <CardDescription>
+              Aquí puedes ver todas las tareas del proyecto, tomar nuevas tareas y gestionar las que ya tienes asignadas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TaskSelfAssignment 
+              projectTasks={projectTasks} 
+              projectId={params.id}
+              projectOperarios={projectOperarios
+                .filter(po => po.user !== undefined)
+                .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
+              onTaskUpdate={refetchTasks}
+            />
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tareas</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Totales</span>
-                  <span className="text-lg font-semibold">{totalTasks}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">En progreso</span>
-                  <span className="text-lg font-semibold text-blue-600">{projectTasks.filter(task => task.status === 'in_progress').length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Terminadas</span>
-                  <span className="text-lg font-semibold text-green-600">{completedTasks}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Task Self Assignment */}
-        <TaskSelfAssignment 
-          projectTasks={projectTasks} 
-          projectId={params.id}
-          projectOperarios={projectOperarios
-            .filter(po => po.user !== undefined)
-            .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
-          onTaskUpdate={refetchTasks}
-        />
       </div>
     </MainLayout>
   )
