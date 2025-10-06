@@ -60,18 +60,20 @@ export function ProjectTaskManager({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'in_progress': return <Clock className="h-4 w-4 text-blue-500" />
       case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-500" />
+      case 'assigned': return <User className="h-4 w-4 text-blue-500" />
+      case 'in_progress': return <Clock className="h-4 w-4 text-orange-500" />
+      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />
       default: return <AlertCircle className="h-4 w-4 text-gray-500" />
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'in_progress': return 'bg-blue-100 text-blue-800'
       case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'assigned': return 'bg-blue-100 text-blue-800'
+      case 'in_progress': return 'bg-orange-100 text-orange-800'
+      case 'completed': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -268,7 +270,12 @@ export function ProjectTaskManager({
           )}
         </h4>
         <div className="space-y-3">
-          {projectTasks.map((projectTask, index) => (
+          {projectTasks
+            .sort((a, b) => {
+              const statusOrder = { in_progress: 0, assigned: 1, pending: 2, completed: 3, cancelled: 4 }
+              return statusOrder[a.status] - statusOrder[b.status]
+            })
+            .map((projectTask, index) => (
             <DraggableTaskCard
               key={projectTask.id}
               projectTask={projectTask}

@@ -48,12 +48,14 @@ export function TaskHeader({ task, onBack }: TaskHeaderProps) {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case 'pending':
+        return 'Pendiente'
+      case 'assigned':
+        return 'Asignada'
       case 'in_progress':
         return 'En Progreso'
       case 'completed':
         return 'Completada'
-      case 'pending':
-        return 'Pendiente'
       case 'cancelled':
         return 'Cancelada'
       default:
