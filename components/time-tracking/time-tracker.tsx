@@ -25,6 +25,9 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
   const [totalHoursWorked, setTotalHoursWorked] = useState(0)
   const [lastSentProgress, setLastSentProgress] = useState<number | null>(null)
   const [isNearLimit, setIsNearLimit] = useState(false)
+  
+  // Límite máximo: 2 horas extra del tiempo estimado (en milisegundos)
+  const MAX_EXTRA_TIME = 2 * 60 * 60 * 1000 // 2 horas extra
 
   // Clave única para localStorage basada en operario, proyecto y tarea
   const timerStorageKey = `timer_${operarioId}_${projectId}_${taskId}`
@@ -101,7 +104,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           project_id: currentTask.project_id,
           start_time: startTime!.toISOString(),
           end_time: endTime.toISOString(),
-          description: 'Tarea completada automáticamente al alcanzar tiempo estimado',
+          description: 'Tarea completada automáticamente al alcanzar límite de tiempo',
           date: startTime!.toISOString().split("T")[0],
         }
 
@@ -281,31 +284,38 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         const sessionElapsedTime = now - startTime.getTime()
         const totalElapsedTime = elapsedTime + sessionElapsedTime
         
-        // Verificar si se ha alcanzado el tiempo estimado de la tarea
+        // Verificar límites de tiempo
+        let maxElapsedTime = MAX_EXTRA_TIME // Límite por defecto: 2 horas
+        let warningThreshold = MAX_EXTRA_TIME * 0.9 // 90% del límite por defecto
+        
+        // Si la tarea tiene tiempo estimado, usar tiempo estimado + 2 horas extra
         if (currentTask?.task?.estimated_hours) {
           const estimatedHours = currentTask.task.estimated_hours
-          const maxElapsedTime = estimatedHours * 60 * 60 * 1000 // Convertir a milisegundos
-          const warningThreshold = maxElapsedTime * 0.9 // 90% del tiempo estimado
+          const estimatedTime = estimatedHours * 60 * 60 * 1000 // Convertir a milisegundos
           
-          // Mostrar advertencia cuando se acerque al límite
-          if (totalElapsedTime >= warningThreshold && totalElapsedTime < maxElapsedTime) {
-            setIsNearLimit(true)
-          } else {
-            setIsNearLimit(false)
-          }
+          // Tiempo estimado + 2 horas extra
+          maxElapsedTime = estimatedTime + MAX_EXTRA_TIME
+          warningThreshold = maxElapsedTime * 0.9 // 90% del límite total
+        }
+        
+        // Mostrar advertencia cuando se acerque al límite
+        if (totalElapsedTime >= warningThreshold && totalElapsedTime < maxElapsedTime) {
+          setIsNearLimit(true)
+        } else {
+          setIsNearLimit(false)
+        }
+        
+        // Detener automáticamente si se alcanza cualquier límite
+        if (totalElapsedTime >= maxElapsedTime) {
+          setIsTracking(false)
+          setElapsedTime(maxElapsedTime)
+          setIsNearLimit(false)
+          saveTimerState(false, startTime, maxElapsedTime)
+          if (interval) clearInterval(interval)
           
-          if (totalElapsedTime >= maxElapsedTime) {
-            // Detener automáticamente el cronómetro y marcar tarea como completada
-            setIsTracking(false)
-            setElapsedTime(maxElapsedTime)
-            setIsNearLimit(false)
-            saveTimerState(false, startTime, maxElapsedTime)
-            if (interval) clearInterval(interval)
-            
-            // Marcar tarea como completada automáticamente
-            completeTaskAutomatically()
-            return
-          }
+          // Marcar tarea como completada automáticamente
+          completeTaskAutomatically()
+          return
         }
         
         setElapsedTime(totalElapsedTime)
@@ -445,7 +455,11 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           {isNearLimit && (
             <div className="bg-orange-100 border border-orange-300 text-orange-800 px-4 py-2 rounded-lg">
               <p className="text-sm font-medium">
-                ⚠️ Te estás acercando al tiempo estimado de la tarea
+                ⚠️ Te estás acercando al límite de tiempo
+                {currentTask?.task?.estimated_hours 
+                  ? ` (${currentTask.task.estimated_hours}h estimadas + 2h extra)`
+                  : ' (máximo 2 horas)'
+                }
               </p>
             </div>
           )}
