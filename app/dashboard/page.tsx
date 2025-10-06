@@ -217,7 +217,7 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium">Control del Personal</h3>
@@ -230,6 +230,22 @@ export default function DashboardPage() {
                     <Button size="sm" className="w-full">
                       <Users className="h-3 w-3 mr-1" />
                       Gestionar personal
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Gestión de Tareas</h3>
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Administra tareas estándar y personalizadas del sistema
+                  </p>
+                  <Link href="/admin/tasks">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <Target className="h-3 w-3 mr-1" />
+                      Gestionar tareas
                     </Button>
                   </Link>
                 </div>

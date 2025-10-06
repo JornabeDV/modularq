@@ -40,6 +40,11 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
     })
   }
 
+  // Calcular tiempo estimado total del proyecto
+  const totalEstimatedHours = project.projectTasks.reduce((sum, task) => 
+    sum + (task.task?.estimatedHours || 0), 0
+  )
+
   return (
     <TableRow>
       <TableCell>
@@ -68,6 +73,14 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
         <div className="text-sm">
           <div className="font-medium">{project.projectOperarios.length}</div>
           <div className="text-muted-foreground">operarios</div>
+        </div>
+      </TableCell>
+      <TableCell className="text-center">
+        <div className="text-sm">
+          <div className="font-medium">
+            {totalEstimatedHours % 1 === 0 ? totalEstimatedHours : totalEstimatedHours.toFixed(1)}h
+          </div>
+          <div className="text-muted-foreground">estimado</div>
         </div>
       </TableCell>
       <TableCell className="text-center">

@@ -67,6 +67,11 @@ export function ProjectManagement() {
   const activeProjects = projects.filter(p => p.status === 'active').length
   const completedProjects = projects.filter(p => p.status === 'completed').length
   const totalTasks = projects.reduce((sum, project) => sum + project.projectTasks.length, 0)
+  const totalEstimatedHours = projects.reduce((sum, project) => 
+    sum + project.projectTasks.reduce((taskSum, task) => 
+      taskSum + (task.task?.estimatedHours || 0), 0
+    ), 0
+  )
 
   if (loading) {
     return (
@@ -115,6 +120,7 @@ export function ProjectManagement() {
         activeProjects={activeProjects}
         completedProjects={completedProjects}
         totalTasks={totalTasks}
+        totalEstimatedHours={totalEstimatedHours}
       />
 
       {/* Projects Table */}
