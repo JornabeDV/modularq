@@ -13,7 +13,7 @@ import type { Task } from '@/lib/types'
 
 export function TaskManagement() {
   const { user } = useAuth()
-  const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks()
+  const { tasks, loading, error, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   
@@ -63,6 +63,10 @@ export function TaskManagement() {
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task)
+  }
+
+  const handleReorderTasks = async (taskOrders: { id: string; taskOrder: number }[]) => {
+    await reorderTasks(taskOrders)
   }
 
   // Filtrar tareas
@@ -149,6 +153,7 @@ export function TaskManagement() {
         onTypeFilterChange={setTypeFilter}
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
+        onReorderTasks={handleReorderTasks}
       />
 
       {/* Create Task Dialog */}

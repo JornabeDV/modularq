@@ -33,6 +33,7 @@ export interface Task {
   category: string
   type: 'standard' | 'custom'
   estimatedHours: number
+  taskOrder: number
   createdBy: string
   createdAt: string
   updatedAt: string
@@ -43,7 +44,7 @@ export interface ProjectTask {
   id: string
   projectId: string
   taskId: string
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
   actualHours: number
   assignedTo?: string
   startDate?: string

@@ -22,9 +22,8 @@ export function useTaskSelfAssignment() {
         .from('project_tasks')
         .update({
           assigned_to: data.userId,
-          status: 'in_progress',
+          status: 'assigned',
           assigned_at: new Date().toISOString(),
-          start_date: new Date().toISOString().split('T')[0],
           updated_at: new Date().toISOString()
         })
         .eq('id', data.projectTaskId)
@@ -40,6 +39,38 @@ export function useTaskSelfAssignment() {
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Error al asignar tarea' 
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Iniciar trabajo en una tarea asignada
+  const startTask = async (projectTaskId: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const { error } = await supabase
+        .from('project_tasks')
+        .update({
+          status: 'in_progress',
+          start_date: new Date().toISOString().split('T')[0],
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', projectTaskId)
+
+      if (error) {
+        throw error
+      }
+
+      return { success: true }
+    } catch (err) {
+      console.error('Error starting task:', err)
+      setError(err instanceof Error ? err.message : 'Error al iniciar tarea')
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Error al iniciar tarea' 
       }
     } finally {
       setLoading(false)
@@ -175,6 +206,7 @@ export function useTaskSelfAssignment() {
     loading,
     error,
     selfAssignTask,
+    startTask,
     unassignTask,
     completeTask
   }

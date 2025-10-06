@@ -170,18 +170,19 @@ export default function ProjectMetricsPage() {
   const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => 
     sum + (pt.task?.estimatedHours || 0), 0
   )
-  const actualHours = Object.values(calculatedHours).reduce((sum: number, hours: number) => 
+  const actualHours = Math.round(Object.values(calculatedHours).reduce((sum: number, hours: number) => 
     sum + hours, 0
-  )
+  ) * 100) / 100 // Redondear a 2 decimales para evitar problemas de precisión
 
   // Calcular progreso de tiempo estimado y eficiencia real
   const completedEstimatedHours = project.projectTasks
     .filter((pt: any) => pt.status === 'completed')
     .reduce((sum: number, pt: any) => sum + (pt.task?.estimatedHours || 0), 0)
   
-  const completedActualHours = project.projectTasks
+  const completedActualHours = Math.round(project.projectTasks
     .filter((pt: any) => pt.status === 'completed')
-    .reduce((sum: number, pt: any) => sum + (calculatedHours[pt.id] || 0), 0)
+    .reduce((sum: number, pt: any) => sum + (calculatedHours[pt.id] || 0), 0) * 100
+  ) / 100
 
   return (
     <MainLayout>
@@ -296,7 +297,7 @@ export default function ProjectMetricsPage() {
                   {estimatedHours > 0 ? (
                     <div className="text-right">
                       <span className="font-semibold text-blue-600">
-                        {actualHours % 1 === 0 ? actualHours : actualHours}h trabajadas
+                        {actualHours % 1 === 0 ? actualHours : actualHours.toFixed(1)}h trabajadas
                       </span>
                       <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                         {(() => {
@@ -368,21 +369,19 @@ export default function ProjectMetricsPage() {
                         total: 0,
                         completed: 0,
                         inProgress: 0,
+                        assigned: 0,
+                        pending: 0,
                         totalHours: 0,
                         actualHours: 0
                       }
                     }
                     acc[operarioName].total++
                     
-                    // Mapear estados de la base de datos a propiedades del objeto
-                    const statusMap: Record<string, string> = {
-                      'completed': 'completed',
-                      'in_progress': 'inProgress',
-                      'pending': 'pending',
-                      'cancelled': 'cancelled'
-                    }
-                    const statusProperty = statusMap[pt.status] || pt.status
-                    acc[operarioName][statusProperty]++
+                    // Contar por estado
+                    if (pt.status === 'completed') acc[operarioName].completed++
+                    else if (pt.status === 'in_progress') acc[operarioName].inProgress++
+                    else if (pt.status === 'assigned') acc[operarioName].assigned++
+                    else if (pt.status === 'pending') acc[operarioName].pending++
                     
                     acc[operarioName].totalHours += pt.task?.estimatedHours || 0
                     acc[operarioName].actualHours += calculatedHours[pt.id] || 0
@@ -424,12 +423,26 @@ export default function ProjectMetricsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {stats.completed} completadas
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {stats.inProgress} en progreso
-                          </Badge>
+                          {stats.inProgress > 0 && (
+                            <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                              {stats.inProgress} en progreso
+                            </Badge>
+                          )}
+                          {stats.assigned > 0 && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              {stats.assigned} asignadas
+                            </Badge>
+                          )}
+                          {stats.pending > 0 && (
+                            <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                              {stats.pending} pendientes
+                            </Badge>
+                          )}
+                          {stats.completed > 0 && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              {stats.completed} completadas
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -474,7 +487,7 @@ export default function ProjectMetricsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {project.projectTasks
                 .sort((a: any, b: any) => {
-                  const statusOrder = { completed: 0, in_progress: 1, pending: 2, cancelled: 3 }
+                  const statusOrder = { in_progress: 0, assigned: 1, pending: 2, completed: 3, cancelled: 4 }
                   return statusOrder[a.status] - statusOrder[b.status]
                 })
                 .map((projectTask: any, index: number) => {
@@ -501,7 +514,9 @@ export default function ProjectMetricsPage() {
                           projectTask.status === 'completed' 
                             ? 'bg-green-50 text-green-700 border-green-200' 
                             : projectTask.status === 'in_progress' 
-                            ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                            ? 'bg-orange-50 text-orange-700 border-orange-200' 
+                            : projectTask.status === 'assigned'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
                             : projectTask.status === 'pending'
                             ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
                             : 'bg-gray-50 text-gray-700 border-gray-200'
@@ -509,6 +524,7 @@ export default function ProjectMetricsPage() {
                       >
                         {projectTask.status === 'completed' ? 'Completada' : 
                          projectTask.status === 'in_progress' ? 'En Progreso' : 
+                         projectTask.status === 'assigned' ? 'Asignada' :
                          projectTask.status === 'pending' ? 'Pendiente' : 
                          projectTask.status}
                       </Badge>
