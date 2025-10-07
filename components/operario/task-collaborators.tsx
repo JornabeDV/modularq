@@ -77,13 +77,14 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none">
           <Users className="h-4 w-4" />
-          Colaboradores ({collaborators.length})
+          <span className="hidden sm:inline">Colaboradores ({collaborators.length})</span>
+          <span className="sm:hidden">Colab. ({collaborators.length})</span>
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md mx-4 sm:mx-0">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -151,7 +152,7 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
           {isResponsible && availableUsers.length > 0 && (
             <div className="space-y-2 pt-4 border-t">
               <h4 className="text-sm font-medium text-muted-foreground">Agregar Colaborador</h4>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Seleccionar operario" />
@@ -168,8 +169,10 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
                   onClick={handleAddCollaborator}
                   disabled={!selectedUserId || isLoading}
                   size="sm"
+                  className="w-full sm:w-auto"
                 >
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Agregar</span>
                 </Button>
               </div>
             </div>

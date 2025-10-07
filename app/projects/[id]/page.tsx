@@ -159,10 +159,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   return (
     <MainLayout>
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         {/* Header Mejorado */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -170,14 +170,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
+              <span className="hidden sm:inline">Volver</span>
             </Button>
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-balance">{project.name}</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">{project.description}</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-balance leading-tight">{project.name}</h1>
+              <p className="text-muted-foreground text-sm sm:text-base mt-1 line-clamp-2">{project.description}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="default" className="text-xs">
               <Zap className="h-3 w-3 mr-1" />
               Activo
@@ -194,29 +194,26 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
         </div>
 
+        {/* Gestión de Tareas - Sin bordes, solo texto */}
+        <div className="mb-4 sm:mb-6">
+          <h2 className="flex items-center gap-2 text-lg sm:text-xl font-semibold mb-2">
+            <Target className="h-5 w-5" />
+            Gestión de Tareas
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Aquí puedes ver todas las tareas del proyecto, tomar nuevas tareas y gestionar las que ya tienes asignadas.
+          </p>
+        </div>
 
-        {/* Gestión de Tareas - Sección Principal */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Gestión de Tareas
-            </CardTitle>
-            <CardDescription>
-              Aquí puedes ver todas las tareas del proyecto, tomar nuevas tareas y gestionar las que ya tienes asignadas.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TaskSelfAssignment 
-              projectTasks={projectTasks} 
-              projectId={params.id}
-              projectOperarios={projectOperarios
-                .filter(po => po.user !== undefined)
-                .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
-              onTaskUpdate={refetchTasks}
-            />
-          </CardContent>
-        </Card>
+        {/* Secciones de Tareas */}
+        <TaskSelfAssignment 
+          projectTasks={projectTasks} 
+          projectId={params.id}
+          projectOperarios={projectOperarios
+            .filter(po => po.user !== undefined)
+            .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
+          onTaskUpdate={refetchTasks}
+        />
 
       </div>
     </MainLayout>
