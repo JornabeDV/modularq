@@ -188,22 +188,22 @@ export default function ProjectMetricsPage() {
     <MainLayout>
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
+                <span className="hidden sm:inline">Volver</span>
               </Button>
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold">{project.name}</h1>
-              <p className="text-muted-foreground">Métricas detalladas del proyecto</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold truncate">{project.name}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Métricas detalladas del proyecto</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
-            <Badge variant="outline">{getStatusText(project.status)}</Badge>
+            <Badge variant="outline" className="text-xs sm:text-sm">{getStatusText(project.status)}</Badge>
           </div>
         </div>
 
@@ -220,22 +220,22 @@ export default function ProjectMetricsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Métricas generales */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{totalTasks}</div>
-                <div className="text-sm text-muted-foreground">Total Tareas</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg sm:text-2xl font-bold">{totalTasks}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Total Tareas</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{completedTasks}</div>
-                <div className="text-sm text-muted-foreground">Completadas</div>
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">{completedTasks}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Completadas</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{inProgressTasks}</div>
-                <div className="text-sm text-muted-foreground">En Progreso</div>
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">{inProgressTasks}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">En Progreso</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-600">{pendingTasks}</div>
-                <div className="text-sm text-muted-foreground">Pendientes</div>
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg sm:text-2xl font-bold text-gray-600">{pendingTasks}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Pendientes</div>
               </div>
             </div>
 
@@ -243,12 +243,12 @@ export default function ProjectMetricsPage() {
             <div className="space-y-4">
               {/* Progreso de Tareas */}
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center gap-1">
-                    <Target className="h-4 w-4" />
-                    Progreso de Tareas
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                  <span className="flex items-center gap-1 text-sm">
+                    <Target className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Progreso de Tareas</span>
                   </span>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-sm sm:text-base">
                     {totalTasks > 0 
                       ? `${Math.round((completedTasks / totalTasks) * 100)}%`
                       : '0%'
@@ -266,12 +266,12 @@ export default function ProjectMetricsPage() {
 
               {/* Tiempo Estimado Completado */}
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center gap-1">
-                    <Timer className="h-4 w-4" />
-                    Tiempo Estimado Completado
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+                  <span className="flex items-center gap-1 text-sm">
+                    <Timer className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Tiempo Estimado Completado</span>
                   </span>
-                  <span className="font-semibold">
+                  <span className="font-semibold text-sm sm:text-base">
                     {estimatedHours > 0 
                       ? `${completedEstimatedHours % 1 === 0 ? completedEstimatedHours : completedEstimatedHours}h de ${estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}h`
                       : '0h de 0h'
@@ -289,17 +289,17 @@ export default function ProjectMetricsPage() {
 
               {/* Progreso Real del Proyecto */}
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    Progreso Real
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                  <span className="flex items-center gap-1 text-sm">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Progreso Real</span>
                   </span>
                   {estimatedHours > 0 ? (
-                    <div className="text-right">
-                      <span className="font-semibold text-blue-600">
+                    <div className="text-left sm:text-right">
+                      <span className="font-semibold text-blue-600 text-sm sm:text-base">
                         {actualHours % 1 === 0 ? actualHours : actualHours.toFixed(1)}h trabajadas
                       </span>
-                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 mt-1 inline-block">
                         {(() => {
                           const progress = (actualHours / estimatedHours) * 100
                           const remainingHours = estimatedHours - actualHours
@@ -309,7 +309,7 @@ export default function ProjectMetricsPage() {
                       </div>
                     </div>
                   ) : (
-                    <span className="font-semibold text-gray-500">Sin datos</span>
+                    <span className="font-semibold text-gray-500 text-sm sm:text-base">Sin datos</span>
                   )}
                 </div>
                 {estimatedHours > 0 ? (
@@ -325,19 +325,19 @@ export default function ProjectMetricsPage() {
             </div>
 
             {/* Información adicional */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>{totalOperarios} operarios asignados</span>
+                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">{totalOperarios} operarios asignados</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Inicio: {formatDate(project.startDate)}</span>
+                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">Inicio: {formatDate(project.startDate)}</span>
               </div>
               {project.endDate && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Fin: {formatDate(project.endDate)}</span>
+                <div className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-1">
+                  <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="truncate">Fin: {formatDate(project.endDate)}</span>
                 </div>
               )}
             </div>
@@ -410,19 +410,19 @@ export default function ProjectMetricsPage() {
                 return (
                   <>
                     {operarioStatsArray.map((stats: any) => (
-                      <div key={stats.name} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                      <div key={stats.name} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
                             {stats.name.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <h4 className="font-medium">{stats.name}</h4>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium truncate">{stats.name}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               {stats.total} tareas • {stats.totalHours % 1 === 0 ? stats.totalHours : stats.totalHours}h estimadas
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                           {stats.inProgress > 0 && (
                             <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
                               {stats.inProgress} en progreso
@@ -448,19 +448,19 @@ export default function ProjectMetricsPage() {
                     ))}
                     
                     {completedWithoutOperario > 0 && (
-                      <div className="flex items-center justify-between p-3 border rounded-lg border-orange-200 bg-orange-50">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg border-orange-200 bg-orange-50 gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
                             ⚠️
                           </div>
-                          <div>
-                            <h4 className="font-medium text-orange-800">Tareas completadas sin operario</h4>
-                            <p className="text-sm text-orange-600">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium text-orange-800 truncate">Tareas completadas sin operario</h4>
+                            <p className="text-xs sm:text-sm text-orange-600">
                               {completedWithoutOperario} tareas completadas sin asignar a operario
                             </p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">
+                        <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 self-start sm:self-auto">
                           {completedWithoutOperario} sin asignar
                         </Badge>
                       </div>
@@ -484,11 +484,11 @@ export default function ProjectMetricsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               {project.projectTasks
                 .sort((a: any, b: any) => {
-                  const statusOrder = { in_progress: 0, assigned: 1, pending: 2, completed: 3, cancelled: 4 }
-                  return statusOrder[a.status] - statusOrder[b.status]
+                  const statusOrder: Record<string, number> = { in_progress: 0, assigned: 1, pending: 2, completed: 3, cancelled: 4 }
+                  return (statusOrder[a.status] || 999) - (statusOrder[b.status] || 999)
                 })
                 .map((projectTask: any, index: number) => {
                 const task = projectTask.task
@@ -497,20 +497,20 @@ export default function ProjectMetricsPage() {
                 const progressPercentage = projectTask.progressPercentage || 0
                 
                 return (
-                  <div key={projectTask.id} className="border rounded-lg p-3 space-y-2 relative">
+                  <div key={projectTask.id} className="border rounded-lg p-3 space-y-3 relative">
                     {/* Header compacto con numeración */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                           {index + 1}
                         </div>
-                        <span className="font-semibold text-sm">
+                        <span className="font-semibold text-sm truncate">
                           {task?.title || 'Tarea sin título'}
                         </span>
                       </div>
                       <Badge 
                         variant="outline" 
-                        className={`text-xs font-medium ${
+                        className={`text-xs font-medium self-start sm:self-auto ${
                           projectTask.status === 'completed' 
                             ? 'bg-green-50 text-green-700 border-green-200' 
                             : projectTask.status === 'in_progress' 
@@ -531,10 +531,10 @@ export default function ProjectMetricsPage() {
                     </div>
 
                     {/* Información compacta */}
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs">
                       {/* Progreso */}
-                      <div className="flex items-center gap-1">
-                        <Target className="h-3 w-3 text-muted-foreground" />
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Target className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Progreso:</span>
                         <span className="font-semibold">
                           {projectTask.status === 'completed' ? '100%' : 
@@ -545,8 +545,8 @@ export default function ProjectMetricsPage() {
                       </div>
 
                       {/* Tiempo estimado */}
-                      <div className="flex items-center gap-1">
-                        <Target className="h-3 w-3 text-muted-foreground" />
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Target className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Estimado:</span>
                         <span className="font-semibold">
                           {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
@@ -554,11 +554,11 @@ export default function ProjectMetricsPage() {
                       </div>
 
                       {/* Operario asignado */}
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3 w-3 text-muted-foreground" />
+                      <div className="flex items-center gap-1 min-w-0 sm:col-span-2">
+                        <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Operario:</span>
                         {projectTask.assignedUser ? (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs truncate">
                             {projectTask.assignedUser.name}
                           </Badge>
                         ) : (
@@ -569,8 +569,8 @@ export default function ProjectMetricsPage() {
                       </div>
 
                       {/* Tiempo trabajado */}
-                      <div className="flex items-center gap-1">
-                        <Timer className="h-3 w-3 text-muted-foreground" />
+                      <div className="flex items-center gap-1 min-w-0 sm:col-span-2">
+                        <Timer className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Trabajado:</span>
                         <span className="font-semibold">
                           {actualHours % 1 === 0 ? actualHours : actualHours}hs
@@ -578,19 +578,19 @@ export default function ProjectMetricsPage() {
                       </div>
 
                       {/* Fechas de inicio y fin */}
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Inicio:</span>
-                        <span className="text-xs font-semibold">
+                        <span className="text-xs font-semibold truncate">
                           {projectTask.startDate ? formatDate(projectTask.startDate) : 'Sin fecha'}
                         </span>
                       </div>
                       
                       {projectTask.endDate && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                           <span className="text-muted-foreground">Fin:</span>
-                          <span className="text-xs font-semibold">
+                          <span className="text-xs font-semibold truncate">
                             {formatDate(projectTask.endDate)}
                           </span>
                         </div>
@@ -598,33 +598,37 @@ export default function ProjectMetricsPage() {
 
                       {/* Colaboradores */}
                       {projectTask.collaborators && projectTask.collaborators.length > 0 && (
-                        <div className="flex items-center gap-1 col-span-2">
-                          <Users className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">Colaboradores:</span>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {projectTask.collaborators.slice(0, 2).map((collaborator: any) => (
-                              <Badge key={collaborator.id} variant="outline" className="text-xs">
-                                {collaborator.user?.name || 'Usuario'}
-                              </Badge>
-                            ))}
-                            {projectTask.collaborators.length > 2 && (
-                              <Badge variant="outline" className="text-xs text-muted-foreground">
-                                +{projectTask.collaborators.length - 2} más
-                              </Badge>
-                            )}
+                        <div className="flex items-start gap-1 sm:col-span-2">
+                          <Users className="h-3 w-3 text-muted-foreground flex-shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <span className="text-muted-foreground">Colaboradores:</span>
+                            <div className="flex items-center gap-1 flex-wrap mt-1">
+                              {projectTask.collaborators.slice(0, 2).map((collaborator: any) => (
+                                <Badge key={collaborator.id} variant="outline" className="text-xs">
+                                  {collaborator.user?.name || 'Usuario'}
+                                </Badge>
+                              ))}
+                              {projectTask.collaborators.length > 2 && (
+                                <Badge variant="outline" className="text-xs text-muted-foreground">
+                                  +{projectTask.collaborators.length - 2} más
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
 
                       {/* Eficiencia (solo para completadas) */}
                       {projectTask.status === 'completed' && (
-                        <div className="flex items-center gap-1 col-span-2">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">Eficiencia:</span>
-                          <span className={`font-semibold ${getEfficiencyColor(actualHours, estimatedHours)}`}>
-                            {actualHours % 1 === 0 ? actualHours : actualHours}hs de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
-                          </span>
-                          <Badge variant="outline" className={`text-xs ${getEfficiencyColor(actualHours, estimatedHours)} border-current`}>
+                        <div className="flex flex-col gap-1 sm:col-span-2">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="text-muted-foreground">Eficiencia:</span>
+                            <span className={`font-semibold ${getEfficiencyColor(actualHours, estimatedHours)}`}>
+                              {actualHours % 1 === 0 ? actualHours : actualHours}hs de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
+                            </span>
+                          </div>
+                          <Badge variant="outline" className={`text-xs w-fit ${getEfficiencyColor(actualHours, estimatedHours)} border-current`}>
                             {(() => {
                               const diff = estimatedHours - actualHours
                               if (diff >= 0) {
