@@ -179,7 +179,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeProjects.length}</div>
-              <p className="text-xs text-muted-foreground">de 0 proyectos totales</p>
+              <p className="text-xs text-muted-foreground">de {projects.length} proyectos totales</p>
             </CardContent>
           </Card>
 

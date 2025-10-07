@@ -152,45 +152,45 @@ export default function TaskMetricsPage() {
   return (
     <AdminOnly>
       <MainLayout>
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => router.push(`/admin/projects/${projectId}/metrics`)}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver
+                <span className="hidden sm:inline">Volver</span>
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold">{task.title}</h1>
-                <p className="text-muted-foreground">
-                  Métricas detalladas de la tarea
-                </p>
-              </div>
+              <Badge 
+                variant="outline" 
+                className={`font-medium text-xs sm:text-sm ${
+                  projectTask.status === 'completed' 
+                    ? 'bg-green-50 text-green-700 border-green-200' 
+                    : projectTask.status === 'in_progress' 
+                    ? 'bg-orange-50 text-orange-700 border-orange-200' 
+                    : projectTask.status === 'assigned'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : projectTask.status === 'pending'
+                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    : 'bg-gray-50 text-gray-700 border-gray-200'
+                }`}
+              >
+                {projectTask.status === 'completed' ? 'Completada' : 
+                 projectTask.status === 'in_progress' ? 'En Progreso' : 
+                 projectTask.status === 'assigned' ? 'Asignada' :
+                 projectTask.status === 'pending' ? 'Pendiente' : 
+                 projectTask.status}
+              </Badge>
             </div>
-            <Badge 
-              variant="outline" 
-              className={`font-medium ${
-                projectTask.status === 'completed' 
-                  ? 'bg-green-50 text-green-700 border-green-200' 
-                  : projectTask.status === 'in_progress' 
-                  ? 'bg-orange-50 text-orange-700 border-orange-200' 
-                  : projectTask.status === 'assigned'
-                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                  : projectTask.status === 'pending'
-                  ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                  : 'bg-gray-50 text-gray-700 border-gray-200'
-              }`}
-            >
-              {projectTask.status === 'completed' ? 'Completada' : 
-               projectTask.status === 'in_progress' ? 'En Progreso' : 
-               projectTask.status === 'assigned' ? 'Asignada' :
-               projectTask.status === 'pending' ? 'Pendiente' : 
-               projectTask.status}
-            </Badge>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold leading-tight break-words">{task.title}</h1>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                Métricas detalladas de la tarea
+              </p>
+            </div>
           </div>
 
           {/* Información general de la tarea */}
@@ -202,27 +202,27 @@ export default function TaskMetricsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Target className="h-4 w-4" />
-                    <span>Horas Estimadas</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="space-y-2 p-3 border rounded-lg">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <Target className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Horas Estimadas</span>
                   </div>
-                  <p className="text-2xl font-bold">{estimatedHours}hs</p>
+                  <p className="text-lg sm:text-2xl font-bold">{estimatedHours}hs</p>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Timer className="h-4 w-4" />
-                    <span>Horas Reales</span>
+                <div className="space-y-2 p-3 border rounded-lg">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <Timer className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Horas Reales</span>
                   </div>
-                  <p className="text-2xl font-bold">{formatTime(actualHours)}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatTime(actualHours)}</p>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Eficiencia</span>
+                <div className="space-y-2 p-3 border rounded-lg col-span-2 lg:col-span-1">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Eficiencia</span>
                   </div>
                   <div className="space-y-1">
                     {estimatedHours > 0 && (
@@ -246,12 +246,12 @@ export default function TaskMetricsPage() {
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Activity className="h-4 w-4" />
-                    <span>Progreso</span>
+                <div className="space-y-2 p-3 border rounded-lg col-span-2 lg:col-span-1">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <Activity className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Progreso</span>
                   </div>
-                  <p className="text-2xl font-bold">{progressPercentage}%</p>
+                  <p className="text-lg sm:text-2xl font-bold">{progressPercentage}%</p>
                 </div>
               </div>
             </CardContent>
@@ -266,29 +266,29 @@ export default function TaskMetricsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Fecha de Inicio</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="space-y-2 p-3 border rounded-lg">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Fecha de Inicio</span>
                   </div>
-                  <p className="font-medium">{formatDate(projectTask.startDate)}</p>
+                  <p className="font-medium text-sm sm:text-base">{formatDate(projectTask.startDate)}</p>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Fecha de Fin</span>
+                <div className="space-y-2 p-3 border rounded-lg">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Fecha de Fin</span>
                   </div>
-                  <p className="font-medium">{formatDate(projectTask.endDate)}</p>
+                  <p className="font-medium text-sm sm:text-base">{formatDate(projectTask.endDate)}</p>
                 </div>
                 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span>Operario Asignado</span>
+                <div className="space-y-2 p-3 border rounded-lg sm:col-span-2 lg:col-span-1">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Operario Asignado</span>
                   </div>
-                  <p className="font-medium">
+                  <p className="font-medium text-sm sm:text-base truncate">
                     {projectTask.assignedUser?.name || 'Sin asignar'}
                   </p>
                 </div>
@@ -309,34 +309,34 @@ export default function TaskMetricsPage() {
             </CardHeader>
             <CardContent>
               {timeEntries.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {timeEntries.map((entry, index) => (
-                    <div key={entry.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                    <div key={entry.id} className="border rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                             {index + 1}
                           </div>
-                          <span className="font-medium">{entry.user?.name || 'Usuario desconocido'}</span>
+                          <span className="font-medium text-sm sm:text-base truncate">{entry.user?.name || 'Usuario desconocido'}</span>
                         </div>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs self-start sm:self-auto">
                           {formatTime(entry.hours)}
                         </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3" />
-                          <span>Fecha: {formatDate(entry.date)}</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Fecha: {formatDate(entry.date)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-3 w-3" />
-                          <span>Hora: {formatDateTime(entry.start_time)} - {formatDateTime(entry.end_time)}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">Hora: {formatDateTime(entry.start_time)} - {formatDateTime(entry.end_time)}</span>
                         </div>
                       </div>
                       
                       {entry.description && (
-                        <div className="mt-2 p-2 bg-muted rounded text-sm">
+                        <div className="mt-3 p-2 bg-muted rounded text-xs sm:text-sm">
                           <span className="font-medium">Descripción:</span> {entry.description}
                         </div>
                       )}
@@ -370,7 +370,7 @@ export default function TaskMetricsPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {projectTask.collaborators.map((collaborator: any) => (
-                    <Badge key={collaborator.id} variant="outline" className="text-sm">
+                    <Badge key={collaborator.id} variant="outline" className="text-xs sm:text-sm">
                       <User className="h-3 w-3 mr-1" />
                       {collaborator.user?.name || 'Usuario'}
                     </Badge>
