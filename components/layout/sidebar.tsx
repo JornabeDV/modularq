@@ -15,7 +15,6 @@ const navigation = [
 const adminNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Gestión del Personal", href: "/admin/users", icon: Shield },
-  { name: "Rendimiento de Operarios", href: "/admin/workers", icon: Users },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Reportes", href: "/reports", icon: FileText },
