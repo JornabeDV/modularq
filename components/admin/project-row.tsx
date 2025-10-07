@@ -50,7 +50,7 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
       <TableCell>
         <div>
           <div className="font-medium">{project.name}</div>
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-sm text-muted-foreground mt-1 hidden sm:block">
             {project.description.length > 80 
               ? `${project.description.substring(0, 80)}...` 
               : project.description

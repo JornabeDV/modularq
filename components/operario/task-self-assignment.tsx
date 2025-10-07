@@ -157,29 +157,29 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Mis Tareas Asignadas (Listas para empezar) */}
       {myAssignedTasks.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
               Mis Tareas Asignadas
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Tareas que has tomado y están listas para empezar a trabajar
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {myAssignedTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
+                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base truncate">{task.task?.title || 'Tarea sin título'}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                       {task.task?.description || 'Sin descripción'}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <Badge 
                         variant="outline" 
                         className="text-xs"
@@ -191,21 +191,23 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Button
                       size="sm"
                       onClick={() => handleStartTask(task.id)}
                       disabled={loading}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                     >
                       <Play className="h-4 w-4 mr-2" />
-                      Iniciar Trabajo
+                      <span className="hidden sm:inline">Iniciar Trabajo</span>
+                      <span className="sm:hidden">Iniciar</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleUnassign(task.id)}
                       disabled={loading}
+                      className="w-full sm:w-auto"
                     >
                       <Square className="h-4 w-4 mr-2" />
                       Devolver
@@ -220,37 +222,37 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
 
       {/* Mis Tareas en Progreso */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             Mis Tareas en Progreso
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Tareas en las que estás trabajando activamente con cronómetro
           </CardDescription>
         </CardHeader>
         <CardContent>
           {myTasks.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No tienes tareas en progreso</h3>
-              <p className="text-muted-foreground">
+            <div className="text-center py-4 sm:py-8">
+              <Clock className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-2 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-medium mb-1 sm:mb-2">No tienes tareas en progreso</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {myAssignedTasks.length > 0 
-                  ? 'Inicia una tarea asignada o toma una nueva de "Tareas Disponibles"'
-                  : 'Toma una tarea de la sección "Tareas Disponibles"'
+                  ? 'Inicia una tarea asignada o toma una nueva'
+                  : 'Toma una tarea disponible'
                 }
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {myTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
+                <div key={task.id} className="flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base truncate">{task.task?.title || 'Tarea sin título'}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                       {task.task?.description || 'Sin descripción'}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <Badge 
                         variant="outline" 
                         className={`text-xs ${getStatusColor(task.status)}`}
@@ -262,28 +264,30 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <TaskCollaborators 
-                      projectTask={task} 
-                      projectOperarios={projectOperarios}
-                      onUpdate={onTaskUpdate}
-                    />
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <Button 
                       size="sm" 
                       variant="default"
                       onClick={() => {
                         router.push(`/projects/${projectId}/task/${task.id}`)
                       }}
-                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      className="bg-orange-600 hover:bg-orange-700 text-white w-full sm:w-auto"
                     >
                       <Zap className="h-4 w-4 mr-2" />
-                      Continuar Trabajando
+                      <span className="hidden sm:inline">Continuar Trabajando</span>
+                      <span className="sm:hidden">Continuar</span>
                     </Button>
+                    <TaskCollaborators 
+                      projectTask={task} 
+                      projectOperarios={projectOperarios}
+                      onUpdate={onTaskUpdate}
+                    />
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleUnassign(task.id)}
                       disabled={loading}
+                      className="w-full sm:w-auto"
                     >
                       <Square className="h-4 w-4 mr-2" />
                       Devolver
@@ -299,25 +303,25 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
       {/* Tareas Completadas */}
       {completedTasks.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               Tareas Completadas
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Tareas que has terminado en este proyecto
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {completedTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
+                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base truncate">{task.task?.title || 'Tarea sin título'}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                       {task.task?.description || 'Sin descripción'}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <Badge 
                         variant="outline" 
                         className={`text-xs ${getStatusColor(task.status)}`}
@@ -338,34 +342,34 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
 
       {/* Tareas Disponibles */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Play className="h-5 w-5" />
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Play className="h-4 w-4 sm:h-5 sm:w-5" />
             Tareas Disponibles
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Tareas que puedes tomar para trabajar
           </CardDescription>
         </CardHeader>
         <CardContent>
           {availableTasks.length === 0 ? (
-            <div className="text-center py-8">
-              <Play className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No hay tareas disponibles</h3>
-              <p className="text-muted-foreground">
+            <div className="text-center py-4 sm:py-8">
+              <Play className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-2 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-medium mb-1 sm:mb-2">No hay tareas disponibles</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Todas las tareas han sido asignadas o están en progreso
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {availableTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{task.task?.title || 'Tarea sin título'}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
+                <div key={task.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm sm:text-base truncate">{task.task?.title || 'Tarea sin título'}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                       {task.task?.description || 'Sin descripción'}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <Badge variant="outline" className="text-xs">
                         {task.task?.category || 'Sin categoría'}
                       </Badge>
@@ -378,7 +382,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                     size="sm"
                     onClick={() => handleSelfAssign(task.id)}
                     disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                   >
                     <User className="h-4 w-4 mr-2" />
                     Tomar Tarea

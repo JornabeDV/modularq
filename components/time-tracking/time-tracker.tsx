@@ -447,7 +447,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
         {/* Cronómetro */}
         <div className="text-center space-y-4">
-          <div className={`text-4xl font-mono font-bold ${isNearLimit ? 'text-orange-500' : ''}`}>
+          <div className={`text-3xl sm:text-4xl font-mono font-bold ${isNearLimit ? 'text-orange-500' : ''}`}>
             {formatTime(elapsedTime)}
           </div>
           
@@ -482,12 +482,12 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
             </div>
           )}
           
-          <div className="flex justify-center gap-2">
+          <div className="flex flex-col sm:flex-row justify-center gap-2">
             {!isTracking ? (
               <Button 
                 onClick={handleStart}
                 disabled={!currentTask}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
               >
                 <Play className="h-4 w-4" />
                 Iniciar {!currentTask ? '(Cargando...)' : ''}
@@ -496,7 +496,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
               <Button 
                 onClick={handleStop}
                 variant="destructive"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto"
               >
                 <Square className="h-4 w-4" />
                 Detener

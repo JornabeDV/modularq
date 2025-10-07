@@ -64,22 +64,23 @@ export function TaskHeader({ task, onBack }: TaskHeaderProps) {
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <Button 
           variant="outline" 
           size="sm"
           onClick={onBack}
+          className="shrink-0"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver al Proyecto
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">{task.task?.title}</h1>
-          <p className="text-muted-foreground">{task.task?.description}</p>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-balance">{task.task?.title}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{task.task?.description}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {getStatusIcon(task.status)}
         <Badge variant={getStatusColor(task.status)}>
           {getStatusLabel(task.status)}
