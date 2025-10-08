@@ -84,6 +84,7 @@ coverage/
 
 # dotenv environment variables file
 .env
+.env.temp
 .env.test
 .env.production
 .env.local
