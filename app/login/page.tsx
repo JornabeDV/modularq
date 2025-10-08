@@ -76,7 +76,7 @@ export default function LoginPage() {
                   {users.map((user) => (
                     user.id && (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.name.split(' ')[0]}
+                        {user.name}
                       </SelectItem>
                     )
                   ))}
