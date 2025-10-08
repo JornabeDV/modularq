@@ -127,7 +127,7 @@ dependencies:
     version: 0.454.0(react@18.3.1)
   next:
     specifier: 14.2.16
-    version: 14.2.16(@babel/core@7.28.4)(react-dom@18.3.1)(react@18.3.1)
+    version: 14.2.16(@babel/core@7.28.4)(@playwright/test@1.56.0)(react-dom@18.3.1)(react@18.3.1)
   next-pwa:
     specifier: ^5.6.0
     version: 5.6.0(@babel/core@7.28.4)(next@14.2.16)(webpack@5.102.0)
@@ -169,6 +169,9 @@ dependencies:
     version: 3.25.67
 
 devDependencies:
+  '@playwright/test':
+    specifier: ^1.56.0
+    version: 1.56.0
   '@tailwindcss/postcss':
     specifier: ^4.1.9
     version: 4.1.14
@@ -1468,6 +1471,13 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
     dev: false
+
+  /@playwright/test@1.56.0:
+    resolution: {integrity: sha512-Tzh95Twig7hUwwNe381/K3PggZBZblKUe2wv25oIpzWLr6Z0m4KgV1ZVIjnR6GM9ANEqjZD7XsZEa6JL/7YEgg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dependencies:
+      playwright: 1.56.0
 
   /@radix-ui/number@1.1.0:
     resolution: {integrity: sha512-V3gRzhVNU1ldS5XhAPTom1fOIo4ccrjjJgmE+LI2h/WaFpHmx0MQApT+KZHnx8abG6Avtfcz4WoEciMnpFT3HQ==}
@@ -3153,7 +3163,7 @@ packages:
       vue-router:
         optional: true
     dependencies:
-      next: 14.2.16(@babel/core@7.28.4)(react-dom@18.3.1)(react@18.3.1)
+      next: 14.2.16(@babel/core@7.28.4)(@playwright/test@1.56.0)(react-dom@18.3.1)(react@18.3.1)
       react: 18.3.1
     dev: false
 
@@ -4121,6 +4131,13 @@ packages:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
     dev: false
 
+  /fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+    requiresBuild: true
+    optional: true
+
   /fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -4154,7 +4171,7 @@ packages:
     peerDependencies:
       next: '>=13.2.0'
     dependencies:
-      next: 14.2.16(@babel/core@7.28.4)(react-dom@18.3.1)(react@18.3.1)
+      next: 14.2.16(@babel/core@7.28.4)(@playwright/test@1.56.0)(react-dom@18.3.1)(react@18.3.1)
     dev: false
 
   /generator-function@2.0.1:
@@ -4934,7 +4951,7 @@ packages:
       babel-loader: 8.4.1(@babel/core@7.28.4)(webpack@5.102.0)
       clean-webpack-plugin: 4.0.0(webpack@5.102.0)
       globby: 11.1.0
-      next: 14.2.16(@babel/core@7.28.4)(react-dom@18.3.1)(react@18.3.1)
+      next: 14.2.16(@babel/core@7.28.4)(@playwright/test@1.56.0)(react-dom@18.3.1)(react@18.3.1)
       terser-webpack-plugin: 5.3.14(webpack@5.102.0)
       workbox-webpack-plugin: 6.6.0(webpack@5.102.0)
       workbox-window: 6.6.0
@@ -4958,7 +4975,7 @@ packages:
       react-dom: 18.3.1(react@18.3.1)
     dev: false
 
-  /next@14.2.16(@babel/core@7.28.4)(react-dom@18.3.1)(react@18.3.1):
+  /next@14.2.16(@babel/core@7.28.4)(@playwright/test@1.56.0)(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-LcO7WnFu6lYSvCzZoo1dB+IO0xXz5uEv52HF1IUN0IqVTUIZGHuuR10I5efiLadGt+4oZqTcNZyVVEem/TM5nA==}
     engines: {node: '>=18.17.0'}
     hasBin: true
@@ -4977,6 +4994,7 @@ packages:
         optional: true
     dependencies:
       '@next/env': 14.2.16
+      '@playwright/test': 1.56.0
       '@swc/helpers': 0.5.5
       busboy: 1.6.0
       caniuse-lite: 1.0.30001748
@@ -5134,6 +5152,20 @@ packages:
     dependencies:
       find-up: 4.1.0
     dev: false
+
+  /playwright-core@1.56.0:
+    resolution: {integrity: sha512-1SXl7pMfemAMSDn5rkPeZljxOCYAmQnYLBTExuh6E8USHXGSX3dx6lYZN/xPpTz1vimXmPA9CDnILvmJaB8aSQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  /playwright@1.56.0:
+    resolution: {integrity: sha512-X5Q1b8lOdWIE4KAoHpW3SE8HvUB+ZZsUoN64ZhjnN8dOb1UpujxBtENGiZFE+9F/yhzJwYa+ca3u43FeLbboHA==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dependencies:
+      playwright-core: 1.56.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   /possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
