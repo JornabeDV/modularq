@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Project, ProjectTask, ProjectOperario } from '@/lib/types'
 
+// Detectar entorno
+const isDevelopment = process.env.NODE_ENV === 'development'
+
 export interface CreateProjectData {
   name: string
   description: string
@@ -23,88 +26,100 @@ export function useProjects() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Cargar proyectos desde Supabase
+  // Cargar proyectos
   const fetchProjects = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const { data, error: fetchError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          project_tasks (
-            id,
-            project_id,
-            task_id,
-            status,
-            actual_hours,
-            assigned_to,
-            start_date,
-            end_date,
-            progress_percentage,
-            notes,
-            assigned_at,
-            assigned_by,
-            created_at,
-            updated_at,
-            task:task_id (
+      if (isDevelopment) {
+        // Usar Neon en desarrollo
+        const response = await fetch('/api/neon/projects')
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Error al obtener proyectos')
+        }
+        
+        setProjects(result.data || [])
+      } else {
+        // Usar Supabase en producción
+        const { data, error: fetchError } = await supabase
+          .from('projects')
+          .select(`
+            *,
+            project_tasks (
               id,
-              title,
-              description,
-              category,
-              type,
-              estimated_hours,
-              created_by,
-              created_at,
-              updated_at
-            ),
-            assigned_user:assigned_to (
-              id,
-              name,
-              role
-            ),
-            collaborators:task_collaborators (
-              id,
-              project_task_id,
-              user_id,
-              added_by,
-              added_at,
+              project_id,
+              task_id,
+              status,
+              actual_hours,
+              assigned_to,
+              start_date,
+              end_date,
+              progress_percentage,
+              notes,
+              assigned_at,
+              assigned_by,
               created_at,
               updated_at,
-              user:user_id (
+              task:task_id (
+                id,
+                title,
+                description,
+                category,
+                type,
+                estimated_hours,
+                created_by,
+                created_at,
+                updated_at
+              ),
+              assigned_user:assigned_to (
                 id,
                 name,
                 role
               ),
-              added_by_user:added_by (
+              collaborators:task_collaborators (
+                id,
+                project_task_id,
+                user_id,
+                added_by,
+                added_at,
+                created_at,
+                updated_at,
+                user:user_id (
+                  id,
+                  name,
+                  role
+                ),
+                added_by_user:added_by (
+                  id,
+                  name,
+                  role
+                )
+              )
+            ),
+            project_operarios (
+              id,
+              project_id,
+              user_id,
+              assigned_at,
+              assigned_by,
+              user:user_id (
                 id,
                 name,
                 role
               )
             )
-          ),
-          project_operarios (
-            id,
-            project_id,
-            user_id,
-            assigned_at,
-            assigned_by,
-            user:user_id (
-              id,
-              name,
-              role
-            )
-          )
-        `)
-        .order('created_at', { ascending: false })
+          `)
+          .order('created_at', { ascending: false })
 
-      if (fetchError) {
-        throw fetchError
-      }
+        if (fetchError) {
+          throw fetchError
+        }
 
-      // Convertir datos de Supabase al formato Project
-      const formattedProjects: Project[] = (data || []).map(project => ({
+        // Convertir datos de Supabase al formato Project
+        const formattedProjects: Project[] = (data || []).map(project => ({
         id: project.id,
         name: project.name,
         description: project.description || '',
@@ -181,7 +196,8 @@ export function useProjects() {
         }))
       }))
 
-      setProjects(formattedProjects)
+        setProjects(formattedProjects)
+      }
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar proyectos')
