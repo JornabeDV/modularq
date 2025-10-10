@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { verifyApiAuth, requireAdmin, createUnauthorizedResponse, createForbiddenResponse } from '@/lib/api-auth';
 
 // Configuración del transporter de email
 const createEmailTransporter = () => {
@@ -88,6 +89,17 @@ This is a test alert from ModularQ monitoring system.
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticación
+    const authResult = await verifyApiAuth(request);
+    if (!authResult.isAuthenticated) {
+      return createUnauthorizedResponse(authResult.error);
+    }
+
+    // Verificar que sea admin
+    if (!requireAdmin(authResult.user)) {
+      return createForbiddenResponse('Only administrators can send alerts');
+    }
+
     const body = await request.json();
     const { alertType, severity, message, details } = body;
 
