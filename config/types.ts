@@ -3,7 +3,7 @@ export interface AppConfig {
   app: {
     name: string
     version: string
-    environment: 'development' | 'staging' | 'production'
+    environment: 'development' | 'production'
     debug: boolean
     logLevel: 'debug' | 'info' | 'warn' | 'error'
   }
@@ -34,5 +34,5 @@ export interface AppConfig {
   }
 }
 
-export type Environment = 'development' | 'staging' | 'production'
+export type Environment = 'development' | 'production'
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
