@@ -41,7 +41,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // En producción, usar Supabase
+    // En producción, usar Supabase (si está disponible)
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Servicio de autenticación no disponible' },
+        { status: 503 }
+      )
+    }
+
     const { data: allUsers, error: fetchError } = await supabase
       .from('users')
       .select('*')
@@ -55,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuario cuyo primer nombre coincida (case-insensitive)
-    const userData = allUsers?.find(user => {
+    const userData = allUsers?.find((user: any) => {
       if (!user.name) return false
       
       const firstName = user.name.split(' ')[0]?.toLowerCase().trim()
