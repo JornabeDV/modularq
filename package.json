@@ -12,7 +12,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:e2e": "playwright test",
     "build:production": "NODE_ENV=production next build",
     "backup": "./scripts/backup.sh",
     "health-check": "node monitoring/health-checks/health-check.js",
@@ -80,7 +79,6 @@
     "zod": "3.25.67"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0",
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
     "@types/pg": "^8.11.10",
