@@ -5,7 +5,6 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "dev:neon": "cross-env NODE_ENV=development next dev",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "start": "next start",
@@ -18,7 +17,6 @@
     "backup": "./scripts/backup.sh",
     "health-check": "node monitoring/health-checks/health-check.js",
     "setup:dev-db": "./scripts/setup-dev-database.sh",
-    "test:neon": "node scripts/test-neon-connection.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
     "postinstall": "next telemetry disable"
