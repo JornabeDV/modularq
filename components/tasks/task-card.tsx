@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Clock, Calendar, MoreHorizontal, Play, Pause, CheckCircle } from "lucide-react"
-import type { Task } from "@/lib/types"
+import type { Task, ProjectTask } from "@/lib/types"
 
 interface TaskCardProps {
-  task: Task
-  onStatusChange?: (taskId: string, newStatus: Task["status"]) => void
+  task: ProjectTask
+  onStatusChange?: (taskId: string, newStatus: ProjectTask["status"]) => void
 }
 
 export function TaskCard({ task, onStatusChange }: TaskCardProps) {
@@ -21,27 +21,12 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
     switch (status) {
       case "completed":
         return "default"
-      case "in-progress":
+      case "in_progress":
         return "default"
       case "pending":
         return "secondary"
-      case "blocked":
+      case "cancelled":
         return "destructive"
-      default:
-        return "secondary"
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "critical":
-        return "destructive"
-      case "high":
-        return "destructive"
-      case "medium":
-        return "default"
-      case "low":
-        return "secondary"
       default:
         return "secondary"
     }
@@ -51,18 +36,18 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
     switch (status) {
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "in-progress":
+      case "in_progress":
         return <Play className="h-4 w-4 text-blue-500" />
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />
-      case "blocked":
+      case "cancelled":
         return <Pause className="h-4 w-4 text-red-500" />
       default:
         return <Clock className="h-4 w-4" />
     }
   }
 
-  const progressPercentage = task.estimatedHours > 0 ? Math.min((task.actualHours / task.estimatedHours) * 100, 100) : 0
+  const progressPercentage = (task.task?.estimatedHours || 0) > 0 ? Math.min(((task.actualHours || 0) / (task.task?.estimatedHours || 1)) * 100, 100) : 0
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha"
@@ -80,14 +65,11 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-2">
               {getStatusIcon(task.status)}
-              <h3 className="font-semibold text-sm">{task.title}</h3>
+              <h3 className="font-semibold text-sm">{task.task?.title}</h3>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={getStatusColor(task.status)} className="text-xs">
                 {task.status}
-              </Badge>
-              <Badge variant={getPriorityColor(task.priority)} className="text-xs">
-                {task.priority}
               </Badge>
             </div>
           </div>
@@ -98,13 +80,15 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "in-progress")}>
+              <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "in_progress")}>
                 Iniciar tarea
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "completed")}>
-                Marcar completada
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "blocked")}>Marcar bloqueada</DropdownMenuItem>
+              {task.status === "in_progress" && (
+                <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "completed")}>
+                  Marcar completada
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "cancelled")}>Marcar cancelada</DropdownMenuItem>
               <DropdownMenuItem>Editar</DropdownMenuItem>
               <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
             </DropdownMenuContent>
@@ -113,7 +97,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">{task.description}</p>
+        <p className="text-sm text-muted-foreground">{task.task?.description || 'Sin descripción'}</p>
 
         {/* Progress */}
         <div className="space-y-2">
@@ -123,8 +107,8 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           </div>
           <Progress value={progressPercentage} className="h-2" />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{task.actualHours}h trabajadas</span>
-            <span>{task.estimatedHours}h estimadas</span>
+            <span>{task.actualHours || 0}h trabajadas</span>
+            <span>{task.task?.estimatedHours || 0}h estimadas</span>
           </div>
         </div>
 
@@ -138,7 +122,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           </div>
 
           <div className="text-muted-foreground">
-            <span className="font-medium">Proyecto:</span> {project?.name || "Desconocido"}
+            <span className="font-medium">Proyecto:</span> Desconocido
           </div>
         </div>
       </CardContent>

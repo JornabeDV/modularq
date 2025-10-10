@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { config } from './config'
 
-export const supabase = createClient(config.supabase.url, config.supabase.anonKey)
+export const supabase = createClient(
+  config.supabase.url || '',
+  config.supabase.anonKey || ''
+)
 
 // Tipos de la base de datos
 export interface Database {
@@ -86,7 +89,7 @@ export interface Database {
           project_id: string
           title: string
           description: string | null
-          status: 'pending' | 'in-progress' | 'completed' | 'blocked'
+          status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'critical'
           assigned_to: string | null
           estimated_hours: number
@@ -102,7 +105,7 @@ export interface Database {
           project_id: string
           title: string
           description?: string | null
-          status: 'pending' | 'in-progress' | 'completed' | 'blocked'
+          status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'critical'
           assigned_to?: string | null
           estimated_hours: number

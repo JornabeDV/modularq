@@ -79,7 +79,7 @@ export interface TaskCollaborator {
 // Para compatibilidad con componentes existentes
 export interface TaskWithProject extends Task {
   projectId: string
-  status: 'pending' | 'in-progress' | 'completed' | 'blocked'
+  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
   assignedTo?: string
   assignedUsers?: Array<{ id: string; name: string; role: string }>
   actualHours: number

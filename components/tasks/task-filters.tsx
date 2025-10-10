@@ -58,9 +58,9 @@ export function TaskFilters({
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
             <SelectItem value="pending">Pendiente</SelectItem>
-            <SelectItem value="in-progress">En progreso</SelectItem>
+            <SelectItem value="in_progress">En progreso</SelectItem>
             <SelectItem value="completed">Completada</SelectItem>
-            <SelectItem value="blocked">Bloqueada</SelectItem>
+            <SelectItem value="cancelled">Cancelada</SelectItem>
           </SelectContent>
         </Select>
 
