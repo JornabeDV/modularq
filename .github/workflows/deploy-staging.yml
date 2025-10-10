@@ -1,19 +1,18 @@
-name: Deploy to Staging
+name: Validate Before Production
 
 on:
   push:
     branches: [ dev ]
-  workflow_dispatch: # Permite deploy manual
+  workflow_dispatch: # Permite validación manual
 
 env:
   NODE_VERSION: '18'
   PNPM_VERSION: '8'
 
 jobs:
-  deploy-staging:
-    name: Deploy to Staging
+  validate:
+    name: Validate Code
     runs-on: ubuntu-latest
-    environment: staging # Requiere aprobación manual si está configurado
     
     steps:
       - name: Checkout code
@@ -35,38 +34,28 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Build for staging
-        run: pnpm build:staging
+      - name: Run type checking
+        run: pnpm type-check
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Test build
+        run: pnpm build
         env:
-          NODE_ENV: staging
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
 
-      - name: Deploy to Vercel (Staging)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--env NODE_ENV=staging'
-          working-directory: ./
-
-      - name: Run health check
-        run: |
-          echo "🔍 Running health check on staging..."
-          # Aquí puedes agregar un health check específico para staging
-          # curl -f ${{ secrets.STAGING_URL }}/api/health || exit 1
-
-      - name: Notify deployment success
+      - name: Notify validation success
         if: success()
         run: |
-          echo "✅ Staging deployment successful!"
-          echo "🌐 Staging URL: ${{ secrets.STAGING_URL }}"
+          echo "✅ Code validation successful!"
+          echo "🚀 Ready for production deployment!"
 
-      - name: Notify deployment failure
+      - name: Notify validation failure
         if: failure()
         run: |
-          echo "❌ Staging deployment failed!"
-          echo "Please check the logs and fix the issues before merging to main."
+          echo "❌ Code validation failed!"
+          echo "Please fix the issues before merging to main."
 
