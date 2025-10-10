@@ -28,7 +28,7 @@ export function useProjectOperarios(projectId?: string) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Cargar operarios asignados al proyecto
+  // Cargar operarios de proyectos
   const fetchProjectOperarios = async (filterProjectId?: string) => {
     try {
       setLoading(true)
@@ -45,30 +45,28 @@ export function useProjectOperarios(projectId?: string) {
             role
           )
         `)
-        .order('assigned_at', { ascending: false })
 
       if (filterProjectId) {
         query = query.eq('project_id', filterProjectId)
       }
 
-      const { data, error: fetchError } = await query
+      const { data, error: fetchError } = await query.order('assigned_at', { ascending: false })
 
       if (fetchError) {
         throw fetchError
       }
 
-      // Convertir datos de Supabase al formato ProjectOperario
-      const formattedOperarios: ProjectOperario[] = (data || []).map(operario => ({
-        id: operario.id,
-        projectId: operario.project_id,
-        userId: operario.user_id,
-        assignedAt: operario.assigned_at,
-        assignedBy: operario.assigned_by,
-        user: operario.user ? {
-          id: operario.user.id,
-          name: operario.user.name,
-          email: operario.user.email,
-          role: operario.user.role,
+      const formattedOperarios: ProjectOperario[] = (data || []).map(row => ({
+        id: row.id,
+        projectId: row.project_id,
+        userId: row.user_id,
+        assignedAt: row.assigned_at,
+        assignedBy: row.assigned_by,
+        user: row.user ? {
+          id: row.user.id,
+          name: row.user.name,
+          email: row.user.email,
+          role: row.user.role,
         } : undefined
       }))
 
@@ -81,10 +79,12 @@ export function useProjectOperarios(projectId?: string) {
     }
   }
 
-  // Asignar operario al proyecto
-  const assignOperarioToProject = async (assignmentData: CreateProjectOperarioData) => {
+  // Asignar operario a proyecto
+  const assignOperarioToProject = async (assignmentData: CreateProjectOperarioData): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { data, error } = await supabase
+      setError(null)
+      
+      const { data, error: insertError } = await supabase
         .from('project_operarios')
         .insert({
           project_id: assignmentData.projectId,
@@ -102,8 +102,8 @@ export function useProjectOperarios(projectId?: string) {
         `)
         .single()
 
-      if (error) {
-        throw error
+      if (insertError) {
+        throw insertError
       }
 
       const newOperario: ProjectOperario = {
@@ -124,33 +124,33 @@ export function useProjectOperarios(projectId?: string) {
       return { success: true }
     } catch (err) {
       console.error('Error assigning operario to project:', err)
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Error al asignar operario al proyecto' 
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Error al asignar operario al proyecto'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
     }
   }
 
-  // Desasignar operario del proyecto
-  const unassignOperarioFromProject = async (assignmentId: string) => {
+  // Desasignar operario de proyecto
+  const unassignOperarioFromProject = async (assignmentId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { error } = await supabase
+      setError(null)
+      
+      const { error: deleteError } = await supabase
         .from('project_operarios')
         .delete()
         .eq('id', assignmentId)
 
-      if (error) {
-        throw error
+      if (deleteError) {
+        throw deleteError
       }
 
       setProjectOperarios(prev => prev.filter(operario => operario.id !== assignmentId))
       return { success: true }
     } catch (err) {
       console.error('Error unassigning operario from project:', err)
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Error al desasignar operario del proyecto' 
-      }
+      const errorMessage = err instanceof Error ? err.message : 'Error al desasignar operario del proyecto'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
     }
   }
 

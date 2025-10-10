@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
-// Detectar entorno
-const isDevelopment = process.env.NODE_ENV === 'development'
-
 export interface UserProfile {
   id?: string
   email: string
@@ -35,26 +32,13 @@ export function useUsers() {
       setLoading(true)
       setError(null)
 
-      if (isDevelopment) {
-        // Usar Neon en desarrollo
-        const response = await fetch('/api/neon/users')
-        const result = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Error al obtener usuarios')
-        }
-        
-        setUsers(result.data || [])
-      } else {
-        // Usar Supabase en producción
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false })
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-        if (error) throw error
-        setUsers(data || [])
-      }
+      if (error) throw error
+      setUsers(data || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar usuarios')
     } finally {
@@ -68,72 +52,51 @@ export function useUsers() {
       setLoading(true)
       setError(null)
       
-      if (isDevelopment) {
-        // Usar Neon en desarrollo
-        const response = await fetch('/api/neon/users', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData),
+      // Generar email automáticamente basado en el nombre
+      const generateEmail = (name: string) => {
+        const cleanName = name.toLowerCase()
+          .replace(/[^a-z\s]/g, '') // Solo letras y espacios
+          .replace(/\s+/g, '.') // Espacios a puntos
+          .substring(0, 15) // Máximo 15 caracteres
+        
+        return `${cleanName}@modularq.local`
+      }
+      
+      const generatedEmail = generateEmail(userData.name)
+      
+      // Crear usuario directamente en la tabla users con timeout
+      const createPromise = supabase
+        .from('users')
+        .insert({
+          email: generatedEmail,
+          name: userData.name,
+          role: userData.role,
+          password: userData.password, // Almacenamos la contraseña temporalmente
+          total_hours: 0,
+          efficiency: 100
         })
-        
-        const result = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Error al crear usuario')
-        }
-        
-        setUsers(prev => [...prev, result.data])
-        return result.data
-      } else {
-        // Usar Supabase en producción
-        // Generar email automáticamente basado en el nombre
-        const generateEmail = (name: string) => {
-          const cleanName = name.toLowerCase()
-            .replace(/[^a-z\s]/g, '') // Solo letras y espacios
-            .replace(/\s+/g, '.') // Espacios a puntos
-            .substring(0, 15) // Máximo 15 caracteres
-          
-          return `${cleanName}@modularq.local`
-        }
-        
-        const generatedEmail = generateEmail(userData.name)
-        
-        // Crear usuario directamente en la tabla users con timeout
-        const createPromise = supabase
-          .from('users')
-          .insert({
-            email: generatedEmail,
-            name: userData.name,
-            role: userData.role,
-            password: userData.password, // Almacenamos la contraseña temporalmente
-            total_hours: 0,
-            efficiency: 100
-          })
-          .select()
-        .single()
+        .select()
+      .single()
 
-        // Agregar timeout de 10 segundos
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout: La operación tardó demasiado')), 10000)
-        )
+      // Agregar timeout de 10 segundos
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La operación tardó demasiado')), 10000)
+      )
 
-        const { data: profileData, error: profileError } = await Promise.race([
-          createPromise,
-          timeoutPromise
-        ]) as any
+      const { data: profileData, error: profileError } = await Promise.race([
+        createPromise,
+        timeoutPromise
+      ]) as any
 
-        if (profileError) throw profileError
+      if (profileError) throw profileError
 
-        // Actualizar lista de usuarios
-        await fetchUsers()
-        
-        return { 
-          success: true, 
-          user: profileData,
-          message: `Usuario ${userData.name} creado exitosamente. Contraseña: ${userData.password}`
-        }
+      // Actualizar lista de usuarios
+      await fetchUsers()
+      
+      return { 
+        success: true, 
+        user: profileData,
+        message: `Usuario ${userData.name} creado exitosamente. Contraseña: ${userData.password}`
       }
     } catch (err) {
       console.error('Error en createUser:', err)
@@ -150,40 +113,19 @@ export function useUsers() {
       setLoading(true)
       setError(null)
       
-      if (isDevelopment) {
-        // Usar Neon en desarrollo
-        const response = await fetch(`/api/neon/users/${userId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updates),
-        })
-        
-        const result = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Error al actualizar usuario')
-        }
-        
-        setUsers(prev => prev.map(user => user.id === userId ? result.data : user))
-        return { success: true, user: result.data }
-      } else {
-        // Usar Supabase en producción
-        const { data, error } = await supabase
-          .from('users')
-          .update(updates)
-          .eq('id', userId)
-          .select()
-          .single()
+      const { data, error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single()
 
-        if (error) throw error
+      if (error) throw error
 
-        // Actualizar lista de usuarios
-        await fetchUsers()
-        
-        return { success: true, user: data }
-      }
+      // Actualizar lista de usuarios
+      await fetchUsers()
+      
+      return { success: true, user: data }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al actualizar usuario')
       return { success: false, error: err instanceof Error ? err.message : 'Error desconocido' }
@@ -203,37 +145,20 @@ export function useUsers() {
         throw new Error('No puedes eliminarte a ti mismo')
       }
       
-      if (isDevelopment) {
-        // Usar Neon en desarrollo
-        const response = await fetch(`/api/neon/users/${userId}`, {
-          method: 'DELETE',
-        })
-        
-        const result = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Error al eliminar usuario')
-        }
-        
-        setUsers(prev => prev.filter(user => user.id !== userId))
-        return { success: true }
-      } else {
-        // Usar Supabase en producción
-        const { error } = await supabase
-          .from('users')
-          .delete()
-          .eq('id', userId)
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId)
 
-        if (error) {
-          console.error('Error eliminando usuario:', error)
-          throw error
-        }
-
-        // Actualizar lista de usuarios
-        await fetchUsers()
-        
-        return { success: true }
+      if (error) {
+        console.error('Error eliminando usuario:', error)
+        throw error
       }
+
+      // Actualizar lista de usuarios
+      await fetchUsers()
+      
+      return { success: true }
     } catch (err) {
       console.error('Error en deleteUser:', err)
       setError(err instanceof Error ? err.message : 'Error al eliminar usuario')
