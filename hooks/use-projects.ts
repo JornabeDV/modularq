@@ -2,24 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Project, ProjectTask, ProjectOperario } from '@/lib/types'
-
-// Detectar entorno
-const isDevelopment = process.env.NODE_ENV === 'development'
+import type { Project } from '@/lib/types'
 
 export interface CreateProjectData {
   name: string
-  description: string
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled'
+  description?: string
+  status?: 'planning' | 'active' | 'paused' | 'completed'
   startDate?: string
   endDate?: string
-  budget?: number
   supervisor?: string
   createdBy: string
-  tasks?: string[] // Array de IDs de tareas
+  tasks?: string[]
 }
 
-export interface UpdateProjectData extends Partial<CreateProjectData> {}
+export interface UpdateProjectData {
+  name?: string
+  description?: string
+  status?: 'planning' | 'active' | 'paused' | 'completed'
+  startDate?: string
+  endDate?: string
+  supervisor?: string
+  tasks?: string[]
+}
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -32,94 +36,63 @@ export function useProjects() {
       setLoading(true)
       setError(null)
       
-      if (isDevelopment) {
-        // Usar Neon en desarrollo
-        const response = await fetch('/api/neon/projects')
-        const result = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Error al obtener proyectos')
-        }
-        
-        setProjects(result.data || [])
-      } else {
-        // Usar Supabase en producción
-        const { data, error: fetchError } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            project_tasks (
+      const { data, error: fetchError } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          project_tasks (
+            id,
+            project_id,
+            task_id,
+            status,
+            actual_hours,
+            assigned_to,
+            start_date,
+            end_date,
+            progress_percentage,
+            notes,
+            assigned_at,
+            assigned_by,
+            created_at,
+            updated_at,
+            task:task_id (
               id,
-              project_id,
-              task_id,
-              status,
-              actual_hours,
-              assigned_to,
-              start_date,
-              end_date,
-              progress_percentage,
-              notes,
-              assigned_at,
-              assigned_by,
+              title,
+              description,
+              category,
+              type,
+              estimated_hours,
+              created_by,
               created_at,
-              updated_at,
-              task:task_id (
-                id,
-                title,
-                description,
-                category,
-                type,
-                estimated_hours,
-                created_by,
-                created_at,
-                updated_at
-              ),
-              assigned_user:assigned_to (
-                id,
-                name,
-                role
-              ),
-              collaborators:task_collaborators (
-                id,
-                project_task_id,
-                user_id,
-                added_by,
-                added_at,
-                created_at,
-                updated_at,
-                user:user_id (
-                  id,
-                  name,
-                  role
-                ),
-                added_by_user:added_by (
-                  id,
-                  name,
-                  role
-                )
-              )
+              updated_at
             ),
-            project_operarios (
+            assigned_user:assigned_to (
               id,
-              project_id,
-              user_id,
-              assigned_at,
-              assigned_by,
-              user:user_id (
-                id,
-                name,
-                role
-              )
+              name,
+              role
             )
-          `)
-          .order('created_at', { ascending: false })
+          ),
+          project_operarios (
+            id,
+            project_id,
+            user_id,
+            assigned_at,
+            assigned_by,
+            user:user_id (
+              id,
+              name,
+              role
+            )
+          )
+        `)
+        .order('created_at', { ascending: false })
 
-        if (fetchError) {
-          throw fetchError
-        }
+      if (fetchError) {
+        throw fetchError
+      }
 
-        // Convertir datos de Supabase al formato Project
-        const formattedProjects: Project[] = (data || []).map(project => ({
+      // Convertir datos de Supabase al formato Project
+      const formattedProjects: Project[] = (data || []).map(project => ({
         id: project.id,
         name: project.name,
         description: project.description || '',
@@ -196,8 +169,7 @@ export function useProjects() {
         }))
       }))
 
-        setProjects(formattedProjects)
-      }
+      setProjects(formattedProjects)
     } catch (err) {
       console.error('Error fetching projects:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar proyectos')
@@ -207,49 +179,32 @@ export function useProjects() {
   }
 
   // Crear nuevo proyecto
-  const createProject = async (projectData: CreateProjectData): Promise<{ success: boolean; error?: string; projectId?: string }> => {
+  const createProject = async (projectData: CreateProjectData): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       
-      // Crear el proyecto
-      const { data: projectResult, error: insertError } = await supabase
+      const { data, error: createError } = await supabase
         .from('projects')
         .insert({
           name: projectData.name,
-          description: projectData.description,
-          status: projectData.status,
+          description: projectData.description || '',
+          status: projectData.status || 'planning',
           start_date: projectData.startDate || null,
           end_date: projectData.endDate || null,
-          supervisor: projectData.supervisor,
+          supervisor: projectData.supervisor || null,
           created_by: projectData.createdBy
         })
         .select()
         .single()
 
-      if (insertError) {
-        throw insertError
+      if (createError) {
+        throw createError
       }
 
-      // Obtener todas las tareas estándar
-      const { data: standardTasks, error: standardTasksError } = await supabase
-        .from('tasks')
-        .select('id')
-        .eq('type', 'standard')
-
-      if (standardTasksError) {
-        console.error('Error fetching standard tasks:', standardTasksError)
-      }
-
-      // Combinar tareas estándar con tareas personalizadas proporcionadas
-      const allTaskIds = [
-        ...(standardTasks?.map(task => task.id) || []),
-        ...(projectData.tasks || [])
-      ]
-
-      // Asignar todas las tareas al proyecto
-      if (allTaskIds.length > 0) {
-        const projectTasks = allTaskIds.map(taskId => ({
-          project_id: projectResult.id,
+      // Manejar asignaciones de tareas si se proporcionan
+      if (projectData.tasks && projectData.tasks.length > 0) {
+        const projectTasks = projectData.tasks.map(taskId => ({
+          project_id: data.id,
           task_id: taskId
         }))
 
@@ -258,15 +213,14 @@ export function useProjects() {
           .insert(projectTasks)
 
         if (taskError) {
-          console.error('Error assigning tasks to project:', taskError)
-          // No lanzamos error aquí, el proyecto ya se creó
+          console.error('Error creating task assignments:', taskError)
         }
       }
 
       // Actualizar estado local
       await fetchProjects()
       
-      return { success: true, projectId: projectResult.id }
+      return { success: true }
     } catch (err) {
       console.error('Error creating project:', err)
       const errorMessage = err instanceof Error ? err.message : 'Error al crear proyecto'
@@ -344,8 +298,8 @@ export function useProjects() {
   const deleteProject = async (projectId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
-      
-      // Eliminar asignaciones de tareas primero
+
+      // Eliminar project_tasks primero
       const { error: taskError } = await supabase
         .from('project_tasks')
         .delete()
@@ -355,14 +309,24 @@ export function useProjects() {
         console.error('Error deleting project tasks:', taskError)
       }
 
+      // Eliminar project_operarios
+      const { error: operarioError } = await supabase
+        .from('project_operarios')
+        .delete()
+        .eq('project_id', projectId)
+
+      if (operarioError) {
+        console.error('Error deleting project operarios:', operarioError)
+      }
+
       // Eliminar el proyecto
-      const { error: deleteError } = await supabase
+      const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId)
 
-      if (deleteError) {
-        throw deleteError
+      if (error) {
+        throw error
       }
 
       // Actualizar estado local
@@ -377,7 +341,7 @@ export function useProjects() {
     }
   }
 
-  // Cargar proyectos al montar el componente
+  // Cargar datos al montar el componente
   useEffect(() => {
     fetchProjects()
   }, [])

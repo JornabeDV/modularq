@@ -158,38 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false
       }
 
-      // En desarrollo, usar una API route para consultar Neon
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          const response = await fetch('/api/auth/login-neon', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: name.trim(), password })
-          })
-
-          if (!response.ok) {
-            console.error('Login error: Usuario no encontrado o credenciales incorrectas')
-            setIsLoading(false)
-            return false
-          }
-
-          const userData = await response.json()
-          const mockUser = createMockUser(userData)
-
-          setUser(mockUser)
-          setUserProfile(userData)
-          setIsLoading(false)
-          return true
-        } catch (apiError) {
-          console.error('API error during login:', apiError)
-          setIsLoading(false)
-          return false
-        }
-      }
-
-      // En producción, usar Supabase
+      // Usar Supabase para autenticación
       const { data: allUsers, error: fetchError } = await supabase
         .from('users')
         .select('*')

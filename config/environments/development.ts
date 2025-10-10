@@ -7,9 +7,9 @@ export const developmentConfig = {
     logLevel: 'debug' as const
   },
   supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL_DEV || process.env.NEXT_PUBLIC_SUPABASE_URL,
+    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_DEV || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY_DEV || process.env.SUPABASE_SERVICE_ROLE_KEY
   },
   features: {
     enableAnalytics: false,

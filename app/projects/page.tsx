@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Calendar, Users, DollarSign, MoreHorizontal, FolderOpen, Eye } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useProjects } from "@/hooks/use-projects"
-import { useProjectOperarios } from "@/hooks/use-project-operarios"
+import { useUserProjects } from "@/hooks/use-user-projects"
 import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 
@@ -23,8 +22,7 @@ export default function ProjectsPage() {
 
 function ProjectsContent() {
   const { user } = useAuth()
-  const { projects, loading, error } = useProjects()
-  const { projectOperarios } = useProjectOperarios()
+  const { projects, loading, error } = useUserProjects(user?.id)
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -65,14 +63,8 @@ function ProjectsContent() {
     })
   }
 
-  // Filtrar proyectos activos donde el operario está asignado
-  const userAssignedProjectIds = projectOperarios
-    .filter(po => po.userId === user?.id)
-    .map(po => po.projectId)
-  
-  const activeProjects = projects.filter(p => 
-    p.status === "active" && userAssignedProjectIds.includes(p.id)
-  )
+  // Filtrar proyectos activos (ya vienen filtrados por usuario)
+  const activeProjects = projects.filter(p => p.status === "active")
   
 
   if (loading) {
