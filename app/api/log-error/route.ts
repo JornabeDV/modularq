@@ -2,9 +2,16 @@
 // app/api/log-error/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyApiAuth, createUnauthorizedResponse } from '@/lib/api-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticación (cualquier usuario autenticado puede loggear errores)
+    const authResult = await verifyApiAuth(request);
+    if (!authResult.isAuthenticated) {
+      return createUnauthorizedResponse(authResult.error);
+    }
+
     const body = await request.json();
     const { error, stack, url, timestamp, userId, userAgent } = body;
 
