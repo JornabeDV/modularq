@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Task } from '@/lib/types'
 
+// Detectar entorno
+const isDevelopment = process.env.NODE_ENV === 'development'
+
 export interface CreateTaskData {
   title: string
   description: string
@@ -20,36 +23,49 @@ export function useTasks() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Cargar tareas desde Supabase
+  // Cargar tareas
   const fetchTasks = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const { data, error: fetchError } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('task_order', { ascending: true })
+      if (isDevelopment) {
+        // Usar Neon en desarrollo
+        const response = await fetch('/api/neon/tasks')
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Error al obtener tareas')
+        }
+        
+        setTasks(result.data || [])
+      } else {
+        // Usar Supabase en producción
+        const { data, error: fetchError } = await supabase
+          .from('tasks')
+          .select('*')
+          .order('task_order', { ascending: true })
 
-      if (fetchError) {
-        throw fetchError
+        if (fetchError) {
+          throw fetchError
+        }
+
+        // Convertir datos de Supabase al formato Task
+        const formattedTasks: Task[] = (data || []).map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || '',
+          category: task.category || '',
+          type: task.type || 'custom',
+          estimatedHours: parseFloat(task.estimated_hours) || 0,
+          taskOrder: task.task_order || 0,
+          createdBy: task.created_by || '',
+          createdAt: task.created_at,
+          updatedAt: task.updated_at
+        }))
+
+        setTasks(formattedTasks)
       }
-
-      // Convertir datos de Supabase al formato Task
-      const formattedTasks: Task[] = (data || []).map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description || '',
-        category: task.category || '',
-        type: task.type || 'custom',
-        estimatedHours: parseFloat(task.estimated_hours) || 0,
-        taskOrder: task.task_order || 0,
-        createdBy: task.created_by || '',
-        createdAt: task.created_at,
-        updatedAt: task.updated_at
-      }))
-
-      setTasks(formattedTasks)
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar tareas')
@@ -63,38 +79,61 @@ export function useTasks() {
     try {
       setError(null)
       
-      // Obtener el siguiente orden
-      const { data: maxOrderData } = await supabase
-        .from('tasks')
-        .select('task_order')
-        .order('task_order', { ascending: false })
-        .limit(1)
-        .single()
-      
-      const nextOrder = (maxOrderData?.task_order || 0) + 1
-      
-      const { data: taskData_result, error: insertError } = await supabase
-        .from('tasks')
-        .insert({
-          title: taskData.title,
-          description: taskData.description,
-          estimated_hours: taskData.estimatedHours,
-          category: taskData.category,
-          type: taskData.type,
-          task_order: nextOrder,
-          created_by: taskData.createdBy
+      if (isDevelopment) {
+        // Usar Neon en desarrollo
+        const response = await fetch('/api/neon/tasks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(taskData),
         })
-        .select()
-        .single()
+        
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Error al crear tarea')
+        }
+        
+        // Actualizar estado local
+        await fetchTasks()
+        
+        return { success: true, taskId: result.data.id }
+      } else {
+        // Usar Supabase en producción
+        // Obtener el siguiente orden
+        const { data: maxOrderData } = await supabase
+          .from('tasks')
+          .select('task_order')
+          .order('task_order', { ascending: false })
+          .limit(1)
+          .single()
+        
+        const nextOrder = (maxOrderData?.task_order || 0) + 1
+        
+        const { data: taskData_result, error: insertError } = await supabase
+          .from('tasks')
+          .insert({
+            title: taskData.title,
+            description: taskData.description,
+            estimated_hours: taskData.estimatedHours,
+            category: taskData.category,
+            type: taskData.type,
+            task_order: nextOrder,
+            created_by: taskData.createdBy
+          })
+          .select()
+          .single()
 
-      if (insertError) {
-        throw insertError
+        if (insertError) {
+          throw insertError
+        }
+
+        // Actualizar estado local
+        await fetchTasks()
+        
+        return { success: true, taskId: taskData_result.id }
       }
-
-      // Actualizar estado local
-      await fetchTasks()
-      
-      return { success: true, taskId: taskData_result.id }
     } catch (err) {
       console.error('Error creating task:', err)
       const errorMessage = err instanceof Error ? err.message : 'Error al crear tarea'

@@ -1,0 +1,25 @@
+{
+  "name": "modularq-pre-commit",
+  "version": "1.0.0",
+  "description": "Pre-commit hooks for ModularQ project",
+  "scripts": {
+    "pre-commit": "lint-staged",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "tsc --noEmit"
+    ]
+  }
+}

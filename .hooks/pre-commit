@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Pre-commit hook para ModularQ
+# Este script se ejecuta automáticamente antes de cada commit
+
+echo "🔍 Running pre-commit validations..."
+
+# Colores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Función para mostrar errores
+show_error() {
+    echo -e "${RED}❌ $1${NC}"
+    exit 1
+}
+
+# Función para mostrar éxito
+show_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+# Función para mostrar advertencias
+show_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+# Verificar que estamos en el directorio correcto
+if [ ! -f "package.json" ]; then
+    show_error "No se encontró package.json. Ejecuta este script desde la raíz del proyecto."
+fi
+
+# 1. Verificar que no hay archivos sin agregar al staging
+echo "📁 Checking for unstaged files..."
+if ! git diff --quiet; then
+    show_warning "Hay archivos modificados que no están en staging. Considera agregarlos con 'git add'"
+fi
+
+# 2. Ejecutar type checking
+echo "📝 Running TypeScript type checking..."
+if ! pnpm type-check; then
+    show_error "TypeScript type checking failed. Fix the errors before committing."
+fi
+show_success "TypeScript type checking passed"
+
+# 3. Ejecutar linting
+echo "🔍 Running ESLint..."
+if ! pnpm lint; then
+    show_error "ESLint found issues. Fix them before committing."
+fi
+show_success "ESLint passed"
+
+# 4. Ejecutar tests rápidos (solo los que no requieren setup completo)
+echo "🧪 Running quick tests..."
+if ! pnpm test --passWithNoTests --watchAll=false; then
+    show_error "Tests failed. Fix the issues before committing."
+fi
+show_success "Tests passed"
+
+# 5. Verificar que el build funciona
+echo "🔨 Testing build..."
+if ! pnpm build; then
+    show_error "Build failed. Fix the issues before committing."
+fi
+show_success "Build test passed"
+
+# 6. Verificar tamaño del bundle (opcional)
+echo "📊 Checking bundle size..."
+if [ -f ".next/analyze" ]; then
+    BUNDLE_SIZE=$(du -sh .next | cut -f1)
+    echo "Bundle size: $BUNDLE_SIZE"
+fi
+
+# 7. Verificar que no hay secrets en el código
+echo "🔐 Checking for secrets..."
+if grep -r "password\|secret\|key\|token" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" . | grep -v node_modules | grep -v ".git" | grep -v "test" | grep -v "example"; then
+    show_warning "Posibles secrets encontrados en el código. Revisa antes de hacer commit."
+fi
+
+echo ""
+show_success "🎉 Pre-commit validations passed! Ready to commit."
+echo ""
+echo "💡 Tips:"
+echo "   - Si falla algo, usa 'git commit --no-verify' para saltar las validaciones (NO recomendado)"
+echo "   - Para hacer commit rápido: 'git commit -m \"mensaje\"'"
+echo "   - Para hacer commit con descripción: 'git commit' (abrirá el editor)"
+echo ""
