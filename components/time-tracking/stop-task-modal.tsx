@@ -16,7 +16,6 @@ interface StopTaskModalProps {
 }
 
 const stopReasons = [
-  { value: 'completed', label: 'Completé la tarea' },
   { value: 'break', label: 'Necesito un descanso' },
   { value: 'other_task', label: 'Necesito hacer otra tarea' },
   { value: 'meeting', label: 'Tengo una reunión' },
