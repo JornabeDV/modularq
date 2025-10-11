@@ -47,6 +47,11 @@ enum TaskPriority {
   critical
 }
 
+enum TaskType {
+  standard
+  custom
+}
+
 enum EntityType {
   project
   task
@@ -98,7 +103,6 @@ model Project {
 
   // Relations
   supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id])
-  tasks          Task[]
   time_entries   TimeEntry[]
   project_operarios ProjectOperario[]
 
@@ -107,23 +111,18 @@ model Project {
 
 model Task {
   id               String       @id @default(cuid())
-  project_id       String
   title            String
   description      String?
-  status           TaskStatus
-  priority         TaskPriority
-  assigned_to      String?
+  category         String?
+  type             TaskType
   estimated_hours Float
-  actual_hours     Float        @default(0)
-  start_date       DateTime?
-  end_date         DateTime?
-  dependencies     String[]     @default([])
+  task_order       Int?
+  created_by       String?
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
 
   // Relations
-  project      Project      @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  assigned_user User?       @relation("TaskAssignee", fields: [assigned_to], references: [id])
+  assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
   time_entries TimeEntry[]
 
   @@map("tasks")

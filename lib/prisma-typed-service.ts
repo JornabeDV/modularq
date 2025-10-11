@@ -203,6 +203,16 @@ export class PrismaTypedService {
     type: 'standard' | 'custom'
     created_by?: string
   }): Promise<Task> {
+    // Obtener el siguiente orden
+    const { data: maxOrderData } = await supabase
+      .from('tasks')
+      .select('task_order')
+      .order('task_order', { ascending: false })
+      .limit(1)
+      .single()
+    
+    const nextOrder = (maxOrderData?.task_order || 0) + 1
+
     const { data, error } = await supabase
       .from('tasks')
       .insert({
@@ -211,6 +221,7 @@ export class PrismaTypedService {
         estimated_hours: taskData.estimated_hours,
         category: taskData.category,
         type: taskData.type,
+        task_order: nextOrder,
         created_by: taskData.created_by
       })
       .select()
@@ -218,6 +229,88 @@ export class PrismaTypedService {
     
     if (error) throw error
     return data as Task
+  }
+
+  static async updateTask(id: string, taskData: {
+    title?: string
+    description?: string
+    estimated_hours?: number
+    category?: string
+    type?: 'standard' | 'custom'
+    task_order?: number
+  }): Promise<Task> {
+    const updateData: any = {}
+    
+    if (taskData.title !== undefined) updateData.title = taskData.title
+    if (taskData.description !== undefined) updateData.description = taskData.description
+    if (taskData.estimated_hours !== undefined) updateData.estimated_hours = taskData.estimated_hours
+    if (taskData.category !== undefined) updateData.category = taskData.category
+    if (taskData.type !== undefined) updateData.type = taskData.type
+    if (taskData.task_order !== undefined) updateData.task_order = taskData.task_order
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data as Task
+  }
+
+  static async deleteTask(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  static async reorderTasks(taskOrders: { id: string; task_order: number }[]): Promise<void> {
+    // Actualizar cada tarea con su nuevo orden
+    const updatePromises = taskOrders.map(({ id, task_order }) =>
+      supabase
+        .from('tasks')
+        .update({ task_order })
+        .eq('id', id)
+    )
+    
+    const results = await Promise.all(updatePromises)
+    
+    // Verificar si alguna actualización falló
+    const hasErrors = results.some(result => result.error)
+    if (hasErrors) {
+      throw new Error('Error al actualizar el orden de las tareas')
+    }
+  }
+
+  // Obtener estadísticas de operario
+  static async getOperarioStats(operarioId: string): Promise<{
+    total: number
+    completed: number
+    inProgress: number
+    pending: number
+  }> {
+    const { data: projectTasks, error: tasksError } = await supabase
+      .from('project_tasks')
+      .select('*')
+      .eq('assigned_to', operarioId)
+
+    if (tasksError) throw tasksError
+
+    const total = projectTasks?.length || 0
+    const completed = projectTasks?.filter(task => task.status === 'completed').length || 0
+    const inProgress = projectTasks?.filter(task => task.status === 'in_progress').length || 0
+    const pending = projectTasks?.filter(task => task.status === 'pending').length || 0
+
+    return {
+      total,
+      completed,
+      inProgress,
+      pending,
+    }
   }
 }
 
