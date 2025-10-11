@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkDatabaseConnection } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
@@ -40,6 +41,22 @@ export async function GET(request: NextRequest) {
       health.checks.database = {
         status: 'skipped',
         message: 'Database credentials not configured'
+      };
+    }
+
+    // Verificar conexión a Prisma
+    try {
+      const prismaConnected = await checkDatabaseConnection();
+      health.checks.prisma = {
+        status: prismaConnected ? 'healthy' : 'unhealthy',
+        responseTime: Date.now() - startTime,
+        message: prismaConnected ? 'Prisma connection successful' : 'Prisma connection failed'
+      };
+    } catch (error) {
+      health.checks.prisma = {
+        status: 'unhealthy',
+        responseTime: Date.now() - startTime,
+        error: error instanceof Error ? error.message : 'Unknown Prisma error'
       };
     }
 
