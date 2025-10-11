@@ -17,10 +17,10 @@ import { TaskForm } from './task-form'
 import { DeleteProjectButton } from './delete-project-button'
 import { ProjectTaskManager } from './project-task-manager'
 import { ProjectOperariosManager } from './project-operarios-manager'
-import { useProjects } from '@/hooks/use-projects'
-import { useProjectTasks } from '@/hooks/use-project-tasks'
-import { useTasks } from '@/hooks/use-tasks'
-import { useUsers } from '@/hooks/use-users'
+import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
+import { useProjectTasksPrisma } from '@/hooks/use-project-tasks-prisma'
+import { useTasksPrisma } from '@/hooks/use-tasks-prisma'
+import { useUsersPrisma } from '@/hooks/use-users-prisma'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import type { Project, ProjectTask, Task } from '@/lib/types'
@@ -32,10 +32,10 @@ interface ProjectDetailProps {
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { projects, loading: projectsLoading, error: projectsError, updateProject, deleteProject, refetch: refetchProjects } = useProjects()
-  const { projectTasks, loading: projectTasksLoading, createProjectTask, updateProjectTask, deleteProjectTask, updateTaskOrder, assignStandardTaskToProject } = useProjectTasks(projectId)
-  const { tasks: allTasks, createTask } = useTasks()
-  const { users } = useUsers()
+  const { projects, loading: projectsLoading, error: projectsError, updateProject, deleteProject, refetch: refetchProjects } = useProjectsPrisma()
+  const { projectTasks, loading: projectTasksLoading, createProjectTask, updateProjectTask, deleteProjectTask, updateTaskOrder, assignStandardTaskToProject } = useProjectTasksPrisma(projectId)
+  const { tasks: allTasks, createTask } = useTasksPrisma()
+  const { users } = useUsersPrisma()
   
   const [project, setProject] = useState<Project | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -70,7 +70,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     
     const result = await updateProject(project.id, { 
       status: 'active',
-      startDate: new Date().toISOString().split('T')[0] // Establecer fecha de inicio al activar
+      start_date: new Date() // Establecer fecha de inicio al activar
     })
     
     if (result.success) {
@@ -142,7 +142,17 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   }
 
   const handleUpdateTask = async (projectTaskId: string, taskData: Partial<ProjectTask>) => {
-    const result = await updateProjectTask(projectTaskId, taskData)
+    // Filtrar solo los campos que acepta el hook
+    const updateData: any = {}
+    if (taskData.status !== undefined) updateData.status = taskData.status
+    if (taskData.actualHours !== undefined) updateData.actualHours = taskData.actualHours
+    if (taskData.progressPercentage !== undefined) updateData.progressPercentage = taskData.progressPercentage
+    if (taskData.notes !== undefined) updateData.notes = taskData.notes
+    if (taskData.startDate !== undefined) updateData.startDate = taskData.startDate
+    if (taskData.endDate !== undefined) updateData.endDate = taskData.endDate
+    if (taskData.assignedTo !== undefined) updateData.assignedTo = taskData.assignedTo
+    
+    const result = await updateProjectTask(projectTaskId, updateData)
     if (result.success) {
       setEditingTask(null)
     }
@@ -192,7 +202,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     const statusMap = {
       'planning': { label: 'Planificación', color: 'secondary' as const },
       'active': { label: 'Activo', color: 'default' as const },
-      'on-hold': { label: 'En Pausa', color: 'destructive' as const },
+      'paused': { label: 'En Pausa', color: 'destructive' as const },
       'completed': { label: 'Completado', color: 'default' as const },
       'cancelled': { label: 'Cancelado', color: 'destructive' as const }
     }
@@ -429,6 +439,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="assigned">Asignada</SelectItem>
                     <SelectItem value="in_progress">En Progreso</SelectItem>
                     <SelectItem value="completed">Completada</SelectItem>
                     <SelectItem value="cancelled">Cancelada</SelectItem>

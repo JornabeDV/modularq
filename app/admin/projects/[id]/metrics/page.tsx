@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { useProjects } from "@/hooks/use-projects"
+import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { AdminOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
 import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users } from "lucide-react"
@@ -15,10 +15,10 @@ import Link from "next/link"
 
 export default function ProjectMetricsPage() {
   const params = useParams()
-  const projectId = params.id as string
-  const { projects, loading } = useProjects()
+  const projectId = params?.id as string
+  const { projects, loading } = useProjectsPrisma()
   
-  const project = projects.find(p => p.id === projectId)
+  const project = projects?.find(p => p.id === projectId)
 
   // Calcular horas reales desde time_entries
   const [calculatedHours, setCalculatedHours] = useState<Record<string, number>>({})

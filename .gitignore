@@ -136,3 +136,9 @@ backups/
 
 # Supabase
 .supabase/
+
+# Prisma
+/lib/generated/
+/prisma/migrations/
+*.db
+*.db-journal

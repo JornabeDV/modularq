@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Calendar, Users, DollarSign, MoreHorizontal, FolderOpen, Eye } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useUserProjects } from "@/hooks/use-user-projects"
+import { useUserProjectsPrisma } from "@/hooks/use-user-projects-prisma"
 import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
 
@@ -22,7 +22,7 @@ export default function ProjectsPage() {
 
 function ProjectsContent() {
   const { user } = useAuth()
-  const { projects, loading, error } = useUserProjects(user?.id)
+  const { projects, loading, error } = useUserProjectsPrisma(user?.id)
   
   const getStatusColor = (status: string) => {
     switch (status) {

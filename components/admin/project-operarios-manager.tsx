@@ -8,8 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Plus, Users, X } from 'lucide-react'
-import { useProjectOperarios } from '@/hooks/use-project-operarios'
-import { useUsers } from '@/hooks/use-users'
+import { useProjectOperariosPrisma } from '@/hooks/use-project-operarios-prisma'
+import { useUsersPrisma } from '@/hooks/use-users-prisma'
 import { useAuth } from '@/lib/auth-context'
 
 interface ProjectOperariosManagerProps {
@@ -18,17 +18,17 @@ interface ProjectOperariosManagerProps {
 
 export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerProps) {
   const { user } = useAuth()
-  const { projectOperarios, loading, assignOperarioToProject, unassignOperarioFromProject } = useProjectOperarios(projectId)
-  const { users } = useUsers()
+  const { projectOperarios, loading, assignOperarioToProject, unassignOperarioFromProject } = useProjectOperariosPrisma(projectId)
+  const { users } = useUsersPrisma()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
   const [isAssigning, setIsAssigning] = useState(false)
 
   // Filtrar solo operarios (no admins)
-  const operarios = users.filter(user => user.role === 'operario')
+  const operarios = users?.filter(user => user.role === 'operario') || []
 
   // Operarios ya asignados
-  const assignedUserIds = projectOperarios.map(po => po.userId)
+  const assignedUserIds = projectOperarios?.map(po => po.user_id) || []
   const availableOperarios = operarios.filter(operario => !assignedUserIds.includes(operario.id))
 
   const handleOperarioToggle = (userId: string) => {
@@ -164,7 +164,7 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
             <p className="text-sm text-muted-foreground mt-2">Cargando operarios...</p>
           </div>
-        ) : projectOperarios.length === 0 ? (
+        ) : !projectOperarios || projectOperarios.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">No hay operarios asignados</h3>
@@ -174,7 +174,7 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
           </div>
         ) : (
           <div className="space-y-3">
-            {projectOperarios.map((projectOperario) => (
+            {projectOperarios?.map((projectOperario) => (
               <div key={projectOperario.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">

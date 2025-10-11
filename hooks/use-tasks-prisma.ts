@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import type { Task } from '@/lib/types'
+import { useState, useEffect, useCallback } from 'react'
+import { PrismaTypedService, type Task } from '@/lib/prisma-typed-service'
 
 export interface CreateTaskData {
   title: string
@@ -15,86 +14,45 @@ export interface CreateTaskData {
 
 export interface UpdateTaskData extends Partial<CreateTaskData> {}
 
-export function useTasks() {
+export function useTasksPrisma() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Cargar tareas
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const { data, error: fetchError } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('task_order', { ascending: true })
-
-      if (fetchError) {
-        throw fetchError
-      }
-
-      // Convertir datos de Supabase al formato Task
-      const formattedTasks: Task[] = (data || []).map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description || '',
-        category: task.category || '',
-        type: task.type || 'custom',
-        estimatedHours: parseFloat(task.estimated_hours) || 0,
-        taskOrder: task.task_order || 0,
-        createdBy: task.created_by || '',
-        createdAt: task.created_at,
-        updatedAt: task.updated_at
-      }))
-
-      setTasks(formattedTasks)
+      const fetchedTasks = await PrismaTypedService.getAllTasks()
+      setTasks(fetchedTasks)
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar tareas')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Crear nueva tarea
   const createTask = async (taskData: CreateTaskData): Promise<{ success: boolean; error?: string; taskId?: string }> => {
     try {
       setError(null)
       
-      // Obtener el siguiente orden
-      const { data: maxOrderData } = await supabase
-        .from('tasks')
-        .select('task_order')
-        .order('task_order', { ascending: false })
-        .limit(1)
-        .single()
-      
-      const nextOrder = (maxOrderData?.task_order || 0) + 1
-      
-      const { data: taskData_result, error: insertError } = await supabase
-        .from('tasks')
-        .insert({
-          title: taskData.title,
-          description: taskData.description,
-          estimated_hours: taskData.estimatedHours,
-          category: taskData.category,
-          type: taskData.type,
-          task_order: nextOrder,
-          created_by: taskData.createdBy
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        throw insertError
-      }
+      const task = await PrismaTypedService.createTask({
+        title: taskData.title,
+        description: taskData.description,
+        estimated_hours: taskData.estimatedHours,
+        category: taskData.category,
+        type: taskData.type,
+        created_by: taskData.createdBy
+      })
 
       // Actualizar estado local
       await fetchTasks()
       
-      return { success: true, taskId: taskData_result.id }
+      return { success: true, taskId: task.id }
     } catch (err) {
       console.error('Error creating task:', err)
       const errorMessage = err instanceof Error ? err.message : 'Error al crear tarea'
@@ -108,22 +66,13 @@ export function useTasks() {
     try {
       setError(null)
       
-      const updateData: any = {}
-      
-      if (taskData.title !== undefined) updateData.title = taskData.title
-      if (taskData.description !== undefined) updateData.description = taskData.description
-      if (taskData.estimatedHours !== undefined) updateData.estimated_hours = taskData.estimatedHours
-      if (taskData.category !== undefined) updateData.category = taskData.category
-      if (taskData.type !== undefined) updateData.type = taskData.type
-
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update(updateData)
-        .eq('id', taskId)
-
-      if (updateError) {
-        throw updateError
-      }
+      const task = await PrismaTypedService.updateTask(taskId, {
+        title: taskData.title,
+        description: taskData.description,
+        estimated_hours: taskData.estimatedHours,
+        category: taskData.category,
+        type: taskData.type
+      })
 
       // Actualizar estado local
       await fetchTasks()
@@ -142,14 +91,7 @@ export function useTasks() {
     try {
       setError(null)
       
-      const { error: deleteError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId)
-
-      if (deleteError) {
-        throw deleteError
-      }
+      await PrismaTypedService.deleteTask(taskId)
 
       // Actualizar estado local
       await fetchTasks()
@@ -162,11 +104,6 @@ export function useTasks() {
       return { success: false, error: errorMessage }
     }
   }
-
-  // Cargar tareas al montar el componente
-  useEffect(() => {
-    fetchTasks()
-  }, [])
 
   // Obtener solo tareas estándar
   const getStandardTasks = () => {
@@ -199,21 +136,13 @@ export function useTasks() {
     try {
       setError(null)
       
-      // Actualizar cada tarea con su nuevo orden
-      const updatePromises = taskOrders.map(({ id, taskOrder }) =>
-        supabase
-          .from('tasks')
-          .update({ task_order: taskOrder })
-          .eq('id', id)
-      )
+      // Convertir taskOrder a task_order para el servicio
+      const prismaTaskOrders = taskOrders.map(({ id, taskOrder }) => ({
+        id,
+        task_order: taskOrder
+      }))
       
-      const results = await Promise.all(updatePromises)
-      
-      // Verificar si alguna actualización falló
-      const hasErrors = results.some(result => result.error)
-      if (hasErrors) {
-        throw new Error('Error al actualizar el orden de las tareas')
-      }
+      await PrismaTypedService.reorderTasks(prismaTaskOrders)
       
       // Actualizar estado local sin recargar toda la página
       setTasks(prevTasks => {
@@ -221,11 +150,11 @@ export function useTasks() {
         taskOrders.forEach(({ id, taskOrder }) => {
           const taskIndex = newTasks.findIndex(task => task.id === id)
           if (taskIndex !== -1) {
-            newTasks[taskIndex] = { ...newTasks[taskIndex], taskOrder }
+            newTasks[taskIndex] = { ...newTasks[taskIndex], task_order: taskOrder }
           }
         })
-        // Reordenar el array según el nuevo taskOrder
-        return newTasks.sort((a, b) => a.taskOrder - b.taskOrder)
+        // Reordenar el array según el nuevo task_order
+        return newTasks.sort((a, b) => (a.task_order || 0) - (b.task_order || 0))
       })
       
       return { success: true }
@@ -236,6 +165,11 @@ export function useTasks() {
       return { success: false, error: errorMessage }
     }
   }
+
+  // Cargar tareas al montar el componente
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   return {
     tasks,

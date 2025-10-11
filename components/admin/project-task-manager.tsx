@@ -2,16 +2,15 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Search, Filter, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { Plus, CheckCircle, Clock, AlertCircle, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { useTasks } from '@/hooks/use-tasks'
-import { useProjectTasks } from '@/hooks/use-project-tasks'
+import { useTasksPrisma } from '@/hooks/use-tasks-prisma'
 import { DraggableTaskCard } from './draggable-task-card'
-import type { Task, ProjectTask } from '@/lib/types'
+import type { ProjectTask } from '@/lib/types'
 
 interface ProjectTaskManagerProps {
   projectId: string
@@ -34,7 +33,7 @@ export function ProjectTaskManager({
   onCreateTask,
   onReorderTasks
 }: ProjectTaskManagerProps) {
-  const { tasks, loading: tasksLoading } = useTasks()
+  const { tasks, loading: tasksLoading } = useTasksPrisma()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'standard' | 'custom'>('all')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -42,14 +41,14 @@ export function ProjectTaskManager({
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
 
   // Filtrar tareas disponibles para asignar
-  const availableTasks = tasks.filter(task => {
+  const availableTasks = tasks?.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description.toLowerCase().includes(searchTerm.toLowerCase())
+                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesType = filterType === 'all' || task.type === filterType
     const notAssigned = !projectTasks.some(pt => pt.taskId === task.id)
     
     return matchesSearch && matchesType && notAssigned
-  })
+  }) || []
 
   const standardTasks = availableTasks.filter(t => t.type === 'standard')
   const customTasks = availableTasks.filter(t => t.type === 'custom')
@@ -198,7 +197,7 @@ export function ProjectTaskManager({
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline">{task.category}</Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {task.estimatedHours}h estimadas
+                                  {task.estimated_hours}h estimadas
                                 </span>
                               </div>
                             </div>
@@ -231,7 +230,7 @@ export function ProjectTaskManager({
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline">{task.category}</Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {task.estimatedHours}h estimadas
+                                  {task.estimated_hours}h estimadas
                                 </span>
                               </div>
                             </div>

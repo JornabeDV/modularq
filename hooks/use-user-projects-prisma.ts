@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { PrismaTypedService } from '@/lib/prisma-typed-service'
 import type { Project } from '@/lib/types'
 
-export function useUserProjects(userId?: string) {
+export function useUserProjectsPrisma(userId?: string) {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Cargar proyectos del usuario
-  const fetchUserProjects = async (filterUserId?: string) => {
+  const fetchUserProjects = useCallback(async (filterUserId?: string) => {
     try {
       setLoading(true)
       setError(null)
@@ -20,55 +20,10 @@ export function useUserProjects(userId?: string) {
         return
       }
 
-      const { data, error: fetchError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          project_operarios!inner (
-            user_id
-          ),
-          project_tasks (
-            id,
-            project_id,
-            task_id,
-            status,
-            actual_hours,
-            assigned_to,
-            start_date,
-            end_date,
-            progress_percentage,
-            notes,
-            assigned_at,
-            assigned_by,
-            created_at,
-            updated_at,
-            task:task_id (
-              id,
-              title,
-              description,
-              category,
-              type,
-              estimated_hours,
-              created_by,
-              created_at,
-              updated_at
-            ),
-            assigned_user:assigned_to (
-              id,
-              name,
-              role
-            )
-          )
-        `)
-        .eq('project_operarios.user_id', filterUserId)
-        .order('created_at', { ascending: false })
+      const data = await PrismaTypedService.getUserProjects(filterUserId)
 
-      if (fetchError) {
-        throw fetchError
-      }
-
-      // Convertir datos de Supabase al formato Project
-      const formattedProjects: Project[] = (data || []).map(project => ({
+      // Convertir datos al formato Project
+      const formattedProjects: Project[] = data.map(project => ({
         id: project.id,
         name: project.name,
         description: project.description || '',
@@ -95,6 +50,7 @@ export function useUserProjects(userId?: string) {
           assignedBy: pt.assigned_by,
           createdAt: pt.created_at,
           updatedAt: pt.updated_at,
+          taskOrder: pt.task_order || 0,
           task: pt.task ? {
             id: pt.task.id,
             title: pt.task.title,
@@ -102,6 +58,7 @@ export function useUserProjects(userId?: string) {
             category: pt.task.category || '',
             type: pt.task.type || 'custom',
             estimatedHours: parseFloat(pt.task.estimated_hours) || 0,
+            taskOrder: pt.task.task_order || 0,
             createdBy: pt.task.created_by || '',
             createdAt: pt.task.created_at,
             updatedAt: pt.task.updated_at
@@ -110,6 +67,18 @@ export function useUserProjects(userId?: string) {
             id: pt.assigned_user.id,
             name: pt.assigned_user.name,
             role: pt.assigned_user.role
+          } : undefined
+        })),
+        projectOperarios: (project.project_operarios || []).map((po: any) => ({
+          id: po.id,
+          projectId: po.project_id,
+          userId: po.user_id,
+          assignedAt: po.assigned_at,
+          assignedBy: po.assigned_by,
+          user: po.user ? {
+            id: po.user.id,
+            name: po.user.name,
+            role: po.user.role
           } : undefined
         }))
       }))
@@ -121,12 +90,12 @@ export function useUserProjects(userId?: string) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchUserProjects(userId)
-  }, [userId])
+  }, [userId, fetchUserProjects])
 
   return {
     projects,

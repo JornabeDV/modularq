@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  admin
+  supervisor
+  operario
+}
+
+enum ProjectStatus {
+  planning
+  active
+  paused
+  completed
+}
+
+enum ProjectPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum TaskStatus {
+  pending
+  assigned
+  in_progress
+  completed
+  cancelled
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum TaskType {
+  standard
+  custom
+}
+
+enum EntityType {
+  project
+  task
+  operario
+  time_entry
+}
+
+enum ReportType {
+  productivity
+  time_tracking
+  project_status
+  operario_performance
+}
+
+// Models
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  role        UserRole
+  total_hours Float    @default(0)
+  efficiency  Float    @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  supervised_projects Project[] @relation("ProjectSupervisor")
+  assigned_tasks      Task[]    @relation("TaskAssignee")
+  time_entries        TimeEntry[]
+  audit_logs          AuditLog[]
+  assigned_projects    ProjectOperario[]
+  reports_generated    Report[]
+
+  @@map("users")
+}
+
+model Project {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  status        ProjectStatus
+  priority      ProjectPriority
+  start_date    DateTime
+  end_date      DateTime?
+  progress      Float           @default(0)
+  supervisor_id String?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+
+  // Relations
+  supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id])
+  time_entries   TimeEntry[]
+  project_operarios ProjectOperario[]
+
+  @@map("projects")
+}
+
+model Task {
+  id               String       @id @default(cuid())
+  title            String
+  description      String?
+  category         String?
+  type             TaskType
+  estimated_hours Float
+  task_order       Int?
+  created_by       String?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  // Relations
+  assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
+  time_entries TimeEntry[]
+
+  @@map("tasks")
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  user_id     String
+  task_id     String
+  project_id  String
+  start_time  DateTime
+  end_time    DateTime?
+  hours       Float    @default(0)
+  description String?
+  date        DateTime
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [user_id], references: [id])
+  task    Task    @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@map("time_entries")
+}
+
+model AuditLog {
+  id           String     @id @default(cuid())
+  user_id      String
+  user_name    String
+  action       String
+  entity_type  EntityType
+  entity_id    String
+  entity_name  String
+  changes      Json?
+  ip_address   String?
+  created_at   DateTime   @default(now())
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Report {
+  id           String     @id @default(cuid())
+  name         String
+  type         ReportType
+  description  String?
+  generated_by String
+  parameters   Json?
+  data         Json?
+  created_at   DateTime   @default(now())
+
+  // Relations
+  generated_by_user User @relation(fields: [generated_by], references: [id])
+
+  @@map("reports")
+}
+
+model ProjectOperario {
+  id          String   @id @default(cuid())
+  project_id  String
+  user_id     String
+  assigned_at DateTime @default(now())
+  assigned_by String?
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [id])
+
+  @@unique([project_id, user_id])
+  @@map("project_operarios")
+}
