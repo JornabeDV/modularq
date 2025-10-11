@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { useProjects } from "@/hooks/use-projects"
+import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { AdminOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
 import { 
@@ -28,11 +28,11 @@ import Link from "next/link"
 export default function TaskMetricsPage() {
   const params = useParams()
   const router = useRouter()
-  const projectId = params.id as string
-  const taskId = params.taskId as string
-  const { projects, loading } = useProjects()
+  const projectId = params?.id as string
+  const taskId = params?.taskId as string
+  const { projects, loading } = useProjectsPrisma()
   
-  const project = projects.find(p => p.id === projectId)
+  const project = projects?.find(p => p.id === projectId)
   const projectTask = project?.projectTasks?.find(pt => pt.id === taskId)
   const task = projectTask?.task
 

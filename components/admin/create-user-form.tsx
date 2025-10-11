@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useUsers, type CreateUserData } from '@/hooks/use-users'
+import { useUsersPrisma, type CreateUserData } from '@/hooks/use-users-prisma'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +13,7 @@ import { Plus, UserPlus, Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function CreateUserForm() {
-  const { createUser } = useUsers()
+  const { createUser } = useUsersPrisma()
   const [isOpen, setIsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPassword, setGeneratedPassword] = useState('')

@@ -4,40 +4,52 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, FolderOpen, Users, Calendar } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { ProjectStats } from './project-stats'
 import { ProjectTable } from './project-table'
 import { ProjectForm } from './project-form'
-import { useProjects } from '@/hooks/use-projects'
+import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
 import { useAuth } from '@/lib/auth-context'
 import type { Project } from '@/lib/types'
 
 export function ProjectManagement() {
   const router = useRouter()
   const { user } = useAuth()
-  const { projects, loading, error, createProject, updateProject, deleteProject } = useProjects()
+  const { projects, loading, error, createProject, updateProject, deleteProject } = useProjectsPrisma()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
-  const handleCreateProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreateProject = async (projectData: any) => {
     if (!user?.id) return
 
     const result = await createProject({
-      ...projectData,
-      createdBy: user.id
+      name: projectData.name,
+      description: projectData.description,
+      status: projectData.status,
+      start_date: projectData.startDate ? new Date(projectData.startDate) : new Date(),
+      end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
+      created_by: user.id
     })
     
-    if (result.success && result.projectId) {
+    if (result.success) {
       setIsCreateDialogOpen(false)
-      // Redirigir a la página de detalles del proyecto creado
-      router.push(`/admin/projects/${result.projectId}`)
+      // Redirigir a la página de proyectos después de crear
+      router.push('/admin/projects')
     }
   }
 
-  const handleUpdateProject = async (projectId: string, projectData: Partial<Project>) => {
-    const result = await updateProject(projectId, projectData)
+  const handleUpdateProject = async (projectId: string, projectData: any) => {
+    const updateData: any = {}
+    
+    if (projectData.name !== undefined) updateData.name = projectData.name
+    if (projectData.description !== undefined) updateData.description = projectData.description
+    if (projectData.status !== undefined) updateData.status = projectData.status
+    if (projectData.startDate !== undefined) updateData.start_date = new Date(projectData.startDate)
+    if (projectData.endDate !== undefined) updateData.end_date = projectData.endDate ? new Date(projectData.endDate) : undefined
+    
+    const result = await updateProject(projectId, updateData)
     if (result.success) {
       setEditingProject(null)
     }
@@ -52,26 +64,25 @@ export function ProjectManagement() {
   }
 
   // Filtrar proyectos
-  const filteredProjects = projects.filter(project => {
+  const filteredProjects = projects?.filter(project => {
     const matchesSearch = searchTerm === '' || 
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchTerm.toLowerCase())
+      (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter
     
     return matchesSearch && matchesStatus
-  })
+  }) || []
 
   // Calcular estadísticas
-  const totalProjects = projects.length
-  const activeProjects = projects.filter(p => p.status === 'active').length
-  const completedProjects = projects.filter(p => p.status === 'completed').length
-  const totalTasks = projects.reduce((sum, project) => sum + project.projectTasks.length, 0)
-  const totalEstimatedHours = projects.reduce((sum, project) => 
-    sum + project.projectTasks.reduce((taskSum, task) => 
-      taskSum + (task.task?.estimatedHours || 0), 0
-    ), 0
-  )
+  const totalProjects = projects?.length || 0
+  const activeProjects = projects?.filter(p => p.status === 'active').length || 0
+  const completedProjects = projects?.filter(p => p.status === 'completed').length || 0
+  const totalTasks = projects?.reduce((sum, project) => sum + (project.projectTasks?.length || 0), 0) || 0
+  const totalEstimatedHours = projects?.reduce((sum, project) => 
+    sum + (project.projectTasks?.reduce((taskSum, task) => 
+      taskSum + (task.task?.estimatedHours || 0), 0) || 0)
+  , 0) || 0
 
   if (loading) {
     return (

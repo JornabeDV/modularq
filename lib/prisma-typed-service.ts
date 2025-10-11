@@ -86,14 +86,60 @@ export class PrismaTypedService {
   }
 
   // Proyectos con tipos de Prisma
-  static async getAllProjects(): Promise<Project[]> {
+  static async getAllProjects(): Promise<any[]> {
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
+      .select(`
+        *,
+        project_tasks (
+          id,
+          project_id,
+          task_id,
+          status,
+          actual_hours,
+          assigned_to,
+          start_date,
+          end_date,
+          progress_percentage,
+          notes,
+          assigned_at,
+          assigned_by,
+          created_at,
+          updated_at,
+          task:task_id (
+            id,
+            title,
+            description,
+            category,
+            type,
+            estimated_hours,
+            created_by,
+            created_at,
+            updated_at
+          ),
+          assigned_user:assigned_to (
+            id,
+            name,
+            role
+          )
+        ),
+        project_operarios (
+          id,
+          project_id,
+          user_id,
+          assigned_at,
+          assigned_by,
+          user:user_id (
+            id,
+            name,
+            role
+          )
+        )
+      `)
       .order('created_at', { ascending: false })
     
     if (error) throw error
-    return data as Project[]
+    return data || []
   }
 
   static async getProjectById(id: string): Promise<Project | null> {
@@ -284,6 +330,259 @@ export class PrismaTypedService {
     if (hasErrors) {
       throw new Error('Error al actualizar el orden de las tareas')
     }
+  }
+
+  // Project Operarios
+  static async getProjectOperarios(projectId?: string): Promise<any[]> {
+    let query = supabase
+      .from('project_operarios')
+      .select(`
+        *,
+        user:user_id (
+          id,
+          name,
+          email,
+          role
+        )
+      `)
+
+    if (projectId) {
+      query = query.eq('project_id', projectId)
+    }
+
+    const { data, error } = await query.order('assigned_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async assignOperarioToProject(assignmentData: {
+    project_id: string
+    user_id: string
+    assigned_by?: string
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('project_operarios')
+      .insert({
+        project_id: assignmentData.project_id,
+        user_id: assignmentData.user_id,
+        assigned_by: assignmentData.assigned_by
+      })
+      .select(`
+        *,
+        user:user_id (
+          id,
+          name,
+          email,
+          role
+        )
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async unassignOperarioFromProject(assignmentId: string): Promise<void> {
+    const { error } = await supabase
+      .from('project_operarios')
+      .delete()
+      .eq('id', assignmentId)
+    
+    if (error) throw error
+  }
+
+  // Project Tasks
+  static async getProjectTasks(projectId?: string): Promise<any[]> {
+    let query = supabase
+      .from('project_tasks')
+      .select(`
+        *,
+        task:task_id (
+          id,
+          title,
+          description,
+          category,
+          type,
+          estimated_hours,
+          created_by,
+          created_at,
+          updated_at
+        ),
+        assigned_user:assigned_to (
+          id,
+          name,
+          role
+        ),
+        collaborators:task_collaborators (
+          id,
+          project_task_id,
+          user_id,
+          added_by,
+          added_at,
+          created_at,
+          updated_at,
+          user:user_id (
+            id,
+            name,
+            role
+          ),
+          added_by_user:added_by (
+            id,
+            name,
+            role
+          )
+        )
+      `)
+      .order('task_order', { ascending: true })
+
+    if (projectId) {
+      query = query.eq('project_id', projectId)
+    }
+
+    const { data, error } = await query
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async createProjectTask(projectTaskData: {
+    project_id: string
+    task_id: string
+    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    actual_hours?: number
+    assigned_to?: string
+    start_date?: string
+    end_date?: string
+    progress_percentage?: number
+    notes?: string
+    assigned_by?: string
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('project_tasks')
+      .insert({
+        project_id: projectTaskData.project_id,
+        task_id: projectTaskData.task_id,
+        status: projectTaskData.status || 'pending',
+        actual_hours: projectTaskData.actual_hours || 0,
+        assigned_to: projectTaskData.assigned_to,
+        start_date: projectTaskData.start_date,
+        end_date: projectTaskData.end_date,
+        progress_percentage: projectTaskData.progress_percentage || 0,
+        notes: projectTaskData.notes,
+        assigned_by: projectTaskData.assigned_by
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateProjectTask(id: string, projectTaskData: {
+    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    actual_hours?: number
+    assigned_to?: string
+    start_date?: string
+    end_date?: string
+    progress_percentage?: number
+    notes?: string
+    task_order?: number
+  }): Promise<any> {
+    const updateData: any = {}
+    
+    if (projectTaskData.status !== undefined) updateData.status = projectTaskData.status
+    if (projectTaskData.actual_hours !== undefined) updateData.actual_hours = projectTaskData.actual_hours
+    if (projectTaskData.assigned_to !== undefined) updateData.assigned_to = projectTaskData.assigned_to
+    if (projectTaskData.start_date !== undefined) updateData.start_date = projectTaskData.start_date
+    if (projectTaskData.end_date !== undefined) updateData.end_date = projectTaskData.end_date
+    if (projectTaskData.progress_percentage !== undefined) updateData.progress_percentage = projectTaskData.progress_percentage
+    if (projectTaskData.notes !== undefined) updateData.notes = projectTaskData.notes
+    if (projectTaskData.task_order !== undefined) updateData.task_order = projectTaskData.task_order
+
+    const { data, error } = await supabase
+      .from('project_tasks')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteProjectTask(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('project_tasks')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  static async updateProjectTaskOrder(taskOrders: { id: string; task_order: number }[]): Promise<void> {
+    const updatePromises = taskOrders.map(({ id, task_order }) =>
+      supabase
+        .from('project_tasks')
+        .update({ task_order })
+        .eq('id', id)
+    )
+    
+    const results = await Promise.all(updatePromises)
+    
+    const hasError = results.some(result => result.error)
+    if (hasError) {
+      throw new Error('Error actualizando el orden de las tareas')
+    }
+  }
+
+  // User Projects
+  static async getUserProjects(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        project_operarios!inner (
+          user_id
+        ),
+        project_tasks (
+          id,
+          project_id,
+          task_id,
+          status,
+          actual_hours,
+          assigned_to,
+          start_date,
+          end_date,
+          progress_percentage,
+          notes,
+          assigned_at,
+          assigned_by,
+          created_at,
+          updated_at,
+          task:task_id (
+            id,
+            title,
+            description,
+            category,
+            type,
+            estimated_hours,
+            created_by,
+            created_at,
+            updated_at
+          ),
+          assigned_user:assigned_to (
+            id,
+            name,
+            role
+          )
+        )
+      `)
+      .eq('project_operarios.user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
   }
 
   // Obtener estadísticas de operario

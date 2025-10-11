@@ -19,7 +19,7 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
     const statusMap = {
       'planning': { label: 'Planificación', color: 'secondary' as const },
       'active': { label: 'Activo', color: 'default' as const },
-      'on-hold': { label: 'En Pausa', color: 'destructive' as const },
+      'paused': { label: 'En Pausa', color: 'destructive' as const },
       'completed': { label: 'Completado', color: 'default' as const },
       'cancelled': { label: 'Cancelado', color: 'destructive' as const }
     }

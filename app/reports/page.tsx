@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { useProjects } from "@/hooks/use-projects"
+import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { CheckCircle, FolderKanban, Calendar } from "lucide-react"
 import Link from "next/link"
 
@@ -19,7 +19,7 @@ export default function ReportsPage() {
 }
 
 function ReportsContent() {
-  const { projects, loading: projectsLoading } = useProjects()
+  const { projects, loading: projectsLoading } = useProjectsPrisma()
   
   // Filtrar proyectos completados
   const completedProjects = projects.filter(p => p.status === 'completed')

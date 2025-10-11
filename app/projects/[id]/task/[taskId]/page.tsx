@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
-import { useProjectTasks } from '@/hooks/use-project-tasks'
-import { useProjectOperarios } from '@/hooks/use-project-operarios'
+import { useProjectTasksPrisma } from '@/hooks/use-project-tasks-prisma'
+import { useProjectOperariosPrisma } from '@/hooks/use-project-operarios-prisma'
 import { useAuth } from '@/lib/auth-context'
 import { TaskHeader } from '@/components/tasks/task-header'
 import { TaskDetails } from '@/components/tasks/task-details'
@@ -16,11 +16,11 @@ export default function TaskDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { user } = useAuth()
-  const projectId = params.id as string
-  const taskId = params.taskId as string
+  const projectId = params?.id as string
+  const taskId = params?.taskId as string
   
-  const { projectTasks, updateProjectTask, loading } = useProjectTasks(projectId)
-  const { projectOperarios, loading: operariosLoading } = useProjectOperarios(projectId)
+  const { projectTasks, updateProjectTask, loading } = useProjectTasksPrisma(projectId)
+  const { projectOperarios, loading: operariosLoading } = useProjectOperariosPrisma(projectId)
   
   const [task, setTask] = useState<any>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -31,10 +31,10 @@ export default function TaskDetailPage() {
   const [refreshTimeEntries, setRefreshTimeEntries] = useState(0)
 
   // Verificar si el operario está asignado al proyecto
-  const isAssignedToProject = projectOperarios.some(po => po.userId === user?.id)
+  const isAssignedToProject = projectOperarios?.some(po => po.user_id === user?.id) || false
 
   useEffect(() => {
-    if (projectTasks.length > 0) {
+    if (projectTasks && projectTasks.length > 0) {
       const foundTask = projectTasks.find(pt => pt.id === taskId)
       if (foundTask) {
         setTask(foundTask)

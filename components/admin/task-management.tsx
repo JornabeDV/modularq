@@ -7,30 +7,29 @@ import { Plus, FolderOpen, Clock, Users, CheckCircle } from 'lucide-react'
 import { TaskStats } from './task-stats'
 import { TaskTable } from './task-table'
 import { TaskForm } from './task-form'
-import { useTasks, type CreateTaskData } from '@/hooks/use-tasks'
+import { useTasksPrisma, type CreateTaskData } from '@/hooks/use-tasks-prisma'
 import { useAuth } from '@/lib/auth-context'
-import type { Task } from '@/lib/types'
 
 export function TaskManagement() {
   const { user } = useAuth()
-  const { tasks, loading, error, createTask, updateTask, deleteTask, reorderTasks } = useTasks()
+  const { tasks, loading, error, createTask, updateTask, deleteTask, reorderTasks } = useTasksPrisma()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState<any>(null)
   
   const [isUpdating, setIsUpdating] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
 
-  const handleCreateTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreateTask = async (taskData: any) => {
     if (!user?.id) return
 
     const createData: CreateTaskData = {
       title: taskData.title,
-      description: taskData.description,
-      estimatedHours: taskData.estimatedHours,
-      category: taskData.category,
-      type: taskData.type,
+      description: taskData.description || '',
+      estimatedHours: taskData.estimatedHours || taskData.estimated_hours || 0,
+      category: taskData.category || '',
+      type: taskData.type || 'custom',
       createdBy: user.id
     }
 
@@ -40,13 +39,21 @@ export function TaskManagement() {
     }
   }
 
-  const handleUpdateTask = async (taskId: string, taskData: Partial<Task>) => {
+  const handleUpdateTask = async (taskId: string, taskData: any) => {
     if (isUpdating) return // Evitar múltiples actualizaciones simultáneas
     
     setIsUpdating(true)
     
     try {
-      const result = await updateTask(taskId, taskData)
+      const updateData: any = {}
+      if (taskData.title !== undefined) updateData.title = taskData.title
+      if (taskData.description !== undefined) updateData.description = taskData.description
+      if (taskData.estimatedHours !== undefined) updateData.estimated_hours = taskData.estimatedHours
+      if (taskData.estimated_hours !== undefined) updateData.estimated_hours = taskData.estimated_hours
+      if (taskData.category !== undefined) updateData.category = taskData.category
+      if (taskData.type !== undefined) updateData.type = taskData.type
+      
+      const result = await updateTask(taskId, updateData)
       if (result.success) {
         setEditingTask(null)
       }
@@ -61,7 +68,7 @@ export function TaskManagement() {
     await deleteTask(taskId)
   }
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = (task: any) => {
     setEditingTask(task)
   }
 
@@ -70,21 +77,21 @@ export function TaskManagement() {
   }
 
   // Filtrar tareas
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = tasks?.filter(task => {
     const matchesSearch = searchTerm === '' || 
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase())
+      (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesCategory = categoryFilter === 'all' || task.category === categoryFilter
     const matchesType = typeFilter === 'all' || task.type === typeFilter
     
     return matchesSearch && matchesCategory && matchesType
-  })
+  }) || []
 
   // Calcular estadísticas
-  const totalTasks = tasks.length
-  const standardTasks = tasks.filter(t => t.type === 'standard').length
-  const customTasks = tasks.filter(t => t.type === 'custom').length
+  const totalTasks = tasks?.length || 0
+  const standardTasks = tasks?.filter(t => t.type === 'standard').length || 0
+  const customTasks = tasks?.filter(t => t.type === 'custom').length || 0
   // Las tareas base no tienen información de asignación, eso se maneja en project_tasks
   const assignedTasks = 0
   const unassignedTasks = totalTasks
@@ -144,7 +151,7 @@ export function TaskManagement() {
 
       {/* Tasks Table */}
       <TaskTable
-        tasks={filteredTasks}
+        tasks={filteredTasks as any}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         categoryFilter={categoryFilter}

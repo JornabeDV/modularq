@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useUsers, type CreateUserData } from '@/hooks/use-users'
+import { useUsersPrisma, type CreateUserData } from '@/hooks/use-users-prisma'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
@@ -12,7 +12,7 @@ import { UserTable } from './user-table'
 import { EditUserDialog } from './edit-user-dialog'
 
 export function UserManagement() {
-  const { users, loading, createUser, updateUser, deleteUser } = useUsers()
+  const { users, loading, createUser, updateUser, deleteUser } = useUsersPrisma()
   const { user: currentUser } = useAuth()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)

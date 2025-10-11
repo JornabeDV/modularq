@@ -27,9 +27,9 @@ import {
   Zap
 } from "lucide-react"
 import { TaskSelfAssignment } from "@/components/operario/task-self-assignment"
-import { useProjects } from "@/hooks/use-projects"
-import { useProjectTasks } from "@/hooks/use-project-tasks"
-import { useProjectOperarios } from "@/hooks/use-project-operarios"
+import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
+import { useProjectTasksPrisma } from "@/hooks/use-project-tasks-prisma"
+import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
 import { useAuth } from "@/lib/auth-context"
 
 interface ProjectDetailPageProps {
@@ -41,9 +41,9 @@ interface ProjectDetailPageProps {
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const { projects, loading: projectsLoading } = useProjects()
-  const { projectTasks, refetch: refetchTasks } = useProjectTasks(params.id)
-  const { projectOperarios, loading: operariosLoading } = useProjectOperarios(params.id)
+  const { projects, loading: projectsLoading } = useProjectsPrisma()
+  const { projectTasks, refetch: refetchTasks } = useProjectTasksPrisma(params.id)
+  const { projectOperarios, loading: operariosLoading } = useProjectOperariosPrisma(params.id)
   const [project, setProject] = useState<any>(null)
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   }, [projects, params.id])
 
   // Verificar si el operario está asignado al proyecto
-  const isAssignedToProject = projectOperarios.some(po => po.userId === user?.id)
+  const isAssignedToProject = projectOperarios?.some(po => po.user_id === user?.id) || false
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
@@ -210,8 +210,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           projectTasks={projectTasks} 
           projectId={params.id}
           projectOperarios={projectOperarios
-            .filter(po => po.user !== undefined)
-            .map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role }))}
+            ?.filter(po => po.user !== undefined)
+            ?.map(po => ({ id: po.user!.id, name: po.user!.name, role: po.user!.role })) || []}
           onTaskUpdate={refetchTasks}
         />
 

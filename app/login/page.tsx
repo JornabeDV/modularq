@@ -5,7 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { useUsers } from "@/hooks/use-users"
+import { useUsersPrisma } from "@/hooks/use-users-prisma"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const { loginWithName, isLoading } = useAuth()
-  const { users, loading: usersLoading } = useUsers()
+  const { users, loading: usersLoading } = useUsersPrisma()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {

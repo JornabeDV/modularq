@@ -6,16 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
-import { useProjects } from "@/hooks/use-projects"
-import { useOperarios } from "@/hooks/use-operarios"
+import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
+import { useOperariosPrisma } from "@/hooks/use-operarios-prisma"
 import { AdminOnly } from "@/components/auth/route-guard"
 import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
   const { userProfile } = useAuth()
-  const { projects, loading: projectsLoading } = useProjects()
-  const { operarios } = useOperarios()
+  const { projects, loading: projectsLoading } = useProjectsPrisma()
+  const { operarios } = useOperariosPrisma()
   
   // Calcular datos reales del dashboard
   const activeProjects = projects.filter(p => p.status === 'active')

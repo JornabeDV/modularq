@@ -10,10 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from 'lucide-react'
 import type { Project } from '@/lib/types'
 
+interface ProjectFormData {
+  name: string
+  description: string
+  status: 'planning' | 'active' | 'paused' | 'completed'
+  startDate?: string
+  endDate?: string
+  supervisor?: string
+  budget?: number
+  progress?: number
+}
+
 interface ProjectFormProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks'>) => void
+  onSubmit: (data: ProjectFormData) => void
   isEditing: boolean
   initialData?: Project | null
 }
@@ -21,9 +32,8 @@ interface ProjectFormProps {
 const PROJECT_STATUSES = [
   { value: 'planning', label: 'Planificación' },
   { value: 'active', label: 'Activo' },
-  { value: 'on-hold', label: 'En Pausa' },
-  { value: 'completed', label: 'Completado' },
-  { value: 'cancelled', label: 'Cancelado' }
+  { value: 'paused', label: 'En Pausa' },
+  { value: 'completed', label: 'Completado' }
 ]
 
 
@@ -31,7 +41,7 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    status: 'planning' as 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled',
+    status: 'planning' as 'planning' | 'active' | 'paused' | 'completed',
     startDate: '',
     endDate: ''
   })

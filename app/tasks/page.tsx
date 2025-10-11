@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TaskCard } from "@/components/tasks/task-card"
 import { TaskFilters } from "@/components/tasks/task-filters"
 import { Plus, ListTodo, Clock, CheckCircle, AlertTriangle } from "lucide-react"
-import { useTasks } from "@/hooks/use-tasks"
+import { useTasksPrisma } from "@/hooks/use-tasks-prisma"
 import { useAuth } from "@/lib/auth-context"
 import type { Task } from "@/lib/types"
 
@@ -21,7 +21,7 @@ export default function TasksPage() {
 }
 
 function TasksContent() {
-  const { tasks, loading, error, getStandardTasks } = useTasks()
+  const { tasks, loading, error, getStandardTasks } = useTasksPrisma()
   const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")

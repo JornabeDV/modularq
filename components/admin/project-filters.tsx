@@ -14,7 +14,7 @@ const PROJECT_STATUSES = [
   { value: 'all', label: 'Todos los estados' },
   { value: 'planning', label: 'Planificación' },
   { value: 'active', label: 'Activo' },
-  { value: 'on-hold', label: 'En Pausa' },
+  { value: 'paused', label: 'En Pausa' },
   { value: 'completed', label: 'Completado' },
   { value: 'cancelled', label: 'Cancelado' }
 ]
