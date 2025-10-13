@@ -1,7 +1,13 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { PrismaTypedService, type Task } from '@/lib/prisma-typed-service'
+import { PrismaTypedService, type Task as PrismaTask } from '@/lib/prisma-typed-service'
+
+// Tipo personalizado para las tareas mapeadas
+export interface Task extends Omit<PrismaTask, 'estimated_hours' | 'task_order'> {
+  estimatedHours: number
+  taskOrder: number
+}
 
 export interface CreateTaskData {
   title: string
@@ -26,7 +32,15 @@ export function useTasksPrisma() {
       setError(null)
       
       const fetchedTasks = await PrismaTypedService.getAllTasks()
-      setTasks(fetchedTasks)
+      
+      // Mapear datos de Prisma al formato esperado por los componentes
+      const mappedTasks = fetchedTasks.map(task => ({
+        ...task,
+        estimatedHours: parseFloat(String(task.estimated_hours)) || 0,
+        taskOrder: task.task_order || 0
+      }))
+      
+      setTasks(mappedTasks)
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar tareas')
@@ -150,11 +164,11 @@ export function useTasksPrisma() {
         taskOrders.forEach(({ id, taskOrder }) => {
           const taskIndex = newTasks.findIndex(task => task.id === id)
           if (taskIndex !== -1) {
-            newTasks[taskIndex] = { ...newTasks[taskIndex], task_order: taskOrder }
+            newTasks[taskIndex] = { ...newTasks[taskIndex], taskOrder: taskOrder }
           }
         })
-        // Reordenar el array según el nuevo task_order
-        return newTasks.sort((a, b) => (a.task_order || 0) - (b.task_order || 0))
+        // Reordenar el array según el nuevo taskOrder
+        return newTasks.sort((a, b) => (a.taskOrder || 0) - (b.taskOrder || 0))
       })
       
       return { success: true }
