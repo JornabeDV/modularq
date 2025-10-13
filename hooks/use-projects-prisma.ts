@@ -116,10 +116,50 @@ export function useProjectsPrisma() {
         created_by: projectData.created_by
       })
 
+      // Asignar automáticamente todas las tareas estándar al nuevo proyecto
+      try {
+        const standardTasks = await PrismaTypedService.getAllTasks()
+        const standardTasksOnly = standardTasks.filter(task => task.type === 'standard')
+        
+        // Crear project_tasks para cada tarea estándar
+        for (const task of standardTasksOnly) {
+          await PrismaTypedService.createProjectTask({
+            project_id: project.id,
+            task_id: task.id,
+            status: 'pending',
+            actual_hours: 0,
+            progress_percentage: 0,
+            assigned_by: projectData.created_by
+          })
+        }
+        
+        console.log(`✅ Asignadas ${standardTasksOnly.length} tareas estándar al proyecto "${project.name}"`)
+      } catch (taskError) {
+        console.error('Error asignando tareas estándar:', taskError)
+        // No fallar la creación del proyecto si hay error con las tareas
+      }
+
+      // Convertir el proyecto de Prisma al formato Project personalizado
+      const formattedProject: Project = {
+        id: project.id,
+        name: project.name,
+        description: project.description || '',
+        status: project.status as Project['status'],
+        startDate: typeof project.start_date === 'string' ? project.start_date : project.start_date.toISOString(),
+        endDate: project.end_date ? (typeof project.end_date === 'string' ? project.end_date : project.end_date.toISOString()) : undefined,
+        supervisor: project.supervisor_id || undefined,
+        progress: project.progress || 0,
+        createdBy: projectData.created_by || '',
+        createdAt: typeof project.created_at === 'string' ? project.created_at : project.created_at.toISOString(),
+        updatedAt: typeof project.updated_at === 'string' ? project.updated_at : project.updated_at.toISOString(),
+        projectTasks: [], // Se llenará cuando se haga fetchProjects
+        projectOperarios: [] // Se llenará cuando se haga fetchProjects
+      }
+
       // Actualizar estado local
       await fetchProjects()
       
-      return { success: true, project: undefined } // El proyecto se obtiene del fetchProjects
+      return { success: true, project: formattedProject } // Devolver el proyecto creado
     } catch (err) {
       console.error('Error creating project:', err)
       const errorMessage = err instanceof Error ? err.message : 'Error al crear proyecto'

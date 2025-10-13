@@ -33,10 +33,10 @@ export function ProjectManagement() {
       created_by: user.id
     })
     
-    if (result.success) {
+    if (result.success && result.project) {
       setIsCreateDialogOpen(false)
-      // Redirigir a la página de proyectos después de crear
-      router.push('/admin/projects')
+      // Redirigir directamente al proyecto creado
+      router.push(`/admin/projects/${result.project.id}`)
     }
   }
 
