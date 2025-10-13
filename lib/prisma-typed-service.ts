@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { User, Project, Task } from './generated/prisma'
+import type { User, Project, Task } from './generated/prisma/index'
 
 // Servicio que usa Supabase pero con tipos de Prisma
 export class PrismaTypedService {
@@ -629,4 +629,4 @@ export type {
   TaskPriority,
   EntityType,
   ReportType
-} from './generated/prisma'
+} from './generated/prisma/index'

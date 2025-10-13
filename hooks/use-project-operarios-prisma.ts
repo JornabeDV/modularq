@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
-import type { ProjectOperario } from '@/lib/generated/prisma'
+import type { ProjectOperario } from '@/lib/generated/prisma/index'
 
 export interface ProjectOperarioWithUser extends ProjectOperario {
   user?: {
