@@ -25,10 +25,13 @@ export default function TaskDetailPage() {
   const [task, setTask] = useState<any>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [actualHours, setActualHours] = useState(0)
+  const [totalHoursWithActive, setTotalHoursWithActive] = useState(0)
   const [progressPercentage, setProgressPercentage] = useState(0)
   const [notes, setNotes] = useState('')
   const [isTracking, setIsTracking] = useState(false)
   const [refreshTimeEntries, setRefreshTimeEntries] = useState(0)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   // Verificar si el operario está asignado al proyecto
   const isAssignedToProject = projectOperarios?.some(po => po.user_id === user?.id) || false
@@ -75,7 +78,8 @@ export default function TaskDetailPage() {
 
     const result = await updateProjectTask(task.id, updateData)
     if (result.success) {
-      router.push(`/projects/${projectId}`)
+      showSuccessNotification('✅ ¡Tarea completada exitosamente!')
+      setTimeout(() => router.push(`/projects/${projectId}`), 1500)
     }
   }
 
@@ -107,6 +111,16 @@ export default function TaskDetailPage() {
       }
     }
   }, [task, updateProjectTask])
+
+  const handleTotalHoursUpdate = useCallback((totalHours: number) => {
+    setTotalHoursWithActive(totalHours)
+  }, [])
+
+  const showSuccessNotification = (message: string) => {
+    setSuccessMessage(message)
+    setShowSuccess(true)
+    setTimeout(() => setShowSuccess(false), 3000)
+  }
 
   // Estados de carga y error
   if (loading || operariosLoading) {
@@ -141,18 +155,32 @@ export default function TaskDetailPage() {
 
   return (
     <MainLayout>
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+        {/* Breadcrumbs */}
+        <div className="text-lg text-gray-600 mb-4">
+          <span className="hover:text-blue-600 cursor-pointer" onClick={() => router.push('/projects')}>
+            Mis Proyectos
+          </span>
+          <span className="mx-2">→</span>
+          <span className="hover:text-blue-600 cursor-pointer" onClick={() => router.push(`/projects/${projectId}`)}>
+            Proyecto Modular 1.2
+          </span>
+          <span className="mx-2">→</span>
+          <span className="font-semibold text-gray-800">{task.task?.title}</span>
+        </div>
+
         {/* Header */}
         <TaskHeader 
           task={task}
           onBack={() => router.push(`/projects/${projectId}`)}
         />
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Detalles de la Tarea */}
           <TaskDetails 
             task={{
               ...task,
+              totalHoursWithActive: totalHoursWithActive,
               collaborators: task.collaborators
             }}
             onComplete={handleCompleteTask}
@@ -169,6 +197,7 @@ export default function TaskDetailPage() {
             operarioId={user?.id}
             onTimeEntryCreate={handleTimeEntryCreate}
             onProgressUpdate={handleProgressUpdate}
+            onTotalHoursUpdate={handleTotalHoursUpdate}
             onTaskComplete={() => {
               // Redirigir al proyecto cuando la tarea se complete automáticamente
               router.push(`/projects/${projectId}`)
@@ -189,6 +218,18 @@ export default function TaskDetailPage() {
           onNotesChange={setNotes}
           onSave={handleUpdateTask}
         />
+
+        {/* Notificación de Éxito */}
+        {showSuccess && (
+          <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 animate-in slide-in-from-right">
+            <div className="flex items-center gap-2">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="font-semibold">{successMessage}</span>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   )

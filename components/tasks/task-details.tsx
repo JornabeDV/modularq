@@ -13,6 +13,7 @@ interface TaskDetailsProps {
       estimatedHours?: number
     }
     actualHours: number
+    totalHoursWithActive?: number
     startDate?: string
     endDate?: string
     progressPercentage: number
@@ -64,50 +65,57 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Detalles de la Tarea
+            <FileText className="h-6 w-6" />
+            <span className="text-xl">Información de la Tarea</span>
           </div>
           {isCompleted && (
-            <Badge variant="outline" className="text-xs">
-              <CheckCircle className="h-3 w-3 mr-1" />
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              <CheckCircle className="h-4 w-4 mr-1" />
               Completada
             </Badge>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-6">
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Horas Estimadas</Label>
-            <p className="text-lg font-semibold">{task.task?.estimatedHours}hs</p>
+            <Label className="text-base font-semibold text-muted-foreground">Tiempo Estimado</Label>
+            <p className="text-2xl font-bold">{task.task?.estimatedHours} horas</p>
           </div>
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Horas Reales</Label>
-            <p className="text-lg font-semibold">{formatHours(task.actualHours)}</p>
+            <Label className="text-base font-semibold text-muted-foreground">Tiempo Trabajado</Label>
+            <p className="text-2xl font-bold">{formatHours(task.totalHoursWithActive || task.actualHours)}</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-6">
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Fecha de Inicio</Label>
-            <p className="text-sm">{formatDate(task.startDate)}</p>
+            <Label className="text-base font-semibold text-muted-foreground">Fecha de Inicio</Label>
+            <p className="text-lg">{formatDate(task.startDate)}</p>
           </div>
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Fecha de Fin</Label>
-            <p className="text-sm">{formatDate(task.endDate)}</p>
+            <Label className="text-base font-semibold text-muted-foreground">Fecha de Fin</Label>
+            <p className="text-lg">{formatDate(task.endDate)}</p>
           </div>
         </div>
 
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Progreso</Label>
-          <div className="mt-2">
+          <Label className="text-base font-semibold text-muted-foreground">Progreso de la Tarea</Label>
+          <div className="mt-3">
             <Progress 
               value={task.progressPercentage} 
-              className="h-2"
+              className="h-4"
             />
-            <p className="text-sm text-muted-foreground mt-1">
-              {task.progressPercentage}% completado
-            </p>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-lg font-semibold text-muted-foreground">
+                {task.progressPercentage}% completado
+              </p>
+              {task.task?.estimatedHours && (
+                <p className="text-base text-muted-foreground">
+                  {formatHours(task.totalHoursWithActive || task.actualHours)} / {task.task.estimatedHours}hs
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -152,15 +160,15 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
 
         {/* Botón de Completar Tarea */}
         {task.status === 'in_progress' && onComplete && (
-          <div className="pt-4 border-t">
+          <div className="pt-6 border-t">
             <button 
               onClick={onComplete}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-medium flex items-center justify-center gap-2"
+              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-bold text-xl flex items-center justify-center gap-3 shadow-lg"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
-              Marcar como Completada
+              FINALIZAR TAREA
             </button>
           </div>
         )}
