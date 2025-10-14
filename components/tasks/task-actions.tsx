@@ -31,7 +31,7 @@ export function TaskActions({
   return (
     <>
       {/* Time Tracker */}
-      {task.status === 'in_progress' && (
+      {(task.status === 'in_progress' || task.status === 'assigned') && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
