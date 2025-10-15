@@ -68,21 +68,21 @@ export function TaskHeader({ task, onBack }: TaskHeaderProps) {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <Button 
           variant="outline" 
-          size="sm"
+          size="lg"
           onClick={onBack}
-          className="shrink-0"
+          className="shrink-0 text-lg px-6 py-3"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver al Proyecto
+          <ArrowLeft className="h-5 w-5 mr-2" />
+          Volver a Mis Tareas
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-balance">{task.task?.title}</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">{task.task?.description}</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-balance">{task.task?.title}</h1>
+          <p className="text-lg sm:text-xl text-muted-foreground mt-2">{task.task?.description}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         {getStatusIcon(task.status)}
-        <Badge variant={getStatusColor(task.status)}>
+        <Badge variant={getStatusColor(task.status)} className="text-lg px-4 py-2">
           {getStatusLabel(task.status)}
         </Badge>
       </div>

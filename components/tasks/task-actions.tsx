@@ -16,6 +16,7 @@ interface TaskActionsProps {
   onTimeEntryCreate: (entry: any) => void
   onProgressUpdate: (progress: number) => void
   onTaskComplete?: () => void
+  onTotalHoursUpdate?: (totalHours: number) => void
   refreshTimeEntries: number
 }
 
@@ -26,6 +27,7 @@ export function TaskActions({
   onTimeEntryCreate,
   onProgressUpdate,
   onTaskComplete,
+  onTotalHoursUpdate,
   refreshTimeEntries
 }: TaskActionsProps) {
   return (
@@ -34,12 +36,11 @@ export function TaskActions({
       {(task.status === 'in_progress' || task.status === 'assigned') && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Registro de Tiempo
+            <CardTitle className="flex items-center gap-2 text-xl">
+              Cronómetro de Trabajo
             </CardTitle>
-            <CardDescription>
-              Registra el tiempo que trabajas en esta tarea
+            <CardDescription className="text-base">
+              Presiona INICIAR para comenzar a trabajar
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -50,6 +51,7 @@ export function TaskActions({
               onTimeEntryCreate={onTimeEntryCreate}
               onProgressUpdate={onProgressUpdate}
               onTaskComplete={onTaskComplete}
+              onTotalHoursUpdate={onTotalHoursUpdate}
             />
           </CardContent>
         </Card>
@@ -58,12 +60,11 @@ export function TaskActions({
       {/* Historial de Tiempo */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Historial de Tiempo
+          <CardTitle className="flex items-center gap-2 text-xl">
+            Sesiones de Trabajo
           </CardTitle>
-          <CardDescription>
-            Registro de todas las sesiones de trabajo en esta tarea
+          <CardDescription className="text-base">
+            Historial de todas las sesiones de trabajo en esta tarea
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from 'react'
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +10,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { useOperariosPrisma } from "@/hooks/use-operarios-prisma"
 import { AdminOnly } from "@/components/auth/route-guard"
+import { supabase } from "@/lib/supabase"
 import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User } from "lucide-react"
 import Link from "next/link"
 
@@ -16,6 +18,12 @@ export default function DashboardPage() {
   const { userProfile } = useAuth()
   const { projects, loading: projectsLoading } = useProjectsPrisma()
   const { operarios } = useOperariosPrisma()
+  
+  // Estados para cálculo de tiempo real
+  const [calculatedHours, setCalculatedHours] = useState<Record<string, number>>({})
+  const [activeSessions, setActiveSessions] = useState<Record<string, any>>({})
+  const [operarioNames, setOperarioNames] = useState<Record<string, string>>({})
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   
   // Calcular datos reales del dashboard
   const activeProjects = projects.filter(p => p.status === 'active')
@@ -32,6 +40,140 @@ export default function DashboardPage() {
   const cancelledTasks = projects.reduce((sum, project) => 
     sum + project.projectTasks.filter(pt => pt.status === 'cancelled').length, 0
   )
+
+  // useEffect para calcular horas reales desde time_entries (igual que en métricas del proyecto)
+  useEffect(() => {
+    const calculateAllHours = async () => {
+      if (!projects || projects.length === 0) return
+      
+      const hoursMap: Record<string, number> = {}
+      const activeSessionsMap: Record<string, any> = {}
+      const operarioNamesMap: Record<string, string> = {}
+      
+      for (const project of projects) {
+        for (const task of project.projectTasks) {
+          if (task.taskId) {
+            try {
+              // Obtener todas las entradas de tiempo (completadas y activas)
+              const { data: timeEntries, error } = await supabase
+                .from('time_entries')
+                .select('hours, start_time, end_time, user_id')
+                .eq('task_id', task.taskId)
+                .eq('project_id', project.id)
+                .order('start_time', { ascending: false })
+
+              if (error) {
+                console.error('Error fetching time entries:', error)
+                hoursMap[task.id] = 0
+                continue
+              }
+
+              let totalHours = 0
+              let activeSession: { startTime: string; elapsedHours: number; operarioId: string } | null = null
+
+              timeEntries?.forEach(entry => {
+                if (entry.end_time) {
+                  // Sesión completada - usar horas calculadas
+                  totalHours += parseFloat(entry.hours || 0)
+                } else {
+                  // Sesión activa - calcular tiempo transcurrido
+                  const startTime = new Date(entry.start_time)
+                  const now = new Date()
+                  const elapsedMs = now.getTime() - startTime.getTime()
+                  const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                  totalHours += elapsedHours
+                  
+                  // Guardar información de sesión activa
+                  activeSession = {
+                    startTime: entry.start_time,
+                    elapsedHours,
+                    operarioId: entry.user_id
+                  }
+                }
+              })
+
+              hoursMap[task.id] = totalHours
+              if (activeSession) {
+                activeSessionsMap[task.taskId] = activeSession
+                
+                // Obtener nombre del operario si no lo tenemos
+                const operarioId = (activeSession as { operarioId: string }).operarioId
+                if (!operarioNamesMap[operarioId]) {
+                  try {
+                    const { data: user, error: userError } = await supabase
+                      .from('users')
+                      .select('name')
+                      .eq('id', operarioId)
+                      .single()
+                    
+                    if (!userError && user) {
+                      operarioNamesMap[operarioId] = user.name
+                    } else {
+                      operarioNamesMap[operarioId] = 'Operario desconocido'
+                    }
+                  } catch (err) {
+                    operarioNamesMap[operarioId] = 'Operario desconocido'
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Error calculating hours for task:', task.id, err)
+              hoursMap[task.id] = 0
+            }
+          } else {
+            hoursMap[task.id] = 0
+          }
+        }
+      }
+      
+      setCalculatedHours(hoursMap)
+      setActiveSessions(activeSessionsMap)
+      setOperarioNames(operarioNamesMap)
+      setLastUpdate(new Date())
+    }
+
+    if (projects && projects.length > 0) {
+      calculateAllHours()
+      
+      // Actualizar cada 30 segundos para sesiones activas
+      const interval = setInterval(calculateAllHours, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [projects])
+
+  // Función para formatear tiempo transcurrido
+  const formatElapsedTime = (elapsedHours: number) => {
+    const hours = Math.floor(elapsedHours)
+    const minutes = Math.round((elapsedHours - hours) * 60)
+    
+    if (hours === 0) {
+      return `${minutes}min`
+    } else if (minutes === 0) {
+      return `${hours}h`
+    } else {
+      return `${hours}h ${minutes}min`
+    }
+  }
+
+  // Función para formatear tiempo trabajado (siempre en minutos, con horas cuando sea necesario)
+  const formatWorkedTime = (hours: number) => {
+    const totalMinutes = Math.round(hours * 60)
+    const hoursPart = Math.floor(totalMinutes / 60)
+    const minutesPart = totalMinutes % 60
+    
+    if (hoursPart === 0) {
+      return `${minutesPart}min`
+    } else if (minutesPart === 0) {
+      return `${hoursPart}h`
+    } else {
+      return `${hoursPart}h ${minutesPart}min`
+    }
+  }
+
+  // Función para obtener nombre del operario
+  const getOperarioName = (operarioId: string) => {
+    return operarioNames[operarioId] || 'Operario desconocido'
+  }
 
   // Función para calcular el progreso real del proyecto basado en progreso de tareas
   const calculateProjectProgress = (project: any) => {
@@ -60,14 +202,13 @@ export default function DashboardPage() {
     const pendingTasks = project.projectTasks.filter((pt: any) => pt.status === 'pending').length
     const totalOperarios = project.projectOperarios.length
     
-    
-    // Calcular horas totales estimadas y trabajadas
+    // Calcular horas totales estimadas y trabajadas usando calculatedHours (desde time_entries)
     const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => 
       sum + (pt.task?.estimatedHours || 0), 0
     )
-    const actualHours = project.projectTasks.reduce((sum: number, pt: any) => 
-      sum + (pt.actualHours || 0), 0
-    )
+    const actualHours = Math.round(project.projectTasks.reduce((sum: number, pt: any) => 
+      sum + (calculatedHours[pt.id] || 0), 0
+    ) * 100) / 100 // Redondear a 2 decimales para evitar problemas de precisión
 
     // Calcular progreso de tiempo estimado y eficiencia real
     // Progreso de tiempo estimado: horas estimadas de tareas completadas vs total estimado
@@ -76,10 +217,10 @@ export default function DashboardPage() {
       .reduce((sum: number, pt: any) => sum + (pt.task?.estimatedHours || 0), 0)
     
     // Eficiencia real: horas trabajadas de tareas completadas vs horas estimadas totales del proyecto
-    const completedActualHours = project.projectTasks
+    const completedActualHours = Math.round(project.projectTasks
       .filter((pt: any) => pt.status === 'completed')
-      .reduce((sum: number, pt: any) => sum + (pt.actualHours || 0), 0)
-
+      .reduce((sum: number, pt: any) => sum + (calculatedHours[pt.id] || 0), 0) * 100
+    ) / 100
 
     return {
       totalTasks,
@@ -166,6 +307,9 @@ export default function DashboardPage() {
                 : 'Resumen general del sistema de gestión de operarios'
               }
             </p>
+            <div className="text-xs text-muted-foreground mt-1">
+              Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
           
         </div>
@@ -302,12 +446,26 @@ export default function DashboardPage() {
                   const metrics = getProjectMetrics(project)
                   const progress = calculateProjectProgress(project)
                   
+                  // Contar sesiones activas únicas en este proyecto (operarios únicos)
+                  // Solo mostrar si la tarea está asignada a un operario y en progreso
+                  const projectActiveSessions = project.projectTasks
+                    .filter((pt: any) => 
+                      pt.taskId && 
+                      activeSessions[pt.taskId] && 
+                      pt.assignedUser && 
+                      (pt.status === 'in_progress' || pt.status === 'assigned')
+                    )
+                    .map((pt: any) => activeSessions[pt.taskId].operarioId)
+                    .filter((operarioId: string, index: number, array: string[]) => 
+                      array.indexOf(operarioId) === index
+                    ).length
+                  
+                  
                   return (
-                    <Card key={project.id} className="hover:shadow-md transition-shadow">
+                    <Card key={project.id} className="hover:shadow-md transition-shadow relative">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
                             <CardTitle className="text-xl">{project.name}</CardTitle>
                           </div>
                           <Badge variant="default" className="text-xs">
@@ -380,36 +538,45 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Progreso Real del Proyecto */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center text-sm">
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
                               Progreso Real
                             </span>
                             {metrics.estimatedHours > 0 ? (
-                              <div className="text-right">
-                                <span className="font-semibold text-blue-600">
-                                  {metrics.actualHours % 1 === 0 ? metrics.actualHours : metrics.actualHours}h trabajadas
-                                </span>
-                                <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                  {(() => {
-                                    const progress = (metrics.actualHours / metrics.estimatedHours) * 100
-                                    const remainingHours = metrics.estimatedHours - metrics.actualHours
-                                    const remainingFormatted = remainingHours % 1 === 0 ? remainingHours : remainingHours.toFixed(1)
-                                    return `${Math.round(progress)}% completado (${remainingFormatted}h restantes)`
-                                  })()}
-                                </div>
-                              </div>
+                              <span className="font-semibold text-blue-600">
+                                {formatWorkedTime(metrics.actualHours)} trabajadas
+                              </span>
                             ) : (
                               <span className="font-semibold text-gray-500">Sin datos</span>
                             )}
                           </div>
-                          {metrics.estimatedHours > 0 ? (
-                            <Progress 
-                              value={Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)} 
-                              className="h-2" 
-                            />
-                          ) : (
+                          
+                          {metrics.estimatedHours > 0 && (
+                            <div className="space-y-2">
+                              <Progress 
+                                value={Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)} 
+                                className="h-2" 
+                              />
+                              <div className="text-center">
+                                <div className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-800 inline-block">
+                                  {(() => {
+                                    const progress = (metrics.actualHours / metrics.estimatedHours) * 100
+                                    const remainingHours = metrics.estimatedHours - metrics.actualHours
+                                    
+                                    if (progress > 100) {
+                                      return `${Math.round(progress)}% completado (${formatWorkedTime(Math.abs(remainingHours))} retrasado)`
+                                    } else {
+                                      return `${Math.round(progress)}% completado (${formatWorkedTime(remainingHours)} restantes)`
+                                    }
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {metrics.estimatedHours === 0 && (
                             <div className="h-2 bg-primary/20 rounded-full">
                             </div>
                           )}
@@ -423,13 +590,41 @@ export default function DashboardPage() {
                               Estado Temporal
                             </span>
                             {(() => {
-                              const now = new Date()
-                              const startDate = project.startDate ? new Date(project.startDate) : null
-                              const endDate = project.endDate ? new Date(project.endDate) : null
-                              
-                              if (!startDate || !endDate) {
-                                return <span className="font-semibold text-gray-500">Sin fechas</span>
+                              // Si no hay fechas, calcular estado basado en progreso real vs estimado
+                              if (!project.startDate || !project.endDate) {
+                                if (metrics.estimatedHours > 0) {
+                                  const progress = (metrics.actualHours / metrics.estimatedHours) * 100
+                                  if (progress > 100) {
+                                    return (
+                                      <span className="font-semibold text-red-600">
+                                        {Math.round(progress - 100)}% retrasado
+                                      </span>
+                                    )
+                                  } else if (progress < 50) {
+                                    return (
+                                      <span className="font-semibold text-yellow-600">
+                                        En progreso
+                                      </span>
+                                    )
+                                  } else {
+                                    return (
+                                      <span className="font-semibold text-blue-600">
+                                        En progreso
+                                      </span>
+                                    )
+                                  }
+                                } else {
+                                  return (
+                                    <span className="font-semibold text-gray-500">
+                                      Sin datos
+                                    </span>
+                                  )
+                                }
                               }
+                              
+                              const now = new Date()
+                              const startDate = new Date(project.startDate)
+                              const endDate = new Date(project.endDate)
                               
                               const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
                               const elapsedDays = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -439,30 +634,21 @@ export default function DashboardPage() {
                               
                               if (timeDifference > 5) {
                                 return (
-                                  <div className="text-right">
-                                    <span className="font-semibold text-green-600">Adelantado</span>
-                                    <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
-                                      {Math.round(timeDifference)}% adelantado
-                                    </div>
-                                  </div>
+                                  <span className="font-semibold text-green-600">
+                                    {Math.round(timeDifference)}% adelantado
+                                  </span>
                                 )
                               } else if (timeDifference < -5) {
                                 return (
-                                  <div className="text-right">
-                                    <span className="font-semibold text-red-600">Atrasado</span>
-                                    <div className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
-                                      {Math.round(Math.abs(timeDifference))}% atrasado
-                                    </div>
-                                  </div>
+                                  <span className="font-semibold text-red-600">
+                                    {Math.round(Math.abs(timeDifference))}% atrasado
+                                  </span>
                                 )
                               } else {
                                 return (
-                                  <div className="text-right">
-                                    <span className="font-semibold text-blue-600">En tiempo</span>
-                                    <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                      Según cronograma
-                                    </div>
-                                  </div>
+                                  <span className="font-semibold text-blue-600">
+                                    Según cronograma
+                                  </span>
                                 )
                               }
                             })()}
@@ -491,6 +677,33 @@ export default function DashboardPage() {
                             <span className="text-muted-foreground">Operarios</span>
                             <span className="font-semibold">{metrics.totalOperarios}</span>
                           </div>
+                          <div className="flex items-center gap-2 col-span-2">
+                            {projectActiveSessions > 0 ? (
+                              <>
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-green-600 font-medium text-xs">
+                                  {projectActiveSessions} operario{projectActiveSessions > 1 ? 's' : ''} trabajando ahora
+                                </span>
+                                <div className="text-xs text-muted-foreground">
+                                  ({project.projectTasks
+                                    .filter((pt: any) => 
+                                      pt.taskId && 
+                                      activeSessions[pt.taskId] && 
+                                      pt.assignedUser && 
+                                      (pt.status === 'in_progress' || pt.status === 'assigned')
+                                    )
+                                    .map((pt: any) => getOperarioName(activeSessions[pt.taskId].operarioId))
+                                    .filter((name: string, index: number, array: string[]) => 
+                                      array.indexOf(name) === index
+                                    ).join(', ')})
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-muted-foreground">
+                                Sin actividad
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Resumen de Horas */}
@@ -501,7 +714,7 @@ export default function DashboardPage() {
                               Horas Trabajadas
                             </span>
                             <span className="text-muted-foreground font-medium">
-                              {metrics.actualHours % 1 === 0 ? metrics.actualHours : metrics.actualHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
+                              {formatWorkedTime(metrics.actualHours)} de {formatWorkedTime(metrics.estimatedHours)}
                             </span>
                           </div>
                         </div>

@@ -20,22 +20,30 @@ export default function ProjectMetricsPage() {
   
   const project = projects?.find(p => p.id === projectId)
 
-  // Calcular horas reales desde time_entries
+  // Calcular horas reales desde time_entries (incluyendo sesiones activas)
   const [calculatedHours, setCalculatedHours] = useState<Record<string, number>>({})
+  const [activeSessions, setActiveSessions] = useState<Record<string, any>>({})
+  const [operarioNames, setOperarioNames] = useState<Record<string, string>>({})
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   useEffect(() => {
     const calculateAllHours = async () => {
       if (!project) return
       
       const hoursMap: Record<string, number> = {}
+      const activeSessionsMap: Record<string, any> = {}
+      const operarioNamesMap: Record<string, string> = {}
       
       for (const task of project.projectTasks) {
         if (task.taskId) {
           try {
+            // Obtener todas las entradas de tiempo (completadas y activas)
             const { data: timeEntries, error } = await supabase
               .from('time_entries')
-              .select('hours')
+              .select('hours, start_time, end_time, user_id')
               .eq('task_id', task.taskId)
+              .eq('project_id', project.id)
+              .order('start_time', { ascending: false })
 
             if (error) {
               console.error('Error fetching time entries:', error)
@@ -43,8 +51,69 @@ export default function ProjectMetricsPage() {
               continue
             }
 
-            const totalHours = timeEntries?.reduce((sum, entry) => sum + parseFloat(entry.hours || 0), 0) || 0
+            let totalHours = 0
+            let activeSession: { startTime: string; elapsedHours: number; operarioId: string } | null = null
+
+            timeEntries?.forEach(entry => {
+              if (entry.end_time) {
+                // Sesión completada - usar horas calculadas
+                totalHours += parseFloat(entry.hours || 0)
+              } else {
+                // Sesión activa - calcular tiempo transcurrido
+                const startTime = new Date(entry.start_time)
+                const now = new Date()
+                const elapsedMs = now.getTime() - startTime.getTime()
+                const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                totalHours += elapsedHours
+                
+                // Guardar información de sesión activa
+                activeSession = {
+                  startTime: entry.start_time,
+                  elapsedHours,
+                  operarioId: entry.user_id
+                }
+              }
+            })
+
             hoursMap[task.id] = totalHours
+            if (activeSession) {
+              activeSessionsMap[task.id] = activeSession
+              
+              // Actualizar estado de la tarea a 'in_progress' si tiene sesión activa
+              if (task.status === 'assigned' || task.status === 'pending') {
+                try {
+                  await supabase
+                    .from('project_tasks')
+                    .update({ status: 'in_progress' })
+                    .eq('id', task.id)
+                } catch (err) {
+                  console.error('Error actualizando estado de tarea:', err)
+                }
+              }
+              
+              // Obtener nombre del operario si no lo tenemos
+              const operarioId = (activeSession as { operarioId: string }).operarioId
+              if (!operarioNamesMap[operarioId]) {
+                try {
+                  const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('name')
+                    .eq('id', operarioId)
+                    .single()
+                  
+                  if (!userError && user) {
+                    operarioNamesMap[operarioId] = user.name
+                  } else {
+                    operarioNamesMap[operarioId] = 'Operario desconocido'
+                  }
+                } catch (err) {
+                  operarioNamesMap[operarioId] = 'Operario desconocido'
+                }
+              }
+            } else {
+              // Si no hay sesión activa pero la tarea está en_progress, mantener el estado
+              // (puede tener sesiones completadas pero no estar trabajando actualmente)
+            }
           } catch (err) {
             console.error('Error calculating hours for task:', task.id, err)
             hoursMap[task.id] = 0
@@ -55,12 +124,79 @@ export default function ProjectMetricsPage() {
       }
       
       setCalculatedHours(hoursMap)
+      setActiveSessions(activeSessionsMap)
+      setOperarioNames(operarioNamesMap)
+      setLastUpdate(new Date())
+      
+      // Verificar si alguna tarea que tenía sesión activa ya no la tiene
+      // y revertir su estado si es necesario
+      const previousActiveSessions = Object.keys(activeSessions)
+      const currentActiveSessions = Object.keys(activeSessionsMap)
+      
+      for (const taskId of previousActiveSessions) {
+        if (!currentActiveSessions.includes(taskId)) {
+          // Esta tarea ya no tiene sesión activa
+          const task = project.projectTasks.find(pt => pt.id === taskId)
+          if (task && task.status === 'in_progress') {
+            // Solo revertir si no tiene horas trabajadas (sesiones completadas)
+            const hasCompletedHours = (calculatedHours[taskId] || 0) > 0
+            if (!hasCompletedHours) {
+              try {
+                await supabase
+                  .from('project_tasks')
+                  .update({ status: 'assigned' })
+                  .eq('id', taskId)
+              } catch (err) {
+                console.error('Error revirtiendo estado de tarea:', err)
+              }
+            }
+          }
+        }
+      }
     }
 
     if (project && project.projectTasks.length > 0) {
       calculateAllHours()
+      
+      // Actualizar cada 30 segundos para sesiones activas
+      const interval = setInterval(calculateAllHours, 30000)
+      return () => clearInterval(interval)
     }
   }, [project])
+
+  // Función para formatear tiempo transcurrido
+  const formatElapsedTime = (elapsedHours: number) => {
+    const hours = Math.floor(elapsedHours)
+    const minutes = Math.round((elapsedHours - hours) * 60)
+    
+    if (hours === 0) {
+      return `${minutes}min`
+    } else if (minutes === 0) {
+      return `${hours}h`
+    } else {
+      return `${hours}h ${minutes}min`
+    }
+  }
+
+  // Función para formatear tiempo trabajado (siempre en minutos, con horas cuando sea necesario)
+  const formatWorkedTime = (hours: number) => {
+    const totalMinutes = Math.round(hours * 60)
+    const hoursPart = Math.floor(totalMinutes / 60)
+    const minutesPart = totalMinutes % 60
+    
+    if (hoursPart === 0) {
+      return `${minutesPart}min`
+    } else if (minutesPart === 0) {
+      return `${hoursPart}h`
+    } else {
+      return `${hoursPart}h ${minutesPart}min`
+    }
+  }
+
+  // Función para obtener nombre del operario
+  const getOperarioName = (operarioId: string) => {
+    return operarioNames[operarioId] || 'Operario desconocido'
+  }
 
   // Función para determinar el color de eficiencia
   const getEfficiencyColor = (actualHours: number, estimatedHours: number) => {
@@ -204,6 +340,9 @@ export default function ProjectMetricsPage() {
           <div className="flex items-center gap-2 self-start sm:self-auto">
             <div className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`} />
             <Badge variant="outline" className="text-xs sm:text-sm">{getStatusText(project.status)}</Badge>
+            <div className="text-xs text-muted-foreground">
+              Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
         </div>
 
@@ -220,7 +359,7 @@ export default function ProjectMetricsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Métricas generales */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               <div className="text-center p-3 border rounded-lg">
                 <div className="text-lg sm:text-2xl font-bold">{totalTasks}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">Total Tareas</div>
@@ -236,6 +375,10 @@ export default function ProjectMetricsPage() {
               <div className="text-center p-3 border rounded-lg">
                 <div className="text-lg sm:text-2xl font-bold text-gray-600">{pendingTasks}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">Pendientes</div>
+              </div>
+              <div className="text-center p-3 border rounded-lg bg-green-50 border-green-200">
+                <div className="text-lg sm:text-2xl font-bold text-green-700">{Object.keys(activeSessions).length}</div>
+                <div className="text-xs sm:text-sm text-green-600">Trabajando Ahora</div>
               </div>
             </div>
 
@@ -296,15 +439,14 @@ export default function ProjectMetricsPage() {
                   </span>
                   {estimatedHours > 0 ? (
                     <div className="text-left sm:text-right">
-                      <span className="font-semibold text-blue-600 text-sm sm:text-base">
-                        {actualHours % 1 === 0 ? actualHours : actualHours.toFixed(1)}h trabajadas
-                      </span>
-                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 mt-1 inline-block">
+                      <div className="font-semibold text-blue-600 text-sm sm:text-base mb-1">
+                        {formatWorkedTime(actualHours)} trabajadas
+                      </div>
+                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 inline-block">
                         {(() => {
                           const progress = (actualHours / estimatedHours) * 100
                           const remainingHours = estimatedHours - actualHours
-                          const remainingFormatted = remainingHours % 1 === 0 ? remainingHours : remainingHours.toFixed(1)
-                          return `${Math.round(progress)}% completado (${remainingFormatted}h restantes)`
+                          return `${Math.round(progress)}% completado (${formatWorkedTime(remainingHours)} restantes)`
                         })()}
                       </div>
                     </div>
@@ -498,6 +640,13 @@ export default function ProjectMetricsPage() {
                 
                 return (
                   <div key={projectTask.id} className="border rounded-lg p-3 space-y-3 relative">
+                    {/* Indicador de sesión activa */}
+                    {activeSessions[projectTask.id] && (
+                      <div className="absolute top-2 right-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                      </div>
+                    )}
+                    
                     {/* Header compacto con numeración */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -507,6 +656,11 @@ export default function ProjectMetricsPage() {
                         <span className="font-semibold text-sm truncate">
                           {task?.title || 'Tarea sin título'}
                         </span>
+                        {activeSessions[projectTask.id] && (
+                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
+                            Trabajando ahora
+                          </Badge>
+                        )}
                       </div>
                       <Badge 
                         variant="outline" 
@@ -566,6 +720,11 @@ export default function ProjectMetricsPage() {
                             Sin asignar
                           </Badge>
                         )}
+                        {activeSessions[projectTask.id] && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 ml-2">
+                            trabajando
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Tiempo trabajado */}
@@ -573,8 +732,13 @@ export default function ProjectMetricsPage() {
                         <Timer className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Trabajado:</span>
                         <span className="font-semibold">
-                          {actualHours % 1 === 0 ? actualHours : actualHours}hs
+                          {formatWorkedTime(actualHours)}
                         </span>
+                        {activeSessions[projectTask.id] && (
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 ml-2">
+                            Trabajando ahora: {formatElapsedTime(activeSessions[projectTask.id].elapsedHours)}
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Fechas de inicio y fin */}
@@ -625,18 +789,16 @@ export default function ProjectMetricsPage() {
                             <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                             <span className="text-muted-foreground">Eficiencia:</span>
                             <span className={`font-semibold ${getEfficiencyColor(actualHours, estimatedHours)}`}>
-                              {actualHours % 1 === 0 ? actualHours : actualHours}hs de {estimatedHours % 1 === 0 ? estimatedHours : estimatedHours}hs
+                              {formatWorkedTime(actualHours)} de {formatWorkedTime(estimatedHours)}
                             </span>
                           </div>
                           <Badge variant="outline" className={`text-xs w-fit ${getEfficiencyColor(actualHours, estimatedHours)} border-current`}>
                             {(() => {
                               const diff = estimatedHours - actualHours
                               if (diff >= 0) {
-                                const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                                return `Tiempo ahorrado: ${diffFormatted}hs`
+                                return `Tiempo ahorrado: ${formatWorkedTime(diff)}`
                               } else {
-                                const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                                return `Tiempo extra: ${diffFormatted}hs`
+                                return `Tiempo extra: ${formatWorkedTime(Math.abs(diff))}`
                               }
                             })()}
                           </Badge>

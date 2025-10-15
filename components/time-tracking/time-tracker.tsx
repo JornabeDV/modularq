@@ -14,9 +14,10 @@ interface TimeTrackerProps {
   onTimeEntryCreate?: (entry: any) => void
   onProgressUpdate?: (progress: number) => void
   onTaskComplete?: () => void
+  onTotalHoursUpdate?: (totalHours: number) => void
 }
 
-export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, onProgressUpdate, onTaskComplete }: TimeTrackerProps) {
+export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, onProgressUpdate, onTaskComplete, onTotalHoursUpdate }: TimeTrackerProps) {
   const { user } = useAuth()
   const [isTracking, setIsTracking] = useState(false)
   const [startTime, setStartTime] = useState<Date | null>(null)
@@ -25,96 +26,123 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
   const [totalHoursWorked, setTotalHoursWorked] = useState(0)
   const [lastSentProgress, setLastSentProgress] = useState<number | null>(null)
   const [isNearLimit, setIsNearLimit] = useState(false)
+  const [currentTimeEntryId, setCurrentTimeEntryId] = useState<string | null>(null)
   
   // Límite máximo: 2 horas extra del tiempo estimado (en milisegundos)
   const MAX_EXTRA_TIME = 2 * 60 * 60 * 1000 // 2 horas extra
 
-  // Clave única para localStorage basada en operario, proyecto y tarea
-  const timerStorageKey = `timer_${operarioId}_${projectId}_${taskId}`
+  // Función para verificar si el operario tiene sesiones activas en otras tareas/proyectos
+  const checkGlobalActiveSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('*')
+        .eq('user_id', operarioId)
+        .is('end_time', null)
+        .order('start_time', { ascending: false })
 
-  // Funciones para persistir el estado del cronómetro
-  const saveTimerState = (isTracking: boolean, startTime: Date | null, elapsedTime: number) => {
-    const timerState = {
-      isTracking,
-      startTime: startTime?.toISOString() || null,
-      elapsedTime,
-      savedAt: new Date().toISOString()
+      if (error) {
+        console.error('Error checking global active sessions:', error)
+        return []
+      }
+
+      return data || []
+    } catch (err) {
+      console.error('Error checking global active sessions:', err)
+      return []
     }
-    localStorage.setItem(timerStorageKey, JSON.stringify(timerState))
   }
 
-  const loadTimerState = () => {
+  // Función para cerrar sesiones activas existentes
+  const closeExistingSessions = async (excludeTaskId?: string, excludeProjectId?: string) => {
     try {
-      const saved = localStorage.getItem(timerStorageKey)
-      if (saved) {
-        const timerState = JSON.parse(saved)
-        const startTime = timerState.startTime ? new Date(timerState.startTime) : null
-        
-        // Verificar si el timer sigue siendo válido basado en el tiempo estimado de la tarea
-        if (currentTask?.task?.estimated_hours && startTime) {
-          const estimatedHours = currentTask.task.estimated_hours
-          const maxElapsedTime = estimatedHours * 60 * 60 * 1000 // Convertir a milisegundos
-          
-          // Si el tiempo transcurrido supera el tiempo estimado, limpiar el estado
-          if (timerState.elapsedTime > maxElapsedTime) {
-            localStorage.removeItem(timerStorageKey)
-            return null
-          }
+      const activeSessions = await checkGlobalActiveSessions()
+      
+      for (const session of activeSessions) {
+        // No cerrar la sesión actual si estamos en la misma tarea y proyecto
+        if (session.task_id === excludeTaskId && session.project_id === excludeProjectId) {
+          continue
         }
-        
-        // Verificar si el estado no es muy viejo (máximo 7 días como fallback)
-        const savedAt = new Date(timerState.savedAt)
-        const now = new Date()
-        const daysDiff = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60 * 24)
-        
-        if (daysDiff < 7) {
-          return {
-            isTracking: timerState.isTracking,
-            startTime,
-            elapsedTime: timerState.elapsedTime
-          }
-        } else {
-          // Limpiar estado muy viejo
-          localStorage.removeItem(timerStorageKey)
+
+        const endTime = new Date()
+        const startTime = new Date(session.start_time)
+        const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
+
+        // Cerrar la sesión existente
+        const { error } = await supabase
+          .from('time_entries')
+          .update({
+            end_time: endTime.toISOString(),
+            description: 'Sesión cerrada automáticamente al iniciar nueva tarea',
+            hours: hours
+          })
+          .eq('id', session.id)
+
+        if (error) {
+          console.error('Error closing existing session:', error)
         }
       }
-    } catch (error) {
-      console.error('Error loading timer state:', error)
+    } catch (err) {
+      console.error('Error closing existing sessions:', err)
     }
-    return null
   }
 
-  const clearTimerState = () => {
-    localStorage.removeItem(timerStorageKey)
+  // Función para cargar sesión activa desde la base de datos
+  const loadActiveSession = async () => {
+    if (!currentTask?.task_id) {
+      return
+    }
+
+    try {
+      // Buscar sesión activa específica para esta tarea y proyecto
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('*')
+        .eq('user_id', operarioId)
+        .eq('task_id', currentTask.task_id)
+        .eq('project_id', projectId)
+        .is('end_time', null)
+        .order('start_time', { ascending: false })
+        .limit(1)
+
+      if (data && data.length > 0 && !error) {
+        const activeSession = data[0]
+        // Recuperar sesión activa
+        const startTime = new Date(activeSession.start_time)
+        const now = new Date()
+        const sessionElapsedTime = now.getTime() - startTime.getTime()
+        
+        setStartTime(startTime)
+        setElapsedTime(sessionElapsedTime) // Solo el tiempo de esta sesión
+        setIsTracking(true)
+        setCurrentTimeEntryId(activeSession.id)
+      }
+    } catch (err) {
+      // No active session found for this task
+    }
   }
 
   // Función para completar tarea automáticamente cuando se alcanza el tiempo estimado
   const completeTaskAutomatically = async () => {
-    if (!currentTask) return
+    if (!currentTask || !currentTimeEntryId) return
 
     try {
-      // Crear entrada de tiempo final
       const endTime = new Date()
-      const hours = (elapsedTime + (endTime.getTime() - startTime!.getTime())) / (1000 * 60 * 60)
+      const hours = elapsedTime / (1000 * 60 * 60)
       
       if (hours > 0) {
-        const timeEntry = {
-          user_id: operarioId,
-          task_id: currentTask.task_id,
-          project_id: currentTask.project_id,
-          start_time: startTime!.toISOString(),
-          end_time: endTime.toISOString(),
-          description: 'Tarea completada automáticamente al alcanzar límite de tiempo',
-          date: startTime!.toISOString().split("T")[0],
-        }
-
-        // Insertar entrada de tiempo
+        // Completar la entrada de tiempo existente
         const { error: timeError } = await supabase
           .from('time_entries')
-          .insert(timeEntry)
+          .update({
+            end_time: endTime.toISOString(),
+            description: 'Tarea completada automáticamente al alcanzar límite de tiempo',
+            hours: hours
+          })
+          .eq('id', currentTimeEntryId)
 
         if (timeError) {
-          console.error('Error creating final time entry:', timeError)
+          console.error('Error updating final time entry:', timeError)
         }
 
         // Actualizar horas trabajadas en project_tasks
@@ -146,6 +174,12 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         if (completeError) {
           console.error('Error completing task:', completeError)
         } else {
+          // Limpiar estado local
+          setCurrentTimeEntryId(null)
+          setIsTracking(false)
+          setStartTime(null)
+          setElapsedTime(0)
+          
           // Notificar al componente padre
           onTaskComplete?.()
           
@@ -195,15 +229,27 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     }
   }, [taskId])
 
-  // Cargar estado del cronómetro al montar el componente
+  // Cargar sesión activa después de que currentTask esté disponible
   useEffect(() => {
-    const savedState = loadTimerState()
-    if (savedState) {
-      setIsTracking(savedState.isTracking)
-      setStartTime(savedState.startTime)
-      setElapsedTime(savedState.elapsedTime)
+    const loadActiveSessionAndValidate = async () => {
+      if (!currentTask?.task_id) return
+
+      // Primero verificar si hay sesiones activas en otras tareas
+      const activeSessions = await checkGlobalActiveSessions()
+      const otherActiveSessions = activeSessions.filter(session => 
+        session.task_id !== currentTask.task_id || session.project_id !== currentTask.project_id
+      )
+
+      if (otherActiveSessions.length > 0) {
+        // Se detectaron sesiones activas en otras tareas al cargar el componente
+      }
+
+      // Cargar la sesión activa para esta tarea específica
+      await loadActiveSession()
     }
-  }, [taskId, operarioId])
+
+    loadActiveSessionAndValidate()
+  }, [currentTask?.task_id, operarioId])
 
   // Cargar horas trabajadas y calcular progreso
   useEffect(() => {
@@ -216,6 +262,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           .select('hours')
           .eq('task_id', currentTask.task_id)
           .eq('user_id', operarioId)
+          .eq('project_id', projectId)
 
         if (error) throw error
 
@@ -238,8 +285,14 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
   // Efecto separado para actualizar progreso cuando cambien las horas trabajadas
   useEffect(() => {
     if (currentTask?.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
-      const progress = Math.min((totalHoursWorked / currentTask.task.estimated_hours) * 100, 100)
+      // Calcular progreso incluyendo la sesión activa
+      const activeSessionHours = isTracking && elapsedTime > 0 ? elapsedTime / (1000 * 60 * 60) : 0
+      const totalHoursWithActive = totalHoursWorked + activeSessionHours
+      const progress = Math.min((totalHoursWithActive / currentTask.task.estimated_hours) * 100, 100)
       const roundedProgress = Math.round(progress)
+      
+      // Enviar tiempo total actualizado
+      onTotalHoursUpdate?.(totalHoursWithActive)
       
       // Solo actualizar si el progreso ha cambiado significativamente y no es el mismo que ya enviamos
       if (roundedProgress !== lastSentProgress && Math.abs(roundedProgress - (currentTask.progressPercentage || 0)) > 1) {
@@ -247,7 +300,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         onProgressUpdate?.(roundedProgress)
       }
     }
-  }, [totalHoursWorked, currentTask?.task?.estimated_hours, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate])
+  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.task?.estimated_hours, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate, onTotalHoursUpdate])
 
   // Refrescar horas trabajadas cuando se crea una nueva entrada
   useEffect(() => {
@@ -260,6 +313,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           .select('hours')
           .eq('task_id', currentTask.task_id)
           .eq('user_id', operarioId)
+          .eq('project_id', projectId)
 
         if (error) throw error
 
@@ -282,7 +336,6 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
       interval = setInterval(() => {
         const now = Date.now()
         const sessionElapsedTime = now - startTime.getTime()
-        const totalElapsedTime = elapsedTime + sessionElapsedTime
         
         // Verificar límites de tiempo
         let maxElapsedTime = MAX_EXTRA_TIME // Límite por defecto: 2 horas
@@ -299,18 +352,17 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         }
         
         // Mostrar advertencia cuando se acerque al límite
-        if (totalElapsedTime >= warningThreshold && totalElapsedTime < maxElapsedTime) {
+        if (sessionElapsedTime >= warningThreshold && sessionElapsedTime < maxElapsedTime) {
           setIsNearLimit(true)
         } else {
           setIsNearLimit(false)
         }
         
         // Detener automáticamente si se alcanza cualquier límite
-        if (totalElapsedTime >= maxElapsedTime) {
+        if (sessionElapsedTime >= maxElapsedTime) {
           setIsTracking(false)
           setElapsedTime(maxElapsedTime)
           setIsNearLimit(false)
-          saveTimerState(false, startTime, maxElapsedTime)
           if (interval) clearInterval(interval)
           
           // Marcar tarea como completada automáticamente
@@ -318,9 +370,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           return
         }
         
-        setElapsedTime(totalElapsedTime)
-        // Guardar estado cada segundo
-        saveTimerState(isTracking, startTime, totalElapsedTime)
+        setElapsedTime(sessionElapsedTime)
       }, 1000)
     }
 
@@ -329,14 +379,6 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     }
   }, [isTracking, startTime, currentTask?.task?.estimated_hours])
 
-  // Limpiar estado al desmontar el componente si no está tracking
-  useEffect(() => {
-    return () => {
-      if (!isTracking) {
-        clearTimerState()
-      }
-    }
-  }, [isTracking])
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000)
@@ -349,16 +391,54 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
       .padStart(2, "0")}`
   }
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (!taskId || !currentTask) {
       return
     }
 
+    // Verificar si ya hay una sesión activa para esta tarea específica
+    if (isTracking && currentTimeEntryId) {
+      return
+    }
+
+    // Verificar si hay sesiones activas en otras tareas/proyectos
+    const activeSessions = await checkGlobalActiveSessions()
+    const otherActiveSessions = activeSessions.filter(session => 
+      session.task_id !== currentTask.task_id || session.project_id !== currentTask.project_id
+    )
+
+    if (otherActiveSessions.length > 0) {
+      // Cerrar sesiones existentes en otras tareas/proyectos
+      await closeExistingSessions(currentTask.task_id, currentTask.project_id)
+    }
+
     const now = new Date()
-    setStartTime(now)
-    setIsTracking(true)
-    // No resetear elapsedTime, mantener el tiempo acumulado
-    saveTimerState(true, now, elapsedTime)
+    
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .insert({
+          user_id: operarioId,
+          task_id: currentTask.task_id,
+          project_id: currentTask.project_id,
+          start_time: now.toISOString(),
+          end_time: null,
+          description: 'Sesión de trabajo iniciada',
+          date: now.toISOString().split("T")[0],
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setCurrentTimeEntryId(data.id)
+      setStartTime(now)
+      setIsTracking(true)
+      setElapsedTime(0)
+      
+    } catch (err) {
+      console.error('Error starting session:', err)
+    }
   }
 
   // Estado para el modal de detener
@@ -370,72 +450,67 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
   }
 
   const handleConfirmStop = async (reason: string) => {
-    if (!startTime || !taskId || !currentTask) return
+    if (!currentTimeEntryId) return
 
     const endTime = new Date()
     const hours = elapsedTime / (1000 * 60 * 60)
 
-    // Solo crear entrada si hay tiempo transcurrido
-    if (hours > 0) {
-      const timeEntry = {
-        user_id: operarioId,
-        task_id: currentTask.task_id,
-        project_id: currentTask.project_id,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        description: reason,
-        date: startTime.toISOString().split("T")[0],
+    try {
+      // Completar la entrada existente
+      const { data, error } = await supabase
+        .from('time_entries')
+        .update({
+          end_time: endTime.toISOString(),
+          description: reason,
+          hours: hours
+        })
+        .eq('id', currentTimeEntryId)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating time entry on stop:', error)
+        throw error
       }
 
+      onTimeEntryCreate?.(data)
+
+      // Actualizar horas trabajadas
+      const newTotalHours = totalHoursWorked + hours
+      setTotalHoursWorked(newTotalHours)
+
+      // Actualizar actual_hours en la tabla project_tasks
       try {
-        const { data, error } = await supabase
-          .from('time_entries')
-          .insert(timeEntry)
-          .select()
+        const { error: updateError } = await supabase
+          .from('project_tasks')
+          .update({ 
+            actual_hours: newTotalHours,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentTask.id)
 
-        if (error) {
-          console.error('Error creating time entry on stop:', error)
-          throw error
-        }
-
-        onTimeEntryCreate?.(timeEntry)
-
-        // Actualizar horas trabajadas
-        const newTotalHours = totalHoursWorked + hours
-        setTotalHoursWorked(newTotalHours)
-
-        // Actualizar actual_hours en la tabla project_tasks
-        try {
-          const { error: updateError } = await supabase
-            .from('project_tasks')
-            .update({ 
-              actual_hours: newTotalHours,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', currentTask.id)
-
-          if (updateError) {
-            console.error('Error updating actual_hours:', updateError)
-          }
-        } catch (err) {
-          console.error('Error updating actual_hours:', err)
-        }
-
-        if (currentTask.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
-          const progress = Math.min((newTotalHours / currentTask.task.estimated_hours) * 100, 100)
-          onProgressUpdate?.(Math.round(progress))
+        if (updateError) {
+          console.error('Error updating actual_hours:', updateError)
         }
       } catch (err) {
-        console.error('Error creating time entry on stop:', err)
+        console.error('Error updating actual_hours:', err)
       }
-    }
 
-    // Reset state
-    setIsTracking(false)
-    setStartTime(null)
-    setElapsedTime(0)
-    setShowStopModal(false)
-    clearTimerState()
+      if (currentTask.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
+        const progress = Math.min((newTotalHours / currentTask.task.estimated_hours) * 100, 100)
+        onProgressUpdate?.(Math.round(progress))
+      }
+
+      // Limpiar estado local
+      setCurrentTimeEntryId(null)
+      setIsTracking(false)
+      setStartTime(null)
+      setElapsedTime(0)
+      setShowStopModal(false)
+      
+    } catch (err) {
+      console.error('Error stopping session:', err)
+    }
   }
 
   const handleCancelStop = () => {
@@ -446,8 +521,17 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     <div className="space-y-4">
 
         {/* Cronómetro */}
-        <div className="text-center space-y-4">
-          <div className={`text-3xl sm:text-4xl font-mono font-bold ${isNearLimit ? 'text-orange-500' : ''}`}>
+        <div className="text-center space-y-6">
+          {/* Estado de trabajo */}
+          {isTracking && (
+            <div className="bg-green-100 border-2 border-green-500 rounded-lg p-4">
+              <p className="text-xl font-bold text-green-800 flex items-center justify-center gap-2">
+                TRABAJANDO AHORA
+              </p>
+            </div>
+          )}
+          
+          <div className={`text-4xl sm:text-5xl font-mono font-bold ${isNearLimit ? 'text-orange-500' : isTracking ? 'text-green-600' : 'text-gray-600'}`}>
             {formatTime(elapsedTime)}
           </div>
           
@@ -466,40 +550,61 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           
           {/* Horas trabajadas */}
           {currentTask?.task?.estimated_hours && (
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium">{(() => {
-                const hours = Math.floor(totalHoursWorked)
-                const minutes = Math.round((totalHoursWorked - hours) * 60)
-                
-                if (hours === 0) {
-                  return `${minutes}min`
-                } else if (minutes === 0) {
-                  return `${hours}hs`
-                } else {
-                  return `${hours}hs ${minutes}min`
-                }
-              })()}</span> trabajadas de {currentTask.task.estimated_hours}hs estimadas
+            <div className="text-sm text-muted-foreground space-y-1">
+              {isTracking && elapsedTime > 0 && (
+                <div className="text-blue-600">
+                  <span className="font-medium">{(() => {
+                    const activeHours = elapsedTime / (1000 * 60 * 60)
+                    const hours = Math.floor(activeHours)
+                    const minutes = Math.round((activeHours - hours) * 60)
+                    
+                    if (hours === 0) {
+                      return `${minutes}min`
+                    } else if (minutes === 0) {
+                      return `${hours}hs`
+                    } else {
+                      return `${hours}hs ${minutes}min`
+                    }
+                  })()}</span> en sesión activa
+                </div>
+              )}
+              
+              <div className="text-xs">
+                Total: <span className="font-medium">{(() => {
+                  const activeSessionHours = isTracking && elapsedTime > 0 ? elapsedTime / (1000 * 60 * 60) : 0
+                  const totalHours = totalHoursWorked + activeSessionHours
+                  const hours = Math.floor(totalHours)
+                  const minutes = Math.round((totalHours - hours) * 60)
+                  
+                  if (hours === 0) {
+                    return `${minutes}min`
+                  } else if (minutes === 0) {
+                    return `${hours}hs`
+                  } else {
+                    return `${hours}hs ${minutes}min`
+                  }
+                })()}</span> de {currentTask.task.estimated_hours}hs estimadas
+              </div>
             </div>
           )}
           
-          <div className="flex flex-col sm:flex-row justify-center gap-2">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             {!isTracking ? (
               <Button 
                 onClick={handleStart}
                 disabled={!currentTask}
-                className="flex items-center gap-2 w-full sm:w-auto"
+                className="flex items-center gap-3 w-full sm:w-auto h-16 text-xl font-bold bg-green-600 hover:bg-green-700"
               >
-                <Play className="h-4 w-4" />
-                Iniciar {!currentTask ? '(Cargando...)' : ''}
+                <Play className="h-6 w-6" />
+                INICIAR TRABAJO {!currentTask ? '(Cargando...)' : ''}
               </Button>
             ) : (
               <Button 
                 onClick={handleStop}
-                variant="destructive"
-                className="flex items-center gap-2 w-full sm:w-auto"
+                className="flex items-center gap-3 w-full sm:w-auto h-16 text-xl font-bold bg-red-600 hover:bg-red-700 text-white"
               >
-                <Square className="h-4 w-4" />
-                Detener
+                <Square className="h-6 w-6" />
+                DETENER TRABAJO
               </Button>
             )}
           </div>
