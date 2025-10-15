@@ -31,6 +31,62 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
   // Límite máximo: 2 horas extra del tiempo estimado (en milisegundos)
   const MAX_EXTRA_TIME = 2 * 60 * 60 * 1000 // 2 horas extra
 
+  // Función para verificar si el operario tiene sesiones activas en otras tareas/proyectos
+  const checkGlobalActiveSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('time_entries')
+        .select('*')
+        .eq('user_id', operarioId)
+        .is('end_time', null)
+        .order('start_time', { ascending: false })
+
+      if (error) {
+        console.error('Error checking global active sessions:', error)
+        return []
+      }
+
+      return data || []
+    } catch (err) {
+      console.error('Error checking global active sessions:', err)
+      return []
+    }
+  }
+
+  // Función para cerrar sesiones activas existentes
+  const closeExistingSessions = async (excludeTaskId?: string, excludeProjectId?: string) => {
+    try {
+      const activeSessions = await checkGlobalActiveSessions()
+      
+      for (const session of activeSessions) {
+        // No cerrar la sesión actual si estamos en la misma tarea y proyecto
+        if (session.task_id === excludeTaskId && session.project_id === excludeProjectId) {
+          continue
+        }
+
+        const endTime = new Date()
+        const startTime = new Date(session.start_time)
+        const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
+
+        // Cerrar la sesión existente
+        const { error } = await supabase
+          .from('time_entries')
+          .update({
+            end_time: endTime.toISOString(),
+            description: 'Sesión cerrada automáticamente al iniciar nueva tarea',
+            hours: hours
+          })
+          .eq('id', session.id)
+
+        if (error) {
+          console.error('Error closing existing session:', error)
+        }
+      }
+    } catch (err) {
+      console.error('Error closing existing sessions:', err)
+    }
+  }
+
   // Función para cargar sesión activa desde la base de datos
   const loadActiveSession = async () => {
     if (!currentTask?.task_id) {
@@ -38,12 +94,13 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     }
 
     try {
-      // Buscar sesión activa
+      // Buscar sesión activa específica para esta tarea y proyecto
       const { data, error } = await supabase
         .from('time_entries')
         .select('*')
         .eq('user_id', operarioId)
         .eq('task_id', currentTask.task_id)
+        .eq('project_id', projectId)
         .is('end_time', null)
         .order('start_time', { ascending: false })
         .limit(1)
@@ -59,15 +116,9 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         setElapsedTime(sessionElapsedTime) // Solo el tiempo de esta sesión
         setIsTracking(true)
         setCurrentTimeEntryId(activeSession.id)
-        
-        console.log('✅ Sesión activa recuperada:', {
-          id: activeSession.id,
-          startTime: activeSession.start_time,
-          elapsedTime: Math.round(sessionElapsedTime / 1000 / 60) + ' minutos'
-        })
       }
     } catch (err) {
-      console.log('No active session found for this task')
+      // No active session found for this task
     }
   }
 
@@ -180,9 +231,24 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
   // Cargar sesión activa después de que currentTask esté disponible
   useEffect(() => {
-    if (currentTask?.task_id) {
-      loadActiveSession()
+    const loadActiveSessionAndValidate = async () => {
+      if (!currentTask?.task_id) return
+
+      // Primero verificar si hay sesiones activas en otras tareas
+      const activeSessions = await checkGlobalActiveSessions()
+      const otherActiveSessions = activeSessions.filter(session => 
+        session.task_id !== currentTask.task_id || session.project_id !== currentTask.project_id
+      )
+
+      if (otherActiveSessions.length > 0) {
+        // Se detectaron sesiones activas en otras tareas al cargar el componente
+      }
+
+      // Cargar la sesión activa para esta tarea específica
+      await loadActiveSession()
     }
+
+    loadActiveSessionAndValidate()
   }, [currentTask?.task_id, operarioId])
 
   // Cargar horas trabajadas y calcular progreso
@@ -196,6 +262,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           .select('hours')
           .eq('task_id', currentTask.task_id)
           .eq('user_id', operarioId)
+          .eq('project_id', projectId)
 
         if (error) throw error
 
@@ -246,6 +313,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           .select('hours')
           .eq('task_id', currentTask.task_id)
           .eq('user_id', operarioId)
+          .eq('project_id', projectId)
 
         if (error) throw error
 
@@ -328,6 +396,22 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
       return
     }
 
+    // Verificar si ya hay una sesión activa para esta tarea específica
+    if (isTracking && currentTimeEntryId) {
+      return
+    }
+
+    // Verificar si hay sesiones activas en otras tareas/proyectos
+    const activeSessions = await checkGlobalActiveSessions()
+    const otherActiveSessions = activeSessions.filter(session => 
+      session.task_id !== currentTask.task_id || session.project_id !== currentTask.project_id
+    )
+
+    if (otherActiveSessions.length > 0) {
+      // Cerrar sesiones existentes en otras tareas/proyectos
+      await closeExistingSessions(currentTask.task_id, currentTask.project_id)
+    }
+
     const now = new Date()
     
     try {
@@ -351,8 +435,6 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
       setStartTime(now)
       setIsTracking(true)
       setElapsedTime(0)
-      
-      console.log('Nueva sesión iniciada:', data.id)
       
     } catch (err) {
       console.error('Error starting session:', err)

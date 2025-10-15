@@ -25,6 +25,12 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+interface ActiveSession {
+  startTime: string
+  elapsedHours: number
+  operarioId: string
+}
+
 export default function TaskMetricsPage() {
   const params = useParams()
   const router = useRouter()
@@ -40,6 +46,9 @@ export default function TaskMetricsPage() {
   const [timeEntries, setTimeEntries] = useState<any[]>([])
   const [calculatedHours, setCalculatedHours] = useState(0)
   const [loadingMetrics, setLoadingMetrics] = useState(true)
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
+  const [operarioName, setOperarioName] = useState<string>('')
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   // Función para formatear fechas
   const formatDate = (dateString?: string) => {
@@ -76,14 +85,43 @@ export default function TaskMetricsPage() {
     return `${hours % 1 === 0 ? hours : hours.toFixed(1)}hs`
   }
 
-  // Cargar métricas detalladas
+  // Función para formatear tiempo trabajado (consistente con métricas del proyecto)
+  const formatWorkedTime = (hours: number) => {
+    const totalMinutes = Math.round(hours * 60)
+    const hoursPart = Math.floor(totalMinutes / 60)
+    const minutesPart = totalMinutes % 60
+    
+    if (hoursPart === 0) {
+      return `${minutesPart}min`
+    } else if (minutesPart === 0) {
+      return `${hoursPart}h`
+    } else {
+      return `${hoursPart}h ${minutesPart}min`
+    }
+  }
+
+  // Función para formatear tiempo transcurrido
+  const formatElapsedTime = (elapsedHours: number) => {
+    const hours = Math.floor(elapsedHours)
+    const minutes = Math.round((elapsedHours - hours) * 60)
+    
+    if (hours === 0) {
+      return `${minutes}min`
+    } else if (minutes === 0) {
+      return `${hours}h`
+    } else {
+      return `${hours}h ${minutes}min`
+    }
+  }
+
+  // Cargar métricas detalladas con tiempo real
   useEffect(() => {
     const loadDetailedMetrics = async () => {
       if (!projectTask?.taskId) return
 
       setLoadingMetrics(true)
       try {
-        // Cargar entradas de tiempo
+        // Cargar todas las entradas de tiempo (completadas y activas)
         const { data: entries, error } = await supabase
           .from('time_entries')
           .select(`
@@ -92,6 +130,7 @@ export default function TaskMetricsPage() {
             task:tasks(title)
           `)
           .eq('task_id', projectTask.taskId)
+          .eq('project_id', projectId)
           .order('start_time', { ascending: false })
 
         if (error) {
@@ -99,9 +138,56 @@ export default function TaskMetricsPage() {
         } else {
           setTimeEntries(entries || [])
           
-          // Calcular horas totales
-          const totalHours = entries?.reduce((sum, entry) => sum + parseFloat(entry.hours || 0), 0) || 0
+          let totalHours = 0
+          let currentActiveSession: ActiveSession | null = null
+
+          // Calcular horas totales incluyendo sesiones activas
+          entries?.forEach(entry => {
+            if (entry.end_time) {
+              // Sesión completada - usar horas calculadas
+              totalHours += parseFloat(entry.hours || 0)
+            } else {
+              // Sesión activa - calcular tiempo transcurrido
+              const startTime = new Date(entry.start_time)
+              const now = new Date()
+              const elapsedMs = now.getTime() - startTime.getTime()
+              const elapsedHours = elapsedMs / (1000 * 60 * 60)
+              totalHours += elapsedHours
+              
+              // Guardar información de sesión activa
+              currentActiveSession = {
+                startTime: entry.start_time,
+                elapsedHours,
+                operarioId: entry.user_id
+              }
+            }
+          })
+
           setCalculatedHours(totalHours)
+          setActiveSession(currentActiveSession)
+
+          // Obtener nombre del operario si hay sesión activa
+          if (currentActiveSession) {
+            try {
+              const { data: user, error: userError } = await supabase
+                .from('users')
+                .select('name')
+                .eq('id', (currentActiveSession as ActiveSession).operarioId)
+                .single()
+              
+              if (!userError && user) {
+                setOperarioName(user.name)
+              } else {
+                setOperarioName('Operario desconocido')
+              }
+            } catch (err) {
+              setOperarioName('Operario desconocido')
+            }
+          } else {
+            setOperarioName('')
+          }
+
+          setLastUpdate(new Date())
         }
       } catch (err) {
         console.error('Error loading detailed metrics:', err)
@@ -111,6 +197,10 @@ export default function TaskMetricsPage() {
     }
 
     loadDetailedMetrics()
+    
+    // Actualizar cada 30 segundos para sesiones activas
+    const interval = setInterval(loadDetailedMetrics, 30000)
+    return () => clearInterval(interval)
   }, [projectTask?.taskId])
 
   if (loading || loadingMetrics) {
@@ -189,7 +279,15 @@ export default function TaskMetricsPage() {
               <h1 className="text-lg sm:text-xl font-bold leading-tight break-words">{task.title}</h1>
               <p className="text-sm sm:text-base text-muted-foreground mt-1">
                 Métricas detalladas de la tarea
+                {activeSession && (
+                  <span className="ml-2 text-green-600 font-medium">
+                    • {operarioName} trabajando ahora ({formatElapsedTime(activeSession.elapsedHours)})
+                  </span>
+                )}
               </p>
+              <div className="text-xs text-muted-foreground mt-1">
+                Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+              </div>
             </div>
           </div>
 
@@ -206,7 +304,7 @@ export default function TaskMetricsPage() {
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <Target className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Horas Estimadas</span>
+                    <span className="truncate">Tiempo Estimado</span>
                   </div>
                   <p className="text-lg sm:text-2xl font-bold">{estimatedHours}hs</p>
                 </div>
@@ -214,9 +312,14 @@ export default function TaskMetricsPage() {
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <Timer className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Horas Reales</span>
+                    <span className="truncate">Tiempo Real</span>
                   </div>
-                  <p className="text-lg sm:text-2xl font-bold">{formatTime(actualHours)}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatWorkedTime(actualHours)}</p>
+                  {activeSession && (
+                    <div className="text-xs text-green-600 font-medium">
+                      Trabajando ahora: {formatElapsedTime(activeSession.elapsedHours)}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2 p-3 border rounded-lg col-span-2 lg:col-span-1">
@@ -234,11 +337,9 @@ export default function TaskMetricsPage() {
                         {(() => {
                           const diff = estimatedHours - actualHours
                           if (diff >= 0) {
-                            const diffFormatted = diff % 1 === 0 ? diff : diff.toFixed(1)
-                            return `Tiempo ahorrado: ${diffFormatted}hs`
+                            return `Tiempo ahorrado: ${formatWorkedTime(diff)}`
                           } else {
-                            const diffFormatted = Math.abs(diff) % 1 === 0 ? Math.abs(diff) : Math.abs(diff).toFixed(1)
-                            return `Tiempo extra: ${diffFormatted}hs`
+                            return `Tiempo extra: ${formatWorkedTime(Math.abs(diff))}`
                           }
                         })()}
                       </Badge>
@@ -291,6 +392,14 @@ export default function TaskMetricsPage() {
                   <p className="font-medium text-sm sm:text-base truncate">
                     {projectTask.assignedUser?.name || 'Sin asignar'}
                   </p>
+                  {activeSession && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs text-green-600 font-medium">
+                        {operarioName} trabajando ahora
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -312,6 +421,14 @@ export default function TaskMetricsPage() {
                 <div className="space-y-3 sm:space-y-4">
                   {timeEntries.map((entry, index) => (
                     <div key={entry.id} className="border rounded-lg p-3 sm:p-4">
+                      {/* Indicador de sesión activa */}
+                      {!entry.end_time && activeSession && activeSession.startTime === entry.start_time && (
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs text-green-600 font-medium">Sesión activa</span>
+                        </div>
+                      )}
+                      
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
@@ -320,7 +437,10 @@ export default function TaskMetricsPage() {
                           <span className="font-medium text-sm sm:text-base truncate">{entry.user?.name || 'Usuario desconocido'}</span>
                         </div>
                         <Badge variant="outline" className="text-xs self-start sm:self-auto">
-                          {formatTime(entry.hours)}
+                          {entry.end_time ? formatWorkedTime(entry.hours) : 
+                           activeSession && activeSession.startTime === entry.start_time ? 
+                           formatElapsedTime(activeSession.elapsedHours) : 
+                           formatWorkedTime(entry.hours)}
                         </Badge>
                       </div>
                       
@@ -331,7 +451,13 @@ export default function TaskMetricsPage() {
                         </div>
                         <div className="flex items-center gap-2 min-w-0">
                           <Clock className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">Hora: {formatDateTime(entry.start_time)} - {formatDateTime(entry.end_time)}</span>
+                          <span className="truncate">
+                            Hora: {formatDateTime(entry.start_time)} - {
+                              entry.end_time ? formatDateTime(entry.end_time) : 
+                              activeSession && activeSession.startTime === entry.start_time ? 
+                              'En curso' : 'Sin finalizar'
+                            }
+                          </span>
                         </div>
                       </div>
                       
