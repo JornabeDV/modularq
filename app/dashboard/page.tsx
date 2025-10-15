@@ -545,8 +545,8 @@ export default function DashboardPage() {
                               Progreso Real
                             </span>
                             {metrics.estimatedHours > 0 ? (
-                              <span className="font-semibold text-blue-600">
-                                {formatWorkedTime(metrics.actualHours)} trabajadas
+                              <span className="font-semibold text-white">
+                                {formatWorkedTime(metrics.actualHours)}
                               </span>
                             ) : (
                               <span className="font-semibold text-gray-500">Sin datos</span>
@@ -555,20 +555,45 @@ export default function DashboardPage() {
                           
                           {metrics.estimatedHours > 0 && (
                             <div className="space-y-2">
-                              <Progress 
-                                value={Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)} 
-                                className="h-2" 
-                              />
-                              <div className="text-center">
-                                <div className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-800 inline-block">
+                              <div className="h-2 bg-gray-200 rounded-full">
+                                <div 
+                                  className={`h-2 rounded-full transition-all duration-300 ${
+                                    metrics.actualHours <= metrics.estimatedHours ? 'bg-green-500' : 'bg-orange-500'
+                                  }`}
+                                  style={{ 
+                                    width: `${Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)}%` 
+                                  }}
+                                />
+                              </div>
+                              <div className="text-center mt-3">
+                                <div className="space-y-2">
                                   {(() => {
-                                    const progress = (metrics.actualHours / metrics.estimatedHours) * 100
-                                    const remainingHours = metrics.estimatedHours - metrics.actualHours
-                                    
-                                    if (progress > 100) {
-                                      return `${Math.round(progress)}% completado (${formatWorkedTime(Math.abs(remainingHours))} retrasado)`
+                                    const percentageUsed = Math.round((metrics.actualHours / metrics.estimatedHours) * 100)
+                                    if (percentageUsed > 100) {
+                                      const extraPercentage = percentageUsed - 100
+                                      const remainingHours = metrics.estimatedHours - metrics.actualHours
+                                      return (
+                                        <div className="space-y-2">
+                                          <div className="text-red-600 font-bold text-base">
+                                            Tiempo extra utilizado: {extraPercentage}%
+                                          </div>
+                                          <div className="text-red-600 font-semibold text-sm">
+                                            Retraso: {formatWorkedTime(Math.abs(remainingHours))}
+                                          </div>
+                                        </div>
+                                      )
                                     } else {
-                                      return `${Math.round(progress)}% completado (${formatWorkedTime(remainingHours)} restantes)`
+                                      const remainingHours = metrics.estimatedHours - metrics.actualHours
+                                      return (
+                                        <div className="space-y-2">
+                                          <div className="text-green-600 font-bold text-base">
+                                            {percentageUsed}% del tiempo estimado utilizado
+                                          </div>
+                                          <div className="text-green-600 font-semibold text-sm">
+                                            Tiempo restante: {formatWorkedTime(remainingHours)}
+                                          </div>
+                                        </div>
+                                      )
                                     }
                                   })()}
                                 </div>
