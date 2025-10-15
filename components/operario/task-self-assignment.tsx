@@ -78,6 +78,31 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
     }
   }, [projectTasks, user?.id])
 
+  // Actualizar horas en tiempo real cada 30 segundos para sesiones activas
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const hoursMap: Record<string, number> = {}
+      
+      for (const task of projectTasks) {
+        if (task.taskId) {
+          const realHours = await calculateActualHours(task.taskId)
+          hoursMap[task.id] = realHours
+        }
+      }
+      
+      setCalculatedHours(prev => {
+        // Solo actualizar si hay cambios significativos (más de 1 minuto)
+        const hasChanges = Object.keys(hoursMap).some(taskId => 
+          Math.abs((hoursMap[taskId] || 0) - (prev[taskId] || 0)) > 0.016 // ~1 minuto
+        )
+        
+        return hasChanges ? hoursMap : prev
+      })
+    }, 30000) // Cada 30 segundos
+
+    return () => clearInterval(interval)
+  }, [projectTasks])
+
   // Filtrar tareas por estado
   const availableTasks = projectTasks.filter(task => task.status === 'pending')
   const myAssignedTasks = projectTasks.filter(task => 
@@ -182,18 +207,33 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
     }
   }
 
-  // Función para calcular horas reales desde time_entries (solo del proyecto actual)
+  // Función para calcular horas reales desde time_entries (incluyendo sesión activa)
   const calculateActualHours = async (taskId: string) => {
     try {
       const { data: timeEntries, error } = await supabase
         .from('time_entries')
-        .select('hours')
+        .select('hours, start_time, end_time')
         .eq('task_id', taskId)
         .eq('project_id', projectId)
 
       if (error) throw error
 
-      const totalHours = timeEntries?.reduce((sum, entry) => sum + parseFloat(entry.hours || 0), 0) || 0
+      let totalHours = 0
+      
+      for (const entry of timeEntries || []) {
+        if (entry.end_time) {
+          // Sesión completada - usar horas registradas
+          totalHours += parseFloat(entry.hours || 0)
+        } else {
+          // Sesión activa - calcular tiempo transcurrido
+          const startTime = new Date(entry.start_time)
+          const now = new Date()
+          const elapsedMs = now.getTime() - startTime.getTime()
+          const elapsedHours = elapsedMs / (1000 * 60 * 60)
+          totalHours += elapsedHours
+        }
+      }
+      
       return totalHours
     } catch (err) {
       console.error('Error calculating actual hours:', err)

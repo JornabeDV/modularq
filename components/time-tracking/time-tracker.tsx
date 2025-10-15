@@ -183,8 +183,6 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
           // Notificar al componente padre
           onTaskComplete?.()
           
-          // Mostrar notificación
-          alert('¡Tarea completada automáticamente! Se alcanzó el tiempo estimado.')
         }
       }
     } catch (err) {
@@ -337,31 +335,34 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         const now = Date.now()
         const sessionElapsedTime = now - startTime.getTime()
         
-        // Verificar límites de tiempo
-        let maxElapsedTime = MAX_EXTRA_TIME // Límite por defecto: 2 horas
-        let warningThreshold = MAX_EXTRA_TIME * 0.9 // 90% del límite por defecto
+        // Calcular tiempo total trabajado (sesiones anteriores + sesión actual)
+        const activeSessionHours = sessionElapsedTime / (1000 * 60 * 60)
+        const totalWorkedHours = totalHoursWorked + activeSessionHours
+        
+        // Verificar límites de tiempo basado en tiempo total trabajado
+        let maxTotalHours = MAX_EXTRA_TIME / (1000 * 60 * 60) // Límite por defecto: 2 horas
+        let warningThreshold = maxTotalHours * 0.9 // 90% del límite por defecto
         
         // Si la tarea tiene tiempo estimado, usar tiempo estimado + 2 horas extra
         if (currentTask?.task?.estimated_hours) {
           const estimatedHours = currentTask.task.estimated_hours
-          const estimatedTime = estimatedHours * 60 * 60 * 1000 // Convertir a milisegundos
           
-          // Tiempo estimado + 2 horas extra
-          maxElapsedTime = estimatedTime + MAX_EXTRA_TIME
-          warningThreshold = maxElapsedTime * 0.9 // 90% del límite total
+          // Tiempo estimado + 2 horas extra máximo
+          maxTotalHours = estimatedHours + (MAX_EXTRA_TIME / (1000 * 60 * 60))
+          warningThreshold = maxTotalHours * 0.9 // 90% del límite total
         }
         
         // Mostrar advertencia cuando se acerque al límite
-        if (sessionElapsedTime >= warningThreshold && sessionElapsedTime < maxElapsedTime) {
+        if (totalWorkedHours >= warningThreshold && totalWorkedHours < maxTotalHours) {
           setIsNearLimit(true)
         } else {
           setIsNearLimit(false)
         }
         
-        // Detener automáticamente si se alcanza cualquier límite
-        if (sessionElapsedTime >= maxElapsedTime) {
+        // Detener automáticamente si se alcanza el límite de tiempo total trabajado
+        if (totalWorkedHours >= maxTotalHours) {
           setIsTracking(false)
-          setElapsedTime(maxElapsedTime)
+          setElapsedTime(sessionElapsedTime)
           setIsNearLimit(false)
           if (interval) clearInterval(interval)
           
@@ -377,7 +378,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isTracking, startTime, currentTask?.task?.estimated_hours])
+  }, [isTracking, startTime, currentTask?.task?.estimated_hours, totalHoursWorked])
 
 
   const formatTime = (milliseconds: number) => {
