@@ -333,7 +333,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                         {hasWorkedOnTask[task.id] ? 'Continuar' : 'Entrar'}
                       </span>
                     </Button>
-                    {task.status === 'in_progress' && (
+                    {task.assignedTo === user?.id && (
                       <TaskCollaborators 
                         projectTask={task} 
                         projectOperarios={projectOperarios}
