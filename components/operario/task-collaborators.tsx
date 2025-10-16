@@ -25,12 +25,17 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
   const [selectedUserId, setSelectedUserId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  // Cargar colaboradores cuando se abre el modal
+  // Cargar colaboradores cuando se monta el componente y cuando cambia la tarea
+  useEffect(() => {
+    loadCollaborators()
+  }, [projectTask.id])
+
+  // Recargar colaboradores cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       loadCollaborators()
     }
-  }, [isOpen, projectTask.id])
+  }, [isOpen])
 
   const loadCollaborators = async () => {
     const data = await getCollaborators(projectTask.id)
