@@ -349,15 +349,52 @@ export default function ProjectMetricsPage() {
         {/* Resumen del proyecto */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Resumen del Proyecto
-            </CardTitle>
-            <CardDescription>
-              Métricas generales y progreso del proyecto
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Resumen del Proyecto
+                </CardTitle>
+                <CardDescription>
+                  Métricas generales y progreso del proyecto
+                </CardDescription>
+              </div>
+              {estimatedHours > 0 && (
+                <div className="text-right">
+                  {(() => {
+                    const percentageUsed = Math.round((actualHours / estimatedHours) * 100)
+                    if (percentageUsed > 100) {
+                      const extraPercentage = percentageUsed - 100
+                      const remainingHours = estimatedHours - actualHours
+                      return (
+                        <div className="space-y-1">
+                          <div className="text-red-600 font-bold text-lg">
+                            Tiempo extra utilizado: {extraPercentage}%
+                          </div>
+                          <div className="text-red-600 font-semibold text-sm">
+                            Retraso: {formatWorkedTime(Math.abs(remainingHours))}
+                          </div>
+                        </div>
+                      )
+                    } else {
+                      const remainingHours = estimatedHours - actualHours
+                      return (
+                        <div className="space-y-1">
+                          <div className="text-green-600 font-bold text-lg">
+                            {percentageUsed}% del tiempo estimado utilizado
+                          </div>
+                          <div className="text-green-600 font-semibold text-sm">
+                            Tiempo restante: {formatWorkedTime(remainingHours)}
+                          </div>
+                        </div>
+                      )
+                    }
+                  })()}
+                </div>
+              )}
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6 px-6">
             {/* Métricas generales */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
               <div className="text-center p-3 border rounded-lg">
@@ -376,16 +413,26 @@ export default function ProjectMetricsPage() {
                 <div className="text-lg sm:text-2xl font-bold text-gray-600">{pendingTasks}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">Pendientes</div>
               </div>
-              <div className="text-center p-3 border rounded-lg bg-green-50 border-green-200">
-                <div className="text-lg sm:text-2xl font-bold text-green-700">{Object.keys(activeSessions).length}</div>
-                <div className="text-xs sm:text-sm text-green-600">Trabajando Ahora</div>
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg sm:text-2xl font-bold">{Object.keys(activeSessions).length}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Trabajando Ahora</div>
+              </div>
+            </div>
+
+            {/* Resumen de Métricas */}
+            <div className="bg-card border rounded-lg p-6 mb-6">
+              <h4 className="font-semibold mb-3">📊 Explicación de las Métricas</h4>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p><strong>Progreso de Tareas:</strong> Porcentaje de tareas completadas vs total de tareas</p>
+                <p><strong>Tiempo Estimado Completado:</strong> Horas estimadas de tareas completadas vs total estimado</p>
+                <p><strong>Tiempo Trabajado:</strong> Horas realmente trabajadas con indicador de retraso/adelanto</p>
               </div>
             </div>
 
             {/* Barras de progreso del proyecto */}
-            <div className="space-y-4">
+            <div className="space-y-8">
               {/* Progreso de Tareas */}
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
                   <span className="flex items-center gap-1 text-sm">
                     <Target className="h-4 w-4 flex-shrink-0" />
@@ -408,7 +455,7 @@ export default function ProjectMetricsPage() {
               </div>
 
               {/* Tiempo Estimado Completado */}
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
                   <span className="flex items-center gap-1 text-sm">
                     <Timer className="h-4 w-4 flex-shrink-0" />
@@ -431,23 +478,16 @@ export default function ProjectMetricsPage() {
               </div>
 
               {/* Progreso Real del Proyecto */}
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                   <span className="flex items-center gap-1 text-sm">
                     <Clock className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Progreso Real</span>
+                    <span className="truncate">Tiempo Trabajado</span>
                   </span>
                   {estimatedHours > 0 ? (
                     <div className="text-left sm:text-right">
-                      <div className="font-semibold text-blue-600 text-sm sm:text-base mb-1">
-                        {formatWorkedTime(actualHours)} trabajadas
-                      </div>
-                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 inline-block">
-                        {(() => {
-                          const progress = (actualHours / estimatedHours) * 100
-                          const remainingHours = estimatedHours - actualHours
-                          return `${Math.round(progress)}% completado (${formatWorkedTime(remainingHours)} restantes)`
-                        })()}
+                      <div className="font-semibold text-white text-sm sm:text-base mb-1">
+                        {formatWorkedTime(actualHours)}
                       </div>
                     </div>
                   ) : (
@@ -455,19 +495,24 @@ export default function ProjectMetricsPage() {
                   )}
                 </div>
                 {estimatedHours > 0 ? (
-                  <Progress 
-                    value={Math.min((actualHours / estimatedHours) * 100, 100)} 
-                    className="h-2" 
-                  />
+                  <div className="h-2 bg-primary/20 rounded-full">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        actualHours <= estimatedHours ? 'bg-green-500' : 'bg-orange-500'
+                      }`}
+                      style={{ 
+                        width: `${Math.min((actualHours / estimatedHours) * 100, 100)}%` 
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="h-2 bg-primary/20 rounded-full">
                   </div>
                 )}
               </div>
             </div>
-
             {/* Información adicional */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-8 border-t">
               <div className="flex items-center gap-2 text-sm">
                 <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="truncate">{totalOperarios} operarios asignados</span>
@@ -720,24 +765,19 @@ export default function ProjectMetricsPage() {
                             Sin asignar
                           </Badge>
                         )}
-                        {activeSessions[projectTask.id] && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 ml-2">
-                            trabajando
-                          </Badge>
-                        )}
                       </div>
 
                       {/* Tiempo trabajado */}
                       <div className="flex items-center gap-1 min-w-0 sm:col-span-2">
                         <Timer className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">Trabajado:</span>
+                        <span className="text-muted-foreground">Tiempo:</span>
                         <span className="font-semibold">
                           {formatWorkedTime(actualHours)}
                         </span>
                         {activeSessions[projectTask.id] && (
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 ml-2">
-                            Trabajando ahora: {formatElapsedTime(activeSessions[projectTask.id].elapsedHours)}
-                          </Badge>
+                          <span className="text-xs text-green-600 font-medium ml-1">
+                            (activo: {formatElapsedTime(activeSessions[projectTask.id].elapsedHours)})
+                          </span>
                         )}
                       </div>
 
