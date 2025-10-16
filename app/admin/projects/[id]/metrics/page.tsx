@@ -413,16 +413,16 @@ export default function ProjectMetricsPage() {
                 <div className="text-lg sm:text-2xl font-bold text-gray-600">{pendingTasks}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">Pendientes</div>
               </div>
-              <div className="text-center p-3 border rounded-lg bg-green-50 border-green-200">
-                <div className="text-lg sm:text-2xl font-bold text-green-700">{Object.keys(activeSessions).length}</div>
-                <div className="text-xs sm:text-sm text-green-600">Trabajando Ahora</div>
+              <div className="text-center p-3 border rounded-lg">
+                <div className="text-lg sm:text-2xl font-bold">{Object.keys(activeSessions).length}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Trabajando Ahora</div>
               </div>
             </div>
 
             {/* Resumen de Métricas */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <h4 className="font-semibold text-blue-800 mb-3">📊 Explicación de las Métricas</h4>
-              <div className="text-sm text-blue-700 space-y-2">
+            <div className="bg-card border rounded-lg p-6 mb-6">
+              <h4 className="font-semibold mb-3">📊 Explicación de las Métricas</h4>
+              <div className="text-sm text-muted-foreground space-y-2">
                 <p><strong>Progreso de Tareas:</strong> Porcentaje de tareas completadas vs total de tareas</p>
                 <p><strong>Tiempo Estimado Completado:</strong> Horas estimadas de tareas completadas vs total estimado</p>
                 <p><strong>Tiempo Trabajado:</strong> Horas realmente trabajadas con indicador de retraso/adelanto</p>
@@ -495,7 +495,7 @@ export default function ProjectMetricsPage() {
                   )}
                 </div>
                 {estimatedHours > 0 ? (
-                  <div className="h-2 bg-gray-200 rounded-full">
+                  <div className="h-2 bg-primary/20 rounded-full">
                     <div 
                       className={`h-2 rounded-full transition-all duration-300 ${
                         actualHours <= estimatedHours ? 'bg-green-500' : 'bg-orange-500'
@@ -765,24 +765,19 @@ export default function ProjectMetricsPage() {
                             Sin asignar
                           </Badge>
                         )}
-                        {activeSessions[projectTask.id] && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 ml-2">
-                            trabajando
-                          </Badge>
-                        )}
                       </div>
 
                       {/* Tiempo trabajado */}
                       <div className="flex items-center gap-1 min-w-0 sm:col-span-2">
                         <Timer className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-muted-foreground">Trabajado:</span>
+                        <span className="text-muted-foreground">Tiempo:</span>
                         <span className="font-semibold">
                           {formatWorkedTime(actualHours)}
                         </span>
                         {activeSessions[projectTask.id] && (
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 ml-2">
-                            Trabajando ahora: {formatElapsedTime(activeSessions[projectTask.id].elapsedHours)}
-                          </Badge>
+                          <span className="text-xs text-green-600 font-medium ml-1">
+                            (activo: {formatElapsedTime(activeSessions[projectTask.id].elapsedHours)})
+                          </span>
                         )}
                       </div>
 

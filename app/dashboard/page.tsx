@@ -134,10 +134,6 @@ export default function DashboardPage() {
 
     if (projects && projects.length > 0) {
       calculateAllHours()
-      
-      // Actualizar cada 30 segundos para sesiones activas
-      const interval = setInterval(calculateAllHours, 30000)
-      return () => clearInterval(interval)
     }
   }, [projects])
 
@@ -553,9 +549,9 @@ export default function DashboardPage() {
                             )}
                           </div>
                           
-                          {metrics.estimatedHours > 0 && (
-                            <div className="space-y-2">
-                              <div className="h-2 bg-gray-200 rounded-full">
+                          <div className="space-y-2">
+                            <div className="h-2 bg-primary/20 rounded-full">
+                              {metrics.estimatedHours > 0 ? (
                                 <div 
                                   className={`h-2 rounded-full transition-all duration-300 ${
                                     metrics.actualHours <= metrics.estimatedHours ? 'bg-green-500' : 'bg-orange-500'
@@ -564,7 +560,11 @@ export default function DashboardPage() {
                                     width: `${Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)}%` 
                                   }}
                                 />
-                              </div>
+                              ) : (
+                                <div className="h-2 bg-primary/20 rounded-full" />
+                              )}
+                            </div>
+                            {metrics.estimatedHours > 0 && (
                               <div className="text-center mt-3">
                                 <div className="space-y-2">
                                   {(() => {
@@ -598,13 +598,8 @@ export default function DashboardPage() {
                                   })()}
                                 </div>
                               </div>
-                            </div>
-                          )}
-                          
-                          {metrics.estimatedHours === 0 && (
-                            <div className="h-2 bg-primary/20 rounded-full">
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
 
                         {/* Estado Temporal del Proyecto */}
