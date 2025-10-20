@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/check-limit-exceeded",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

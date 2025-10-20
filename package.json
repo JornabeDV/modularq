@@ -26,7 +26,12 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
-    "db:setup": "prisma generate && prisma db push"
+    "db:setup": "prisma generate && prisma db push",
+    "test:local-monitoring": "node test-local-monitoring.js",
+    "test:automatic-cutoff": "node test-automatic-cutoff.js",
+    "test:cutoff-description": "node test-cutoff-description.js",
+    "monitor:start": "node scheduler.js start",
+    "monitor:once": "node scheduler.js once"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

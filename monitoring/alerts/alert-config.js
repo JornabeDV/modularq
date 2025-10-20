@@ -82,10 +82,6 @@ const alertConfig = {
   // Configuración de notificaciones
   notifications: {
     channels: {
-      email: {
-        enabled: true,
-        recipients: process.env.ALERT_EMAIL_RECIPIENTS?.split(',') || []
-      },
       slack: {
         enabled: process.env.SLACK_WEBHOOK_URL ? true : false,
         webhook: process.env.SLACK_WEBHOOK_URL
