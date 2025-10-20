@@ -5,6 +5,17 @@ const MAX_EXTRA_PERCENTAGE = 0.20 // 20% extra del tiempo estimado
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autorización del cron job
+    const authHeader = request.headers.get('Authorization')
+    const cronSecret = process.env.CRON_SECRET
+    
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      console.log('❌ [CRON] Unauthorized cron job request')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    console.log('🔍 [CRON] Checking for overdue tasks...')
+    
     // Obtener sesiones activas de más de 1 hora
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     
