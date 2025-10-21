@@ -5,6 +5,12 @@ export async function GET() {
   try {
     console.log('🔍 [DEBUG] Checking time_entries status...')
     
+    // Deshabilitar cache para obtener datos frescos
+    const headers = new Headers()
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    headers.set('Pragma', 'no-cache')
+    headers.set('Expires', '0')
+    
     // Obtener todas las sesiones activas (sin end_time)
     const { data: activeSessions, error: sessionsError } = await supabase
       .from('time_entries')
@@ -83,7 +89,7 @@ export async function GET() {
       totalActiveSessions: activeSessions?.length || 0,
       sessionsWithDetails: sessionsWithDetails,
       timestamp: new Date().toISOString()
-    })
+    }, { headers })
 
   } catch (error) {
     console.error('❌ [DEBUG] Error in debug-time-entries:', error)

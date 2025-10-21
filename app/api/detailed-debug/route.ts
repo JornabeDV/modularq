@@ -5,6 +5,12 @@ export async function GET() {
   try {
     console.log('🔍 [DETAILED-DEBUG] Starting detailed diagnosis...')
     
+    // Deshabilitar cache para obtener datos frescos
+    const headers = new Headers()
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    headers.set('Pragma', 'no-cache')
+    headers.set('Expires', '0')
+    
     // 1. Obtener TODAS las sesiones (activas e inactivas)
     const { data: allSessions, error: allSessionsError } = await supabase
       .from('time_entries')
@@ -80,7 +86,7 @@ export async function GET() {
       recentSessions: allSessions?.slice(0, 5) || [],
       activeSessionsDetails: activeSessionsDetails,
       timestamp: new Date().toISOString()
-    })
+    }, { headers })
 
   } catch (error) {
     console.error('❌ [DETAILED-DEBUG] Error in detailed diagnosis:', error)
