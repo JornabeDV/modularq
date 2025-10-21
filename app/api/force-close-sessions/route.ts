@@ -3,6 +3,15 @@ import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autorización del cron job
+    const authHeader = request.headers.get('Authorization')
+    const cronSecret = process.env.CRON_SECRET
+    
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      console.log('❌ [FORCE-FIX] Unauthorized request')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     console.log('🔧 [FORCE-FIX] Starting to force close old sessions...')
     
     // Obtener todas las sesiones activas
