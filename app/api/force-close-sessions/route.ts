@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
             .from('time_entries')
             .update({
               end_time: now.toISOString(),
-              hours: sessionElapsedHours,
               description: fixDescription,
               updated_at: now.toISOString()
             })

@@ -154,7 +154,6 @@ export async function POST(request: NextRequest) {
                 .from('time_entries')
                 .update({
                   end_time: cutoffTime.toISOString(),
-                  hours: sessionElapsedHours,
                   description: cutoffDescription,
                   updated_at: cutoffTime.toISOString()
                 })

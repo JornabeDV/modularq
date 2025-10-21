@@ -64,12 +64,11 @@ export async function POST(request: NextRequest) {
     
     const fixDescription = `Sesión cerrada directamente: Sesión problemática de ${sessionElapsedHours.toFixed(2)}h cerrada manualmente.`
     
-    // Cerrar la sesión
+    // Cerrar la sesión (sin actualizar 'hours' porque es una columna generada)
     const { error: updateSessionError } = await supabase
       .from('time_entries')
       .update({
         end_time: now.toISOString(),
-        hours: sessionElapsedHours,
         description: fixDescription,
         updated_at: now.toISOString()
       })
