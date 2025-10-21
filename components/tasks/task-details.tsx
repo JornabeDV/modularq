@@ -159,7 +159,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         )}
 
         {/* Botón de Completar Tarea */}
-        {task.status === 'in_progress' && onComplete && (
+        {(task.status === 'in_progress' || task.status === 'assigned') && onComplete && (
           <div className="pt-6 border-t">
             <button 
               onClick={onComplete}
