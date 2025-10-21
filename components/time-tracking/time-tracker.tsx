@@ -234,7 +234,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
       // Primero verificar si hay sesiones activas en otras tareas
       const activeSessions = await checkGlobalActiveSessions()
-      const otherActiveSessions = activeSessions.filter(session => 
+      const otherActiveSessions = activeSessions.filter((session: any) => 
         session.task_id !== currentTask.task_id || session.project_id !== currentTask.project_id
       )
 
@@ -264,7 +264,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
         if (error) throw error
 
-        const totalHours = data?.reduce((sum, entry) => sum + (entry.hours || 0), 0) || 0
+        const totalHours = data?.reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0) || 0
         setTotalHoursWorked(totalHours)
 
         // Calcular progreso basado en horas trabajadas vs estimadas
@@ -315,7 +315,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
         if (error) throw error
 
-        const totalHours = data?.reduce((sum, entry) => sum + (entry.hours || 0), 0) || 0
+        const totalHours = data?.reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0) || 0
         setTotalHoursWorked(totalHours)
       } catch (err) {
         console.error('Error refreshing hours:', err)
@@ -404,7 +404,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
     // Verificar si hay sesiones activas en otras tareas/proyectos
     const activeSessions = await checkGlobalActiveSessions()
-    const otherActiveSessions = activeSessions.filter(session => 
+    const otherActiveSessions = activeSessions.filter((session: any) => 
       session.task_id !== currentTask.task_id || session.project_id !== currentTask.project_id
     )
 
