@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/check-limit-exceeded",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }

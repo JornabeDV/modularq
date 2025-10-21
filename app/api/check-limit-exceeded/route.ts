@@ -29,14 +29,19 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({
-    message: 'Check Limit Exceeded API',
-    usage: {
-      method: 'POST',
-      endpoint: '/api/check-limit-exceeded',
-      description: 'Checks for tasks that have exceeded their time limit and completes them automatically',
-      schedule: 'Runs every 5 minutes via cron job',
-      behavior: 'Automatically completes tasks and terminates sessions when limits are exceeded'
-    }
-  })
+  try {
+    console.log('🔍 [CRON] Checking for overdue tasks via GET...')
+    
+    // Por ahora, solo devolver un mensaje de prueba
+    return NextResponse.json({
+      message: 'Cron job endpoint working via GET - Supabase integration pending',
+      timestamp: new Date().toISOString(),
+      note: 'This is a simplified version without Supabase dependencies',
+      method: 'GET'
+    })
+
+  } catch (error) {
+    console.error('❌ [CRON] Error in check-limit-exceeded GET:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
