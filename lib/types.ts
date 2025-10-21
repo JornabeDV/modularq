@@ -8,6 +8,7 @@ export interface Project {
   supervisor?: string
   budget?: number
   progress?: number
+  projectOrder?: number
   createdBy: string
   createdAt: string
   updatedAt: string
