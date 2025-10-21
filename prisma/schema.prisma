@@ -97,6 +97,7 @@ model Project {
   start_date    DateTime
   end_date      DateTime?
   progress      Float           @default(0)
+  project_order Int?
   supervisor_id String?
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt

@@ -19,6 +19,7 @@ export interface UpdateProjectData {
   status?: 'planning' | 'active' | 'paused' | 'completed'
   start_date?: Date
   end_date?: Date
+  project_order?: number
 }
 
 export function useProjectsPrisma() {
@@ -44,6 +45,7 @@ export function useProjectsPrisma() {
         endDate: project.end_date,
         supervisor: project.supervisor,
         progress: project.progress || 0,
+        projectOrder: project.project_order || undefined,
         createdBy: project.created_by,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
@@ -149,6 +151,7 @@ export function useProjectsPrisma() {
         endDate: project.end_date ? (typeof project.end_date === 'string' ? project.end_date : project.end_date.toISOString()) : undefined,
         supervisor: project.supervisor_id || undefined,
         progress: project.progress || 0,
+        projectOrder: project.project_order || undefined,
         createdBy: projectData.created_by || '',
         createdAt: typeof project.created_at === 'string' ? project.created_at : project.created_at.toISOString(),
         updatedAt: typeof project.updated_at === 'string' ? project.updated_at : project.updated_at.toISOString(),
@@ -212,6 +215,49 @@ export function useProjectsPrisma() {
     }
   }
 
+  // Reordenar proyectos
+  const reorderProjects = async (projectOrders: { id: string; projectOrder: number }[]): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null)
+      
+      // Actualizar cada proyecto con su nuevo orden
+      for (const { id, projectOrder } of projectOrders) {
+        await PrismaTypedService.updateProject(id, {
+          project_order: projectOrder
+        })
+      }
+
+      // Actualizar estado local directamente sin recargar
+      setProjects(prevProjects => {
+        const updatedProjects = [...prevProjects]
+        projectOrders.forEach(({ id, projectOrder }) => {
+          const projectIndex = updatedProjects.findIndex(p => p.id === id)
+          if (projectIndex !== -1) {
+            updatedProjects[projectIndex] = {
+              ...updatedProjects[projectIndex],
+              projectOrder
+            }
+          }
+        })
+        // Reordenar el array según el nuevo projectOrder
+        return updatedProjects.sort((a, b) => {
+          const orderA = a.projectOrder || 0
+          const orderB = b.projectOrder || 0
+          if (orderA !== orderB) return orderA - orderB
+          // Si tienen el mismo orden, mantener el orden por fecha de creación
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+      })
+      
+      return { success: true }
+    } catch (err) {
+      console.error('Error reordering projects:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Error al reordenar proyectos'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    }
+  }
+
   // Obtener proyecto por ID
   const getProjectById = (projectId: string): Project | undefined => {
     return projects.find(p => p.id === projectId)
@@ -229,6 +275,7 @@ export function useProjectsPrisma() {
     createProject,
     updateProject,
     deleteProject,
+    reorderProjects,
     getProjectById,
     refetch: fetchProjects
   }

@@ -15,7 +15,7 @@ import type { Project } from '@/lib/types'
 export function ProjectManagement() {
   const router = useRouter()
   const { user } = useAuth()
-  const { projects, loading, error, createProject, updateProject, deleteProject } = useProjectsPrisma()
+  const { projects, loading, error, createProject, updateProject, deleteProject, reorderProjects } = useProjectsPrisma()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -63,6 +63,10 @@ export function ProjectManagement() {
     setEditingProject(project)
   }
 
+  const handleReorderProjects = async (projectOrders: { id: string; projectOrder: number }[]) => {
+    await reorderProjects(projectOrders)
+  }
+
   // Filtrar proyectos
   const filteredProjects = projects?.filter(project => {
     const matchesSearch = searchTerm === '' || 
@@ -78,11 +82,7 @@ export function ProjectManagement() {
   const totalProjects = projects?.length || 0
   const activeProjects = projects?.filter(p => p.status === 'active').length || 0
   const completedProjects = projects?.filter(p => p.status === 'completed').length || 0
-  const totalTasks = projects?.reduce((sum, project) => sum + (project.projectTasks?.length || 0), 0) || 0
-  const totalEstimatedHours = projects?.reduce((sum, project) => 
-    sum + (project.projectTasks?.reduce((taskSum, task) => 
-      taskSum + (task.task?.estimatedHours || 0), 0) || 0)
-  , 0) || 0
+  const planningProjects = projects?.filter(p => p.status === 'planning').length || 0
 
   if (loading) {
     return (
@@ -130,8 +130,7 @@ export function ProjectManagement() {
         totalProjects={totalProjects}
         activeProjects={activeProjects}
         completedProjects={completedProjects}
-        totalTasks={totalTasks}
-        totalEstimatedHours={totalEstimatedHours}
+        planningProjects={planningProjects}
       />
 
       {/* Projects Table */}
@@ -143,6 +142,7 @@ export function ProjectManagement() {
         onStatusFilterChange={setStatusFilter}
         onEditProject={handleEditProject}
         onDeleteProject={handleDeleteProject}
+        onReorderProjects={handleReorderProjects}
       />
 
       {/* Create Project Dialog */}

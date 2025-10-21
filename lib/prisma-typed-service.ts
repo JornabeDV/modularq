@@ -136,6 +136,7 @@ export class PrismaTypedService {
           )
         )
       `)
+      .order('project_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -186,6 +187,7 @@ export class PrismaTypedService {
     start_date?: Date
     end_date?: Date
     progress?: number
+    project_order?: number
   }): Promise<Project> {
     const updateData: any = {}
     
@@ -195,6 +197,7 @@ export class PrismaTypedService {
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date.toISOString()
     if (projectData.end_date !== undefined) updateData.end_date = projectData.end_date.toISOString()
     if (projectData.progress !== undefined) updateData.progress = projectData.progress
+    if (projectData.project_order !== undefined) updateData.project_order = projectData.project_order
 
     const { data, error } = await supabase
       .from('projects')
@@ -238,7 +241,7 @@ export class PrismaTypedService {
       .order('created_at', { ascending: true })
     
     if (error) throw error
-    return data.map(pt => pt.task).filter(Boolean) as Task[]
+    return data.map((pt: any) => pt.task).filter(Boolean) as Task[]
   }
 
   static async createTask(taskData: {
@@ -600,9 +603,9 @@ export class PrismaTypedService {
     if (tasksError) throw tasksError
 
     const total = projectTasks?.length || 0
-    const completed = projectTasks?.filter(task => task.status === 'completed').length || 0
-    const inProgress = projectTasks?.filter(task => task.status === 'in_progress').length || 0
-    const pending = projectTasks?.filter(task => task.status === 'pending').length || 0
+    const completed = projectTasks?.filter((task: any) => task.status === 'completed').length || 0
+    const inProgress = projectTasks?.filter((task: any) => task.status === 'in_progress').length || 0
+    const pending = projectTasks?.filter((task: any) => task.status === 'pending').length || 0
 
     return {
       total,
