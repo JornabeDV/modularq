@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 import { config } from './config'
 
-export const supabase = createClient(
-  config.supabase.url || '',
-  config.supabase.anonKey || ''
-)
+// Crear cliente de Supabase solo si las variables están disponibles
+let supabase: any = null
+
+if (config.supabase.url && config.supabase.anonKey) {
+  supabase = createClient(config.supabase.url, config.supabase.anonKey)
+} else {
+  console.warn('Supabase configuration not available - client not initialized')
+}
+
+export { supabase }
 
 // Tipos de la base de datos
 export interface Database {
