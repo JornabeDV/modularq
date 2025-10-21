@@ -462,8 +462,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         .from('time_entries')
         .update({
           end_time: endTime.toISOString(),
-          description: reason,
-          hours: hours
+          description: reason
         })
         .eq('id', currentTimeEntryId)
         .select()
