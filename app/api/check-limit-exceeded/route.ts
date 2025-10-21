@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     console.log(`📊 Found ${activeSessions.length} potentially overdue sessions`)
 
     // Obtener información de tareas
-    const taskIds = [...new Set(activeSessions.map(s => s.task_id))]
+    const taskIds = [...new Set(activeSessions.map((s: any) => s.task_id))]
     
     const { data: tasks, error: tasksError } = await supabase
       .from('tasks')
@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear mapas para acceso rápido
-    const tasksMap = new Map(tasks?.map(t => [t.id, t]) || [])
-    const projectTasksMap = new Map(projectTasks?.map(pt => [pt.task_id, pt]) || [])
+    const tasksMap = new Map(tasks?.map((t: any) => [t.id, t]) || [])
+    const projectTasksMap = new Map(projectTasks?.map((pt: any) => [pt.task_id, pt]) || [])
 
     let exceededTasksCount = 0
     const exceededTasks = []
@@ -85,24 +85,24 @@ export async function POST(request: NextRequest) {
         const task = tasksMap.get(session.task_id)
         const projectTask = projectTasksMap.get(session.task_id)
         
-        if (!task || projectTask?.status === 'completed') {
+        if (!task || (projectTask as any)?.status === 'completed') {
           continue
         }
 
         const startTime = new Date(session.start_time)
-        const now = new Date()
-        const sessionElapsedMs = now.getTime() - startTime.getTime()
+        const currentTime = new Date()
+        const sessionElapsedMs = currentTime.getTime() - startTime.getTime()
         const sessionElapsedHours = sessionElapsedMs / (1000 * 60 * 60)
 
         // Calcular tiempo total trabajado
-        const previousHours = projectTask?.actual_hours || 0
+        const previousHours = (projectTask as any)?.actual_hours || 0
         const totalWorkedHours = previousHours + sessionElapsedHours
 
         // Determinar límite máximo (20% extra del tiempo estimado)
         let maxTotalHours = 2 // 2 horas por defecto si no hay tiempo estimado
         
-        if (task.estimated_hours) {
-          maxTotalHours = task.estimated_hours * (1 + MAX_EXTRA_PERCENTAGE) // Tiempo estimado + 20%
+        if ((task as any)?.estimated_hours) {
+          maxTotalHours = (task as any).estimated_hours * (1 + MAX_EXTRA_PERCENTAGE) // Tiempo estimado + 20%
         }
 
         // Verificar si excede el límite y hacer corte automático
@@ -110,8 +110,8 @@ export async function POST(request: NextRequest) {
           exceededTasksCount++
           
           const exceededData = {
-            taskId: task.id,
-            taskTitle: task.title,
+            taskId: (task as any).id,
+            taskTitle: (task as any).title,
             totalHours: totalWorkedHours,
             maxHours: maxTotalHours,
             sessionElapsedHours: sessionElapsedHours,
@@ -127,39 +127,44 @@ export async function POST(request: NextRequest) {
 
           // CORTE AUTOMÁTICO: Completar la tarea automáticamente
           if (projectTask) {
-            const now = new Date()
+            const cutoffTime = new Date()
             
             // Actualizar project_task como completada
             const { error: updateTaskError } = await supabase
               .from('project_tasks')
               .update({
                 status: 'completed',
-                end_date: now.toISOString(),
+                end_date: cutoffTime.toISOString(),
                 actual_hours: totalWorkedHours,
                 progress_percentage: 100,
-                updated_at: now.toISOString()
+                updated_at: cutoffTime.toISOString()
               })
-              .eq('id', projectTask.id)
+              .eq('id', (projectTask as any).id)
 
             if (updateTaskError) {
-              console.error('Error updating project task:', updateTaskError)
-            }
+              console.error('❌ [CRON] Error updating project task:', updateTaskError)
+              // Continuar con la siguiente tarea si hay error
+            } else {
+              console.log(`✅ [CRON] Project task ${(projectTask as any).id} marked as completed`)
+              
+              // Finalizar la sesión de tiempo con descripción del corte automático
+              const cutoffDescription = `Corte automático: Tarea excedió límite de tiempo (${maxTotalHours.toFixed(2)}h). Trabajado: ${totalWorkedHours.toFixed(2)}h. Sistema completó automáticamente.`
+              
+              const { error: updateSessionError } = await supabase
+                .from('time_entries')
+                .update({
+                  end_time: cutoffTime.toISOString(),
+                  hours: sessionElapsedHours,
+                  description: cutoffDescription,
+                  updated_at: cutoffTime.toISOString()
+                })
+                .eq('id', session.id)
 
-            // Finalizar la sesión de tiempo con descripción del corte automático
-            const cutoffDescription = `Corte automático: Tarea excedió límite de tiempo (${maxTotalHours.toFixed(2)}h). Trabajado: ${totalWorkedHours.toFixed(2)}h. Sistema completó automáticamente.`
-            
-            const { error: updateSessionError } = await supabase
-              .from('time_entries')
-              .update({
-                end_time: now.toISOString(),
-                hours: sessionElapsedHours,
-                description: cutoffDescription,
-                updated_at: now.toISOString()
-              })
-              .eq('id', session.id)
-
-            if (updateSessionError) {
-              console.error('Error updating time session:', updateSessionError)
+              if (updateSessionError) {
+                console.error('❌ [CRON] Error updating time session:', updateSessionError)
+              } else {
+                console.log(`✅ [CRON] Time session ${session.id} terminated with cutoff description`)
+              }
             }
           }
         }
