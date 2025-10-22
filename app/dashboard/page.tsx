@@ -9,15 +9,17 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { useOperariosPrisma } from "@/hooks/use-operarios-prisma"
+import { useClientsPrisma } from "@/hooks/use-clients-prisma"
 import { AdminOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
-import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User } from "lucide-react"
+import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User, Building2 } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardPage() {
   const { userProfile } = useAuth()
   const { projects, loading: projectsLoading } = useProjectsPrisma()
   const { operarios } = useOperariosPrisma()
+  const { clients } = useClientsPrisma()
   
   // Estados para cálculo de tiempo real
   const [calculatedHours, setCalculatedHours] = useState<Record<string, number>>({})
@@ -71,7 +73,7 @@ export default function DashboardPage() {
               let totalHours = 0
               let activeSession: { startTime: string; elapsedHours: number; operarioId: string } | null = null
 
-              timeEntries?.forEach(entry => {
+              timeEntries?.forEach((entry: any) => {
                 if (entry.end_time) {
                   // Sesión completada - usar horas calculadas
                   totalHours += parseFloat(entry.hours || 0)
@@ -311,7 +313,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
@@ -345,6 +347,17 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{clients?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">clientes registrados</p>
+            </CardContent>
+          </Card>
+
         </div>
 
         {/* Admin Section */}
@@ -357,7 +370,7 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium">Control del Personal</h3>
@@ -386,6 +399,22 @@ export default function DashboardPage() {
                     <Button size="sm" variant="outline" className="w-full">
                       <Target className="h-3 w-3 mr-1" />
                       Gestionar tareas
+                    </Button>
+                  </Link>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Gestión de Clientes</h3>
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Administra la información de tus clientes y empresas
+                  </p>
+                  <Link href="/admin/clients">
+                    <Button size="sm" variant="outline" className="w-full">
+                      <Building2 className="h-3 w-3 mr-1" />
+                      Gestionar clientes
                     </Button>
                   </Link>
                 </div>

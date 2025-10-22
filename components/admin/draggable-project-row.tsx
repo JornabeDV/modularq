@@ -106,6 +106,13 @@ export function DraggableProjectRow({
         </div>
       </TableCell>
       <TableCell className="text-center">
+        <div className="text-sm">
+          <div className="font-medium">
+            {project.client?.companyName || 'Sin cliente'}
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="text-center">
         <Badge variant={getStatusInfo(project.status).color}>
           {getStatusInfo(project.status).label}
         </Badge>

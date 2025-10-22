@@ -10,6 +10,7 @@ export interface CreateProjectData {
   status?: 'planning' | 'active' | 'paused' | 'completed'
   start_date?: Date
   end_date?: Date
+  client_id?: string
   created_by?: string
 }
 
@@ -19,6 +20,7 @@ export interface UpdateProjectData {
   status?: 'planning' | 'active' | 'paused' | 'completed'
   start_date?: Date
   end_date?: Date
+  client_id?: string
   project_order?: number
 }
 
@@ -49,6 +51,15 @@ export function useProjectsPrisma() {
         createdBy: project.created_by,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
+        clientId: project.client_id,
+        client: project.clients ? {
+          id: project.clients.id,
+          cuit: project.clients.cuit,
+          companyName: project.clients.company_name,
+          representative: project.clients.representative,
+          email: project.clients.email,
+          phone: project.clients.phone
+        } : undefined,
         projectTasks: (project.project_tasks || []).map((pt: any) => ({
           id: pt.id,
           projectId: pt.project_id,
@@ -115,6 +126,7 @@ export function useProjectsPrisma() {
         status: projectData.status || 'planning',
         start_date: projectData.start_date || new Date(),
         end_date: projectData.end_date,
+        client_id: projectData.client_id,
         created_by: projectData.created_by
       })
 
@@ -181,7 +193,8 @@ export function useProjectsPrisma() {
         description: projectData.description,
         status: projectData.status,
         start_date: projectData.start_date,
-        end_date: projectData.end_date
+        end_date: projectData.end_date,
+        client_id: projectData.client_id
       })
 
       // Actualizar estado local

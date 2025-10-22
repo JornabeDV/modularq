@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar } from 'lucide-react'
 import type { Project } from '@/lib/types'
+import { useClientsPrisma } from '@/hooks/use-clients-prisma'
 
 interface ProjectFormData {
   name: string
@@ -16,6 +17,7 @@ interface ProjectFormData {
   status: 'planning' | 'active' | 'paused' | 'completed'
   startDate?: string
   endDate?: string
+  clientId?: string
   supervisor?: string
   budget?: number
   progress?: number
@@ -38,12 +40,14 @@ const PROJECT_STATUSES = [
 
 
 export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData }: ProjectFormProps) {
+  const { clients, loading: clientsLoading } = useClientsPrisma()
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     status: 'planning' as 'planning' | 'active' | 'paused' | 'completed',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    clientId: 'none'
   })
 
   useEffect(() => {
@@ -53,7 +57,8 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
         description: initialData.description,
         status: initialData.status,
         startDate: initialData.startDate || '',
-        endDate: initialData.endDate || ''
+        endDate: initialData.endDate || '',
+        clientId: initialData.clientId || 'none'
       })
     } else {
       setFormData({
@@ -61,7 +66,8 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
         description: '',
         status: 'planning',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        clientId: 'none'
       })
     }
   }, [isEditing, initialData])
@@ -72,7 +78,12 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+    // Convertir "none" a undefined para el clientId
+    const submitData = {
+      ...formData,
+      clientId: formData.clientId === 'none' ? undefined : formData.clientId
+    }
+    onSubmit(submitData)
   }
 
   return (
@@ -96,6 +107,32 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
               />
             </div>
             <div>
+              <Label htmlFor="clientId" className="mb-2">Cliente</Label>
+              <Select
+                value={formData.clientId}
+                onValueChange={(value) => handleInputChange('clientId', value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin cliente</SelectItem>
+                  {clientsLoading ? (
+                    <SelectItem value="loading" disabled>Cargando clientes...</SelectItem>
+                  ) : (
+                    clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.companyName}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label htmlFor="status" className="mb-2">Estado</Label>
               <Select
                 value={formData.status}
@@ -112,6 +149,9 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              {/* Espacio vacío para mantener el layout */}
             </div>
           </div>
 

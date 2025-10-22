@@ -30,6 +30,7 @@ export function ProjectManagement() {
       status: projectData.status,
       start_date: projectData.startDate ? new Date(projectData.startDate) : new Date(),
       end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
+      client_id: projectData.clientId || undefined,
       created_by: user.id
     })
     
@@ -48,6 +49,7 @@ export function ProjectManagement() {
     if (projectData.status !== undefined) updateData.status = projectData.status
     if (projectData.startDate !== undefined) updateData.start_date = new Date(projectData.startDate)
     if (projectData.endDate !== undefined) updateData.end_date = projectData.endDate ? new Date(projectData.endDate) : undefined
+    if (projectData.clientId !== undefined) updateData.client_id = projectData.clientId || undefined
     
     const result = await updateProject(projectId, updateData)
     if (result.success) {

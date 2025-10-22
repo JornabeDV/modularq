@@ -117,6 +117,7 @@ export function ProjectTable({
               <TableRow className="hover:bg-background">
                 <TableHead className="text-center min-w-[60px]">#</TableHead>
                 <TableHead className="min-w-[200px]">Proyecto</TableHead>
+                <TableHead className="text-center min-w-[120px]">Cliente</TableHead>
                 <TableHead className="text-center min-w-[120px]">Estado</TableHead>
                 <TableHead className="text-center min-w-[120px]">Fecha Inicio</TableHead>
                 <TableHead className="text-center min-w-[120px]">Fecha Fin</TableHead>
@@ -127,7 +128,7 @@ export function ProjectTable({
             <TableBody>
               {projects.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={8} className="text-center py-8 text-muted-foreground">
                     No se encontraron proyectos
                   </td>
                 </tr>

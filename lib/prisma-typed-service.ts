@@ -91,6 +91,14 @@ export class PrismaTypedService {
       .from('projects')
       .select(`
         *,
+        clients!client_id (
+          id,
+          cuit,
+          company_name,
+          representative,
+          email,
+          phone
+        ),
         project_tasks (
           id,
           project_id,
@@ -160,6 +168,7 @@ export class PrismaTypedService {
     status: 'planning' | 'active' | 'paused' | 'completed'
     start_date: Date
     end_date?: Date
+    client_id?: string
     created_by?: string
   }): Promise<Project> {
     const { data, error } = await supabase
@@ -170,6 +179,7 @@ export class PrismaTypedService {
         status: projectData.status,
         start_date: projectData.start_date.toISOString(),
         end_date: projectData.end_date?.toISOString(),
+        client_id: projectData.client_id,
         created_by: projectData.created_by,
         progress: 0
       })
@@ -186,6 +196,7 @@ export class PrismaTypedService {
     status?: 'planning' | 'active' | 'paused' | 'completed'
     start_date?: Date
     end_date?: Date
+    client_id?: string
     progress?: number
     project_order?: number
   }): Promise<Project> {
@@ -196,6 +207,7 @@ export class PrismaTypedService {
     if (projectData.status !== undefined) updateData.status = projectData.status
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date.toISOString()
     if (projectData.end_date !== undefined) updateData.end_date = projectData.end_date.toISOString()
+    if (projectData.client_id !== undefined) updateData.client_id = projectData.client_id
     if (projectData.progress !== undefined) updateData.progress = projectData.progress
     if (projectData.project_order !== undefined) updateData.project_order = projectData.project_order
 
@@ -613,6 +625,88 @@ export class PrismaTypedService {
       inProgress,
       pending,
     }
+  }
+
+  // Clientes con tipos de Prisma
+  static async getAllClients(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async getClientById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data
+  }
+
+  static async createClient(clientData: {
+    cuit: string
+    company_name: string
+    representative: string
+    email: string
+    phone: string
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('clients')
+      .insert(clientData)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateClient(id: string, clientData: {
+    cuit?: string
+    company_name?: string
+    representative?: string
+    email?: string
+    phone?: string
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('clients')
+      .update({
+        ...clientData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteClient(id: string): Promise<void> {
+    // Primero verificar si hay proyectos asociados
+    const { data: projects, error: checkError } = await supabase
+      .from('projects')
+      .select('id, name')
+      .eq('client_id', id)
+    
+    if (checkError) throw checkError
+    
+    if (projects && projects.length > 0) {
+      throw new Error(`No se puede eliminar el cliente porque tiene ${projects.length} proyecto(s) asociado(s). Primero debe desasociar o eliminar los proyectos.`)
+    }
+    
+    // Si no hay proyectos asociados, proceder con la eliminación
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
   }
 }
 
