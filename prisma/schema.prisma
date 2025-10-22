@@ -99,11 +99,13 @@ model Project {
   progress      Float           @default(0)
   project_order Int?
   supervisor_id String?
+  client_id     String?
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
 
   // Relations
   supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id])
+  client         Client?          @relation(fields: [client_id], references: [id])
   time_entries   TimeEntry[]
   project_operarios ProjectOperario[]
 
@@ -197,4 +199,20 @@ model ProjectOperario {
 
   @@unique([project_id, user_id])
   @@map("project_operarios")
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  cuit         String   @unique
+  company_name String
+  representative String
+  email        String
+  phone        String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  projects     Project[]
+
+  @@map("clients")
 }

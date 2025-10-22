@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, Users, FileText, LogOut, Shield, CheckSquare } from "lucide-react"
+import { LayoutDashboard, FolderKanban, Users, FileText, LogOut, Shield, CheckSquare, Building2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -17,6 +17,7 @@ const adminNavigation = [
   { name: "Gestión del Personal", href: "/admin/users", icon: Shield },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
+  { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Reportes", href: "/reports", icon: FileText },
 ]
 

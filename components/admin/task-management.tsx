@@ -125,7 +125,7 @@ export function TaskManagement() {
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Gestión de Tareas</h2>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Crea y administra tareas estándar (se asignan automáticamente a proyectos nuevos) y personalizadas (se asignan manualmente)
+            Crea y administra tareas estándar y personalizadas
           </p>
         </div>
         

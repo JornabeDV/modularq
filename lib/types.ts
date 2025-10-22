@@ -12,6 +12,15 @@ export interface Project {
   createdBy: string
   createdAt: string
   updatedAt: string
+  clientId?: string
+  client?: {
+    id: string
+    cuit: string
+    companyName: string
+    representative: string
+    email: string
+    phone: string
+  }
   projectTasks: ProjectTask[]
   projectOperarios: ProjectOperario[]
 }
