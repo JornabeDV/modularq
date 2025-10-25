@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Download, Eye, Calendar, User, Activity } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useAuditLogs } from "@/hooks/use-audit-logs"
 
 export function AuditLogComponent() {
@@ -73,6 +74,7 @@ export function AuditLogComponent() {
   }
 
   return (
+    <TooltipProvider>
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -185,9 +187,16 @@ export function AuditLogComponent() {
                     </div>
                   </div>
 
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-3 w-3" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="sm" className="cursor-pointer">
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ver detalles</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             ))
@@ -207,5 +216,6 @@ export function AuditLogComponent() {
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   )
 }

@@ -17,10 +17,12 @@ import { TaskForm } from './task-form'
 import { DeleteProjectButton } from './delete-project-button'
 import { ProjectTaskManager } from './project-task-manager'
 import { ProjectOperariosManager } from './project-operarios-manager'
+import { FileUpload } from '@/components/projects/file-upload'
 import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
 import { useProjectTasksPrisma } from '@/hooks/use-project-tasks-prisma'
 import { useTasksPrisma } from '@/hooks/use-tasks-prisma'
 import { useUsersPrisma } from '@/hooks/use-users-prisma'
+import { useProjectFiles } from '@/hooks/use-project-files'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import type { Project, ProjectTask, Task } from '@/lib/types'
@@ -31,11 +33,16 @@ interface ProjectDetailProps {
 
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
   const { projects, loading: projectsLoading, error: projectsError, updateProject, deleteProject, refetch: refetchProjects } = useProjectsPrisma()
   const { projectTasks, loading: projectTasksLoading, createProjectTask, updateProjectTask, deleteProjectTask, updateTaskOrder, assignStandardTaskToProject } = useProjectTasksPrisma(projectId)
   const { tasks: allTasks, createTask } = useTasksPrisma()
   const { users } = useUsersPrisma()
+  const { files: projectFiles, loading: filesLoading } = useProjectFiles(
+    projectId, 
+    user?.id || '',
+    userProfile?.role === 'admin' || userProfile?.role === 'supervisor'
+  )
   
   const [project, setProject] = useState<Project | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -385,6 +392,28 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
       {/* Project Operarios Manager */}
       <ProjectOperariosManager projectId={project.id} />
+
+      {/* Project Files Manager - Solo para admins y supervisores */}
+      {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FolderOpen className="h-5 w-5" />
+              Archivos del Proyecto
+            </CardTitle>
+            <CardDescription>
+              Gestiona documentos PDF, Excel y otros archivos relacionados con este proyecto
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FileUpload
+              projectId={project.id}
+              userId={user?.id || ''}
+              existingFiles={projectFiles}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Project Task Manager */}
       <ProjectTaskManager

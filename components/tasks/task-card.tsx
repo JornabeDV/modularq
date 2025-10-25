@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Clock, Calendar, MoreHorizontal, Play, Pause, CheckCircle } from "lucide-react"
 import type { Task, ProjectTask } from "@/lib/types"
 
@@ -59,6 +60,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   }
 
   return (
+    <TooltipProvider>
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -74,11 +76,18 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
             </div>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="cursor-pointer">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Opciones de tarea</p>
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onStatusChange?.(task.id, "in_progress")}>
                 Iniciar tarea
@@ -127,5 +136,6 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   )
 }

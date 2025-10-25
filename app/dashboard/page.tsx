@@ -371,7 +371,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 border rounded-lg">
+                <div className="p-4 border rounded-lg flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium">Control del Personal</h3>
                     <Users className="h-4 w-4 text-muted-foreground" />
