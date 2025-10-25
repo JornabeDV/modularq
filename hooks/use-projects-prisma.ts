@@ -12,6 +12,12 @@ export interface CreateProjectData {
   end_date?: Date
   client_id?: string
   created_by?: string
+  // Especificaciones técnicas
+  modulation?: string
+  height?: number
+  width?: number
+  depth?: number
+  module_count?: number
 }
 
 export interface UpdateProjectData {
@@ -22,6 +28,12 @@ export interface UpdateProjectData {
   end_date?: Date
   client_id?: string
   project_order?: number
+  // Especificaciones técnicas
+  modulation?: string
+  height?: number
+  width?: number
+  depth?: number
+  module_count?: number
 }
 
 export function useProjectsPrisma() {
@@ -52,6 +64,12 @@ export function useProjectsPrisma() {
         createdAt: project.created_at,
         updatedAt: project.updated_at,
         clientId: project.client_id,
+        // Especificaciones técnicas
+        modulation: project.modulation || 'standard',
+        height: project.height || 2.0,
+        width: project.width || 1.5,
+        depth: project.depth || 0.8,
+        moduleCount: project.module_count || 1,
         client: project.clients ? {
           id: project.clients.id,
           cuit: project.clients.cuit,
@@ -106,6 +124,12 @@ export function useProjectsPrisma() {
         }))
       }))
       
+      // Debug: verificar datos del proyecto específico
+      const debugProject = formattedProjects.find(p => p.id === '92e6dc81-b97d-434e-bdd5-c59ab896bebb')
+      if (debugProject) {
+        console.log('🔍 Proyecto después del fetch:', debugProject)
+      }
+      
       setProjects(formattedProjects)
     } catch (err) {
       console.error('Error fetching projects:', err)
@@ -127,7 +151,13 @@ export function useProjectsPrisma() {
         start_date: projectData.start_date || new Date(),
         end_date: projectData.end_date,
         client_id: projectData.client_id,
-        created_by: projectData.created_by
+        created_by: projectData.created_by,
+        // Especificaciones técnicas
+        modulation: projectData.modulation || 'standard',
+        height: projectData.height || 2.0,
+        width: projectData.width || 1.5,
+        depth: projectData.depth || 0.8,
+        module_count: projectData.module_count || 1
       })
 
       // Asignar automáticamente todas las tareas estándar al nuevo proyecto
@@ -167,6 +197,12 @@ export function useProjectsPrisma() {
         createdBy: projectData.created_by || '',
         createdAt: typeof project.created_at === 'string' ? project.created_at : project.created_at.toISOString(),
         updatedAt: typeof project.updated_at === 'string' ? project.updated_at : project.updated_at.toISOString(),
+        // Especificaciones técnicas
+        modulation: project.modulation || 'standard',
+        height: project.height || 2.0,
+        width: project.width || 1.5,
+        depth: project.depth || 0.8,
+        moduleCount: project.module_count || 1,
         projectTasks: [], // Se llenará cuando se haga fetchProjects
         projectOperarios: [] // Se llenará cuando se haga fetchProjects
       }
@@ -188,14 +224,25 @@ export function useProjectsPrisma() {
     try {
       setError(null)
       
+      console.log('🔍 Hook updateProject - projectId:', projectId)
+      console.log('🔍 Hook updateProject - projectData:', projectData)
+      
       const project = await PrismaTypedService.updateProject(projectId, {
         name: projectData.name,
         description: projectData.description,
         status: projectData.status,
         start_date: projectData.start_date,
         end_date: projectData.end_date,
-        client_id: projectData.client_id
+        client_id: projectData.client_id,
+        // Especificaciones técnicas
+        modulation: projectData.modulation,
+        height: projectData.height,
+        width: projectData.width,
+        depth: projectData.depth,
+        module_count: projectData.module_count
       })
+
+      console.log('✅ Proyecto actualizado en Prisma:', project)
 
       // Actualizar estado local
       await fetchProjects()

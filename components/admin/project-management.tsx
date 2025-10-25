@@ -31,7 +31,13 @@ export function ProjectManagement() {
       start_date: projectData.startDate ? new Date(projectData.startDate) : new Date(),
       end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
       client_id: projectData.clientId || undefined,
-      created_by: user.id
+      created_by: user.id,
+      // Especificaciones técnicas
+      modulation: projectData.modulation,
+      height: projectData.height,
+      width: projectData.width,
+      depth: projectData.depth,
+      module_count: projectData.moduleCount
     })
     
     if (result.success && result.project) {
@@ -50,6 +56,13 @@ export function ProjectManagement() {
     if (projectData.startDate !== undefined) updateData.start_date = new Date(projectData.startDate)
     if (projectData.endDate !== undefined) updateData.end_date = projectData.endDate ? new Date(projectData.endDate) : undefined
     if (projectData.clientId !== undefined) updateData.client_id = projectData.clientId || undefined
+    
+    // Especificaciones técnicas
+    if (projectData.modulation !== undefined) updateData.modulation = projectData.modulation
+    if (projectData.height !== undefined) updateData.height = projectData.height
+    if (projectData.width !== undefined) updateData.width = projectData.width
+    if (projectData.depth !== undefined) updateData.depth = projectData.depth
+    if (projectData.moduleCount !== undefined) updateData.module_count = projectData.moduleCount
     
     const result = await updateProject(projectId, updateData)
     if (result.success) {

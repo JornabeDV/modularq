@@ -21,6 +21,12 @@ export interface Project {
     email: string
     phone: string
   }
+  // Especificaciones técnicas
+  modulation: string
+  height: number
+  width: number
+  depth: number
+  moduleCount: number
   projectTasks: ProjectTask[]
   projectOperarios: ProjectOperario[]
 }

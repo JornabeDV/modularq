@@ -170,6 +170,12 @@ export class PrismaTypedService {
     end_date?: Date
     client_id?: string
     created_by?: string
+    // Especificaciones técnicas
+    modulation?: string
+    height?: number
+    width?: number
+    depth?: number
+    module_count?: number
   }): Promise<Project> {
     const { data, error } = await supabase
       .from('projects')
@@ -181,7 +187,13 @@ export class PrismaTypedService {
         end_date: projectData.end_date?.toISOString(),
         client_id: projectData.client_id,
         created_by: projectData.created_by,
-        progress: 0
+        progress: 0,
+        // Especificaciones técnicas
+        modulation: projectData.modulation || 'standard',
+        height: projectData.height || 2.0,
+        width: projectData.width || 1.5,
+        depth: projectData.depth || 0.8,
+        module_count: projectData.module_count || 1
       })
       .select()
       .single()
@@ -199,6 +211,12 @@ export class PrismaTypedService {
     client_id?: string
     progress?: number
     project_order?: number
+    // Especificaciones técnicas
+    modulation?: string
+    height?: number
+    width?: number
+    depth?: number
+    module_count?: number
   }): Promise<Project> {
     const updateData: any = {}
     
@@ -210,6 +228,12 @@ export class PrismaTypedService {
     if (projectData.client_id !== undefined) updateData.client_id = projectData.client_id
     if (projectData.progress !== undefined) updateData.progress = projectData.progress
     if (projectData.project_order !== undefined) updateData.project_order = projectData.project_order
+    // Especificaciones técnicas
+    if (projectData.modulation !== undefined) updateData.modulation = projectData.modulation
+    if (projectData.height !== undefined) updateData.height = projectData.height
+    if (projectData.width !== undefined) updateData.width = projectData.width
+    if (projectData.depth !== undefined) updateData.depth = projectData.depth
+    if (projectData.module_count !== undefined) updateData.module_count = projectData.module_count
 
     const { data, error } = await supabase
       .from('projects')

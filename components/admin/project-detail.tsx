@@ -10,7 +10,8 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Plus, Users, Calendar, FolderOpen, Edit, Trash2, Zap, ClipboardList } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { ArrowLeft, Plus, Users, Calendar, FolderOpen, Edit, Trash2, Zap, ClipboardList, Settings } from 'lucide-react'
 import { ProjectForm } from './project-form'
 import { TaskRow } from './task-row'
 import { TaskForm } from './task-form'
@@ -55,6 +56,12 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     if (projects.length > 0) {
       const foundProject = projects.find(p => p.id === projectId)
       setProject(foundProject || null)
+      
+      // Debug: verificar datos del proyecto en el componente
+      if (foundProject && foundProject.id === '92e6dc81-b97d-434e-bdd5-c59ab896bebb') {
+        console.log('🔍 Proyecto en el componente:', foundProject)
+        console.log('🔍 moduleCount en el componente:', foundProject.moduleCount)
+      }
     }
   }, [projects, projectId])
 
@@ -62,9 +69,37 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const handleUpdateProject = async (projectData: Partial<Project>) => {
     if (!project) return
     
-    const result = await updateProject(project.id, projectData)
+    // Mapear los datos del formulario al formato esperado por el hook
+    const mappedData = {
+      name: projectData.name,
+      description: projectData.description,
+      status: projectData.status,
+      start_date: projectData.startDate ? new Date(projectData.startDate) : undefined,
+      end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
+      client_id: projectData.clientId,
+      // Especificaciones técnicas
+      modulation: projectData.modulation,
+      height: projectData.height,
+      width: projectData.width,
+      depth: projectData.depth,
+      module_count: projectData.moduleCount
+    }
+    
+    console.log('🔍 Datos del formulario:', projectData)
+    console.log('🔍 Datos mapeados:', mappedData)
+    console.log('🔍 Campos técnicos en projectData:', {
+      modulation: projectData.modulation,
+      height: projectData.height,
+      width: projectData.width,
+      depth: projectData.depth,
+      moduleCount: projectData.moduleCount
+    })
+    
+    const result = await updateProject(project.id, mappedData)
     if (result.success) {
       setIsEditDialogOpen(false)
+    } else {
+      console.error('❌ Error actualizando proyecto:', result.error)
     }
   }
 
@@ -418,6 +453,38 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           )}
         </div>
       </div>
+
+      {/* Especificaciones Técnicas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Especificaciones Técnicas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">Modulación</Label>
+              <p className="text-sm font-medium">{project.modulation}</p>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">Medidas</Label>
+              <p className="text-sm font-medium">
+                <span className="text-muted-foreground">Alto:</span> {project.height}m • 
+                <span className="text-muted-foreground"> Ancho:</span> {project.width}m • 
+                <span className="text-muted-foreground"> Profundidad:</span> {project.depth}m
+              </p>
+            </div>
+            
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">Módulos</Label>
+              <p className="text-sm font-medium">{project.moduleCount} módulos</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Project Operarios Manager */}
       <ProjectOperariosManager projectId={project.id} />
