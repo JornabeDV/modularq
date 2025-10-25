@@ -94,12 +94,6 @@ export async function GET(request: NextRequest) {
     // En producción, también enviar métricas a servicios de monitoreo
     if (process.env.NODE_ENV === 'production') {
       // Aquí podrías enviar métricas a Sentry, DataDog, etc.
-      console.log('📊 Health check metrics:', {
-        status: health.status,
-        responseTime,
-        memoryUsage: health.checks.memory.usagePercent,
-        databaseStatus: health.checks.database.status
-      });
     }
 
     const statusCode = health.status === 'healthy' ? 200 : 503;

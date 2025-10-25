@@ -184,7 +184,6 @@ export function useProjectTasksPrisma(projectId?: string) {
           status: 'completed',
           end_date: new Date()
         })
-        console.log(`Proyecto ${projectId} marcado como completado automáticamente`)
       }
     } catch (err) {
       console.error('Error checking project status:', err)

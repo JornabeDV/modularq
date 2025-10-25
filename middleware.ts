@@ -18,13 +18,6 @@ export function middleware(request: NextRequest) {
 
   // Log de métricas para Vercel Analytics
   if (process.env.NODE_ENV === 'production') {
-    console.log('📊 Request metrics:', {
-      path: pathname,
-      method: request.method,
-      userAgent: request.headers.get('user-agent'),
-      ip: request.ip || request.headers.get('x-forwarded-for'),
-      timestamp: new Date().toISOString()
-    });
   }
 
   // Monitorear rutas críticas
@@ -32,10 +25,6 @@ export function middleware(request: NextRequest) {
   const isCriticalPath = criticalPaths.some(path => pathname.startsWith(path));
 
   if (isCriticalPath) {
-    console.log('🔍 Critical path accessed:', {
-      path: pathname,
-      timestamp: new Date().toISOString()
-    });
   }
 
   return response;

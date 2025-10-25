@@ -213,7 +213,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.signOut()
       } catch (authError) {
         // Si falla, no es crítico ya que limpiamos el estado local
-        console.log('Auth signOut not applicable for custom login')
       }
     } catch (error) {
       console.error('Logout error:', error)
