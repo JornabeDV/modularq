@@ -67,21 +67,24 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Operarios Asignados
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Operarios Asignados</span>
+              <span className="sm:hidden">Operarios</span>
             </CardTitle>
-            <CardDescription>
-              Gestiona qué operarios pueden trabajar en este proyecto
+            <CardDescription className="text-sm">
+              <span className="hidden sm:inline">Gestiona qué operarios pueden trabajar en este proyecto</span>
+              <span className="sm:hidden">Gestiona operarios del proyecto</span>
             </CardDescription>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="cursor-pointer">
+              <Button size="sm" className="cursor-pointer self-start sm:self-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Asignar Operarios
+                <span className="hidden sm:inline">Asignar Operarios</span>
+                <span className="sm:hidden">Asignar</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">

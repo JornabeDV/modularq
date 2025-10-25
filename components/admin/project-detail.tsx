@@ -297,7 +297,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="cursor-pointer">
                 <Edit className="h-4 w-4 mr-2" />
-                Editar Proyecto
+                Editar
               </Button>
             </DialogTrigger>
           </Dialog>
@@ -308,7 +308,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
               onClick={handleActivateProject}
             >
               <Zap className="h-4 w-4 mr-2" />
-              ¡Activar Proyecto!
+              <span className="hidden sm:inline">¡Activar Proyecto!</span>
+              <span className="sm:hidden">Activar</span>
             </Button>
           )}
           {project.status === 'active' && (
@@ -329,16 +330,25 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             />
           )}
           {project.status === 'active' && (
-            <div className="text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md">
+            <div className="hidden sm:block text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md">
               <strong>Proyecto Activo</strong>
             </div>
           )}
         </div>
       </div>
 
+      {/* Project Status Indicator - Solo móvil */}
+      {project.status === 'active' && (
+        <div className="flex justify-start sm:hidden">
+          <div className="text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md inline-block">
+            <strong>Proyecto Activo</strong>
+          </div>
+        </div>
+      )}
+
       {/* Project Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="md:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Información del Proyecto</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -367,28 +377,46 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Estado</CardTitle>
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <Badge variant={getStatusInfo(project.status).color}>
-              {getStatusInfo(project.status).label}
-            </Badge>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Estado</CardTitle>
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Badge variant={getStatusInfo(project.status).color}>
+                {getStatusInfo(project.status).label}
+              </Badge>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tareas</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{projectTasks.length}</div>
-            <p className="text-xs text-muted-foreground">tareas asignadas</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Tareas</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{projectTasks.length}</div>
+              <p className="text-xs text-muted-foreground">tareas asignadas</p>
+            </CardContent>
+          </Card>
+
+          {/* Files Statistics Card - Solo para admins y supervisores */}
+          {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Archivos</CardTitle>
+                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{projectFiles.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  archivo{projectFiles.length !== 1 ? 's' : ''} subido{projectFiles.length !== 1 ? 's' : ''}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       {/* Project Operarios Manager */}
@@ -397,23 +425,23 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       {/* Project Files Manager - Solo para admins y supervisores */}
       {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FolderOpen className="h-5 w-5" />
-              Archivos del Proyecto
-            </CardTitle>
-            <CardDescription>
-              Gestiona documentos PDF, Excel y otros archivos relacionados con este proyecto
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FileUpload
-              projectId={project.id}
-              userId={user?.id || ''}
-              existingFiles={projectFiles}
-            />
-          </CardContent>
-        </Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FolderOpen className="h-5 w-5" />
+                Archivos del Proyecto
+              </CardTitle>
+              <CardDescription>
+                Gestiona documentos PDF, Excel y otros archivos relacionados con este proyecto
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FileUpload
+                projectId={project.id}
+                userId={user?.id || ''}
+                existingFiles={projectFiles}
+              />
+            </CardContent>
+          </Card>
       )}
 
       {/* Project Task Manager */}
