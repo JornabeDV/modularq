@@ -60,7 +60,8 @@ export function useUsersPrisma() {
       const user = await PrismaTypedService.createUser({
         email: generatedEmail,
         name: userData.name,
-        role: userData.role
+        role: userData.role,
+        password: userData.password
       })
 
       // Actualizar estado local

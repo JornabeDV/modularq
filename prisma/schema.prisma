@@ -71,6 +71,7 @@ model User {
   id          String   @id @default(cuid())
   email       String   @unique
   name        String
+  password    String?
   role        UserRole
   total_hours Float    @default(0)
   efficiency  Float    @default(0)
