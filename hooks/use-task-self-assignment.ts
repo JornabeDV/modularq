@@ -178,7 +178,7 @@ export function useTaskSelfAssignment() {
       }
 
       // Verificar si todas las tareas están completadas
-      const allTasksCompleted = tasks && tasks.length > 0 && tasks.every(task => task.status === 'completed')
+      const allTasksCompleted = tasks && tasks.length > 0 && tasks.every((task: any) => task.status === 'completed')
 
       if (allTasksCompleted) {
         // Actualizar el proyecto a completado
@@ -194,7 +194,6 @@ export function useTaskSelfAssignment() {
         if (updateError) {
           console.error('Error updating project status:', updateError)
         } else {
-          console.log(`Proyecto ${projectId} marcado como completado automáticamente`)
         }
       }
     } catch (err) {

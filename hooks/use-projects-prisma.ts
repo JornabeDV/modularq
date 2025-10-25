@@ -124,11 +124,6 @@ export function useProjectsPrisma() {
         }))
       }))
       
-      // Debug: verificar datos del proyecto específico
-      const debugProject = formattedProjects.find(p => p.id === '92e6dc81-b97d-434e-bdd5-c59ab896bebb')
-      if (debugProject) {
-        console.log('🔍 Proyecto después del fetch:', debugProject)
-      }
       
       setProjects(formattedProjects)
     } catch (err) {
@@ -177,7 +172,6 @@ export function useProjectsPrisma() {
           })
         }
         
-        console.log(`✅ Asignadas ${standardTasksOnly.length} tareas estándar al proyecto "${project.name}"`)
       } catch (taskError) {
         console.error('Error asignando tareas estándar:', taskError)
         // No fallar la creación del proyecto si hay error con las tareas
@@ -224,8 +218,6 @@ export function useProjectsPrisma() {
     try {
       setError(null)
       
-      console.log('🔍 Hook updateProject - projectId:', projectId)
-      console.log('🔍 Hook updateProject - projectData:', projectData)
       
       const project = await PrismaTypedService.updateProject(projectId, {
         name: projectData.name,
@@ -242,7 +234,6 @@ export function useProjectsPrisma() {
         module_count: projectData.module_count
       })
 
-      console.log('✅ Proyecto actualizado en Prisma:', project)
 
       // Actualizar estado local
       await fetchProjects()

@@ -57,11 +57,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       const foundProject = projects.find(p => p.id === projectId)
       setProject(foundProject || null)
       
-      // Debug: verificar datos del proyecto en el componente
-      if (foundProject && foundProject.id === '92e6dc81-b97d-434e-bdd5-c59ab896bebb') {
-        console.log('🔍 Proyecto en el componente:', foundProject)
-        console.log('🔍 moduleCount en el componente:', foundProject.moduleCount)
-      }
     }
   }, [projects, projectId])
 
@@ -85,15 +80,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       module_count: projectData.moduleCount
     }
     
-    console.log('🔍 Datos del formulario:', projectData)
-    console.log('🔍 Datos mapeados:', mappedData)
-    console.log('🔍 Campos técnicos en projectData:', {
-      modulation: projectData.modulation,
-      height: projectData.height,
-      width: projectData.width,
-      depth: projectData.depth,
-      moduleCount: projectData.moduleCount
-    })
     
     const result = await updateProject(project.id, mappedData)
     if (result.success) {

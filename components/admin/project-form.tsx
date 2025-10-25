@@ -108,15 +108,6 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
       clientId: formData.clientId === 'none' ? undefined : formData.clientId
     }
     
-    console.log('🔍 Formulario enviando datos:', submitData)
-    console.log('🔍 moduleCount del formulario:', formData.moduleCount)
-    console.log('🔍 Todos los campos técnicos:', {
-      modulation: formData.modulation,
-      height: formData.height,
-      width: formData.width,
-      depth: formData.depth,
-      moduleCount: formData.moduleCount
-    })
     
     onSubmit(submitData)
   }
