@@ -6,6 +6,7 @@ import { TableCell, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Edit, Eye, GripVertical } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DeleteProjectButton } from './delete-project-button'
 import type { Project } from '@/lib/types'
 
@@ -70,6 +71,7 @@ export function DraggableProjectRow({
   const progress = calculateProgress()
 
   return (
+    <TooltipProvider>
     <TableRow 
       className={`transition-all duration-200 select-none ${
         isDragging 
@@ -134,23 +136,39 @@ export function DraggableProjectRow({
       </TableCell>
       <TableCell className="text-center">
         <div className="flex items-center justify-center space-x-2">
-          <Link href={`/admin/projects/${project.id}`}>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Ver detalles del proyecto"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEdit}
-            title="Editar proyecto"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href={`/admin/projects/${project.id}`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Ver detalles del proyecto</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                className="cursor-pointer"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Editar proyecto</p>
+            </TooltipContent>
+          </Tooltip>
+          
           {project.status !== 'active' && (
             <DeleteProjectButton
               projectId={project.id}
@@ -161,5 +179,6 @@ export function DraggableProjectRow({
         </div>
       </TableCell>
     </TableRow>
+    </TooltipProvider>
   )
 }
