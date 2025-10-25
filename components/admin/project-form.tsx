@@ -21,6 +21,12 @@ interface ProjectFormData {
   supervisor?: string
   budget?: number
   progress?: number
+  // Especificaciones técnicas
+  modulation: string
+  height: number
+  width: number
+  depth: number
+  moduleCount: number
 }
 
 interface ProjectFormProps {
@@ -47,7 +53,13 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
     status: 'planning' as 'planning' | 'active' | 'paused' | 'completed',
     startDate: '',
     endDate: '',
-    clientId: 'none'
+    clientId: 'none',
+    // Valores por defecto del modelo estándar
+    modulation: 'standard',
+    height: 2.0,
+    width: 1.5,
+    depth: 0.8,
+    moduleCount: 1
   })
 
   useEffect(() => {
@@ -58,7 +70,13 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
         status: initialData.status,
         startDate: initialData.startDate || '',
         endDate: initialData.endDate || '',
-        clientId: initialData.clientId || 'none'
+        clientId: initialData.clientId || 'none',
+        // Campos técnicos
+        modulation: initialData.modulation || 'standard',
+        height: initialData.height || 2.0,
+        width: initialData.width || 1.5,
+        depth: initialData.depth || 0.8,
+        moduleCount: initialData.moduleCount || 1
       })
     } else {
       setFormData({
@@ -67,7 +85,13 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
         status: 'planning',
         startDate: '',
         endDate: '',
-        clientId: 'none'
+        clientId: 'none',
+        // Valores por defecto del modelo estándar
+        modulation: 'standard',
+        height: 2.0,
+        width: 1.5,
+        depth: 0.8,
+        moduleCount: 1
       })
     }
   }, [isEditing, initialData])
@@ -83,6 +107,17 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
       ...formData,
       clientId: formData.clientId === 'none' ? undefined : formData.clientId
     }
+    
+    console.log('🔍 Formulario enviando datos:', submitData)
+    console.log('🔍 moduleCount del formulario:', formData.moduleCount)
+    console.log('🔍 Todos los campos técnicos:', {
+      modulation: formData.modulation,
+      height: formData.height,
+      width: formData.width,
+      depth: formData.depth,
+      moduleCount: formData.moduleCount
+    })
+    
     onSubmit(submitData)
   }
 
@@ -196,6 +231,77 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
             </div>
           </div>
 
+          {/* Especificaciones Técnicas */}
+          <div className="space-y-4 border-t pt-6">
+            <h3 className="text-lg font-medium">Especificaciones Técnicas</h3>
+            
+            {/* Modulación */}
+            <div className="space-y-2">
+              <Label htmlFor="modulation">Modulación</Label>
+              <Input
+                id="modulation"
+                placeholder="Ej: standard, hermanados"
+                value={formData.modulation}
+                onChange={(e) => handleInputChange('modulation', e.target.value)}
+              />
+            </div>
+            
+            {/* Medidas */}
+            <div className="space-y-2">
+              <Label>Medidas (metros)</Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="height" className="text-sm text-muted-foreground">Alto</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="2.0"
+                    value={formData.height}
+                    onChange={(e) => handleInputChange('height', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="width" className="text-sm text-muted-foreground">Ancho</Label>
+                  <Input
+                    id="width"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="1.5"
+                    value={formData.width}
+                    onChange={(e) => handleInputChange('width', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="depth" className="text-sm text-muted-foreground">Profundidad</Label>
+                  <Input
+                    id="depth"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    placeholder="0.8"
+                    value={formData.depth}
+                    onChange={(e) => handleInputChange('depth', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Cantidad de Módulos */}
+            <div className="space-y-2">
+              <Label htmlFor="moduleCount">Cantidad de Módulos</Label>
+              <Input
+                id="moduleCount"
+                type="number"
+                min="1"
+                placeholder="1"
+                value={formData.moduleCount}
+                onChange={(e) => handleInputChange('moduleCount', parseInt(e.target.value) || 1)}
+              />
+            </div>
+          </div>
 
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onClose} className="cursor-pointer">
