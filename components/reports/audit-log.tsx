@@ -85,7 +85,7 @@ export function AuditLogComponent() {
             </CardTitle>
             <CardDescription>Historial completo de actividades del sistema</CardDescription>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="cursor-pointer">
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -144,7 +144,7 @@ export function AuditLogComponent() {
               <Activity className="h-12 w-12 text-destructive mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">Error al cargar logs</h3>
               <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={fetchAuditLogs} variant="outline">
+              <Button onClick={fetchAuditLogs} variant="outline" className="cursor-pointer">
                 Reintentar
               </Button>
             </div>

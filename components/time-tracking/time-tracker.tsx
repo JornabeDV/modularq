@@ -593,7 +593,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
               <Button 
                 onClick={handleStart}
                 disabled={!currentTask}
-                className="flex items-center gap-3 w-full sm:w-auto h-16 text-xl font-bold bg-green-600 hover:bg-green-700"
+                className="flex items-center gap-3 w-full sm:w-auto h-16 text-xl font-bold bg-green-600 hover:bg-green-700 cursor-pointer"
               >
                 <Play className="h-6 w-6" />
                 INICIAR TRABAJO {!currentTask ? '(Cargando...)' : ''}
@@ -601,7 +601,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
             ) : (
               <Button 
                 onClick={handleStop}
-                className="flex items-center gap-3 w-full sm:w-auto h-16 text-xl font-bold bg-red-600 hover:bg-red-700 text-white"
+                className="flex items-center gap-3 w-full sm:w-auto h-16 text-xl font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               >
                 <Square className="h-6 w-6" />
                 DETENER TRABAJO

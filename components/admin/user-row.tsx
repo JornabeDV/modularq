@@ -5,13 +5,9 @@ import { Badge } from '@/components/ui/badge'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { Edit, Shield, Users, Wrench } from 'lucide-react'
 import { DeleteUserButton } from './delete-user-button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-import type { UserProfile } from '@/hooks/use-users'
-
-interface User extends Omit<UserProfile, 'id'> {
-  id: string
-  role: 'admin' | 'supervisor' | 'operario'
-}
+import type { User } from '@/lib/prisma-typed-service'
 
 interface UserRowProps {
   user: User
@@ -56,34 +52,44 @@ export function UserRow({ user, currentUserId, onEdit, onDelete }: UserRowProps)
   }
 
   return (
-    <TableRow>
-      <TableCell>
-        <div className="font-medium">{user.name}</div>
-      </TableCell>
-      <TableCell className="text-center">
-        <Badge variant={getRoleColor(user.role)}>
-          {getRoleIcon(user.role)}
-          <span className="ml-1 capitalize">{user.role}</span>
-        </Badge>
-      </TableCell>
-      <TableCell className="text-center">
-        <div className="flex items-center justify-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEdit}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          
-          <DeleteUserButton
-            userId={user.id}
-            userName={user.name}
-            currentUserId={currentUserId}
-            onDelete={onDelete}
-          />
-        </div>
-      </TableCell>
-    </TableRow>
+    <TooltipProvider>
+      <TableRow>
+        <TableCell>
+          <div className="font-medium">{user.name}</div>
+        </TableCell>
+        <TableCell className="text-center">
+          <Badge variant={getRoleColor(user.role)}>
+            {getRoleIcon(user.role)}
+            <span className="ml-1 capitalize">{user.role}</span>
+          </Badge>
+        </TableCell>
+        <TableCell className="text-center">
+          <div className="flex items-center justify-center space-x-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEdit}
+                  className="cursor-pointer"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Editar usuario</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <DeleteUserButton
+              userId={user.id}
+              userName={user.name}
+              currentUserId={currentUserId}
+              onDelete={onDelete}
+            />
+          </div>
+        </TableCell>
+      </TableRow>
+    </TooltipProvider>
   )
 }

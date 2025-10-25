@@ -70,7 +70,7 @@ export function TaskHeader({ task, onBack }: TaskHeaderProps) {
           variant="outline" 
           size="lg"
           onClick={onBack}
-          className="shrink-0 text-lg px-6 py-3"
+          className="shrink-0 text-lg px-6 py-3 cursor-pointer"
         >
           <ArrowLeft className="h-5 w-5 mr-2" />
           Volver a Mis Tareas

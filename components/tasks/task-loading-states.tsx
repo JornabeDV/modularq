@@ -30,7 +30,7 @@ export function TaskLoadingStates({ state, onBackToProject, onBackToProjects }: 
           {onBackToProject && (
             <Button 
               onClick={onBackToProject} 
-              className="mt-4"
+              className="mt-4 cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver al Proyecto
@@ -50,7 +50,7 @@ export function TaskLoadingStates({ state, onBackToProject, onBackToProjects }: 
           {onBackToProjects && (
             <Button 
               onClick={onBackToProjects} 
-              className="mt-4"
+              className="mt-4 cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver a Proyectos

@@ -118,7 +118,7 @@ export function Sidebar() {
       <div className="p-4 border-t">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground cursor-pointer"
           onClick={logout}
         >
           <LogOut className="h-4 w-4" />

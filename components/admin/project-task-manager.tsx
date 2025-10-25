@@ -135,7 +135,7 @@ export function ProjectTaskManager({
         </div>
         <div className="flex gap-2">
           {!isReadOnly && onCreateTask && (
-            <Button variant="outline" onClick={onCreateTask}>
+            <Button variant="outline" onClick={onCreateTask} className="cursor-pointer">
               <Plus className="h-4 w-4 mr-2" />
               Crear Tarea Personalizada
             </Button>
@@ -143,7 +143,7 @@ export function ProjectTaskManager({
           {!isReadOnly && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="cursor-pointer">
                   <Plus className="h-4 w-4 mr-2" />
                   Asignar Tarea Existente
                 </Button>
@@ -197,11 +197,11 @@ export function ProjectTaskManager({
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline">{task.category}</Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {task.estimated_hours}h estimadas
+                                  {task.estimatedHours}h estimadas
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" className="cursor-pointer">
                               Asignar
                             </Button>
                           </div>
@@ -230,11 +230,11 @@ export function ProjectTaskManager({
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline">{task.category}</Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {task.estimated_hours}h estimadas
+                                  {task.estimatedHours}h estimadas
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" className="cursor-pointer">
                               Asignar
                             </Button>
                           </div>

@@ -54,7 +54,7 @@ export default function ProjectMetricsPage() {
             let totalHours = 0
             let activeSession: { startTime: string; elapsedHours: number; operarioId: string } | null = null
 
-            timeEntries?.forEach(entry => {
+            timeEntries?.forEach((entry: any) => {
               if (entry.end_time) {
                 // Sesión completada - usar horas calculadas
                 totalHours += parseFloat(entry.hours || 0)
@@ -284,7 +284,7 @@ export default function ProjectMetricsPage() {
               El proyecto que buscas no existe o no tienes permisos para verlo
             </p>
             <Link href="/dashboard">
-              <Button variant="outline">
+              <Button variant="outline" className="cursor-pointer">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Volver al Dashboard
               </Button>
@@ -327,7 +327,7 @@ export default function ProjectMetricsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="cursor-pointer">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Volver</span>
               </Button>
@@ -849,7 +849,7 @@ export default function ProjectMetricsPage() {
                     {/* Botón Ver detalle */}
                     <div className="flex justify-end pt-2">
                       <Link href={`/admin/projects/${projectId}/metrics/task/${projectTask.id}`}>
-                        <Button variant="outline" size="sm" className="text-xs">
+                        <Button variant="outline" size="sm" className="text-xs cursor-pointer">
                           Ver detalle
                         </Button>
                       </Link>

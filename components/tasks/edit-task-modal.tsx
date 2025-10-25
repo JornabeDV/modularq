@@ -75,10 +75,10 @@ export function EditTaskModal({
             />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button onClick={onSave}>
+            <Button onClick={onSave} className="cursor-pointer">
               Guardar Cambios
             </Button>
           </div>

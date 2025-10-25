@@ -99,7 +99,7 @@ function TasksContent() {
             <h1 className="text-3xl font-bold text-balance">Tareas Estándar</h1>
             <p className="text-muted-foreground">Gestiona las tareas reutilizables del sistema</p>
           </div>
-          <Button>
+          <Button className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
             Nueva Tarea Estándar
           </Button>

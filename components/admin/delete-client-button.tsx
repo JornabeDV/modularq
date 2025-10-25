@@ -37,7 +37,7 @@ export function DeleteClientButton({ clientId, clientName, onDelete }: DeleteCli
         <Tooltip>
           <TooltipTrigger asChild>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive cursor-pointer">
+              <Button variant="outline" size="sm" className="cursor-pointer">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -55,7 +55,7 @@ export function DeleteClientButton({ clientId, clientName, onDelete }: DeleteCli
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} className="cursor-pointer">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

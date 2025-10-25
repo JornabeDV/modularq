@@ -111,13 +111,13 @@ export function StopTaskModal({
               onClick={handleCancel}
               variant="outline"
               size="lg"
-              className="h-10 sm:h-12 px-6 sm:px-8 text-base sm:text-lg w-full sm:w-auto"
+              className="h-10 sm:h-12 px-6 sm:px-8 text-base sm:text-lg w-full sm:w-auto cursor-pointer"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleConfirm}
-              className="h-10 sm:h-12 px-6 sm:px-8 text-base sm:text-lg bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+              className="h-10 sm:h-12 px-6 sm:px-8 text-base sm:text-lg bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto cursor-pointer"
               disabled={!selectedReason || (selectedReason === 'other' && !customReason.trim())}
             >
               Detener Trabajo

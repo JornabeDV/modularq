@@ -176,7 +176,7 @@ function ProjectsContent() {
                 {/* Botón para ver detalles */}
                 <div className="pt-2 border-t">
                   <Link href={`/projects/${project.id}`}>
-                    <Button variant="outline" className="w-full text-sm sm:text-base">
+                    <Button variant="outline" className="w-full text-sm sm:text-base cursor-pointer">
                       <Eye className="h-4 w-4 mr-2" />
                       Ver Detalles del Proyecto
                     </Button>
