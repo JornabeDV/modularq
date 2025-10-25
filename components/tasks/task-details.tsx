@@ -163,7 +163,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
           <div className="pt-6 border-t">
             <button 
               onClick={onComplete}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-bold text-xl flex items-center justify-center gap-3 shadow-lg"
+              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-bold text-xl flex items-center justify-center gap-3 shadow-lg cursor-pointer"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />

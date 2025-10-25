@@ -142,7 +142,7 @@ export default function TaskMetricsPage() {
           let currentActiveSession: ActiveSession | null = null
 
           // Calcular horas totales incluyendo sesiones activas
-          entries?.forEach(entry => {
+          entries?.forEach((entry: any) => {
             if (entry.end_time) {
               // Sesión completada - usar horas calculadas
               totalHours += parseFloat(entry.hours || 0)
@@ -225,7 +225,7 @@ export default function TaskMetricsPage() {
           <p className="text-muted-foreground mb-4">
             La tarea que buscas no existe o no tienes permisos para verla
           </p>
-          <Button onClick={() => router.push(`/admin/projects/${projectId}/metrics`)}>
+          <Button onClick={() => router.push(`/admin/projects/${projectId}/metrics`)} className="cursor-pointer">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a Métricas del Proyecto
           </Button>
@@ -250,6 +250,7 @@ export default function TaskMetricsPage() {
                 variant="outline" 
                 size="sm"
                 onClick={() => router.push(`/admin/projects/${projectId}/metrics`)}
+                className="cursor-pointer"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Volver</span>

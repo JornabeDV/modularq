@@ -380,7 +380,7 @@ export default function DashboardPage() {
                     Crea, edita y gestiona todo el personal del sistema
                   </p>
                   <Link href="/admin/users">
-                    <Button size="sm" className="w-full">
+                    <Button size="sm" className="w-full cursor-pointer">
                       <Users className="h-3 w-3 mr-1" />
                       Gestionar personal
                     </Button>
@@ -396,7 +396,7 @@ export default function DashboardPage() {
                     Administra tareas estándar y personalizadas del sistema
                   </p>
                   <Link href="/admin/tasks">
-                    <Button size="sm" variant="outline" className="w-full">
+                    <Button size="sm" variant="outline" className="w-full cursor-pointer">
                       <Target className="h-3 w-3 mr-1" />
                       Gestionar tareas
                     </Button>
@@ -412,7 +412,7 @@ export default function DashboardPage() {
                     Administra la información de tus clientes y empresas
                   </p>
                   <Link href="/admin/clients">
-                    <Button size="sm" variant="outline" className="w-full">
+                    <Button size="sm" variant="outline" className="w-full cursor-pointer">
                       <Building2 className="h-3 w-3 mr-1" />
                       Gestionar clientes
                     </Button>
@@ -430,7 +430,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <Link href="/reports">
-                    <Button size="sm" variant="outline" className="w-full">
+                    <Button size="sm" variant="outline" className="w-full cursor-pointer">
                       <TrendingUp className="h-3 w-3 mr-1" />
                       Ver Reportes
                     </Button>
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                 <CardDescription>Estado actual de los proyectos en curso</CardDescription>
               </div>
               <Link href="/admin/projects">
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 cursor-pointer">
                   <FolderKanban className="h-4 w-4" />
                   Gestionar Proyectos
                 </Button>
@@ -772,7 +772,7 @@ export default function DashboardPage() {
                         {/* Botones de acción */}
                         <div className="pt-2">
                           <Link href={`/admin/projects/${project.id}/metrics`}>
-                            <Button variant="outline" size="sm" className="w-full">
+                            <Button variant="outline" size="sm" className="w-full cursor-pointer">
                               Ver Métricas
                             </Button>
                           </Link>
@@ -790,7 +790,7 @@ export default function DashboardPage() {
                   Comienza creando tu primer proyecto para gestionar las tareas de los operarios
                 </p>
                 <Link href="/admin/projects">
-                  <Button className="gap-2">
+                  <Button className="gap-2 cursor-pointer">
                     <FolderKanban className="h-4 w-4" />
                     Crear Proyecto
                   </Button>

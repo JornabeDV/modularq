@@ -82,7 +82,7 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none">
+        <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none cursor-pointer">
           <Users className="h-4 w-4" />
           <span className="hidden sm:inline">Colaboradores ({collaborators.length})</span>
           <span className="sm:hidden">Colab. ({collaborators.length})</span>
@@ -143,6 +143,7 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
                         size="sm"
                         onClick={() => handleRemoveCollaborator(collaborator.id)}
                         disabled={isLoading}
+                        className="cursor-pointer"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -174,7 +175,7 @@ export function TaskCollaborators({ projectTask, projectOperarios, onUpdate }: T
                   onClick={handleAddCollaborator}
                   disabled={!selectedUserId || isLoading}
                   size="sm"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto cursor-pointer"
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Agregar</span>

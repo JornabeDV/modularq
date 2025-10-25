@@ -198,10 +198,10 @@ export function ProjectForm({ isOpen, onClose, onSubmit, isEditing, initialData 
 
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" className="cursor-pointer">
               {isEditing ? 'Actualizar Proyecto' : 'Crear Proyecto'}
             </Button>
           </div>

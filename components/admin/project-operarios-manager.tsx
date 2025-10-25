@@ -79,7 +79,7 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" className="cursor-pointer">
                 <Plus className="h-4 w-4 mr-2" />
                 Asignar Operarios
               </Button>
@@ -146,6 +146,7 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
                         <Button 
                           onClick={handleAssignSelected}
                           disabled={selectedUserIds.length === 0 || isAssigning}
+                          className="cursor-pointer"
                         >
                           {isAssigning ? 'Asignando...' : `Asignar ${selectedUserIds.length}`}
                         </Button>
@@ -196,6 +197,7 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
                   variant="ghost"
                   size="sm"
                   onClick={() => handleUnassignOperario(projectOperario.id)}
+                  className="cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </Button>

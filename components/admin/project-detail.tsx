@@ -262,7 +262,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </p>
           <Button 
             onClick={() => router.push('/admin/projects')} 
-            className="mt-4"
+            className="mt-4 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a Proyectos
@@ -281,6 +281,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             variant="outline"
             size="sm"
             onClick={() => router.push('/admin/projects')}
+            className="cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
@@ -294,7 +295,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         <div className="flex items-center gap-2">
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="cursor-pointer">
                 <Edit className="h-4 w-4 mr-2" />
                 Editar Proyecto
               </Button>
@@ -302,7 +303,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </Dialog>
           {project.status === 'planning' && (
             <Button 
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
               size="sm"
               onClick={handleActivateProject}
             >
@@ -312,7 +313,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           )}
           {project.status === 'active' && (
             <Button 
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
               size="sm"
               onClick={handleDeactivateProject}
             >
@@ -503,7 +504,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingTask(null)}>
+              <Button variant="outline" onClick={() => setEditingTask(null)} className="cursor-pointer">
                 Cancelar
               </Button>
               <Button onClick={() => {
@@ -514,7 +515,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                   notes: editingTask.notes
                 }
                 handleUpdateTask(editingTask.id, updateData)
-              }}>
+              }} className="cursor-pointer">
                 Guardar Cambios
               </Button>
             </DialogFooter>
@@ -540,11 +541,12 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             <Button 
               variant="outline" 
               onClick={() => setIsActivateDialogOpen(false)}
+              className="cursor-pointer"
             >
               Cancelar
             </Button>
             <Button 
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white cursor-pointer"
               onClick={confirmActivateProject}
             >
               <Zap className="h-4 w-4 mr-2" />
@@ -572,11 +574,12 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             <Button 
               variant="outline" 
               onClick={() => setIsDeactivateDialogOpen(false)}
+              className="cursor-pointer"
             >
               Cancelar
             </Button>
             <Button 
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white cursor-pointer"
               onClick={confirmDeactivateProject}
             >
               <ClipboardList className="h-4 w-4 mr-2" />

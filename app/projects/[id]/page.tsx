@@ -99,7 +99,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             <p className="text-muted-foreground mt-2">El proyecto solicitado no existe</p>
             <Button 
               onClick={() => router.push('/projects')} 
-              className="mt-4"
+              className="mt-4 cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver a Proyectos
@@ -121,7 +121,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             </p>
             <Button 
               onClick={() => router.push('/projects')} 
-              className="mt-4"
+              className="mt-4 cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver a Proyectos
@@ -167,7 +167,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               variant="outline"
               size="sm"
               onClick={() => router.push('/projects')}
-              className="shrink-0"
+              className="shrink-0 cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Volver</span>

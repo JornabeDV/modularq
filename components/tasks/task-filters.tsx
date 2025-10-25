@@ -90,7 +90,7 @@ export function TaskFilters({
         </Select>
 
         {activeFiltersCount > 0 && (
-          <Button variant="outline" size="sm" onClick={onClearFilters}>
+          <Button variant="outline" size="sm" onClick={onClearFilters} className="cursor-pointer">
             <X className="h-4 w-4 mr-2" />
             Limpiar filtros
             <Badge variant="secondary" className="ml-2">

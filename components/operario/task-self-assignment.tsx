@@ -319,7 +319,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                       variant="default"
                       onClick={() => handleEnterTask(task)}
                       disabled={loading}
-                      className={`w-full sm:w-auto text-white ${
+                      className={`w-full sm:w-auto text-white cursor-pointer ${
                         hasWorkedOnTask[task.id] 
                           ? 'bg-orange-600 hover:bg-orange-700' 
                           : 'bg-blue-600 hover:bg-blue-700'
@@ -345,7 +345,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                       variant="outline"
                       onClick={() => handleUnassign(task.id)}
                       disabled={loading}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto cursor-pointer"
                     >
                       <Square className="h-4 w-4 mr-2" />
                       Devolver
@@ -495,7 +495,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                     size="sm"
                     onClick={() => handleSelfAssign(task.id)}
                     disabled={loading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto cursor-pointer"
                   >
                     <User className="h-4 w-4 mr-2" />
                     Tomar Tarea

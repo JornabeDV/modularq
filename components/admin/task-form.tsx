@@ -67,6 +67,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
       estimatedHours: formData.estimatedHours,
       category: formData.category,
       type: formData.type,
+      taskOrder: 0,
       createdBy: user?.id || '00000000-0000-0000-0000-000000000000'
     })
   }
@@ -173,10 +174,10 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
 
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="cursor-pointer">
               {isLoading ? 'Guardando...' : (isEditing ? 'Actualizar Tarea' : 'Crear Tarea')}
             </Button>
           </div>

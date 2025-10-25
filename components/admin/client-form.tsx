@@ -135,10 +135,10 @@ export function ClientForm({ isOpen, onClose, onSubmit, isEditing, initialData, 
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="cursor-pointer">
               {isLoading ? 'Guardando...' : (isEditing ? 'Actualizar Cliente' : 'Crear Cliente')}
             </Button>
           </div>

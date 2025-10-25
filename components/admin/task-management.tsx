@@ -131,7 +131,7 @@ export function TaskManagement() {
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button type="button" className="w-full sm:w-auto">
+            <Button type="button" className="w-full sm:w-auto cursor-pointer">
               <Plus className="h-4 w-4 mr-2" />
               Nueva Tarea
             </Button>

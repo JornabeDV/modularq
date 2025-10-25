@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
-import type { CreateUserData } from '@/hooks/use-users'
+import type { CreateUserData } from '@/hooks/use-users-prisma'
 
 interface EditUserDialogProps {
   isOpen: boolean
@@ -83,10 +83,10 @@ export function EditUserDialog({
           
           
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" className="cursor-pointer">
               {isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}
             </Button>
           </div>

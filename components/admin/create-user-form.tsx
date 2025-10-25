@@ -113,7 +113,7 @@ export function CreateUserForm() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="cursor-pointer">
           <UserPlus className="h-4 w-4 mr-2" />
           Crear Usuario
         </Button>
@@ -194,7 +194,7 @@ export function CreateUserForm() {
                   type="button"
                   variant="outline"
                   onClick={handleGeneratePassword}
-                  className="flex-1"
+                  className="flex-1 cursor-pointer"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Generar Contraseña Segura
@@ -205,6 +205,7 @@ export function CreateUserForm() {
                     variant="outline"
                     onClick={handleCopyPassword}
                     title="Copiar contraseña"
+                    className="cursor-pointer"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -243,10 +244,10 @@ export function CreateUserForm() {
 
           {/* Botones */}
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="cursor-pointer">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isGenerating}>
+            <Button type="submit" disabled={isGenerating} className="cursor-pointer">
               {isGenerating ? 'Creando...' : 'Crear Usuario'}
             </Button>
           </div>

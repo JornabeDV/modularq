@@ -103,6 +103,7 @@ export function TaskAssignmentDialog({ isOpen, onClose, projectId, projectName }
                         variant="outline"
                         size="sm"
                         onClick={() => handleUnassignTask(projectTask.id)}
+                        className="cursor-pointer"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -152,7 +153,7 @@ export function TaskAssignmentDialog({ isOpen, onClose, projectId, projectName }
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline">{task.category || 'Sin categoría'}</Badge>
                         <span className="text-xs text-gray-500">
-                          {task.estimated_hours}h estimadas
+                          {task.estimatedHours}h estimadas
                         </span>
                       </div>
                     </div>
@@ -170,6 +171,7 @@ export function TaskAssignmentDialog({ isOpen, onClose, projectId, projectName }
                   onClick={handleAssignSelected}
                   disabled={isAssigning}
                   size="sm"
+                  className="cursor-pointer"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {isAssigning ? 'Asignando...' : 'Asignar Seleccionadas'}
@@ -180,7 +182,7 @@ export function TaskAssignmentDialog({ isOpen, onClose, projectId, projectName }
         </div>
 
         <div className="flex justify-end space-x-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="cursor-pointer">
             Cerrar
           </Button>
         </div>

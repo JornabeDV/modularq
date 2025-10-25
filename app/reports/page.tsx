@@ -71,7 +71,7 @@ function ReportsContent() {
                   Los proyectos completados aparecerán aquí cuando todas sus tareas estén terminadas
                 </p>
                 <Link href="/admin/projects">
-                  <Button className="gap-2">
+                  <Button className="gap-2 cursor-pointer">
                     <FolderKanban className="h-4 w-4" />
                     Ver Todos los Proyectos
                   </Button>
@@ -143,7 +143,7 @@ function ReportsContent() {
                         {/* Botones de acción */}
                         <div className="pt-2">
                           <Link href={`/admin/projects/${project.id}/metrics`}>
-                            <Button variant="outline" size="sm" className="w-full">
+                            <Button variant="outline" size="sm" className="w-full cursor-pointer">
                               Ver Métricas
                             </Button>
                           </Link>

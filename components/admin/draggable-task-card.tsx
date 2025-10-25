@@ -96,6 +96,7 @@ export function DraggableTaskCard({
                   size="sm" 
                   variant="outline"
                   onClick={() => onEdit(projectTask)}
+                  className="cursor-pointer"
                 >
                   Editar
                 </Button>
@@ -103,6 +104,7 @@ export function DraggableTaskCard({
                   size="sm" 
                   variant="outline" 
                   onClick={() => onUnassign(projectTask.id)}
+                  className="cursor-pointer"
                 >
                   Desasignar
                 </Button>

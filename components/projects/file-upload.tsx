@@ -133,15 +133,37 @@ export function FileUpload({
 
   const handleDownload = async (file: FileMetadata) => {
     try {
-      const url = await SupabaseFileStorage.getFileUrl(file.storage_path)
+      // Usar URL firmada para descarga (archivos privados)
+      const url = await SupabaseFileStorage.getSignedUrl(file.storage_path)
+      
+      // Descargar usando fetch para mejor control
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Error al obtener el archivo')
+      }
+      
+      const blob = await response.blob()
+      
+      // Crear URL del blob y descargar
+      const blobUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
+      link.href = blobUrl
       link.download = file.file_name
-      link.target = '_blank'
+      link.style.display = 'none'
+      
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      
+      // Limpiar URL del blob
+      window.URL.revokeObjectURL(blobUrl)
+      
+      toast({
+        title: "Descarga completada",
+        description: `${file.file_name} se ha descargado correctamente`
+      })
     } catch (error) {
+      console.error('Download error:', error)
       toast({
         title: "Error al descargar archivo",
         description: "No se pudo descargar el archivo",
@@ -152,7 +174,14 @@ export function FileUpload({
 
   const handleView = async (file: FileMetadata) => {
     try {
-      const url = await SupabaseFileStorage.getFileUrl(file.storage_path)
+      // Intentar URL pública primero, si falla usar URL firmada
+      let url: string
+      try {
+        url = await SupabaseFileStorage.getFileUrl(file.storage_path)
+      } catch {
+        // Si falla la URL pública, usar URL firmada
+        url = await SupabaseFileStorage.getSignedUrl(file.storage_path)
+      }
       window.open(url, '_blank')
     } catch (error) {
       toast({
@@ -367,7 +396,7 @@ export function FileUpload({
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => confirmDeleteFile(file)}
-                            className="bg-red-600 hover:bg-red-700"
+                            className="cursor-pointer"
                           >
                             Eliminar
                           </AlertDialogAction>
