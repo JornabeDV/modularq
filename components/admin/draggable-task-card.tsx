@@ -57,10 +57,10 @@ export function DraggableTaskCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent className="p-0">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Task Number */}
-            <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+            <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold">
               {taskNumber}
             </div>
             
@@ -73,13 +73,13 @@ export function DraggableTaskCard({
             
             {/* Task Info */}
             <div className="flex-1 min-w-0">
-              <h5 className="font-medium truncate">{projectTask.task?.title}</h5>
+              <h5 className="font-medium text-sm sm:text-base truncate">{projectTask.task?.title}</h5>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge variant="outline" className="text-xs">
                   {projectTask.task?.category}
                 </Badge>
               </div>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
                 <span>{projectTask.task?.estimatedHours}h estimadas</span>
                 {projectTask.actualHours > 0 && (
                   <span>{projectTask.actualHours}h reales</span>
@@ -89,16 +89,17 @@ export function DraggableTaskCard({
           </div>
           
           {/* Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
             {!isReadOnly ? (
-              <>
+              <div className="flex items-center gap-2">
                 <Button 
                   size="sm" 
                   variant="outline"
                   onClick={() => onEdit(projectTask)}
                   className="cursor-pointer"
                 >
-                  Editar
+                  <span className="hidden sm:inline">Editar</span>
+                  <span className="sm:hidden">Editar</span>
                 </Button>
                 <Button 
                   size="sm" 
@@ -106,9 +107,9 @@ export function DraggableTaskCard({
                   onClick={() => onUnassign(projectTask.id)}
                   className="cursor-pointer"
                 >
-                  Desasignar
+                  Quitar
                 </Button>
-              </>
+              </div>
             ) : null}
           </div>
         </div>

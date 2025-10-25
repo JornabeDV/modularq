@@ -215,15 +215,12 @@ export function FileUpload({
   return (
     <TooltipProvider>
       <div className="space-y-6">
-      {/* Upload Area */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        {/* Upload Area */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Subir Archivos
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+            <h3 className="text-lg font-semibold">Subir Archivos</h3>
+          </div>
           {/* Drag & Drop Area */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
@@ -277,6 +274,7 @@ export function FileUpload({
               onChange={(e) => setDescription(e.target.value)}
               disabled={uploading}
               rows={2}
+              className="text-sm"
             />
           </div>
 
@@ -291,38 +289,42 @@ export function FileUpload({
             </div>
           )}
 
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Files List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <div className="space-y-4 pt-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
             <File className="h-5 w-5" />
-            Archivos del Proyecto ({files.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+            Archivos Subidos
+          </h3>
+          {files.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {files.length} archivo{files.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
           {files.length > 0 ? (
             <div className="space-y-3">
               {files.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg"
                 >
                   <div 
                     className="flex items-center space-x-3 cursor-pointer rounded-lg p-2 -m-2 flex-1"
                     onClick={() => handleView(file)}
                     title="Hacer clic para ver el archivo"
                   >
-                    <span className="text-2xl">
+                    <span className="text-xl sm:text-2xl">
                       {SupabaseFileStorage.getFileIcon(file.file_type)}
                     </span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">
                         {file.file_name}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
                         <span>{SupabaseFileStorage.formatFileSize(file.file_size)}</span>
                         <span>{new Date(file.uploaded_at).toLocaleDateString()}</span>
                         <span className="capitalize">{file.file_type}</span>
@@ -335,7 +337,7 @@ export function FileUpload({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 self-end sm:self-auto">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -414,8 +416,6 @@ export function FileUpload({
               <p className="text-xs mt-1">Sube el primer archivo usando el formulario de arriba</p>
             </div>
           )}
-        </CardContent>
-      </Card>
       </div>
     </TooltipProvider>
   )

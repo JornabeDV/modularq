@@ -129,15 +129,16 @@ export function ProjectTaskManager({
   return (
     <div className="space-y-6">
       {/* Header con controles */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold">Gestión de Tareas del Proyecto</h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-row gap-2">
           {!isReadOnly && onCreateTask && (
             <Button variant="outline" onClick={onCreateTask} className="cursor-pointer">
               <Plus className="h-4 w-4 mr-2" />
-              Crear Tarea Personalizada
+              <span className="hidden sm:inline">Crear Tarea Personalizada</span>
+              <span className="sm:hidden">Crear Tarea</span>
             </Button>
           )}
           {!isReadOnly && (
@@ -145,17 +146,18 @@ export function ProjectTaskManager({
               <DialogTrigger asChild>
                 <Button className="cursor-pointer">
                   <Plus className="h-4 w-4 mr-2" />
-                  Asignar Tarea Existente
+                  <span className="hidden sm:inline">Asignar Tarea Existente</span>
+                  <span className="sm:hidden">Asignar Tarea</span>
                 </Button>
               </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Asignar Tarea al Proyecto</DialogTitle>
             </DialogHeader>
             
             {/* Filtros */}
             <div className="space-y-4">
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Input
                     placeholder="Buscar tareas..."
@@ -165,7 +167,7 @@ export function ProjectTaskManager({
                   />
                 </div>
                 <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Filtrar por tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -185,23 +187,23 @@ export function ProjectTaskManager({
                     </h4>
                     <div className="grid gap-2">
                       {standardTasks.map(task => (
-                        <Card key={task.id} className="p-3 hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer"
+                        <Card key={task.id} className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
                               onClick={() => {
                                 onAssignTask(task.id)
                                 setIsDialogOpen(false)
                               }}>
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <h5 className="font-medium">{task.title}</h5>
-                              <p className="text-sm text-muted-foreground">{task.description}</p>
+                              <p className="text-sm text-muted-foreground truncate">{task.description}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline">{task.category}</Badge>
+                                <Badge variant="outline" className="text-xs">{task.category}</Badge>
                                 <span className="text-xs text-muted-foreground">
                                   {task.estimatedHours}h estimadas
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="cursor-pointer">
+                            <Button size="sm" variant="outline" className="cursor-pointer ml-3">
                               Asignar
                             </Button>
                           </div>
@@ -218,23 +220,23 @@ export function ProjectTaskManager({
                     </h4>
                     <div className="grid gap-2">
                       {customTasks.map(task => (
-                        <Card key={task.id} className="p-3 hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors cursor-pointer"
+                        <Card key={task.id} className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
                               onClick={() => {
                                 onAssignTask(task.id)
                                 setIsDialogOpen(false)
                               }}>
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <h5 className="font-medium">{task.title}</h5>
-                              <p className="text-sm text-muted-foreground">{task.description}</p>
+                              <p className="text-sm text-muted-foreground truncate">{task.description}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline">{task.category}</Badge>
+                                <Badge variant="outline" className="text-xs">{task.category}</Badge>
                                 <span className="text-xs text-muted-foreground">
                                   {task.estimatedHours}h estimadas
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="cursor-pointer">
+                            <Button size="sm" variant="outline" className="cursor-pointer ml-3">
                               Asignar
                             </Button>
                           </div>
