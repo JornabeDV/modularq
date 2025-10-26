@@ -15,6 +15,9 @@ export default function HomePage() {
         // Redirigir según el rol del usuario
         if (userProfile.role === 'admin') {
           router.push("/dashboard")
+        } else if (userProfile.role === 'supervisor') {
+          // Supervisores van al dashboard también
+          router.push("/dashboard")
         } else {
           // Operarios van directo a proyectos activos
           router.push("/projects")

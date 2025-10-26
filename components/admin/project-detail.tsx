@@ -35,6 +35,10 @@ interface ProjectDetailProps {
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter()
   const { user, userProfile } = useAuth()
+  
+  // Los supervisores solo pueden ver, no editar
+  const isReadOnly = userProfile?.role === 'supervisor'
+  
   const { projects, loading: projectsLoading, error: projectsError, updateProject, deleteProject, refetch: refetchProjects } = useProjectsPrisma()
   const { projectTasks, loading: projectTasksLoading, createProjectTask, updateProjectTask, deleteProjectTask, updateTaskOrder, assignStandardTaskToProject } = useProjectTasksPrisma(projectId)
   const { tasks: allTasks, createTask } = useTasksPrisma()
@@ -314,41 +318,45 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="cursor-pointer">
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
-            </DialogTrigger>
-          </Dialog>
-          {project.status === 'planning' && (
-            <Button 
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-              size="sm"
-              onClick={handleActivateProject}
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">¡Activar Proyecto!</span>
-              <span className="sm:hidden">Activar</span>
-            </Button>
-          )}
-          {project.status === 'active' && (
-            <Button 
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-              size="sm"
-              onClick={handleDeactivateProject}
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Volver a Planificación
-            </Button>
-          )}
-          {project.status !== 'active' && (
-            <DeleteProjectButton
-              projectId={project.id}
-              projectName={project.name}
-              onDelete={handleDeleteProject}
-            />
+          {!isReadOnly && (
+            <>
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="cursor-pointer">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+              {project.status === 'planning' && (
+                <Button 
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  size="sm"
+                  onClick={handleActivateProject}
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">¡Activar Proyecto!</span>
+                  <span className="sm:hidden">Activar</span>
+                </Button>
+              )}
+              {project.status === 'active' && (
+                <Button 
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  size="sm"
+                  onClick={handleDeactivateProject}
+                >
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Volver a Planificación
+                </Button>
+              )}
+              {project.status !== 'active' && (
+                <DeleteProjectButton
+                  projectId={project.id}
+                  projectName={project.name}
+                  onDelete={handleDeleteProject}
+                />
+              )}
+            </>
           )}
           {project.status === 'active' && (
             <div className="hidden sm:block text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md">
@@ -473,7 +481,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       </Card>
 
       {/* Project Operarios Manager */}
-      <ProjectOperariosManager projectId={project.id} />
+      <ProjectOperariosManager projectId={project.id} isReadOnly={isReadOnly} />
 
       {/* Project Files Manager - Solo para admins y supervisores */}
       {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
@@ -492,6 +500,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
                 projectId={project.id}
                 userId={user?.id || ''}
                 existingFiles={projectFiles}
+                isReadOnly={isReadOnly}
               />
             </CardContent>
           </Card>
@@ -507,28 +516,33 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         onEditTask={handleEditTask}
         onCreateTask={() => setIsTaskDialogOpen(true)}
         onReorderTasks={handleReorderTasks}
+        isReadOnly={isReadOnly}
       />
 
       {/* Edit Project Dialog */}
-      <ProjectForm
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        onSubmit={handleUpdateProject}
-        isEditing={true}
-        initialData={project}
-      />
+      {!isReadOnly && (
+        <ProjectForm
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          onSubmit={handleUpdateProject}
+          isEditing={true}
+          initialData={project}
+        />
+      )}
 
       {/* Create Task Dialog */}
-      <TaskForm
-        isOpen={isTaskDialogOpen}
-        onClose={() => setIsTaskDialogOpen(false)}
-        onSubmit={handleCreateTask}
-        isEditing={false}
-        projectId={project.id}
-      />
+      {!isReadOnly && (
+        <TaskForm
+          isOpen={isTaskDialogOpen}
+          onClose={() => setIsTaskDialogOpen(false)}
+          onSubmit={handleCreateTask}
+          isEditing={false}
+          projectId={project.id}
+        />
+      )}
 
       {/* Edit Project Task Dialog */}
-      {editingTask && (
+      {!isReadOnly && editingTask && (
         <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
           <DialogContent>
             <DialogHeader>
@@ -605,70 +619,74 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       )}
 
       {/* Modal de Confirmación para Activar Proyecto */}
-      <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-green-600" />
-              Activar Proyecto
-            </DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que quieres activar este proyecto?
-            </DialogDescription>
-          </DialogHeader>
-          
+      {!isReadOnly && (
+        <Dialog open={isActivateDialogOpen} onOpenChange={setIsActivateDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-green-600" />
+                Activar Proyecto
+              </DialogTitle>
+              <DialogDescription>
+                ¿Estás seguro de que quieres activar este proyecto?
+              </DialogDescription>
+            </DialogHeader>
+            
 
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsActivateDialogOpen(false)}
-              className="cursor-pointer"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white cursor-pointer"
-              onClick={confirmActivateProject}
-            >
-              <Zap className="h-4 w-4 mr-2" />
-              Sí, Activar Proyecto
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsActivateDialogOpen(false)}
+                className="cursor-pointer"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white cursor-pointer"
+                onClick={confirmActivateProject}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Sí, Activar Proyecto
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Modal de Confirmación para Desactivar Proyecto */}
-      <Dialog open={isDeactivateDialogOpen} onOpenChange={setIsDeactivateDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-orange-600" />
-              Volver a Planificación
-            </DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que quieres volver este proyecto a estado de planificación?
-            </DialogDescription>
-          </DialogHeader>
-          
+      {!isReadOnly && (
+        <Dialog open={isDeactivateDialogOpen} onOpenChange={setIsDeactivateDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-orange-600" />
+                Volver a Planificación
+              </DialogTitle>
+              <DialogDescription>
+                ¿Estás seguro de que quieres volver este proyecto a estado de planificación?
+              </DialogDescription>
+            </DialogHeader>
+            
 
-          <DialogFooter className="gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDeactivateDialogOpen(false)}
-              className="cursor-pointer"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white cursor-pointer"
-              onClick={confirmDeactivateProject}
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Sí, Volver a Planificación
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDeactivateDialogOpen(false)}
+                className="cursor-pointer"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white cursor-pointer"
+                onClick={confirmDeactivateProject}
+              >
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Sí, Volver a Planificación
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   )

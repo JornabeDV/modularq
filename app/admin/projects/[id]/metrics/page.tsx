@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
-import { AdminOnly } from "@/components/auth/route-guard"
+import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
 import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users } from "lucide-react"
 import Link from "next/link"
@@ -321,8 +321,9 @@ export default function ProjectMetricsPage() {
   ) / 100
 
   return (
-    <MainLayout>
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <AdminOrSupervisorOnly>
+      <MainLayout>
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -862,5 +863,6 @@ export default function ProjectMetricsPage() {
         </Card>
       </div>
     </MainLayout>
+    </AdminOrSupervisorOnly>
   )
 }

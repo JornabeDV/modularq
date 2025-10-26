@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
-import { AdminOnly } from "@/components/auth/route-guard"
+import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
 import { 
   ArrowLeft, 
@@ -240,7 +240,7 @@ export default function TaskMetricsPage() {
   const efficiency = estimatedHours > 0 ? (actualHours / estimatedHours) * 100 : 0
 
   return (
-    <AdminOnly>
+    <AdminOrSupervisorOnly>
       <MainLayout>
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
@@ -508,6 +508,6 @@ export default function TaskMetricsPage() {
           )}
         </div>
       </MainLayout>
-    </AdminOnly>
+    </AdminOrSupervisorOnly>
   )
 }

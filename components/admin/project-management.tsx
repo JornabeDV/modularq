@@ -14,7 +14,11 @@ import type { Project } from '@/lib/types'
 
 export function ProjectManagement() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
+  
+  // Los supervisores solo pueden ver, no editar
+  const isReadOnly = userProfile?.role === 'supervisor'
+  
   const { projects, loading, error, createProject, updateProject, deleteProject, reorderProjects } = useProjectsPrisma()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
@@ -130,14 +134,16 @@ export function ProjectManagement() {
           <p className="text-sm sm:text-base text-muted-foreground">Administra proyectos y asigna tareas existentes</p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" className="w-full sm:w-auto cursor-pointer">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Proyecto
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        {!isReadOnly && (
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" className="w-full sm:w-auto cursor-pointer">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Proyecto
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -158,6 +164,7 @@ export function ProjectManagement() {
         onEditProject={handleEditProject}
         onDeleteProject={handleDeleteProject}
         onReorderProjects={handleReorderProjects}
+        isReadOnly={isReadOnly}
       />
 
       {/* Create Project Dialog */}

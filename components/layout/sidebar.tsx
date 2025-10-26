@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, Users, FileText, LogOut, Shield, CheckSquare, Building2 } from "lucide-react"
+import { LayoutDashboard, FolderKanban, FileText, LogOut, Shield, CheckSquare, Building2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -87,10 +87,18 @@ export function Sidebar() {
             )
           })}
           
-          {/* Admin Navigation */}
-          {userProfile?.role === 'admin' && (
+          {/* Admin and Supervisor Navigation */}
+          {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
             <>
-              {adminNavigation.map((item) => {
+              {adminNavigation
+                .filter((item) => {
+                  // Solo mostrar "Gestión del Personal" para admin
+                  if (item.name === "Gestión del Personal" && userProfile?.role !== 'admin') {
+                    return false
+                  }
+                  return true
+                })
+                .map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <li key={item.name}>

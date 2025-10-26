@@ -18,6 +18,7 @@ interface TaskTableProps {
   onEditTask: (task: Task) => void
   onDeleteTask: (taskId: string) => void
   onReorderTasks?: (taskOrders: { id: string; taskOrder: number }[]) => void
+  isReadOnly?: boolean
 }
 
 export function TaskTable({
@@ -30,7 +31,8 @@ export function TaskTable({
   onTypeFilterChange,
   onEditTask,
   onDeleteTask,
-  onReorderTasks
+  onReorderTasks,
+  isReadOnly = false
 }: TaskTableProps) {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
@@ -130,13 +132,13 @@ export function TaskTable({
                 <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
                 <TableHead className="text-center min-w-[100px]">Tipo</TableHead>
                 <TableHead className="text-center min-w-[100px]">Horas</TableHead>
-                <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
+                {!isReadOnly && <TableHead className="text-center min-w-[120px]">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={isReadOnly ? 5 : 6} className="text-center py-8 text-muted-foreground">
                     No se encontraron tareas
                   </td>
                 </tr>
@@ -154,6 +156,7 @@ export function TaskTable({
                     onDragEnd={handleDragEnd}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
+                    isReadOnly={isReadOnly}
                   />
                 ))
               )}
