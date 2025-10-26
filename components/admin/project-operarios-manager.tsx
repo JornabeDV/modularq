@@ -14,9 +14,10 @@ import { useAuth } from '@/lib/auth-context'
 
 interface ProjectOperariosManagerProps {
   projectId: string
+  isReadOnly?: boolean
 }
 
-export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerProps) {
+export function ProjectOperariosManager({ projectId, isReadOnly = false }: ProjectOperariosManagerProps) {
   const { user } = useAuth()
   const { projectOperarios, loading, assignOperarioToProject, unassignOperarioFromProject } = useProjectOperariosPrisma(projectId)
   const { users } = useUsersPrisma()
@@ -79,14 +80,15 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
               <span className="sm:hidden">Gestiona operarios del proyecto</span>
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="cursor-pointer self-start sm:self-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Asignar Operarios</span>
-                <span className="sm:hidden">Asignar</span>
-              </Button>
-            </DialogTrigger>
+          {!isReadOnly && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="cursor-pointer self-start sm:self-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Asignar Operarios</span>
+                  <span className="sm:hidden">Asignar</span>
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Asignar Operarios al Proyecto</DialogTitle>
@@ -160,6 +162,7 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -196,14 +199,16 @@ export function ProjectOperariosManager({ projectId }: ProjectOperariosManagerPr
                     </Badge>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleUnassignOperario(projectOperario.id)}
-                  className="cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {!isReadOnly && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleUnassignOperario(projectOperario.id)}
+                    className="cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             ))}
           </div>

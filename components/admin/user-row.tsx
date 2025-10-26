@@ -14,9 +14,10 @@ interface UserRowProps {
   currentUserId?: string
   onEdit: (user: User) => void
   onDelete: (userId: string) => void
+  isReadOnly?: boolean
 }
 
-export function UserRow({ user, currentUserId, onEdit, onDelete }: UserRowProps) {
+export function UserRow({ user, currentUserId, onEdit, onDelete, isReadOnly = false }: UserRowProps) {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'admin':
@@ -65,28 +66,32 @@ export function UserRow({ user, currentUserId, onEdit, onDelete }: UserRowProps)
         </TableCell>
         <TableCell className="text-center">
           <div className="flex items-center justify-center space-x-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEdit}
-                  className="cursor-pointer"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Editar usuario</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <DeleteUserButton
-              userId={user.id}
-              userName={user.name}
-              currentUserId={currentUserId}
-              onDelete={onDelete}
-            />
+            {!isReadOnly && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEdit}
+                      className="cursor-pointer"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Editar usuario</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <DeleteUserButton
+                  userId={user.id}
+                  userName={user.name}
+                  currentUserId={currentUserId}
+                  onDelete={onDelete}
+                />
+              </>
+            )}
           </div>
         </TableCell>
       </TableRow>

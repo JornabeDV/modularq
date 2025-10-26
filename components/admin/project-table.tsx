@@ -16,6 +16,7 @@ interface ProjectTableProps {
   onEditProject: (project: Project) => void
   onDeleteProject: (projectId: string) => void
   onReorderProjects?: (projectOrders: { id: string; projectOrder: number }[]) => void
+  isReadOnly?: boolean
 }
 
 export function ProjectTable({
@@ -26,7 +27,8 @@ export function ProjectTable({
   onStatusFilterChange,
   onEditProject,
   onDeleteProject,
-  onReorderProjects
+  onReorderProjects,
+  isReadOnly = false
 }: ProjectTableProps) {
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null)
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
@@ -145,6 +147,7 @@ export function ProjectTable({
                     onDragEnd={handleDragEnd}
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
+                    isReadOnly={isReadOnly}
                   />
                 ))
               )}

@@ -21,6 +21,7 @@ interface ProjectTaskManagerProps {
   onEditTask?: (task: ProjectTask) => void
   onCreateTask?: () => void
   onReorderTasks?: (taskOrders: { id: string; taskOrder: number }[]) => void
+  isReadOnly?: boolean
 }
 
 export function ProjectTaskManager({ 
@@ -28,10 +29,11 @@ export function ProjectTaskManager({
   projectTasks, 
   projectStatus,
   onAssignTask, 
-  onUnassignTask,
+  onUnassignTask, 
   onEditTask,
   onCreateTask,
-  onReorderTasks
+  onReorderTasks,
+  isReadOnly = false
 }: ProjectTaskManagerProps) {
   const { tasks, loading: tasksLoading } = useTasksPrisma()
   const [searchTerm, setSearchTerm] = useState('')
@@ -52,10 +54,6 @@ export function ProjectTaskManager({
 
   const standardTasks = availableTasks.filter(t => t.type === 'standard')
   const customTasks = availableTasks.filter(t => t.type === 'custom')
-  
-  // Determinar si el proyecto está en modo solo lectura (solo para operarios)
-  // Los administradores siempre pueden editar
-  const isReadOnly = false
 
   const getStatusIcon = (status: string) => {
     switch (status) {

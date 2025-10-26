@@ -13,7 +13,10 @@ import { EditUserDialog } from './edit-user-dialog'
 
 export function UserManagement() {
   const { users, loading, createUser, updateUser, deleteUser } = useUsersPrisma()
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, userProfile } = useAuth()
+  
+  // Los supervisores solo pueden ver, no editar
+  const isReadOnly = userProfile?.role === 'supervisor'
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
   const [formData, setFormData] = useState<CreateUserData>({
@@ -118,14 +121,16 @@ export function UserManagement() {
           <p className="text-sm sm:text-base text-muted-foreground">Administra personal, roles y permisos del sistema</p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" className="w-full sm:w-auto cursor-pointer">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Operario
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        {!isReadOnly && (
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" className="w-full sm:w-auto cursor-pointer">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Operario
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -145,6 +150,7 @@ export function UserManagement() {
         onRoleFilterChange={setRoleFilter}
         onEditUser={handleEditUser}
         onDeleteUser={handleDeleteUser}
+        isReadOnly={isReadOnly}
       />
 
       {/* Create User Dialog */}

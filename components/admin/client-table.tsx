@@ -13,6 +13,7 @@ interface ClientTableProps {
   onSearchChange: (value: string) => void
   onEditClient: (client: Client) => void
   onDeleteClient: (clientId: string) => void
+  isReadOnly?: boolean
 }
 
 export function ClientTable({
@@ -20,38 +21,34 @@ export function ClientTable({
   searchTerm,
   onSearchChange,
   onEditClient,
-  onDeleteClient
+  onDeleteClient,
+  isReadOnly = false
 }: ClientTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Lista de Clientes</CardTitle>
-        <CardDescription>
-          Administra la información de tus clientes
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
         <ClientFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}
         />
-        
+      </CardHeader>
+      <CardContent>
         <div className="mt-4">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-background">
                 <TableHead>CUIT</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Representante</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                {!isReadOnly && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {clients.length === 0 ? (
                 <TableRow>
-                  <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={isReadOnly ? 5 : 6} className="text-center py-8 text-muted-foreground">
                     {searchTerm ? 'No se encontraron clientes con ese criterio de búsqueda' : 'No hay clientes registrados'}
                   </td>
                 </TableRow>
@@ -62,6 +59,7 @@ export function ClientTable({
                     client={client}
                     onEdit={onEditClient}
                     onDelete={onDeleteClient}
+                    isReadOnly={isReadOnly}
                   />
                 ))
               )}

@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { useOperariosPrisma } from "@/hooks/use-operarios-prisma"
 import { useClientsPrisma } from "@/hooks/use-clients-prisma"
-import { AdminOnly } from "@/components/auth/route-guard"
+import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
 import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User, Building2 } from "lucide-react"
 import Link from "next/link"
@@ -292,7 +292,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <AdminOnly>
+    <AdminOrSupervisorOnly>
       <MainLayout>
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
@@ -360,32 +360,35 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* Admin Section */}
-        {userProfile?.role === 'admin' && (
+        {/* Admin and Supervisor Section */}
+        {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Panel de Administración
+                {userProfile?.role === 'admin' ? 'Panel de Administración' : 'Panel de Supervisión'}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 border rounded-lg flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">Control del Personal</h3>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${userProfile?.role === 'admin' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+                {/* Solo administradores pueden gestionar personal */}
+                {userProfile?.role === 'admin' && (
+                  <div className="p-4 border rounded-lg flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">Control del Personal</h3>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Crea, edita y gestiona todo el personal del sistema
+                    </p>
+                    <Link href="/admin/users">
+                      <Button size="sm" className="w-full cursor-pointer">
+                        <Users className="h-3 w-3 mr-1" />
+                        Gestionar personal
+                      </Button>
+                    </Link>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Crea, edita y gestiona todo el personal del sistema
-                  </p>
-                  <Link href="/admin/users">
-                    <Button size="sm" className="w-full cursor-pointer">
-                      <Users className="h-3 w-3 mr-1" />
-                      Gestionar personal
-                    </Button>
-                  </Link>
-                </div>
+                )}
                 
                 <div className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
@@ -802,6 +805,6 @@ export default function DashboardPage() {
 
         </div>
       </MainLayout>
-    </AdminOnly>
+    </AdminOrSupervisorOnly>
   )
 }

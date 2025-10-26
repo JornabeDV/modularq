@@ -34,6 +34,8 @@ export function RouteGuard({
           // Redirigir según el rol del usuario
           if (userRole === 'admin') {
             router.push("/dashboard")
+          } else if (userRole === 'supervisor') {
+            router.push("/dashboard")
           } else if (userRole === 'operario') {
             router.push("/projects")
           } else {
@@ -74,6 +76,22 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
 export function OperarioOnly({ children }: { children: React.ReactNode }) {
   return (
     <RouteGuard allowedRoles={['operario']} redirectTo="/dashboard">
+      {children}
+    </RouteGuard>
+  )
+}
+
+export function SupervisorOnly({ children }: { children: React.ReactNode }) {
+  return (
+    <RouteGuard allowedRoles={['supervisor']} redirectTo="/dashboard">
+      {children}
+    </RouteGuard>
+  )
+}
+
+export function AdminOrSupervisorOnly({ children }: { children: React.ReactNode }) {
+  return (
+    <RouteGuard allowedRoles={['admin', 'supervisor']} redirectTo="/projects">
       {children}
     </RouteGuard>
   )

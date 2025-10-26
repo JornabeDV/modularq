@@ -11,7 +11,11 @@ import { useTasksPrisma, type CreateTaskData } from '@/hooks/use-tasks-prisma'
 import { useAuth } from '@/lib/auth-context'
 
 export function TaskManagement() {
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
+  
+  // Los supervisores solo pueden ver, no editar
+  const isReadOnly = userProfile?.role === 'supervisor'
+  
   const { tasks, loading, error, createTask, updateTask, deleteTask, reorderTasks } = useTasksPrisma()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<any>(null)
@@ -129,14 +133,16 @@ export function TaskManagement() {
           </p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" className="w-full sm:w-auto cursor-pointer">
-              <Plus className="h-4 w-4 mr-2" />
-              Nueva Tarea
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        {!isReadOnly && (
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" className="w-full sm:w-auto cursor-pointer">
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Tarea
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        )}
       </div>
 
 
@@ -161,6 +167,7 @@ export function TaskManagement() {
         onEditTask={handleEditTask}
         onDeleteTask={handleDeleteTask}
         onReorderTasks={handleReorderTasks}
+        isReadOnly={isReadOnly}
       />
 
       {/* Create Task Dialog */}

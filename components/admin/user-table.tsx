@@ -5,22 +5,18 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { UserRow } from './user-row'
 import { UserFilters } from './user-filters'
 
-import type { UserProfile } from '@/hooks/use-users'
-
-interface User extends Omit<UserProfile, 'id'> {
-  id: string
-  role: 'admin' | 'supervisor' | 'operario'
-}
+import type { User as PrismaUser } from '@/lib/prisma-typed-service'
 
 interface UserTableProps {
-  users: User[]
+  users: PrismaUser[]
   currentUserId?: string
   searchTerm: string
   onSearchChange: (value: string) => void
   roleFilter: string
   onRoleFilterChange: (value: string) => void
-  onEditUser: (user: User) => void
+  onEditUser: (user: PrismaUser) => void
   onDeleteUser: (userId: string) => void
+  isReadOnly?: boolean
 }
 
 export function UserTable({
@@ -31,7 +27,8 @@ export function UserTable({
   roleFilter,
   onRoleFilterChange,
   onEditUser,
-  onDeleteUser
+  onDeleteUser,
+  isReadOnly = false
 }: UserTableProps) {
   return (
     <Card>
@@ -68,6 +65,7 @@ export function UserTable({
                     currentUserId={currentUserId}
                     onEdit={onEditUser}
                     onDelete={onDeleteUser}
+                    isReadOnly={isReadOnly}
                   />
                 ))
               )}

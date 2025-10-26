@@ -10,7 +10,14 @@ import { ClientForm } from './client-form'
 import { useClientsPrisma, type CreateClientData } from '@/hooks/use-clients-prisma'
 import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
 
+import { useAuth } from '@/lib/auth-context'
+
 export function ClientManagement() {
+  const { userProfile } = useAuth()
+  
+  // Los supervisores solo pueden ver, no editar
+  const isReadOnly = userProfile?.role === 'supervisor'
+  
   const { clients, loading, error, createClient, updateClient, deleteClient } = useClientsPrisma()
   const { projects } = useProjectsPrisma()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -106,14 +113,16 @@ export function ClientManagement() {
           </p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button type="button" className="w-full sm:w-auto cursor-pointer">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Cliente
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        {!isReadOnly && (
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" className="w-full sm:w-auto cursor-pointer">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Cliente
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -129,6 +138,7 @@ export function ClientManagement() {
         onSearchChange={setSearchTerm}
         onEditClient={handleEditClient}
         onDeleteClient={handleDeleteClient}
+        isReadOnly={isReadOnly}
       />
 
       {/* Create Client Dialog */}

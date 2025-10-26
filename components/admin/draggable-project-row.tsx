@@ -20,6 +20,7 @@ interface DraggableProjectRowProps {
   onDragEnd?: (e: React.DragEvent) => void
   onDragOver?: (e: React.DragEvent) => void
   onDrop?: (e: React.DragEvent, projectId: string) => void
+  isReadOnly?: boolean
 }
 
 export function DraggableProjectRow({ 
@@ -31,7 +32,8 @@ export function DraggableProjectRow({
   onDragStart,
   onDragEnd,
   onDragOver,
-  onDrop
+  onDrop,
+  isReadOnly = false
 }: DraggableProjectRowProps) {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -78,19 +80,22 @@ export function DraggableProjectRow({
           ? 'opacity-50 shadow-lg' 
           : isHovered 
             ? 'shadow-md' 
-            : 'hover:shadow-sm'
+            : isReadOnly 
+              ? 'hover:!bg-background' 
+              : 'hover:shadow-sm'
       }`}
-      draggable
-      onDragStart={(e) => onDragStart?.(e, project.id)}
+      style={isReadOnly ? { backgroundColor: 'transparent' } : undefined}
+      draggable={!isReadOnly}
+      onDragStart={(e) => !isReadOnly && onDragStart?.(e, project.id)}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
-      onDrop={(e) => onDrop?.(e, project.id)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onDrop={(e) => !isReadOnly && onDrop?.(e, project.id)}
+      onMouseEnter={() => !isReadOnly && setIsHovered(true)}
+      onMouseLeave={() => !isReadOnly && setIsHovered(false)}
     >
       <TableCell className="text-center">
         <div className="flex items-center justify-center gap-2">
-          <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+          {!isReadOnly && <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />}
           <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
             {index}
           </div>
@@ -153,29 +158,33 @@ export function DraggableProjectRow({
             </TooltipContent>
           </Tooltip>
           
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEdit}
-                className="cursor-pointer"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Editar proyecto</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {project.status !== 'active' && (
-            <DeleteProjectButton
-              projectId={project.id}
-              projectName={project.name}
-              onDelete={onDelete}
-            />
-          )}
+          {!isReadOnly && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEdit}
+                    className="cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Editar proyecto</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              {project.status !== 'active' && (
+                <DeleteProjectButton
+                  projectId={project.id}
+                  projectName={project.name}
+                  onDelete={onDelete}
+                />
+              )}
+            </>
+        )}
         </div>
       </TableCell>
     </TableRow>
