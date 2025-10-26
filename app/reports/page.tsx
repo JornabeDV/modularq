@@ -1,7 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
-import { AdminOnly } from "@/components/auth/route-guard"
+import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,9 +12,9 @@ import Link from "next/link"
 
 export default function ReportsPage() {
   return (
-    <AdminOnly>
+    <AdminOrSupervisorOnly>
       <ReportsContent />
-    </AdminOnly>
+    </AdminOrSupervisorOnly>
   )
 }
 
