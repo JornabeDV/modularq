@@ -8,15 +8,21 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
+import { useProjectFiles } from "@/hooks/use-project-files"
+import { useAuth } from "@/lib/auth-context"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
-import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users } from "lucide-react"
+import { SupabaseFileStorage } from "@/lib/supabase-storage"
+import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users, FileText, Download, Eye } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 
 export default function ProjectMetricsPage() {
   const params = useParams()
   const projectId = params?.id as string
   const { projects, loading } = useProjectsPrisma()
+  const { user } = useAuth()
+  const { files: projectFiles, loading: filesLoading } = useProjectFiles(projectId, user?.id || '', true)
   
   const project = projects?.find(p => p.id === projectId)
 
@@ -223,6 +229,67 @@ export default function ProjectMetricsPage() {
       month: '2-digit',
       year: 'numeric'
     })
+  }
+
+  // Función para formatear tamaño de archivo
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  // Función para obtener icono según tipo de archivo
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return '🖼️'
+    if (mimeType.includes('pdf')) return '📄'
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊'
+    return '📎'
+  }
+
+  // Función para descargar archivo
+  const handleDownload = async (file: any) => {
+    try {
+      // Usar URL firmada para descarga (archivos privados)
+      const url = await SupabaseFileStorage.getSignedUrl(file.storage_path)
+      
+      // Descargar usando fetch para mejor control
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Error al obtener el archivo')
+      }
+      
+      const blob = await response.blob()
+      
+      // Crear URL del blob y descargar
+      const blobUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = file.file_name
+      link.style.display = 'none'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Limpiar URL del blob
+      window.URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('Error downloading file:', error)
+    }
+  }
+
+  // Función para ver archivo
+  const handleView = async (file: any) => {
+    try {
+      const url = await SupabaseFileStorage.getSignedUrl(file.storage_path)
+      if (url) {
+        window.open(url, '_blank')
+      }
+    } catch (error) {
+      console.error('Error viewing file:', error)
+    }
   }
 
   // Función para obtener el color del estado
@@ -529,6 +596,104 @@ export default function ProjectMetricsPage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Archivos del Proyecto */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Archivos del Proyecto
+            </CardTitle>
+            <CardDescription>
+              Documentos y archivos asociados al proyecto
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2 text-muted-foreground">Cargando archivos...</p>
+                </div>
+              </div>
+            ) : projectFiles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No hay archivos en este proyecto</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projectFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg"
+                  >
+                    <div 
+                      className="flex items-center space-x-3 cursor-pointer rounded-lg p-2 -m-2 flex-1"
+                      onClick={() => handleView(file)}
+                      title="Hacer clic para ver el archivo"
+                    >
+                      <span className="text-xl sm:text-2xl">
+                        {getFileIcon(file.file_type)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">
+                          {file.file_name}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                          <span>{formatFileSize(file.file_size)}</span>
+                          <span>{formatDate(file.uploaded_at)}</span>
+                          <span className="capitalize">{file.file_type}</span>
+                        </div>
+                        {file.description && (
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {file.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 self-end sm:self-auto">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleView(file)}
+                              className="h-8 w-8 p-0 cursor-pointer"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ver archivo</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(file)}
+                              className="h-8 w-8 p-0 cursor-pointer"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Descargar archivo</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
