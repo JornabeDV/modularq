@@ -240,14 +240,6 @@ export default function ProjectMetricsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  // Función para obtener icono según tipo de archivo
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return '🖼️'
-    if (mimeType.includes('pdf')) return '📄'
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊'
-    return '📎'
-  }
-
   // Función para descargar archivo
   const handleDownload = async (file: any) => {
     try {
@@ -631,13 +623,10 @@ export default function ProjectMetricsPage() {
                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg"
                   >
                     <div 
-                      className="flex items-center space-x-3 cursor-pointer rounded-lg p-2 -m-2 flex-1"
+                      className="flex items-center cursor-pointer rounded-lg p-2 -m-2 flex-1"
                       onClick={() => handleView(file)}
                       title="Hacer clic para ver el archivo"
                     >
-                      <span className="text-xl sm:text-2xl">
-                        {getFileIcon(file.file_type)}
-                      </span>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm truncate">
                           {file.file_name}
