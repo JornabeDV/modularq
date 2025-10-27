@@ -4,16 +4,18 @@ import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, CheckCircle } from 'lucide-react'
 import type { ProjectTask } from '@/lib/types'
 
 interface DraggableTaskCardProps {
   projectTask: ProjectTask
   onUnassign: (projectTaskId: string) => void
   onEdit: (task: ProjectTask) => void
+  onComplete?: (task: ProjectTask) => void
   isDragging?: boolean
   taskNumber?: number
   isReadOnly?: boolean
+  projectStatus?: string
   onDragStart?: (e: React.DragEvent, taskId: string) => void
   onDragEnd?: (e: React.DragEvent) => void
   onDragOver?: (e: React.DragEvent) => void
@@ -24,9 +26,11 @@ export function DraggableTaskCard({
   projectTask,
   onUnassign,
   onEdit,
+  onComplete,
   isDragging = false,
   taskNumber = 1,
   isReadOnly = false,
+  projectStatus,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -92,6 +96,18 @@ export function DraggableTaskCard({
           <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
             {!isReadOnly ? (
               <div className="flex items-center gap-2">
+                {onComplete && projectTask.status !== 'completed' && projectStatus === 'active' && (
+                  <Button 
+                    size="sm" 
+                    variant="default"
+                    onClick={() => onComplete(projectTask)}
+                    className="cursor-pointer bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Completar</span>
+                    <span className="sm:hidden">✓</span>
+                  </Button>
+                )}
                 <Button 
                   size="sm" 
                   variant="outline"

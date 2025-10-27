@@ -19,6 +19,7 @@ interface ProjectTaskManagerProps {
   onAssignTask: (taskId: string) => void
   onUnassignTask: (projectTaskId: string) => void
   onEditTask?: (task: ProjectTask) => void
+  onCompleteTask?: (task: ProjectTask) => void
   onCreateTask?: () => void
   onReorderTasks?: (taskOrders: { id: string; taskOrder: number }[]) => void
   isReadOnly?: boolean
@@ -31,6 +32,7 @@ export function ProjectTaskManager({
   onAssignTask, 
   onUnassignTask, 
   onEditTask,
+  onCompleteTask,
   onCreateTask,
   onReorderTasks,
   isReadOnly = false
@@ -148,13 +150,13 @@ export function ProjectTaskManager({
                   <span className="sm:hidden">Asignar Tarea</span>
                 </Button>
               </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle>Asignar Tarea al Proyecto</DialogTitle>
             </DialogHeader>
             
             {/* Filtros */}
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-x-hidden">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-1">
                   <Input
@@ -185,23 +187,29 @@ export function ProjectTaskManager({
                     </h4>
                     <div className="grid gap-2">
                       {standardTasks.map(task => (
-                        <Card key={task.id} className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                              onClick={() => {
-                                onAssignTask(task.id)
-                                setIsDialogOpen(false)
-                              }}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium">{task.title}</h5>
-                              <p className="text-sm text-muted-foreground truncate">{task.description}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">{task.category}</Badge>
-                                <span className="text-xs text-muted-foreground">
+                        <Card key={task.id} className="p-3 hover:bg-muted/50 transition-colors overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                            <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                              <h5 className="font-medium text-sm sm:text-base break-words">{task.title}</h5>
+                              {task.description && (
+                                <p className="text-sm text-muted-foreground break-words line-clamp-2">{task.description}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <Badge variant="outline" className="text-xs whitespace-nowrap">{task.category}</Badge>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
                                   {task.estimatedHours}h estimadas
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="cursor-pointer ml-3">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="cursor-pointer w-full sm:w-auto flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onAssignTask(task.id)
+                              }}
+                            >
                               Asignar
                             </Button>
                           </div>
@@ -218,23 +226,29 @@ export function ProjectTaskManager({
                     </h4>
                     <div className="grid gap-2">
                       {customTasks.map(task => (
-                        <Card key={task.id} className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                              onClick={() => {
-                                onAssignTask(task.id)
-                                setIsDialogOpen(false)
-                              }}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-medium">{task.title}</h5>
-                              <p className="text-sm text-muted-foreground truncate">{task.description}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">{task.category}</Badge>
-                                <span className="text-xs text-muted-foreground">
+                        <Card key={task.id} className="p-3 hover:bg-muted/50 transition-colors overflow-hidden">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                            <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                              <h5 className="font-medium text-sm sm:text-base break-words">{task.title}</h5>
+                              {task.description && (
+                                <p className="text-sm text-muted-foreground break-words line-clamp-2">{task.description}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <Badge variant="outline" className="text-xs whitespace-nowrap">{task.category}</Badge>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
                                   {task.estimatedHours}h estimadas
                                 </span>
                               </div>
                             </div>
-                            <Button size="sm" variant="outline" className="cursor-pointer ml-3">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="cursor-pointer w-full sm:w-auto flex-shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onAssignTask(task.id)
+                              }}
+                            >
                               Asignar
                             </Button>
                           </div>
@@ -281,8 +295,10 @@ export function ProjectTaskManager({
               taskNumber={index + 1}
               onUnassign={onUnassignTask}
               onEdit={onEditTask || (() => {})}
+              onComplete={onCompleteTask}
               isDragging={draggedTaskId === projectTask.id}
               isReadOnly={isReadOnly}
+              projectStatus={projectStatus}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
