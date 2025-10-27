@@ -10,6 +10,7 @@ import { useEffect } from "react"
 import { Loader2, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Toaster } from "@/components/ui/toaster"
 import Image from "next/image"
 
 interface MainLayoutProps {
@@ -80,6 +81,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       <main className="flex-1 overflow-auto lg:ml-0 pt-20 lg:pt-0">
         {children}
       </main>
+      
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
   )
 }

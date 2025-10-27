@@ -26,6 +26,7 @@ import { useUsersPrisma } from '@/hooks/use-users-prisma'
 import { useProjectFiles } from '@/hooks/use-project-files'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
 import type { Project, ProjectTask, Task } from '@/lib/types'
 
 interface ProjectDetailProps {
@@ -35,6 +36,7 @@ interface ProjectDetailProps {
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter()
   const { user, userProfile } = useAuth()
+  const { toast } = useToast()
   
   // Los supervisores solo pueden ver, no editar
   const isReadOnly = userProfile?.role === 'supervisor'
@@ -155,6 +157,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
       if (taskError) {
         console.error('Error creating task:', taskError)
+        toast({
+          title: "Error",
+          description: "No se pudo crear la tarea",
+          variant: "destructive"
+        })
         return
       }
 
@@ -167,9 +174,25 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       
       if (projectTaskResult.success) {
         setIsTaskDialogOpen(false)
+        toast({
+          title: "✓ Tarea creada y asignada",
+          description: `${taskData.title} ha sido creada y asignada al proyecto`,
+          variant: "default"
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo asignar la tarea al proyecto",
+          variant: "destructive"
+        })
       }
     } catch (error) {
       console.error('Error in handleCreateTask:', error)
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error al crear la tarea",
+        variant: "destructive"
+      })
     }
   }
 
@@ -198,6 +221,32 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     setEditingTask(task)
   }
 
+  const handleCompleteTask = async (task: ProjectTask) => {
+    // Si no hay horas reales registradas, usar el tiempo estimado
+    const actualHours = task.actualHours > 0 
+      ? task.actualHours 
+      : (task.task?.estimatedHours || 0)
+    
+    const result = await updateProjectTask(task.id, { 
+      status: 'completed',
+      endDate: new Date().toISOString(),
+      actualHours: actualHours
+    })
+    if (result.success) {
+      toast({
+        title: "✓ Tarea completada",
+        description: `${task.task?.title || 'La tarea'} ha sido marcada como completada`,
+        variant: "default"
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo completar la tarea",
+        variant: "destructive"
+      })
+    }
+  }
+
   const handleAssignTask = async (taskId: string) => {
     if (!user?.id) return
     
@@ -208,7 +257,20 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     })
     
     if (result.success) {
-      // Tarea asignada exitosamente
+      // Buscar el nombre de la tarea para el toast
+      const taskName = allTasks.find(t => t.id === taskId)?.title || 'tarea'
+      
+      toast({
+        title: "✓ Tarea asignada",
+        description: `${taskName} ha sido asignada al proyecto`,
+        variant: "default"
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo asignar la tarea",
+        variant: "destructive"
+      })
     }
   }
 
@@ -514,6 +576,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         onAssignTask={handleAssignTask}
         onUnassignTask={handleUnassignTask}
         onEditTask={handleEditTask}
+        onCompleteTask={handleCompleteTask}
         onCreateTask={() => setIsTaskDialogOpen(true)}
         onReorderTasks={handleReorderTasks}
         isReadOnly={isReadOnly}
