@@ -44,7 +44,13 @@ export function UserManagement() {
     e.preventDefault()
     if (!editingUser) return
 
-    const result = await updateUser(editingUser.id, formData)
+    // Filtrar password si está vacío para mantener la contraseña actual
+    const updates = { ...formData }
+    if (!updates.password || updates.password.trim() === '') {
+      delete updates.password
+    }
+
+    const result = await updateUser(editingUser.id, updates)
     
     if (result.success) {
       toast.success('Usuario actualizado exitosamente')
