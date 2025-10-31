@@ -94,14 +94,21 @@ export function useUsersPrisma() {
     try {
       setError(null)
       
-      const user = await PrismaTypedService.updateUser(userId, {
+      // No incluir password si está vacío o es solo espacios
+      const updateData: UpdateUserData = {
         email: updates.email,
         name: updates.name,
         role: updates.role,
-        password: updates.password,
         total_hours: updates.total_hours,
         efficiency: updates.efficiency
-      })
+      }
+      
+      // Solo incluir password si tiene un valor no vacío
+      if (updates.password && updates.password.trim() !== '') {
+        updateData.password = updates.password
+      }
+      
+      const user = await PrismaTypedService.updateUser(userId, updateData)
 
       // Actualizar estado local
       await fetchUsers()

@@ -61,7 +61,10 @@ export class PrismaTypedService {
     if (userData.email !== undefined) updateData.email = userData.email
     if (userData.name !== undefined) updateData.name = userData.name
     if (userData.role !== undefined) updateData.role = userData.role
-    if (userData.password !== undefined) updateData.password = userData.password
+    // Solo actualizar password si está definido y no está vacío
+    if (userData.password !== undefined && userData.password.trim() !== '') {
+      updateData.password = userData.password
+    }
     if (userData.total_hours !== undefined) updateData.total_hours = userData.total_hours
     if (userData.efficiency !== undefined) updateData.efficiency = userData.efficiency
 
