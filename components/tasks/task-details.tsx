@@ -40,11 +40,20 @@ interface TaskDetailsProps {
 export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
+    
+    // Si la fecha viene en formato YYYY-MM-DD (sin hora), parsearla directamente
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-')
+      return `${day}/${month}/${year}`
+    }
+    
+    // Si viene con hora, usar la fecha local
+    const date = new Date(dateString)
+    // Usar métodos locales para evitar problemas de zona horaria
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
   }
 
   const formatHours = (hours: number) => {
@@ -80,7 +89,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <Label className="text-base font-semibold text-muted-foreground">Tiempo Estimado</Label>
-            <p className="text-2xl font-bold">{task.task?.estimatedHours} horas</p>
+            <p className="text-2xl font-bold">{task.task?.estimatedHours || 0} horas</p>
           </div>
           <div>
             <Label className="text-base font-semibold text-muted-foreground">Tiempo Trabajado</Label>

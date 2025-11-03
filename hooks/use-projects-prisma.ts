@@ -83,6 +83,7 @@ export function useProjectsPrisma() {
           projectId: pt.project_id,
           taskId: pt.task_id,
           status: pt.status,
+          estimatedHours: parseFloat(pt.estimated_hours) || 0,  // Tiempo estimado total del proyecto
           actualHours: parseFloat(pt.actual_hours) || 0,
           assignedTo: pt.assigned_to,
           startDate: pt.start_date,
@@ -99,7 +100,7 @@ export function useProjectsPrisma() {
             description: pt.task.description || '',
             category: pt.task.category || '',
             type: pt.task.type || 'custom',
-            estimatedHours: parseFloat(pt.task.estimated_hours) || 0,
+            estimatedHours: parseFloat(pt.task.estimated_hours) || 0,  // Tiempo estimado base (por 1 módulo)
             createdBy: pt.task.created_by || '',
             createdAt: pt.task.created_at,
             updatedAt: pt.task.updated_at
@@ -159,13 +160,18 @@ export function useProjectsPrisma() {
       try {
         const standardTasks = await PrismaTypedService.getAllTasks()
         const standardTasksOnly = standardTasks.filter(task => task.type === 'standard')
+        const moduleCount = projectData.module_count || 1
         
         // Crear project_tasks para cada tarea estándar
         for (const task of standardTasksOnly) {
+          // Calcular tiempo estimado total: tiempo base de la tarea * cantidad de módulos
+          const estimatedHours = (task.estimated_hours || 0) * moduleCount
+          
           await PrismaTypedService.createProjectTask({
             project_id: project.id,
             task_id: task.id,
             status: 'pending',
+            estimated_hours: estimatedHours,
             actual_hours: 0,
             progress_percentage: 0,
             assigned_by: projectData.created_by

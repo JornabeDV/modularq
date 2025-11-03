@@ -76,9 +76,9 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
     if (projectTasks.length > 0) {
       calculateAllHours()
     }
-  }, [projectTasks, user?.id])
+  }, [projectTasks, user?.id, projectId])
 
-  // Actualizar horas en tiempo real cada 30 segundos para sesiones activas
+  // Actualizar horas en tiempo real cada 10 segundos para sesiones activas
   useEffect(() => {
     const interval = setInterval(async () => {
       const hoursMap: Record<string, number> = {}
@@ -91,9 +91,10 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
       }
       
       setCalculatedHours(prev => {
-        // Solo actualizar si hay cambios significativos (más de 1 minuto)
+        // Actualizar siempre para reflejar sesiones activas en tiempo real
+        // Verificar si hay cambios significativos (más de 10 segundos)
         const hasChanges = Object.keys(hoursMap).some(taskId => 
-          Math.abs((hoursMap[taskId] || 0) - (prev[taskId] || 0)) > 0.016 // ~1 minuto
+          Math.abs((hoursMap[taskId] || 0) - (prev[taskId] || 0)) > 0.0028 // ~10 segundos
         )
         
         return hasChanges ? hoursMap : prev
@@ -101,7 +102,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
     }, 30000) // Cada 30 segundos
 
     return () => clearInterval(interval)
-  }, [projectTasks])
+  }, [projectTasks, projectId])
 
   // Filtrar tareas por estado
   const availableTasks = projectTasks.filter(task => task.status === 'pending')
@@ -222,8 +223,17 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
       
       for (const entry of timeEntries || []) {
         if (entry.end_time) {
-          // Sesión completada - usar horas registradas
-          totalHours += parseFloat(entry.hours || 0)
+          // Sesión completada - usar horas registradas si existe y es válido
+          if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+            totalHours += parseFloat(entry.hours)
+          } else {
+            // Si no tiene hours o es 0, calcular desde start_time y end_time
+            const startTime = new Date(entry.start_time)
+            const endTime = new Date(entry.end_time)
+            const elapsedMs = endTime.getTime() - startTime.getTime()
+            const elapsedHours = elapsedMs / (1000 * 60 * 60)
+            totalHours += elapsedHours
+          }
         } else {
           // Sesión activa - calcular tiempo transcurrido
           const startTime = new Date(entry.start_time)
@@ -306,10 +316,17 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                         {hasWorkedOnTask[task.id] ? 'En Progreso' : (task.status === 'assigned' ? 'Asignada' : 'En Progreso')}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {hasWorkedOnTask[task.id] 
-                          ? `${formatHours(calculatedHours[task.id] || 0)} trabajadas de ${task.task?.estimatedHours || 0}h estimadas`
-                          : `${task.task?.estimatedHours || 0}h estimadas`
-                        }
+                        {(() => {
+                          // Usar estimatedHours del projectTask (tiempo total del proyecto)
+                          const estimatedHours = task.estimatedHours || task.task?.estimatedHours || 0
+                          const workedHours = calculatedHours[task.id] || 0
+                          // Siempre mostrar el tiempo trabajado si hay horas calculadas, incluso si no hay sesión activa
+                          if (workedHours > 0) {
+                            return `${formatHours(workedHours)} trabajadas de ${estimatedHours}h estimadas`
+                          } else {
+                            return `${estimatedHours}h estimadas`
+                          }
+                        })()}
                       </span>
                     </div>
                   </div>
@@ -398,10 +415,17 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                           Trabajando: <span className="font-medium">{assignedOperario?.name || 'Operario desconocido'}</span>
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {otherOperariosWorked[task.id] 
-                            ? `${formatHours(calculatedHours[task.id] || 0)} trabajadas de ${task.task?.estimatedHours || 0}h estimadas`
-                            : `${task.task?.estimatedHours || 0}h estimadas`
-                          }
+                          {(() => {
+                            // Usar estimatedHours del projectTask (tiempo total del proyecto)
+                            const estimatedHours = task.estimatedHours || task.task?.estimatedHours || 0
+                            const workedHours = calculatedHours[task.id] || 0
+                            // Siempre mostrar el tiempo trabajado si hay horas calculadas
+                            if (workedHours > 0) {
+                              return `${formatHours(workedHours)} trabajadas de ${estimatedHours}h estimadas`
+                            } else {
+                              return `${estimatedHours}h estimadas`
+                            }
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -487,7 +511,8 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
                         {task.task?.category || 'Sin categoría'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {task.task?.estimatedHours || 0}h estimadas
+                        {/* Usar estimatedHours del projectTask (tiempo total del proyecto) */}
+                        {task.estimatedHours || task.task?.estimatedHours || 0}h estimadas
                       </span>
                     </div>
                   </div>

@@ -144,8 +144,17 @@ export default function TaskMetricsPage() {
           // Calcular horas totales incluyendo sesiones activas
           entries?.forEach((entry: any) => {
             if (entry.end_time) {
-              // Sesión completada - usar horas calculadas
-              totalHours += parseFloat(entry.hours || 0)
+              // Sesión completada - usar horas calculadas si existe y es válido, sino calcular desde fechas
+              if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+                totalHours += parseFloat(entry.hours)
+              } else {
+                // Si no tiene hours o es 0, calcular desde start_time y end_time
+                const startTime = new Date(entry.start_time)
+                const endTime = new Date(entry.end_time)
+                const elapsedMs = endTime.getTime() - startTime.getTime()
+                const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                totalHours += elapsedHours
+              }
             } else {
               // Sesión activa - calcular tiempo transcurrido
               const startTime = new Date(entry.start_time)
@@ -235,7 +244,14 @@ export default function TaskMetricsPage() {
   }
 
   const actualHours = calculatedHours
-  const estimatedHours = task.estimatedHours || 0
+  // Usar estimatedHours del projectTask (tiempo total del proyecto)
+  // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
+  let estimatedHours = projectTask.estimatedHours || 0
+  if (estimatedHours === 0 && task?.estimatedHours && project?.moduleCount) {
+    estimatedHours = task.estimatedHours * project.moduleCount
+  } else if (estimatedHours === 0) {
+    estimatedHours = task?.estimatedHours || 0
+  }
   const progressPercentage = projectTask.progressPercentage || 0
   const efficiency = estimatedHours > 0 ? (actualHours / estimatedHours) * 100 : 0
 
@@ -438,10 +454,29 @@ export default function TaskMetricsPage() {
                           <span className="font-medium text-sm sm:text-base truncate">{entry.user?.name || 'Usuario desconocido'}</span>
                         </div>
                         <Badge variant="outline" className="text-xs self-start sm:self-auto">
-                          {entry.end_time ? formatWorkedTime(entry.hours) : 
-                           activeSession && activeSession.startTime === entry.start_time ? 
-                           formatElapsedTime(activeSession.elapsedHours) : 
-                           formatWorkedTime(entry.hours)}
+                          {(() => {
+                            if (entry.end_time) {
+                              // Sesión completada - calcular tiempo desde start_time y end_time si hours no está disponible
+                              let hours = entry.hours
+                              if (!hours || hours === 0 || isNaN(hours)) {
+                                const startTime = new Date(entry.start_time)
+                                const endTime = new Date(entry.end_time)
+                                const elapsedMs = endTime.getTime() - startTime.getTime()
+                                hours = elapsedMs / (1000 * 60 * 60)
+                              }
+                              return formatWorkedTime(hours)
+                            } else if (activeSession && activeSession.startTime === entry.start_time) {
+                              // Sesión activa
+                              return formatElapsedTime(activeSession.elapsedHours)
+                            } else {
+                              // Sesión sin end_time pero no activa (no debería pasar normalmente)
+                              const startTime = new Date(entry.start_time)
+                              const now = new Date()
+                              const elapsedMs = now.getTime() - startTime.getTime()
+                              const hours = elapsedMs / (1000 * 60 * 60)
+                              return formatElapsedTime(hours)
+                            }
+                          })()}
                         </Badge>
                       </div>
                       

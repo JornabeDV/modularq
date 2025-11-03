@@ -257,40 +257,58 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
       try {
         const { data, error } = await supabase
           .from('time_entries')
-          .select('hours')
+          .select('hours, start_time, end_time')
           .eq('task_id', currentTask.task_id)
-          .eq('user_id', operarioId)
           .eq('project_id', projectId)
+          // Obtener TODAS las entradas del proyecto para sumar todas las sesiones completadas
 
         if (error) throw error
 
-        const totalHours = data?.reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0) || 0
+        // Calcular horas totales SOLO de sesiones completadas (de todos los usuarios)
+        // La sesión activa se maneja por separado con elapsedTime
+        let totalHours = 0
+        data?.forEach((entry: any) => {
+          if (entry.end_time) {
+            // Sesión completada - usar hours si existe y es válido, sino calcular desde fechas
+            if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+              totalHours += parseFloat(entry.hours)
+            } else {
+              // Si no tiene hours o es 0, calcular desde start_time y end_time
+              const startTime = new Date(entry.start_time)
+              const endTime = new Date(entry.end_time)
+              const elapsedMs = endTime.getTime() - startTime.getTime()
+              const elapsedHours = elapsedMs / (1000 * 60 * 60)
+              totalHours += elapsedHours
+            }
+          }
+          // IMPORTANTE: Sesiones activas (sin end_time) NO se incluyen aquí
+          // porque se manejan con elapsedTime del estado local que se actualiza cada segundo
+        })
+        
         setTotalHoursWorked(totalHours)
-
-        // Calcular progreso basado en horas trabajadas vs estimadas
-        if (currentTask.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
-          const progress = Math.min((totalHours / currentTask.task.estimated_hours) * 100, 100)
-          onProgressUpdate?.(Math.round(progress))
-        }
       } catch (err) {
         console.error('Error fetching total hours:', err)
       }
     }
 
     fetchTotalHours()
-  }, [currentTask, operarioId]) // Removido onProgressUpdate de las dependencias
+  }, [currentTask?.task_id, operarioId, projectId]) // Asegurar que se ejecute cuando cambian estos valores
 
   // Efecto separado para actualizar progreso cuando cambien las horas trabajadas
   useEffect(() => {
-    if (currentTask?.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
+    // Calcular tiempo total incluyendo la sesión activa actual
+    const activeSessionHours = isTracking && elapsedTime > 0 ? elapsedTime / (1000 * 60 * 60) : 0
+    const totalHoursWithActive = totalHoursWorked + activeSessionHours
+    
+    // Siempre enviar tiempo total actualizado, incluso si no hay tiempo estimado
+    onTotalHoursUpdate?.(totalHoursWithActive)
+    
+    // Usar estimatedHours del projectTask (tiempo total del proyecto)
+    const estimatedHours = currentTask?.estimatedHours || currentTask?.task?.estimatedHours || 0
+    if (estimatedHours > 0) {
       // Calcular progreso incluyendo la sesión activa
-      const activeSessionHours = isTracking && elapsedTime > 0 ? elapsedTime / (1000 * 60 * 60) : 0
-      const totalHoursWithActive = totalHoursWorked + activeSessionHours
-      const progress = Math.min((totalHoursWithActive / currentTask.task.estimated_hours) * 100, 100)
+      const progress = Math.min((totalHoursWithActive / estimatedHours) * 100, 100)
       const roundedProgress = Math.round(progress)
-      
-      // Enviar tiempo total actualizado
-      onTotalHoursUpdate?.(totalHoursWithActive)
       
       // Solo actualizar si el progreso ha cambiado significativamente y no es el mismo que ya enviamos
       if (roundedProgress !== lastSentProgress && Math.abs(roundedProgress - (currentTask.progressPercentage || 0)) > 1) {
@@ -298,7 +316,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         onProgressUpdate?.(roundedProgress)
       }
     }
-  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.task?.estimated_hours, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate, onTotalHoursUpdate])
+  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.estimatedHours, currentTask?.task?.estimated_hours, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate, onTotalHoursUpdate])
 
   // Refrescar horas trabajadas cuando se crea una nueva entrada
   useEffect(() => {
@@ -308,14 +326,34 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
       try {
         const { data, error } = await supabase
           .from('time_entries')
-          .select('hours')
+          .select('hours, start_time, end_time')
           .eq('task_id', currentTask.task_id)
-          .eq('user_id', operarioId)
           .eq('project_id', projectId)
+          // Obtener TODAS las entradas del proyecto para sumar todas las sesiones completadas
 
         if (error) throw error
 
-        const totalHours = data?.reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0) || 0
+        // Calcular horas totales SOLO de sesiones completadas (de todos los usuarios)
+        // La sesión activa se maneja por separado con elapsedTime
+        let totalHours = 0
+        data?.forEach((entry: any) => {
+          if (entry.end_time) {
+            // Sesión completada - usar hours si existe y es válido, sino calcular desde fechas
+            if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+              totalHours += parseFloat(entry.hours)
+            } else {
+              // Si no tiene hours o es 0, calcular desde start_time y end_time
+              const startTime = new Date(entry.start_time)
+              const endTime = new Date(entry.end_time)
+              const elapsedMs = endTime.getTime() - startTime.getTime()
+              const elapsedHours = elapsedMs / (1000 * 60 * 60)
+              totalHours += elapsedHours
+            }
+          }
+          // Sesiones activas (sin end_time) NO se incluyen aquí
+          // porque se manejan con elapsedTime del estado local
+        })
+        
         setTotalHoursWorked(totalHours)
       } catch (err) {
         console.error('Error refreshing hours:', err)
@@ -325,7 +363,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     // Refrescar después de un breve delay para permitir que la BD se actualice
     const timeoutId = setTimeout(refreshHours, 2000)
     return () => clearTimeout(timeoutId)
-  }, [onTimeEntryCreate, currentTask?.task_id, operarioId])
+  }, [onTimeEntryCreate, currentTask?.task_id, operarioId, projectId])
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
@@ -344,9 +382,9 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         let warningThreshold = maxTotalHours * 0.9 // 90% del límite por defecto
         
         // Si la tarea tiene tiempo estimado, usar tiempo estimado + 2 horas extra
-        if (currentTask?.task?.estimated_hours) {
-          const estimatedHours = currentTask.task.estimated_hours
-          
+        // Usar estimatedHours del projectTask (tiempo total del proyecto)
+        const estimatedHours = currentTask?.estimatedHours || currentTask?.task?.estimatedHours || 0
+        if (estimatedHours > 0) {
           // Tiempo estimado + 2 horas extra máximo
           maxTotalHours = estimatedHours + (MAX_EXTRA_TIME / (1000 * 60 * 60))
           warningThreshold = maxTotalHours * 0.9 // 90% del límite total
@@ -378,7 +416,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isTracking, startTime, currentTask?.task?.estimated_hours, totalHoursWorked])
+  }, [isTracking, startTime, currentTask?.estimatedHours, currentTask?.task?.estimated_hours, totalHoursWorked])
 
 
   const formatTime = (milliseconds: number) => {
@@ -457,12 +495,13 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     const hours = elapsedTime / (1000 * 60 * 60)
 
     try {
-      // Completar la entrada existente
+      // Completar la entrada existente - incluir hours calculado
       const { data, error } = await supabase
         .from('time_entries')
         .update({
           end_time: endTime.toISOString(),
-          description: reason
+          description: reason,
+          hours: hours // Actualizar el campo hours con el tiempo calculado
         })
         .eq('id', currentTimeEntryId)
         .select()
@@ -475,11 +514,13 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
 
       onTimeEntryCreate?.(data)
 
-      // Actualizar horas trabajadas
-      const newTotalHours = totalHoursWorked + hours
-      setTotalHoursWorked(newTotalHours)
+      // NO actualizar totalHoursWorked manualmente aquí
+      // Se actualizará automáticamente cuando refreshHours se ejecute después de que la BD se actualice
+      // Solo establecer elapsedTime a 0 para que no se sume en el cálculo
 
       // Actualizar actual_hours en la tabla project_tasks
+      // Calcular el nuevo total incluyendo la sesión que acabamos de completar
+      const newTotalHours = totalHoursWorked + hours
       try {
         const { error: updateError } = await supabase
           .from('project_tasks')
@@ -496,17 +537,17 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
         console.error('Error updating actual_hours:', err)
       }
 
-      if (currentTask.task?.estimated_hours && currentTask.task.estimated_hours > 0) {
-        const progress = Math.min((newTotalHours / currentTask.task.estimated_hours) * 100, 100)
-        onProgressUpdate?.(Math.round(progress))
-      }
+      // El progreso se actualizará automáticamente cuando refreshHours recalcule totalHoursWorked
 
-      // Limpiar estado local
+      // Limpiar estado local ANTES de que refreshHours recalcule desde la BD
       setCurrentTimeEntryId(null)
       setIsTracking(false)
       setStartTime(null)
-      setElapsedTime(0)
+      setElapsedTime(0) // IMPORTANTE: resetear a 0 para que no se sume en totalHoursWithActive
       setShowStopModal(false)
+      
+      // Refrescar horas desde la BD para obtener el valor correcto (incluye la sesión que acabamos de completar)
+      // Esto se hará automáticamente cuando onTimeEntryCreate se llame y actualice refreshTimeEntries
       
     } catch (err) {
       console.error('Error stopping session:', err)
@@ -540,16 +581,19 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
             <div className="bg-orange-100 border border-orange-300 text-orange-800 px-4 py-2 rounded-lg">
               <p className="text-sm font-medium">
                 ⚠️ Te estás acercando al límite de tiempo
-                {currentTask?.task?.estimated_hours 
-                  ? ` (${currentTask.task.estimated_hours}h estimadas + 2h extra)`
-                  : ' (máximo 2 horas)'
-                }
+                {(() => {
+                  const estimatedHours = currentTask?.estimatedHours || currentTask?.task?.estimatedHours || 0
+                  return estimatedHours > 0 ? ` (${estimatedHours}h estimadas + 2h extra)` : ' (máximo 2 horas)'
+                })()}
               </p>
             </div>
           )}
           
           {/* Horas trabajadas */}
-          {currentTask?.task?.estimated_hours && (
+          {(() => {
+            const estimatedHours = currentTask?.estimatedHours || currentTask?.task?.estimatedHours || 0
+            return estimatedHours > 0
+          })() && (
             <div className="text-sm text-muted-foreground space-y-1">
               {isTracking && elapsedTime > 0 && (
                 <div className="text-blue-600">
@@ -583,7 +627,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
                   } else {
                     return `${hours}hs ${minutes}min`
                   }
-                })()}</span> de {currentTask.task.estimated_hours}hs estimadas
+                })()}</span> de {currentTask.estimatedHours || currentTask.task?.estimatedHours || 0}hs estimadas
               </div>
             </div>
           )}

@@ -75,8 +75,17 @@ export default function DashboardPage() {
 
               timeEntries?.forEach((entry: any) => {
                 if (entry.end_time) {
-                  // Sesión completada - usar horas calculadas
-                  totalHours += parseFloat(entry.hours || 0)
+                  // Sesión completada - usar horas calculadas si existe y es válido, sino calcular desde fechas
+                  if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+                    totalHours += parseFloat(entry.hours)
+                  } else {
+                    // Si no tiene hours o es 0, calcular desde start_time y end_time
+                    const startTime = new Date(entry.start_time)
+                    const endTime = new Date(entry.end_time)
+                    const elapsedMs = endTime.getTime() - startTime.getTime()
+                    const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                    totalHours += elapsedHours
+                  }
                 } else {
                   // Sesión activa - calcular tiempo transcurrido
                   const startTime = new Date(entry.start_time)
@@ -136,6 +145,10 @@ export default function DashboardPage() {
 
     if (projects && projects.length > 0) {
       calculateAllHours()
+      
+      // Actualizar cada 10 segundos para sesiones activas y cambios en sesiones completadas
+      const interval = setInterval(calculateAllHours, 10000)
+      return () => clearInterval(interval)
     }
   }, [projects])
 
@@ -201,9 +214,17 @@ export default function DashboardPage() {
     const totalOperarios = project.projectOperarios.length
     
     // Calcular horas totales estimadas y trabajadas usando calculatedHours (desde time_entries)
-    const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => 
-      sum + (pt.task?.estimatedHours || 0), 0
-    )
+    // Usar estimatedHours del projectTask (tiempo total del proyecto) en lugar del tiempo base de la tarea
+    // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
+    const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => {
+      let taskEstimated = pt.estimatedHours || 0
+      if (taskEstimated === 0 && pt.task?.estimatedHours && project.moduleCount) {
+        taskEstimated = pt.task.estimatedHours * project.moduleCount
+      } else if (taskEstimated === 0) {
+        taskEstimated = pt.task?.estimatedHours || 0
+      }
+      return sum + taskEstimated
+    }, 0)
     const actualHours = Math.round(project.projectTasks.reduce((sum: number, pt: any) => 
       sum + (calculatedHours[pt.id] || 0), 0
     ) * 100) / 100 // Redondear a 2 decimales para evitar problemas de precisión
@@ -212,7 +233,15 @@ export default function DashboardPage() {
     // Progreso de tiempo estimado: horas estimadas de tareas completadas vs total estimado
     const completedEstimatedHours = project.projectTasks
       .filter((pt: any) => pt.status === 'completed')
-      .reduce((sum: number, pt: any) => sum + (pt.task?.estimatedHours || 0), 0)
+      .reduce((sum: number, pt: any) => {
+        let taskEstimated = pt.estimatedHours || 0
+        if (taskEstimated === 0 && pt.task?.estimatedHours && project.moduleCount) {
+          taskEstimated = pt.task.estimatedHours * project.moduleCount
+        } else if (taskEstimated === 0) {
+          taskEstimated = pt.task?.estimatedHours || 0
+        }
+        return sum + taskEstimated
+      }, 0)
     
     // Eficiencia real: horas trabajadas de tareas completadas vs horas estimadas totales del proyecto
     const completedActualHours = Math.round(project.projectTasks

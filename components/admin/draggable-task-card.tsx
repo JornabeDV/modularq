@@ -84,7 +84,7 @@ export function DraggableTaskCard({
                 </Badge>
               </div>
               <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
-                <span>{projectTask.task?.estimatedHours}h estimadas</span>
+                <span>{projectTask.estimatedHours || projectTask.task?.estimatedHours || 0}h estimadas</span>
                 {projectTask.actualHours > 0 && (
                   <span>{projectTask.actualHours}h reales</span>
                 )}
