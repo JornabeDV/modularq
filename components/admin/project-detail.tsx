@@ -228,6 +228,40 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       ? task.actualHours 
       : (task.estimatedHours || task.task?.estimatedHours || 0)
     
+    // Primero, cerrar todas las sesiones activas de esta tarea
+    if (task.taskId && projectId) {
+      try {
+        const now = new Date()
+        const { data: activeEntries, error: entriesError } = await supabase
+          .from('time_entries')
+          .select('id, start_time, description')
+          .eq('task_id', task.taskId)
+          .eq('project_id', projectId)
+          .is('end_time', null)
+
+        if (!entriesError && activeEntries && activeEntries.length > 0) {
+          // Cerrar todas las sesiones activas
+          for (const entry of activeEntries) {
+            const startTime = new Date(entry.start_time)
+            const elapsedMs = now.getTime() - startTime.getTime()
+            const elapsedHours = elapsedMs / (1000 * 60 * 60)
+            
+            await supabase
+              .from('time_entries')
+              .update({
+                end_time: now.toISOString(),
+                hours: elapsedHours,
+                description: entry.description || 'Sesión cerrada al completar la tarea'
+              })
+              .eq('id', entry.id)
+          }
+        }
+      } catch (err) {
+        console.error('Error closing active sessions:', err)
+        // Continuar con la actualización de la tarea aunque haya error al cerrar sesiones
+      }
+    }
+    
     const result = await updateProjectTask(task.id, { 
       status: 'completed',
       endDate: new Date().toISOString(),

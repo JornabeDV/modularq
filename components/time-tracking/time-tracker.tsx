@@ -201,6 +201,8 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
             task_id,
             project_id,
             status,
+            estimated_hours,
+            progress_percentage,
             task:task_id (
               id,
               title,
@@ -304,19 +306,21 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     onTotalHoursUpdate?.(totalHoursWithActive)
     
     // Usar estimatedHours del projectTask (tiempo total del proyecto)
-    const estimatedHours = currentTask?.estimatedHours || currentTask?.task?.estimatedHours || 0
+    // Priorizar estimated_hours del project_task (ya multiplicado por moduleCount)
+    const estimatedHours = currentTask?.estimated_hours || currentTask?.estimatedHours || currentTask?.task?.estimated_hours || 0
     if (estimatedHours > 0) {
       // Calcular progreso incluyendo la sesión activa
       const progress = Math.min((totalHoursWithActive / estimatedHours) * 100, 100)
       const roundedProgress = Math.round(progress)
       
       // Solo actualizar si el progreso ha cambiado significativamente y no es el mismo que ya enviamos
-      if (roundedProgress !== lastSentProgress && Math.abs(roundedProgress - (currentTask.progressPercentage || 0)) > 1) {
+      const currentProgress = currentTask?.progress_percentage || currentTask?.progressPercentage || 0
+      if (roundedProgress !== lastSentProgress && Math.abs(roundedProgress - currentProgress) > 1) {
         setLastSentProgress(roundedProgress)
         onProgressUpdate?.(roundedProgress)
       }
     }
-  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.estimatedHours, currentTask?.task?.estimated_hours, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate, onTotalHoursUpdate])
+  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.estimated_hours, currentTask?.estimatedHours, currentTask?.task?.estimated_hours, currentTask?.progress_percentage, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate, onTotalHoursUpdate])
 
   // Refrescar horas trabajadas cuando se crea una nueva entrada
   useEffect(() => {

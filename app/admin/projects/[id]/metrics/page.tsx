@@ -20,7 +20,7 @@ import Link from "next/link"
 export default function ProjectMetricsPage() {
   const params = useParams()
   const projectId = params?.id as string
-  const { projects, loading } = useProjectsPrisma()
+  const { projects, loading, refetch } = useProjectsPrisma()
   const { user } = useAuth()
   const { files: projectFiles, loading: filesLoading } = useProjectFiles(projectId, user?.id || '', true)
   
@@ -36,6 +36,8 @@ export default function ProjectMetricsPage() {
   const [taskStatuses, setTaskStatuses] = useState<Record<string, string>>({})
   // Estado local para mantener las fechas de inicio actualizadas
   const [taskStartDates, setTaskStartDates] = useState<Record<string, string>>({})
+  // Estado para rastrear qué sesiones ya intentamos cerrar (evitar bucles infinitos)
+  const [closedSessions, setClosedSessions] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const calculateAllHours = async () => {
@@ -111,6 +113,35 @@ export default function ProjectMetricsPage() {
             // Guardar el total calculado (puede ser 0 si no hay entradas)
             hoursMap[task.id] = totalHours
             
+            // Recalcular y actualizar progreso si hay horas trabajadas
+            if (totalHours > 0) {
+              // Calcular estimatedHours del projectTask (tiempo total del proyecto)
+              let taskEstimatedHours = task.estimatedHours || 0
+              if (taskEstimatedHours === 0 && task.task?.estimatedHours && project.moduleCount) {
+                taskEstimatedHours = task.task.estimatedHours * project.moduleCount
+              } else if (taskEstimatedHours === 0) {
+                taskEstimatedHours = task.task?.estimatedHours || 0
+              }
+              
+              // Si hay tiempo estimado, recalcular progreso
+              if (taskEstimatedHours > 0) {
+                const calculatedProgress = Math.min(Math.round((totalHours / taskEstimatedHours) * 100), 100)
+                const currentProgress = task.progressPercentage || 0
+                
+                // Actualizar solo si hay una diferencia significativa (más de 1%)
+                if (Math.abs(calculatedProgress - currentProgress) > 1) {
+                  try {
+                    await supabase
+                      .from('project_tasks')
+                      .update({ progress_percentage: calculatedProgress })
+                      .eq('id', task.id)
+                  } catch (err) {
+                    console.error('Error actualizando progreso de tarea:', err)
+                  }
+                }
+              }
+            }
+            
             // Actualizar fecha de inicio si no existe usando la primera entrada de tiempo
             if (!task.startDate && firstEntryStartTime) {
               const startDate = new Date(firstEntryStartTime).toISOString().split('T')[0] // Solo la fecha (YYYY-MM-DD)
@@ -131,43 +162,90 @@ export default function ProjectMetricsPage() {
             }
             
             if (activeSession) {
-              activeSessionsMap[task.id] = activeSession
-              
-              // Actualizar estado local inmediatamente para reflejar que está en progreso
-              setTaskStatuses(prev => ({
-                ...prev,
-                [task.id]: 'in_progress'
-              }))
-              
-              // Actualizar estado de la tarea a 'in_progress' si tiene sesión activa
-              if (task.status === 'assigned' || task.status === 'pending') {
+              // Si la tarea está completada pero tiene sesión activa, cerrarla automáticamente
+              // Solo cerrar si no la hemos cerrado ya (evitar bucle infinito)
+              if (task.status === 'completed' && !closedSessions.has(task.id)) {
                 try {
-                  await supabase
-                    .from('project_tasks')
-                    .update({ status: 'in_progress' })
-                    .eq('id', task.id)
-                } catch (err) {
-                  console.error('Error actualizando estado de tarea:', err)
-                }
-              }
-              
-              // Obtener nombre del operario si no lo tenemos
-              const operarioId = (activeSession as { operarioId: string }).operarioId
-              if (!operarioNamesMap[operarioId]) {
-                try {
-                  const { data: user, error: userError } = await supabase
-                    .from('users')
-                    .select('name')
-                    .eq('id', operarioId)
-                    .single()
+                  const now = new Date()
+                  const session = activeSession as { startTime: string; elapsedHours: number; operarioId: string }
+                  const startTime = new Date(session.startTime)
+                  const elapsedMs = now.getTime() - startTime.getTime()
+                  const elapsedHours = elapsedMs / (1000 * 60 * 60)
                   
-                  if (!userError && user) {
-                    operarioNamesMap[operarioId] = user.name
-                  } else {
-                    operarioNamesMap[operarioId] = 'Operario desconocido'
+                  // Buscar la entrada de tiempo activa y cerrarla
+                  const { data: timeEntry, error: fetchError } = await supabase
+                    .from('time_entries')
+                    .select('id')
+                    .eq('task_id', task.taskId)
+                    .eq('project_id', project.id)
+                    .eq('user_id', session.operarioId)
+                    .is('end_time', null)
+                    .order('start_time', { ascending: false })
+                    .limit(1)
+                    .single()
+
+                  if (!fetchError && timeEntry) {
+                    await supabase
+                      .from('time_entries')
+                      .update({
+                        end_time: now.toISOString(),
+                        hours: elapsedHours,
+                        description: 'Sesión cerrada automáticamente: tarea ya estaba completada'
+                      })
+                      .eq('id', timeEntry.id)
+                    
+                    // Marcar que ya cerramos esta sesión para evitar bucles
+                    setClosedSessions(prev => new Set(prev).add(task.id))
                   }
                 } catch (err) {
-                  operarioNamesMap[operarioId] = 'Operario desconocido'
+                  console.error('Error cerrando sesión huérfana:', err)
+                }
+                // NO agregar a activeSessionsMap si la tarea está completada
+                setTaskStatuses(prev => ({
+                  ...prev,
+                  [task.id]: 'completed'
+                }))
+              } else {
+                // Solo agregar sesión activa si la tarea NO está completada
+                activeSessionsMap[task.id] = activeSession
+                
+                // Actualizar estado local inmediatamente para reflejar que está en progreso
+                setTaskStatuses(prev => ({
+                  ...prev,
+                  [task.id]: 'in_progress'
+                }))
+                
+                // Actualizar estado de la tarea a 'in_progress' si tiene sesión activa
+                if (task.status === 'assigned' || task.status === 'pending') {
+                  try {
+                    await supabase
+                      .from('project_tasks')
+                      .update({ status: 'in_progress' })
+                      .eq('id', task.id)
+                  } catch (err) {
+                    console.error('Error actualizando estado de tarea:', err)
+                  }
+                }
+                
+                // Obtener nombre del operario si no lo tenemos (solo si la sesión está activa y la tarea no está completada)
+                const session = activeSession as { startTime: string; elapsedHours: number; operarioId: string }
+                const operarioId = session.operarioId
+                if (!operarioNamesMap[operarioId]) {
+                  try {
+                    const { data: user, error: userError } = await supabase
+                      .from('users')
+                      .select('name')
+                      .eq('id', operarioId)
+                      .single()
+                    
+                    if (!userError && user) {
+                      operarioNamesMap[operarioId] = user.name
+                    } else {
+                      operarioNamesMap[operarioId] = 'Operario desconocido'
+                    }
+                  } catch (err) {
+                    operarioNamesMap[operarioId] = 'Operario desconocido'
+                  }
                 }
               }
             } else {
@@ -206,10 +284,15 @@ export default function ProjectMetricsPage() {
       setCalculatingMetrics(false)
       
       // Inicializar estados locales de tareas que no tienen sesión activa
+      // IMPORTANTE: Las tareas completadas siempre deben mantenerse como completadas
       setTaskStatuses(prev => {
         const updated = { ...prev }
         project.projectTasks.forEach((task: any) => {
-          if (!activeSessionsMap[task.id] && !updated[task.id]) {
+          // Si la tarea está completada en la BD, siempre mantenerla como completada
+          if (task.status === 'completed') {
+            updated[task.id] = 'completed'
+          } else if (!activeSessionsMap[task.id] && !updated[task.id]) {
+            // Si no hay sesión activa y no hay estado local, usar el del proyecto
             updated[task.id] = task.status
           }
         })
@@ -258,12 +341,26 @@ export default function ProjectMetricsPage() {
       calculateAllHours()
       
       // Actualizar cada 10 segundos para sesiones activas y cambios en sesiones completadas
-      const interval = setInterval(calculateAllHours, 10000)
-      return () => clearInterval(interval)
+      const interval = setInterval(() => {
+        calculateAllHours()
+      }, 10000)
+      
+      // Refrescar proyectos cada 30 segundos para detectar cambios de estado (como tareas completadas)
+      // Usar una referencia estable de refetch
+      const refreshInterval = setInterval(() => {
+        if (refetch) {
+          refetch()
+        }
+      }, 30000)
+      
+      return () => {
+        clearInterval(interval)
+        clearInterval(refreshInterval)
+      }
     } else if (project && project.projectTasks.length === 0) {
       setCalculatingMetrics(false)
     }
-  }, [project])
+  }, [project?.id, project?.projectTasks?.length]) // Solo depender de valores estables, no de refetch
 
   // Función para formatear tiempo transcurrido
   const formatElapsedTime = (elapsedHours: number) => {
@@ -997,8 +1094,8 @@ export default function ProjectMetricsPage() {
                 
                 return (
                   <div key={projectTask.id} className="border rounded-lg p-3 space-y-3 relative">
-                    {/* Indicador de sesión activa */}
-                    {activeSessions[projectTask.id] && (
+                    {/* Indicador de sesión activa - solo si la tarea NO está completada */}
+                    {activeSessions[projectTask.id] && (taskStatuses[projectTask.id] || projectTask.status) !== 'completed' && (
                       <div className="absolute top-2 right-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                       </div>
@@ -1013,7 +1110,7 @@ export default function ProjectMetricsPage() {
                         <span className="font-semibold text-sm truncate">
                           {task?.title || 'Tarea sin título'}
                         </span>
-                        {activeSessions[projectTask.id] && (
+                        {activeSessions[projectTask.id] && (taskStatuses[projectTask.id] || projectTask.status) !== 'completed' && (
                           <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300">
                             Trabajando ahora
                           </Badge>
@@ -1058,10 +1155,19 @@ export default function ProjectMetricsPage() {
                         <span className="font-semibold">
                           {(() => {
                             const displayStatus = taskStatuses[projectTask.id] || projectTask.status
-                            return displayStatus === 'completed' ? '100%' : 
-                                   displayStatus === 'in_progress' ? `${progressPercentage}%` : 
-                                   displayStatus === 'pending' ? '0%' : 
-                                   '0%'
+                            if (displayStatus === 'completed') {
+                              return '100%'
+                            } else if (displayStatus === 'in_progress' || displayStatus === 'assigned') {
+                              // Recalcular progreso basado en horas reales trabajadas vs estimadas
+                              if (estimatedHours > 0 && actualHours > 0) {
+                                const calculatedProgress = Math.min(Math.round((actualHours / estimatedHours) * 100), 100)
+                                return `${calculatedProgress}%`
+                              }
+                              // Si no hay horas trabajadas aún, usar el progreso guardado
+                              return `${progressPercentage}%`
+                            } else {
+                              return '0%'
+                            }
                           })()}
                         </span>
                       </div>
@@ -1097,7 +1203,7 @@ export default function ProjectMetricsPage() {
                         <span className="font-semibold">
                           {formatWorkedTime(actualHours)}
                         </span>
-                        {activeSessions[projectTask.id] && (
+                        {activeSessions[projectTask.id] && (taskStatuses[projectTask.id] || projectTask.status) !== 'completed' && (
                           <span className="text-xs text-green-600 font-medium ml-1">
                             (activo: {formatElapsedTime(activeSessions[projectTask.id].elapsedHours)})
                           </span>
