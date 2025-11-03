@@ -11,6 +11,7 @@ import { TaskDetails } from '@/components/tasks/task-details'
 import { TaskActions } from '@/components/tasks/task-actions'
 import { EditTaskModal } from '@/components/tasks/edit-task-modal'
 import { TaskLoadingStates } from '@/components/tasks/task-loading-states'
+import { supabase } from '@/lib/supabase'
 
 export default function TaskDetailPage() {
   const router = useRouter()
@@ -32,6 +33,7 @@ export default function TaskDetailPage() {
   const [refreshTimeEntries, setRefreshTimeEntries] = useState(0)
   const [showSuccess, setShowSuccess] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [taskStartDate, setTaskStartDate] = useState<string | null>(null)
 
   // Verificar si el operario está asignado al proyecto
   const isAssignedToProject = projectOperarios?.some(po => po.user_id === user?.id) || false
@@ -44,9 +46,119 @@ export default function TaskDetailPage() {
         setActualHours(foundTask.actualHours || 0)
         setProgressPercentage(foundTask.progressPercentage || 0)
         setNotes(foundTask.notes || '')
+        setTaskStartDate(foundTask.startDate || null)
       }
     }
   }, [projectTasks, taskId])
+
+  // Cargar entradas de tiempo y calcular horas totales, progreso y fecha de inicio
+  useEffect(() => {
+    const loadTimeEntriesAndCalculate = async () => {
+      if (!task?.taskId || !projectId) return
+
+      try {
+        // Obtener todas las entradas de tiempo (completadas y activas)
+        const { data: timeEntries, error } = await supabase
+          .from('time_entries')
+          .select('hours, start_time, end_time')
+          .eq('task_id', task.taskId)
+          .eq('project_id', projectId)
+          .order('start_time', { ascending: true })
+
+        if (error) {
+          console.error('Error fetching time entries:', error)
+          return
+        }
+
+        let totalHours = 0
+        let firstEntryStartTime: string | null = null
+
+        // Ordenar entradas por fecha de inicio para obtener la primera
+        if (timeEntries && timeEntries.length > 0) {
+          firstEntryStartTime = timeEntries[0].start_time
+        }
+
+        // Calcular horas totales incluyendo sesiones activas
+        timeEntries?.forEach((entry: any) => {
+          if (entry.end_time) {
+            // Sesión completada - usar horas calculadas si existe y es válido, sino calcular desde fechas
+            if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+              totalHours += parseFloat(entry.hours)
+            } else {
+              // Si no tiene hours o es 0, calcular desde start_time y end_time
+              const startTime = new Date(entry.start_time)
+              const endTime = new Date(entry.end_time)
+              const elapsedMs = endTime.getTime() - startTime.getTime()
+              const elapsedHours = elapsedMs / (1000 * 60 * 60)
+              totalHours += elapsedHours
+            }
+          } else {
+            // Sesión activa - calcular tiempo transcurrido
+            const startTime = new Date(entry.start_time)
+            const now = new Date()
+            const elapsedMs = now.getTime() - startTime.getTime()
+            const elapsedHours = elapsedMs / (1000 * 60 * 60)
+            totalHours += elapsedHours
+          }
+        })
+
+        // Actualizar horas totales
+        setTotalHoursWithActive(totalHours)
+
+        // Calcular progreso basado en horas trabajadas vs estimadas
+        const estimatedHours = task.estimatedHours || task.task?.estimatedHours || 0
+        if (estimatedHours > 0) {
+          const calculatedProgress = Math.min(Math.round((totalHours / estimatedHours) * 100), 100)
+          const currentProgress = progressPercentage
+          
+          // Solo actualizar si el progreso calculado es diferente al actual
+          if (Math.abs(calculatedProgress - currentProgress) > 0.1) {
+            setProgressPercentage(calculatedProgress)
+            
+            // Actualizar progreso en la base de datos
+            updateProjectTask(task.id, { progressPercentage: calculatedProgress }, true)
+          }
+        }
+
+        // Actualizar fecha de inicio si no existe y hay entradas de tiempo
+        if (!task.startDate && firstEntryStartTime) {
+          // Usar fecha local para evitar problemas de zona horaria
+          const date = new Date(firstEntryStartTime)
+          // Obtener año, mes y día en la zona horaria local
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const day = String(date.getDate()).padStart(2, '0')
+          const startDate = `${year}-${month}-${day}`
+          
+          setTaskStartDate(startDate)
+          
+          // Actualizar en la base de datos
+          try {
+            await supabase
+              .from('project_tasks')
+              .update({ start_date: startDate })
+              .eq('id', task.id)
+            
+            // Actualizar estado local del task
+            setTask((prev: any) => ({ ...prev, startDate }))
+          } catch (err) {
+            console.error('Error actualizando fecha de inicio:', err)
+          }
+        }
+      } catch (err) {
+        console.error('Error loading time entries:', err)
+      }
+    }
+
+    if (task) {
+      loadTimeEntriesAndCalculate()
+      
+      // Actualizar cada 30 segundos para sesiones activas
+      const interval = setInterval(loadTimeEntriesAndCalculate, 30000)
+      return () => clearInterval(interval)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task?.id, task?.taskId, task?.estimatedHours, task?.startDate, projectId, refreshTimeEntries])
 
   const handleUpdateTask = async () => {
     if (!task) return
@@ -84,7 +196,10 @@ export default function TaskDetailPage() {
   }
 
   const handleTimeEntryCreate = useCallback((entry: any) => {
-    setRefreshTimeEntries(prev => prev + 1)
+    // Dar un pequeño delay para asegurar que la BD se haya actualizado completamente
+    setTimeout(() => {
+      setRefreshTimeEntries(prev => prev + 1)
+    }, 500)
     
     // Actualizar las horas reales trabajadas
     if (entry.hours && task) {
@@ -181,6 +296,8 @@ export default function TaskDetailPage() {
             task={{
               ...task,
               totalHoursWithActive: totalHoursWithActive,
+              progressPercentage: progressPercentage,
+              startDate: taskStartDate || task.startDate,
               collaborators: task.collaborators
             }}
             onComplete={handleCompleteTask}

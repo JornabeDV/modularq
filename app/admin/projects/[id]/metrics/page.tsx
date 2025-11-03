@@ -32,6 +32,10 @@ export default function ProjectMetricsPage() {
   const [operarioNames, setOperarioNames] = useState<Record<string, string>>({})
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [calculatingMetrics, setCalculatingMetrics] = useState(true)
+  // Estado local para mantener el estado actualizado de las tareas
+  const [taskStatuses, setTaskStatuses] = useState<Record<string, string>>({})
+  // Estado local para mantener las fechas de inicio actualizadas
+  const [taskStartDates, setTaskStartDates] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const calculateAllHours = async () => {
@@ -60,31 +64,80 @@ export default function ProjectMetricsPage() {
 
             let totalHours = 0
             let activeSession: { startTime: string; elapsedHours: number; operarioId: string } | null = null
+            let firstEntryStartTime: string | null = null
 
-            timeEntries?.forEach((entry: any) => {
-              if (entry.end_time) {
-                // Sesión completada - usar horas calculadas
-                totalHours += parseFloat(entry.hours || 0)
-              } else {
-                // Sesión activa - calcular tiempo transcurrido
-                const startTime = new Date(entry.start_time)
-                const now = new Date()
-                const elapsedMs = now.getTime() - startTime.getTime()
-                const elapsedHours = elapsedMs / (1000 * 60 * 60)
-                totalHours += elapsedHours
-                
-                // Guardar información de sesión activa
-                activeSession = {
-                  startTime: entry.start_time,
-                  elapsedHours,
-                  operarioId: entry.user_id
+            // Ordenar entradas por fecha de inicio para obtener la primera
+            const sortedEntries = [...(timeEntries || [])].sort((a: any, b: any) => 
+              new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+            )
+            
+            if (sortedEntries.length > 0) {
+              firstEntryStartTime = sortedEntries[0].start_time
+            }
+
+            // Procesar todas las entradas de tiempo
+            if (timeEntries && timeEntries.length > 0) {
+              timeEntries.forEach((entry: any) => {
+                if (entry.end_time) {
+                  // Sesión completada - usar horas calculadas si existe y es válido, sino calcular desde fechas
+                  if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
+                    totalHours += parseFloat(entry.hours)
+                  } else {
+                    // Si no tiene hours o es 0, calcular desde start_time y end_time
+                    const startTime = new Date(entry.start_time)
+                    const endTime = new Date(entry.end_time)
+                    const elapsedMs = endTime.getTime() - startTime.getTime()
+                    const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                    totalHours += elapsedHours
+                  }
+                } else {
+                  // Sesión activa - calcular tiempo transcurrido
+                  const startTime = new Date(entry.start_time)
+                  const now = new Date()
+                  const elapsedMs = now.getTime() - startTime.getTime()
+                  const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                  totalHours += elapsedHours
+                  
+                  // Guardar información de sesión activa
+                  activeSession = {
+                    startTime: entry.start_time,
+                    elapsedHours,
+                    operarioId: entry.user_id
+                  }
                 }
-              }
-            })
+              })
+            }
 
+            // Guardar el total calculado (puede ser 0 si no hay entradas)
             hoursMap[task.id] = totalHours
+            
+            // Actualizar fecha de inicio si no existe usando la primera entrada de tiempo
+            if (!task.startDate && firstEntryStartTime) {
+              const startDate = new Date(firstEntryStartTime).toISOString().split('T')[0] // Solo la fecha (YYYY-MM-DD)
+              setTaskStartDates(prev => ({
+                ...prev,
+                [task.id]: startDate
+              }))
+              
+              // Actualizar en la base de datos también
+              try {
+                await supabase
+                  .from('project_tasks')
+                  .update({ start_date: startDate })
+                  .eq('id', task.id)
+              } catch (err) {
+                console.error('Error actualizando fecha de inicio de tarea:', err)
+              }
+            }
+            
             if (activeSession) {
               activeSessionsMap[task.id] = activeSession
+              
+              // Actualizar estado local inmediatamente para reflejar que está en progreso
+              setTaskStatuses(prev => ({
+                ...prev,
+                [task.id]: 'in_progress'
+              }))
               
               // Actualizar estado de la tarea a 'in_progress' si tiene sesión activa
               if (task.status === 'assigned' || task.status === 'pending') {
@@ -118,8 +171,20 @@ export default function ProjectMetricsPage() {
                 }
               }
             } else {
-              // Si no hay sesión activa pero la tarea está en_progress, mantener el estado
+              // Si no hay sesión activa, usar el estado original del proyecto
               // (puede tener sesiones completadas pero no estar trabajando actualmente)
+              setTaskStatuses(prev => {
+                const updated = { ...prev }
+                // Solo actualizar si no hay sesión activa y el estado previo era 'in_progress' por sesión activa
+                if (updated[task.id] === 'in_progress' && !activeSessionsMap[task.id]) {
+                  // Mantener el estado original del proyecto
+                  updated[task.id] = task.status
+                } else if (!updated[task.id]) {
+                  // Si no hay estado local, usar el del proyecto
+                  updated[task.id] = task.status
+                }
+                return updated
+              })
             }
           } catch (err) {
             console.error('Error calculating hours for task:', task.id, err)
@@ -130,11 +195,37 @@ export default function ProjectMetricsPage() {
         }
       }
       
-      setCalculatedHours(hoursMap)
+      // Actualizar estado de horas calculadas - usar merge para mantener consistencia
+      setCalculatedHours(prev => {
+        // Merge con valores anteriores para mantener otros cálculos, pero sobrescribir con nuevos valores
+        return { ...prev, ...hoursMap }
+      })
       setActiveSessions(activeSessionsMap)
       setOperarioNames(operarioNamesMap)
       setLastUpdate(new Date())
       setCalculatingMetrics(false)
+      
+      // Inicializar estados locales de tareas que no tienen sesión activa
+      setTaskStatuses(prev => {
+        const updated = { ...prev }
+        project.projectTasks.forEach((task: any) => {
+          if (!activeSessionsMap[task.id] && !updated[task.id]) {
+            updated[task.id] = task.status
+          }
+        })
+        return updated
+      })
+      
+      // Inicializar fechas de inicio locales
+      setTaskStartDates(prev => {
+        const updated = { ...prev }
+        project.projectTasks.forEach((task: any) => {
+          if (task.startDate && !updated[task.id]) {
+            updated[task.id] = task.startDate
+          }
+        })
+        return updated
+      })
       
       // Verificar si alguna tarea que tenía sesión activa ya no la tiene
       // y revertir su estado si es necesario
@@ -166,8 +257,8 @@ export default function ProjectMetricsPage() {
     if (project && project.projectTasks.length > 0) {
       calculateAllHours()
       
-      // Actualizar cada 30 segundos para sesiones activas
-      const interval = setInterval(calculateAllHours, 30000)
+      // Actualizar cada 10 segundos para sesiones activas y cambios en sesiones completadas
+      const interval = setInterval(calculateAllHours, 10000)
       return () => clearInterval(interval)
     } else if (project && project.projectTasks.length === 0) {
       setCalculatingMetrics(false)
@@ -355,28 +446,59 @@ export default function ProjectMetricsPage() {
     )
   }
 
-  // Calcular métricas del proyecto
+  // Calcular métricas del proyecto usando estados actualizados
   const totalTasks = project.projectTasks.length
-  const completedTasks = project.projectTasks.filter((pt: any) => pt.status === 'completed').length
-  const inProgressTasks = project.projectTasks.filter((pt: any) => pt.status === 'in_progress').length
-  const pendingTasks = project.projectTasks.filter((pt: any) => pt.status === 'pending').length
+  const completedTasks = project.projectTasks.filter((pt: any) => {
+    const status = taskStatuses[pt.id] || pt.status
+    return status === 'completed'
+  }).length
+  const inProgressTasks = project.projectTasks.filter((pt: any) => {
+    const status = taskStatuses[pt.id] || pt.status
+    return status === 'in_progress'
+  }).length
+  const pendingTasks = project.projectTasks.filter((pt: any) => {
+    const status = taskStatuses[pt.id] || pt.status
+    return status === 'pending'
+  }).length
   const totalOperarios = project.projectOperarios.length
   
   // Calcular horas totales estimadas y trabajadas
-  const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => 
-    sum + (pt.task?.estimatedHours || 0), 0
-  )
+  // Usar estimatedHours del projectTask (tiempo total del proyecto) en lugar del tiempo base de la tarea
+  // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
+  const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => {
+    let taskEstimated = pt.estimatedHours || 0
+    if (taskEstimated === 0 && pt.task?.estimatedHours && project.moduleCount) {
+      taskEstimated = pt.task.estimatedHours * project.moduleCount
+    } else if (taskEstimated === 0) {
+      taskEstimated = pt.task?.estimatedHours || 0
+    }
+    return sum + taskEstimated
+  }, 0)
   const actualHours = Math.round(Object.values(calculatedHours).reduce((sum: number, hours: number) => 
     sum + hours, 0
   ) * 100) / 100 // Redondear a 2 decimales para evitar problemas de precisión
 
-  // Calcular progreso de tiempo estimado y eficiencia real
+  // Calcular progreso de tiempo estimado y eficiencia real usando estados actualizados
   const completedEstimatedHours = project.projectTasks
-    .filter((pt: any) => pt.status === 'completed')
-    .reduce((sum: number, pt: any) => sum + (pt.task?.estimatedHours || 0), 0)
+    .filter((pt: any) => {
+      const status = taskStatuses[pt.id] || pt.status
+      return status === 'completed'
+    })
+    .reduce((sum: number, pt: any) => {
+      let taskEstimated = pt.estimatedHours || 0
+      if (taskEstimated === 0 && pt.task?.estimatedHours && project.moduleCount) {
+        taskEstimated = pt.task.estimatedHours * project.moduleCount
+      } else if (taskEstimated === 0) {
+        taskEstimated = pt.task?.estimatedHours || 0
+      }
+      return sum + taskEstimated
+    }, 0)
   
   const completedActualHours = Math.round(project.projectTasks
-    .filter((pt: any) => pt.status === 'completed')
+    .filter((pt: any) => {
+      const status = taskStatuses[pt.id] || pt.status
+      return status === 'completed'
+    })
     .reduce((sum: number, pt: any) => sum + (calculatedHours[pt.id] || 0), 0) * 100
   ) / 100
 
@@ -720,21 +842,31 @@ export default function ProjectMetricsPage() {
                     }
                     acc[operarioName].total++
                     
-                    // Contar por estado
-                    if (pt.status === 'completed') acc[operarioName].completed++
-                    else if (pt.status === 'in_progress') acc[operarioName].inProgress++
-                    else if (pt.status === 'assigned') acc[operarioName].assigned++
-                    else if (pt.status === 'pending') acc[operarioName].pending++
+                    // Contar por estado usando estados actualizados
+                    const status = taskStatuses[pt.id] || pt.status
+                    if (status === 'completed') acc[operarioName].completed++
+                    else if (status === 'in_progress') acc[operarioName].inProgress++
+                    else if (status === 'assigned') acc[operarioName].assigned++
+                    else if (status === 'pending') acc[operarioName].pending++
                     
-                    acc[operarioName].totalHours += pt.task?.estimatedHours || 0
+                    // Usar estimatedHours del projectTask (tiempo total del proyecto)
+                    // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
+                    let taskEstimated = pt.estimatedHours || 0
+                    if (taskEstimated === 0 && pt.task?.estimatedHours && project.moduleCount) {
+                      taskEstimated = pt.task.estimatedHours * project.moduleCount
+                    } else if (taskEstimated === 0) {
+                      taskEstimated = pt.task?.estimatedHours || 0
+                    }
+                    acc[operarioName].totalHours += taskEstimated
                     acc[operarioName].actualHours += calculatedHours[pt.id] || 0
                     return acc
                   }, {})
 
-                // Contar tareas completadas sin operario asignado
-                const completedWithoutOperario = project.projectTasks.filter((pt: any) => 
-                  pt.status === 'completed' && !pt.assignedUser
-                ).length
+                // Contar tareas completadas sin operario asignado usando estados actualizados
+                const completedWithoutOperario = project.projectTasks.filter((pt: any) => {
+                  const status = taskStatuses[pt.id] || pt.status
+                  return status === 'completed' && !pt.assignedUser
+                }).length
 
                 const operarioStatsArray = Object.values(operarioStats)
                 
@@ -830,13 +962,37 @@ export default function ProjectMetricsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               {project.projectTasks
                 .sort((a: any, b: any) => {
-                  const statusOrder: Record<string, number> = { in_progress: 0, assigned: 1, pending: 2, completed: 3, cancelled: 4 }
-                  return (statusOrder[a.status] || 999) - (statusOrder[b.status] || 999)
+                  // Orden: 1. En progreso, 2. Asignadas, 3. Pendientes, 4. Completadas
+                  const statusOrder: Record<string, number> = { 
+                    in_progress: 0, 
+                    assigned: 1, 
+                    pending: 2, 
+                    completed: 3, 
+                    cancelled: 4 
+                  }
+                  const statusA = taskStatuses[a.id] || a.status
+                  const statusB = taskStatuses[b.id] || b.status
+                  const orderA = statusOrder[statusA] ?? 999
+                  const orderB = statusOrder[statusB] ?? 999
+                  
+                  // Si tienen el mismo orden, mantener el orden original
+                  if (orderA === orderB) {
+                    return 0
+                  }
+                  
+                  return orderA - orderB
                 })
                 .map((projectTask: any, index: number) => {
                 const task = projectTask.task
                 const actualHours = calculatedHours[projectTask.id] || 0
-                const estimatedHours = task?.estimatedHours || 0
+                // Usar estimatedHours del projectTask (tiempo total del proyecto)
+                // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
+                let estimatedHours = projectTask.estimatedHours || 0
+                if (estimatedHours === 0 && task?.estimatedHours && project?.moduleCount) {
+                  estimatedHours = task.estimatedHours * project.moduleCount
+                } else if (estimatedHours === 0) {
+                  estimatedHours = task?.estimatedHours || 0
+                }
                 const progressPercentage = projectTask.progressPercentage || 0
                 
                 return (
@@ -866,22 +1022,30 @@ export default function ProjectMetricsPage() {
                       <Badge 
                         variant="outline" 
                         className={`text-xs font-medium self-start sm:self-auto ${
-                          projectTask.status === 'completed' 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
-                            : projectTask.status === 'in_progress' 
-                            ? 'bg-orange-50 text-orange-700 border-orange-200' 
-                            : projectTask.status === 'assigned'
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : projectTask.status === 'pending'
-                            ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                          (() => {
+                            // Usar estado local si existe, sino usar el del proyecto
+                            const displayStatus = taskStatuses[projectTask.id] || projectTask.status
+                            return displayStatus === 'completed' 
+                              ? 'bg-green-50 text-green-700 border-green-200' 
+                              : displayStatus === 'in_progress' 
+                              ? 'bg-orange-50 text-orange-700 border-orange-200' 
+                              : displayStatus === 'assigned'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : displayStatus === 'pending'
+                              ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                              : 'bg-gray-50 text-gray-700 border-gray-200'
+                          })()
                         }`}
                       >
-                        {projectTask.status === 'completed' ? 'Completada' : 
-                         projectTask.status === 'in_progress' ? 'En Progreso' : 
-                         projectTask.status === 'assigned' ? 'Asignada' :
-                         projectTask.status === 'pending' ? 'Pendiente' : 
-                         projectTask.status}
+                        {(() => {
+                          // Usar estado local si existe, sino usar el del proyecto
+                          const displayStatus = taskStatuses[projectTask.id] || projectTask.status
+                          return displayStatus === 'completed' ? 'Completada' : 
+                                 displayStatus === 'in_progress' ? 'En Progreso' : 
+                                 displayStatus === 'assigned' ? 'Asignada' :
+                                 displayStatus === 'pending' ? 'Pendiente' : 
+                                 displayStatus
+                        })()}
                       </Badge>
                     </div>
 
@@ -892,10 +1056,13 @@ export default function ProjectMetricsPage() {
                         <Target className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Progreso:</span>
                         <span className="font-semibold">
-                          {projectTask.status === 'completed' ? '100%' : 
-                           projectTask.status === 'in_progress' ? `${progressPercentage}%` : 
-                           projectTask.status === 'pending' ? '0%' : 
-                           '0%'}
+                          {(() => {
+                            const displayStatus = taskStatuses[projectTask.id] || projectTask.status
+                            return displayStatus === 'completed' ? '100%' : 
+                                   displayStatus === 'in_progress' ? `${progressPercentage}%` : 
+                                   displayStatus === 'pending' ? '0%' : 
+                                   '0%'
+                          })()}
                         </span>
                       </div>
 
@@ -942,7 +1109,11 @@ export default function ProjectMetricsPage() {
                         <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         <span className="text-muted-foreground">Inicio:</span>
                         <span className="text-xs font-semibold truncate">
-                          {projectTask.startDate ? formatDate(projectTask.startDate) : 'Sin fecha'}
+                          {(() => {
+                            // Usar fecha de inicio local si existe, sino usar la del proyecto
+                            const startDate = taskStartDates[projectTask.id] || projectTask.startDate
+                            return startDate ? formatDate(startDate) : 'Sin fecha'
+                          })()}
                         </span>
                       </div>
                       
@@ -979,7 +1150,10 @@ export default function ProjectMetricsPage() {
                       )}
 
                       {/* Eficiencia (solo para completadas) */}
-                      {projectTask.status === 'completed' && (
+                      {(() => {
+                        const displayStatus = taskStatuses[projectTask.id] || projectTask.status
+                        return displayStatus === 'completed'
+                      })() && (
                         <div className="flex flex-col gap-1 sm:col-span-2">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />

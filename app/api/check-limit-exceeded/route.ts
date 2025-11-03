@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const { data: projectTasks, error: projectTasksError } = await supabase
       .from('project_tasks')
-      .select('id, status, actual_hours, task_id')
+      .select('id, status, actual_hours, estimated_hours, task_id')
       .in('task_id', taskIds)
 
     if (projectTasksError) {
@@ -99,10 +99,12 @@ export async function POST(request: NextRequest) {
         const totalWorkedHours = previousHours + sessionElapsedHours
 
         // Determinar límite máximo (20% extra del tiempo estimado)
+        // Usar estimated_hours del projectTask (tiempo total del proyecto) en lugar del tiempo base de la tarea
         let maxTotalHours = 2 // 2 horas por defecto si no hay tiempo estimado
         
-        if ((task as any)?.estimated_hours) {
-          maxTotalHours = (task as any).estimated_hours * (1 + MAX_EXTRA_PERCENTAGE) // Tiempo estimado + 20%
+        const estimatedHours = (projectTask as any)?.estimated_hours ?.estimated_hours || 0
+        if (estimatedHours > 0) {
+          maxTotalHours = estimatedHours * (1 + MAX_EXTRA_PERCENTAGE) // Tiempo estimado + 20%
         }
 
         // Verificar si excede el límite y hacer corte automático

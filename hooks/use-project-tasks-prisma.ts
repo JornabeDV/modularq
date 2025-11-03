@@ -8,6 +8,7 @@ export interface CreateProjectTaskData {
   projectId: string
   taskId: string
   status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+  estimatedHours?: number  // Tiempo estimado total para este proyecto (opcional, se calcula automáticamente si no se proporciona)
   actualHours?: number
   assignedTo?: string
   startDate?: string
@@ -40,6 +41,7 @@ export function useProjectTasksPrisma(projectId?: string) {
         projectId: pt.project_id,
         taskId: pt.task_id,
         status: pt.status,
+        estimatedHours: parseFloat(pt.estimated_hours) || 0,  // Tiempo estimado del proyecto
         actualHours: parseFloat(pt.actual_hours) || 0,
         assignedTo: pt.assigned_to,
         startDate: pt.start_date,
@@ -57,7 +59,7 @@ export function useProjectTasksPrisma(projectId?: string) {
           description: pt.task.description || '',
           category: pt.task.category || '',
           type: pt.task.type || 'custom',
-          estimatedHours: parseFloat(pt.task.estimated_hours) || 0,
+          estimatedHours: parseFloat(pt.task.estimated_hours) || 0,  // Tiempo estimado base (por 1 módulo)
           taskOrder: pt.task.task_order || 0,
           createdBy: pt.task.created_by || '',
           createdAt: pt.task.created_at,
@@ -103,10 +105,28 @@ export function useProjectTasksPrisma(projectId?: string) {
     try {
       setError(null)
       
+      // Si no se proporciona estimatedHours, calcularlo automáticamente
+      let estimatedHours = projectTaskData.estimatedHours
+      if (estimatedHours === undefined) {
+        // Obtener la tarea y el proyecto para calcular el tiempo estimado
+        const [task, project] = await Promise.all([
+          PrismaTypedService.getTaskById(projectTaskData.taskId),
+          PrismaTypedService.getProjectById(projectTaskData.projectId)
+        ])
+        
+        if (task && project) {
+          // Calcular: tiempo base de la tarea * cantidad de módulos del proyecto
+          estimatedHours = (task.estimated_hours || 0) * (project.module_count || 1)
+        } else {
+          estimatedHours = 0
+        }
+      }
+      
       await PrismaTypedService.createProjectTask({
         project_id: projectTaskData.projectId,
         task_id: projectTaskData.taskId,
         status: projectTaskData.status || 'pending',
+        estimated_hours: estimatedHours,
         actual_hours: projectTaskData.actualHours || 0,
         assigned_to: projectTaskData.assignedTo,
         start_date: projectTaskData.startDate,

@@ -74,10 +74,29 @@ export function TimeEntriesList({ operarioId, taskId, projectId, limit, showOper
     fetchTimeEntries()
   }, [operarioId, taskId, projectId, limit, refreshTrigger])
 
-  const formatTime = useCallback((hours: number) => {
+  const formatTime = useCallback((hours: number | null | undefined) => {
+    if (hours == null || hours === undefined || isNaN(hours)) {
+      return '0hs 0m'
+    }
     const h = Math.floor(hours)
     const m = Math.round((hours - h) * 60)
     return `${h}hs ${m}m`
+  }, [])
+  
+  const calculateHoursFromTimes = useCallback((startTime: string, endTime?: string | null) => {
+    if (!startTime) return 0
+    if (!endTime) {
+      // Si no hay end_time, calcular desde start_time hasta ahora
+      const start = new Date(startTime)
+      const now = new Date()
+      const elapsedMs = now.getTime() - start.getTime()
+      return elapsedMs / (1000 * 60 * 60)
+    }
+    // Calcular desde start_time hasta end_time
+    const start = new Date(startTime)
+    const end = new Date(endTime)
+    const elapsedMs = end.getTime() - start.getTime()
+    return elapsedMs / (1000 * 60 * 60)
   }, [])
 
   const formatDate = useCallback((dateString: string) => {
@@ -105,19 +124,26 @@ export function TimeEntriesList({ operarioId, taskId, projectId, limit, showOper
   }, [])
 
   const renderedEntries = useMemo(() => {
-    return entries.map((entry) => (
-      <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Clock className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium">{entry.task?.title || 'Tarea eliminada'}</span>
-              <Badge variant="outline" className="text-xs">
-                {formatTime(entry.hours)}
-              </Badge>
+    return entries.map((entry) => {
+      // Calcular horas: usar entry.hours si existe y es válido, sino calcular desde start_time y end_time
+      let hoursToDisplay = entry.hours
+      if (!hoursToDisplay || hoursToDisplay === 0 || isNaN(hoursToDisplay)) {
+        hoursToDisplay = calculateHoursFromTimes(entry.start_time, entry.end_time)
+      }
+      
+      return (
+        <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Clock className="h-4 w-4 text-primary" />
             </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium">{entry.task?.title || 'Tarea eliminada'}</span>
+                <Badge variant="outline" className="text-xs">
+                  {formatTime(hoursToDisplay)}
+                </Badge>
+              </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
@@ -142,8 +168,9 @@ export function TimeEntriesList({ operarioId, taskId, projectId, limit, showOper
           </div>
         </div>
       </div>
-    ))
-  }, [entries, formatTime, formatDate, formatTimeRange])
+      )
+    })
+  }, [entries, formatTime, formatDate, formatTimeRange, calculateHoursFromTimes])
 
   if (loading) {
     return (

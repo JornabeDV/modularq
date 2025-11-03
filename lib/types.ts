@@ -61,6 +61,7 @@ export interface ProjectTask {
   projectId: string
   taskId: string
   status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+  estimatedHours: number  // Tiempo estimado total para este proyecto (task.estimatedHours * project.moduleCount)
   actualHours: number
   assignedTo?: string
   startDate?: string

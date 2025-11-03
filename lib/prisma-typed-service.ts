@@ -347,6 +347,17 @@ export class PrismaTypedService {
     return data as Task
   }
 
+  static async getTaskById(id: string): Promise<Task | null> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data as Task
+  }
+
   static async deleteTask(id: string): Promise<void> {
     const { error } = await supabase
       .from('tasks')
@@ -492,6 +503,7 @@ export class PrismaTypedService {
     project_id: string
     task_id: string
     status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    estimated_hours?: number  // Tiempo estimado total para este proyecto
     actual_hours?: number
     assigned_to?: string
     start_date?: string
@@ -500,20 +512,27 @@ export class PrismaTypedService {
     notes?: string
     assigned_by?: string
   }): Promise<any> {
+    const insertData: any = {
+      project_id: projectTaskData.project_id,
+      task_id: projectTaskData.task_id,
+      status: projectTaskData.status || 'pending',
+      actual_hours: projectTaskData.actual_hours || 0,
+      assigned_to: projectTaskData.assigned_to,
+      start_date: projectTaskData.start_date,
+      end_date: projectTaskData.end_date,
+      progress_percentage: projectTaskData.progress_percentage || 0,
+      notes: projectTaskData.notes,
+      assigned_by: projectTaskData.assigned_by
+    }
+    
+    // Solo incluir estimated_hours si se proporciona
+    if (projectTaskData.estimated_hours !== undefined) {
+      insertData.estimated_hours = projectTaskData.estimated_hours
+    }
+    
     const { data, error } = await supabase
       .from('project_tasks')
-      .insert({
-        project_id: projectTaskData.project_id,
-        task_id: projectTaskData.task_id,
-        status: projectTaskData.status || 'pending',
-        actual_hours: projectTaskData.actual_hours || 0,
-        assigned_to: projectTaskData.assigned_to,
-        start_date: projectTaskData.start_date,
-        end_date: projectTaskData.end_date,
-        progress_percentage: projectTaskData.progress_percentage || 0,
-        notes: projectTaskData.notes,
-        assigned_by: projectTaskData.assigned_by
-      })
+      .insert(insertData)
       .select()
       .single()
     
@@ -523,6 +542,7 @@ export class PrismaTypedService {
 
   static async updateProjectTask(id: string, projectTaskData: {
     status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    estimated_hours?: number
     actual_hours?: number
     assigned_to?: string
     start_date?: string
@@ -534,6 +554,7 @@ export class PrismaTypedService {
     const updateData: any = {}
     
     if (projectTaskData.status !== undefined) updateData.status = projectTaskData.status
+    if (projectTaskData.estimated_hours !== undefined) updateData.estimated_hours = projectTaskData.estimated_hours
     if (projectTaskData.actual_hours !== undefined) updateData.actual_hours = projectTaskData.actual_hours
     if (projectTaskData.assigned_to !== undefined) updateData.assigned_to = projectTaskData.assigned_to
     if (projectTaskData.start_date !== undefined) updateData.start_date = projectTaskData.start_date

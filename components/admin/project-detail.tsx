@@ -223,9 +223,10 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
   const handleCompleteTask = async (task: ProjectTask) => {
     // Si no hay horas reales registradas, usar el tiempo estimado
+    // Usar estimatedHours del projectTask (tiempo total del proyecto)
     const actualHours = task.actualHours > 0 
       ? task.actualHours 
-      : (task.task?.estimatedHours || 0)
+      : (task.estimatedHours || task.task?.estimatedHours || 0)
     
     const result = await updateProjectTask(task.id, { 
       status: 'completed',
