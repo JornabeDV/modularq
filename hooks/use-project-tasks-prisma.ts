@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
+import { supabase } from '@/lib/supabase'
 import type { ProjectTask } from '@/lib/types'
 
 export interface CreateProjectTaskData {
@@ -152,6 +153,49 @@ export function useProjectTasksPrisma(projectId?: string) {
   const updateProjectTask = async (projectTaskId: string, projectTaskData: UpdateProjectTaskData, skipRefetch: boolean = false): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
+      
+      // Si se está completando la tarea, cerrar todas las sesiones activas primero
+      if (projectTaskData.status === 'completed') {
+        try {
+          // Obtener información de la tarea para cerrar sesiones activas
+          const { data: projectTask, error: fetchError } = await supabase
+            .from('project_tasks')
+            .select('task_id, project_id')
+            .eq('id', projectTaskId)
+            .single()
+
+          if (!fetchError && projectTask) {
+            const now = new Date()
+            const { data: activeEntries, error: entriesError } = await supabase
+              .from('time_entries')
+              .select('id, start_time, description')
+              .eq('task_id', projectTask.task_id)
+              .eq('project_id', projectTask.project_id)
+              .is('end_time', null)
+
+            if (!entriesError && activeEntries && activeEntries.length > 0) {
+              // Cerrar todas las sesiones activas
+              for (const entry of activeEntries) {
+                const startTime = new Date(entry.start_time)
+                const elapsedMs = now.getTime() - startTime.getTime()
+                const elapsedHours = elapsedMs / (1000 * 60 * 60)
+                
+                await supabase
+                  .from('time_entries')
+                  .update({
+                    end_time: now.toISOString(),
+                    hours: elapsedHours,
+                    description: entry.description || 'Sesión cerrada al completar la tarea'
+                  })
+                  .eq('id', entry.id)
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error closing active sessions:', err)
+          // Continuar con la actualización de la tarea aunque haya error al cerrar sesiones
+        }
+      }
       
       await PrismaTypedService.updateProjectTask(projectTaskId, {
         status: projectTaskData.status,

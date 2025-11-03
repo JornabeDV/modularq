@@ -117,6 +117,48 @@ export function useTaskSelfAssignment() {
       setLoading(true)
       setError(null)
 
+      // Obtener información de la tarea para cerrar sesiones activas
+      const { data: projectTask, error: fetchError } = await supabase
+        .from('project_tasks')
+        .select('task_id, project_id')
+        .eq('id', projectTaskId)
+        .single()
+
+      if (fetchError) {
+        throw fetchError
+      }
+
+      // Primero, cerrar todas las sesiones activas de esta tarea
+      if (projectTask) {
+        const now = new Date()
+        const { data: activeEntries, error: entriesError } = await supabase
+          .from('time_entries')
+          .select('id, start_time, description')
+          .eq('task_id', projectTask.task_id)
+          .eq('project_id', projectTask.project_id)
+          .is('end_time', null)
+
+        if (entriesError) {
+          console.error('Error fetching active sessions:', entriesError)
+        } else if (activeEntries && activeEntries.length > 0) {
+          // Cerrar todas las sesiones activas
+          for (const entry of activeEntries) {
+            const startTime = new Date(entry.start_time)
+            const elapsedMs = now.getTime() - startTime.getTime()
+            const elapsedHours = elapsedMs / (1000 * 60 * 60)
+            
+            await supabase
+              .from('time_entries')
+              .update({
+                end_time: now.toISOString(),
+                hours: elapsedHours,
+                description: entry.description || 'Sesión cerrada al completar la tarea'
+              })
+              .eq('id', entry.id)
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('project_tasks')
         .update({

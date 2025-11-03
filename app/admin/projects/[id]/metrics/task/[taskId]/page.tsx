@@ -36,7 +36,7 @@ export default function TaskMetricsPage() {
   const router = useRouter()
   const projectId = params?.id as string
   const taskId = params?.taskId as string
-  const { projects, loading } = useProjectsPrisma()
+  const { projects, loading, refetch } = useProjectsPrisma()
   
   const project = projects?.find(p => p.id === projectId)
   const projectTask = project?.projectTasks?.find(pt => pt.id === taskId)
@@ -116,9 +116,18 @@ export default function TaskMetricsPage() {
 
   // Cargar métricas detalladas con tiempo real
   useEffect(() => {
-    const loadDetailedMetrics = async () => {
-      if (!projectTask?.taskId) return
+    // Si aún estamos cargando proyectos, esperar
+    if (loading) {
+      return
+    }
 
+    // Si no hay projectTask después de cargar, detener loading
+    if (!projectTask?.taskId) {
+      setLoadingMetrics(false)
+      return
+    }
+
+    const loadDetailedMetrics = async () => {
       setLoadingMetrics(true)
       try {
         // Cargar todas las entradas de tiempo (completadas y activas)
@@ -175,6 +184,35 @@ export default function TaskMetricsPage() {
           setCalculatedHours(totalHours)
           setActiveSession(currentActiveSession)
 
+          // Recalcular y actualizar progreso si hay horas trabajadas
+          if (totalHours > 0 && projectTask) {
+            // Calcular estimatedHours del projectTask (tiempo total del proyecto)
+            let taskEstimatedHours = projectTask.estimatedHours || 0
+            if (taskEstimatedHours === 0 && task?.estimatedHours && project?.moduleCount) {
+              taskEstimatedHours = task.estimatedHours * project.moduleCount
+            } else if (taskEstimatedHours === 0) {
+              taskEstimatedHours = task?.estimatedHours || 0
+            }
+            
+            // Si hay tiempo estimado, recalcular progreso
+            if (taskEstimatedHours > 0) {
+              const calculatedProgress = Math.min(Math.round((totalHours / taskEstimatedHours) * 100), 100)
+              const currentProgress = projectTask.progressPercentage || 0
+              
+              // Actualizar solo si hay una diferencia significativa (más de 1%)
+              if (Math.abs(calculatedProgress - currentProgress) > 1) {
+                try {
+                  await supabase
+                    .from('project_tasks')
+                    .update({ progress_percentage: calculatedProgress })
+                    .eq('id', projectTask.id)
+                } catch (err) {
+                  console.error('Error actualizando progreso de tarea:', err)
+                }
+              }
+            }
+          }
+
           // Obtener nombre del operario si hay sesión activa
           if (currentActiveSession) {
             try {
@@ -207,25 +245,28 @@ export default function TaskMetricsPage() {
 
     loadDetailedMetrics()
     
-    // Actualizar cada 30 segundos para sesiones activas
-    const interval = setInterval(loadDetailedMetrics, 30000)
-    return () => clearInterval(interval)
-  }, [projectTask?.taskId])
+    // Actualizar cada 30 segundos para sesiones activas y cambios de estado
+    const interval = setInterval(() => {
+      if (projectTask?.taskId) {
+        loadDetailedMetrics()
+      }
+    }, 30000)
+    
+    // Refrescar proyectos cada 30 segundos para detectar cambios de estado (como tareas completadas)
+    const refreshInterval = setInterval(() => {
+      if (refetch) {
+        refetch()
+      }
+    }, 30000)
+    
+    return () => {
+      clearInterval(interval)
+      clearInterval(refreshInterval)
+    }
+  }, [loading, projectTask?.taskId, projectTask?.id]) // Depender de loading y valores estables
 
-  if (loading || loadingMetrics) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-muted-foreground">Cargando métricas de la tarea...</p>
-          </div>
-        </div>
-      </MainLayout>
-    )
-  }
-
-  if (!project || !projectTask || !task) {
+  // Si no hay proyecto o tarea después de cargar, mostrar error
+  if (!loading && !loadingMetrics && (!project || !projectTask || !task)) {
     return (
       <MainLayout>
         <div className="text-center py-8">
@@ -243,6 +284,20 @@ export default function TaskMetricsPage() {
     )
   }
 
+  if (loading || loadingMetrics || !project || !projectTask || !task) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Cargando métricas de la tarea...</p>
+          </div>
+        </div>
+      </MainLayout>
+    )
+  }
+
+
   const actualHours = calculatedHours
   // Usar estimatedHours del projectTask (tiempo total del proyecto)
   // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
@@ -252,7 +307,20 @@ export default function TaskMetricsPage() {
   } else if (estimatedHours === 0) {
     estimatedHours = task?.estimatedHours || 0
   }
-  const progressPercentage = projectTask.progressPercentage || 0
+  
+  // Recalcular progreso basado en horas reales trabajadas vs estimadas
+  // Esto asegura que el progreso sea preciso incluso si el valor en la BD está desactualizado
+  let progressPercentage = projectTask.progressPercentage || 0
+  if (estimatedHours > 0 && actualHours > 0) {
+    const calculatedProgress = Math.min(Math.round((actualHours / estimatedHours) * 100), 100)
+    // Usar el progreso calculado si hay una diferencia significativa (más de 1%)
+    if (Math.abs(calculatedProgress - progressPercentage) > 1) {
+      progressPercentage = calculatedProgress
+    }
+  } else if (projectTask.status === 'completed') {
+    progressPercentage = 100
+  }
+  
   const efficiency = estimatedHours > 0 ? (actualHours / estimatedHours) * 100 : 0
 
   return (
