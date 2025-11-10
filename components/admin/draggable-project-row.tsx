@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,20 @@ export function DraggableProjectRow({
   isReadOnly = false
 }: DraggableProjectRowProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const router = useRouter()
+
+  const handleRowClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement
+    const isDragHandle = target.closest('[data-drag-handle]')
+    const isActionButton = target.closest('[data-action-button]')
+    const isLink = target.closest('a')
+    
+    if (isDragHandle || isActionButton || isLink) {
+      return
+    }
+    
+    router.push(`/admin/projects/${project.id}`)
+  }
 
   const getStatusInfo = (status: string) => {
     const statusMap = {
@@ -75,7 +90,7 @@ export function DraggableProjectRow({
   return (
     <TooltipProvider>
     <TableRow 
-      className={`transition-all duration-200 select-none ${
+      className={`transition-all duration-200 select-none cursor-pointer ${
         isDragging 
           ? 'opacity-50 shadow-lg' 
           : isHovered 
@@ -92,10 +107,17 @@ export function DraggableProjectRow({
       onDrop={(e) => !isReadOnly && onDrop?.(e, project.id)}
       onMouseEnter={() => !isReadOnly && setIsHovered(true)}
       onMouseLeave={() => !isReadOnly && setIsHovered(false)}
+      onClick={handleRowClick}
     >
       <TableCell className="text-center">
         <div className="flex items-center justify-center gap-2">
-          {!isReadOnly && <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />}
+          {!isReadOnly && (
+            <GripVertical 
+              className="h-4 w-4 text-muted-foreground cursor-move" 
+              data-drag-handle
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
           <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
             {index}
           </div>
@@ -139,8 +161,8 @@ export function DraggableProjectRow({
           <div className="font-medium">{progress}%</div>
         </div>
       </TableCell>
-      <TableCell className="text-center">
-        <div className="flex items-center justify-center space-x-2">
+      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center space-x-2" data-action-button>
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href={`/admin/projects/${project.id}`}>
@@ -148,6 +170,7 @@ export function DraggableProjectRow({
                   variant="outline"
                   size="sm"
                   className="cursor-pointer"
+                  data-action-button
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
@@ -167,6 +190,7 @@ export function DraggableProjectRow({
                     size="sm"
                     onClick={handleEdit}
                     className="cursor-pointer"
+                    data-action-button
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -177,11 +201,13 @@ export function DraggableProjectRow({
               </Tooltip>
               
               {project.status !== 'active' && (
-                <DeleteProjectButton
-                  projectId={project.id}
-                  projectName={project.name}
-                  onDelete={onDelete}
-                />
+                <div data-action-button>
+                  <DeleteProjectButton
+                    projectId={project.id}
+                    projectName={project.name}
+                    onDelete={onDelete}
+                  />
+                </div>
               )}
             </>
         )}

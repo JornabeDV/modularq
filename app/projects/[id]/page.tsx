@@ -27,6 +27,7 @@ import {
   Zap
 } from "lucide-react"
 import { TaskSelfAssignment } from "@/components/operario/task-self-assignment"
+import { ProjectDocumentsViewer } from "@/components/projects/project-documents-viewer"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { useProjectTasksPrisma } from "@/hooks/use-project-tasks-prisma"
 import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
@@ -193,6 +194,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             )}
           </div>
         </div>
+
+        {/* Documentos del Proyecto */}
+        <ProjectDocumentsViewer projectId={params.id} />
 
         {/* Gestión de Tareas - Sin bordes, solo texto */}
         <div className="mb-4 sm:mb-6">

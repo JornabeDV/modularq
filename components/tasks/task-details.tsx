@@ -70,7 +70,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
   const isCompleted = task.status === 'completed'
 
   return (
-    <Card className={isCompleted ? 'bg-green-50' : ''}>
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">

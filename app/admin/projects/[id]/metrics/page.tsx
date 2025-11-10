@@ -840,7 +840,7 @@ export default function ProjectMetricsPage() {
                 {projectFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg"
+                    className="flex hover:bg-accent/50 transition-colors flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border rounded-lg"
                   >
                     <div 
                       className="flex items-center cursor-pointer rounded-lg p-2 -m-2 flex-1"
