@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, FileText, LogOut, Shield, CheckSquare, Building2 } from "lucide-react"
+import { LayoutDashboard, FolderKanban, FileText, LogOut, Shield, CheckSquare, Building2, Package } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -18,6 +18,7 @@ const adminNavigation = [
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
+  { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
   { name: "Reportes", href: "/reports", icon: FileText },
 ]
 
@@ -93,6 +94,7 @@ export function Sidebar() {
               {adminNavigation
                 .filter((item) => {
                   // Solo mostrar "Gestión del Personal" para admin
+                  // "Gestión de Stock" está disponible para admin y supervisor
                   if (item.name === "Gestión del Personal" && userProfile?.role !== 'admin') {
                     return false
                   }

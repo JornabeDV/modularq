@@ -18,6 +18,7 @@ import { TaskForm } from './task-form'
 import { DeleteProjectButton } from './delete-project-button'
 import { ProjectTaskManager } from './project-task-manager'
 import { ProjectOperariosManager } from './project-operarios-manager'
+import { ProjectMaterialsManager } from './project-materials-manager'
 import { FileUpload } from '@/components/projects/file-upload'
 import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
 import { useProjectTasksPrisma } from '@/hooks/use-project-tasks-prisma'
@@ -576,6 +577,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Project Materials Manager - Solo para admins y supervisores */}
+      {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
+        <ProjectMaterialsManager projectId={project.id} isReadOnly={isReadOnly} />
+      )}
 
       {/* Project Operarios Manager */}
       <ProjectOperariosManager projectId={project.id} isReadOnly={isReadOnly} />

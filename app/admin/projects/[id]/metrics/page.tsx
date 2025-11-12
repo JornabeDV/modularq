@@ -13,7 +13,8 @@ import { useAuth } from "@/lib/auth-context"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
 import { SupabaseFileStorage } from "@/lib/supabase-storage"
-import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users, FileText, Download, Eye } from "lucide-react"
+import { PrismaTypedService } from "@/lib/prisma-typed-service"
+import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users, FileText, Download, Eye, Package } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
 
@@ -38,6 +39,9 @@ export default function ProjectMetricsPage() {
   const [taskStartDates, setTaskStartDates] = useState<Record<string, string>>({})
   // Estado para rastrear qué sesiones ya intentamos cerrar (evitar bucles infinitos)
   const [closedSessions, setClosedSessions] = useState<Set<string>>(new Set())
+  // Estado para materiales del proyecto
+  const [projectMaterials, setProjectMaterials] = useState<any[]>([])
+  const [materialsLoading, setMaterialsLoading] = useState(true)
 
   useEffect(() => {
     const calculateAllHours = async () => {
@@ -361,6 +365,26 @@ export default function ProjectMetricsPage() {
       setCalculatingMetrics(false)
     }
   }, [project?.id, project?.projectTasks?.length]) // Solo depender de valores estables, no de refetch
+
+  // Cargar materiales del proyecto
+  useEffect(() => {
+    const loadProjectMaterials = async () => {
+      if (!projectId) return
+      
+      setMaterialsLoading(true)
+      try {
+        const materials = await PrismaTypedService.getProjectMaterials(projectId)
+        setProjectMaterials(materials)
+      } catch (error) {
+        console.error('Error loading project materials:', error)
+        setProjectMaterials([])
+      } finally {
+        setMaterialsLoading(false)
+      }
+    }
+    
+    loadProjectMaterials()
+  }, [projectId])
 
   // Función para formatear tiempo transcurrido
   const formatElapsedTime = (elapsedHours: number) => {
@@ -808,6 +832,125 @@ export default function ProjectMetricsPage() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Materiales Utilizados */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Materiales Utilizados
+            </CardTitle>
+            <CardDescription>
+              Materiales asignados y utilizados en este proyecto
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {materialsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2 text-muted-foreground">Cargando materiales...</p>
+                </div>
+              </div>
+            ) : projectMaterials.length === 0 ? (
+              <div className="text-center py-12">
+                <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No hay materiales asignados</h3>
+                <p className="text-muted-foreground">
+                  Los materiales asignados al proyecto aparecerán aquí
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Resumen */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold">{projectMaterials.length}</div>
+                    <div className="text-sm text-muted-foreground">Tipos de materiales</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold">
+                      {projectMaterials.reduce((sum, pm) => sum + pm.quantity, 0).toLocaleString('es-AR')}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Cantidad total</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      ${projectMaterials.reduce((sum, pm) => {
+                        const price = pm.unit_price || pm.material?.unit_price || 0
+                        return sum + (pm.quantity * price)
+                      }, 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Valor total</div>
+                  </div>
+                </div>
+
+                {/* Lista de materiales */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm">Detalle de materiales:</h4>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {projectMaterials.map((pm: any) => {
+                      const UNIT_LABELS: Record<string, string> = {
+                        unidad: 'Unidad',
+                        metro: 'm',
+                        metro_cuadrado: 'm²',
+                        metro_cubico: 'm³',
+                        kilogramo: 'kg',
+                        litro: 'L'
+                      }
+                      const unit = UNIT_LABELS[pm.material?.unit] || pm.material?.unit || ''
+                      const price = pm.unit_price || pm.material?.unit_price || 0
+                      const total = pm.quantity * price
+                      
+                      return (
+                        <div key={pm.id} className="p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-mono text-xs font-medium text-muted-foreground">
+                                  {pm.material?.code || 'N/A'}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {pm.material?.category || 'N/A'}
+                                </Badge>
+                              </div>
+                              <p className="font-medium text-sm">{pm.material?.name || 'Material desconocido'}</p>
+                              {pm.material?.description && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                  {pm.material.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right text-sm">
+                              <div className="font-semibold">
+                                {pm.quantity.toLocaleString('es-AR')} {unit}
+                              </div>
+                              {price > 0 && (
+                                <>
+                                  <div className="text-xs text-muted-foreground">
+                                    ${price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} c/u
+                                  </div>
+                                  <div className="text-green-600 font-semibold mt-1">
+                                    ${total.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {pm.notes && (
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                              <strong>Notas:</strong> {pm.notes}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

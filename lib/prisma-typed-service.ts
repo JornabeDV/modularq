@@ -756,6 +756,359 @@ export class PrismaTypedService {
     
     if (error) throw error
   }
+
+  // Materiales
+  static async getAllMaterials(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('materials')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  // Obtener el siguiente código disponible para una categoría
+  static async getNextMaterialCode(category: string): Promise<string> {
+    // Mapeo de categorías a prefijos
+    const categoryPrefixes: Record<string, string> = {
+      estructura: 'EST',
+      paneles: 'PAN',
+      herrajes: 'HER',
+      aislacion: 'AIS',
+      electricidad: 'ELE',
+      sanitarios: 'SAN',
+      otros: 'OTR'
+    }
+
+    const prefix = categoryPrefixes[category] || 'MAT'
+    
+    // Buscar el último código de esta categoría
+    const { data, error } = await supabase
+      .from('materials')
+      .select('code')
+      .like('code', `${prefix}-%`)
+      .order('code', { ascending: false })
+      .limit(1)
+    
+    if (error) throw error
+    
+    let nextNumber = 1
+    
+    if (data && data.length > 0) {
+      // Extraer el número del último código (ej: "EST-042" -> 42)
+      const lastCode = data[0].code
+      const match = lastCode.match(/-(\d+)$/)
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1
+      }
+    }
+    
+    // Formatear con ceros a la izquierda (001, 002, etc.)
+    return `${prefix}-${String(nextNumber).padStart(3, '0')}`
+  }
+
+  static async getMaterialById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('materials')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data
+  }
+
+  static async createMaterial(materialData: {
+    code: string
+    name: string
+    description?: string
+    category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+    unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
+    stock_quantity?: number
+    min_stock?: number
+    unit_price?: number
+    supplier?: string
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('materials')
+      .insert({
+        ...materialData,
+        stock_quantity: materialData.stock_quantity ?? 0,
+        min_stock: materialData.min_stock ?? 0
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateMaterial(id: string, materialData: {
+    code?: string
+    name?: string
+    description?: string
+    category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+    unit?: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
+    stock_quantity?: number
+    min_stock?: number
+    unit_price?: number
+    supplier?: string
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('materials')
+      .update({
+        ...materialData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteMaterial(id: string): Promise<void> {
+    // Primero verificar si hay proyectos asociados
+    const { data: projectMaterials, error: checkError } = await supabase
+      .from('project_materials')
+      .select('id')
+      .eq('material_id', id)
+    
+    if (checkError) throw checkError
+    
+    if (projectMaterials && projectMaterials.length > 0) {
+      throw new Error(`No se puede eliminar el material porque está asignado a ${projectMaterials.length} proyecto(s). Primero debe desasociar el material de los proyectos.`)
+    }
+    
+    // Si no hay proyectos asociados, proceder con la eliminación
+    const { error } = await supabase
+      .from('materials')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  // Project Materials (relación entre proyectos y materiales)
+  static async getProjectMaterials(projectId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('project_materials')
+      .select(`
+        *,
+        material:materials (
+          id,
+          code,
+          name,
+          description,
+          category,
+          unit,
+          stock_quantity,
+          min_stock,
+          unit_price,
+          supplier
+        )
+      `)
+      .eq('project_id', projectId)
+      .order('assigned_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async addMaterialToProject(projectId: string, materialData: {
+    material_id: string
+    quantity: number
+    unit_price?: number
+    notes?: string
+    assigned_by?: string
+  }): Promise<any> {
+    // Primero verificar que hay stock suficiente
+    const material = await this.getMaterialById(materialData.material_id)
+    if (!material) {
+      throw new Error('Material no encontrado')
+    }
+    
+    const currentStock = material.stock_quantity ?? 0
+    if (currentStock < materialData.quantity) {
+      throw new Error(`Stock insuficiente. Disponible: ${currentStock} ${material.unit}, Requerido: ${materialData.quantity} ${material.unit}`)
+    }
+    
+    // Usar transacción para asegurar consistencia
+    // 1. Descontar stock del material
+    const newStock = currentStock - materialData.quantity
+    const { error: updateStockError } = await supabase
+      .from('materials')
+      .update({ 
+        stock_quantity: newStock,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', materialData.material_id)
+    
+    if (updateStockError) {
+      throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
+    }
+    
+    // 2. Crear la relación proyecto-material
+    const { data, error } = await supabase
+      .from('project_materials')
+      .insert({
+        project_id: projectId,
+        material_id: materialData.material_id,
+        quantity: materialData.quantity,
+        unit_price: materialData.unit_price || material.unit_price,
+        notes: materialData.notes,
+        assigned_by: materialData.assigned_by
+      })
+      .select(`
+        *,
+        material:materials (*)
+      `)
+      .single()
+    
+    if (error) {
+      // Si falla la inserción, revertir el descuento de stock
+      await supabase
+        .from('materials')
+        .update({ 
+          stock_quantity: currentStock,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', materialData.material_id)
+      throw error
+    }
+    
+    return data
+  }
+
+  static async updateProjectMaterial(id: string, materialData: {
+    quantity?: number
+    unit_price?: number
+    notes?: string
+  }): Promise<any> {
+    // Si se está actualizando la cantidad, ajustar el stock
+    if (materialData.quantity !== undefined) {
+      // Obtener la información actual
+      const { data: currentData, error: fetchError } = await supabase
+        .from('project_materials')
+        .select(`
+          *,
+          material:materials (
+            id,
+            stock_quantity
+          )
+        `)
+        .eq('id', id)
+        .single()
+      
+      if (fetchError) throw fetchError
+      if (!currentData) throw new Error('Material del proyecto no encontrado')
+      
+      const material = currentData.material
+      if (material) {
+        const currentQuantity = currentData.quantity
+        const newQuantity = materialData.quantity
+        const difference = newQuantity - currentQuantity
+        const currentStock = material.stock_quantity ?? 0
+        
+        // Si se está aumentando la cantidad, verificar stock y descontar
+        if (difference > 0) {
+          if (currentStock < difference) {
+            throw new Error(`Stock insuficiente. Disponible: ${currentStock}, Requerido adicional: ${difference}`)
+          }
+          
+          const newStock = currentStock - difference
+          const { error: updateStockError } = await supabase
+            .from('materials')
+            .update({ 
+              stock_quantity: newStock,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', material.id)
+          
+          if (updateStockError) {
+            throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
+          }
+        }
+        // Si se está disminuyendo la cantidad, devolver stock
+        else if (difference < 0) {
+          const newStock = currentStock + Math.abs(difference)
+          const { error: updateStockError } = await supabase
+            .from('materials')
+            .update({ 
+              stock_quantity: newStock,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', material.id)
+          
+          if (updateStockError) {
+            throw new Error(`Error al devolver stock: ${updateStockError.message}`)
+          }
+        }
+      }
+    }
+    
+    // Actualizar la relación proyecto-material
+    const { data, error } = await supabase
+      .from('project_materials')
+      .update(materialData)
+      .eq('id', id)
+      .select(`
+        *,
+        material:materials (*)
+      `)
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async removeMaterialFromProject(id: string): Promise<void> {
+    // Primero obtener la información del material asignado para devolver el stock
+    const { data: projectMaterial, error: fetchError } = await supabase
+      .from('project_materials')
+      .select(`
+        *,
+        material:materials (
+          id,
+          stock_quantity
+        )
+      `)
+      .eq('id', id)
+      .single()
+    
+    if (fetchError) throw fetchError
+    if (!projectMaterial) throw new Error('Material del proyecto no encontrado')
+    
+    // Devolver el stock al material
+    const material = projectMaterial.material
+    if (material) {
+      const currentStock = material.stock_quantity ?? 0
+      const quantityToReturn = projectMaterial.quantity
+      const newStock = currentStock + quantityToReturn
+      
+      const { error: updateStockError } = await supabase
+        .from('materials')
+        .update({ 
+          stock_quantity: newStock,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', material.id)
+      
+      if (updateStockError) {
+        throw new Error(`Error al devolver stock: ${updateStockError.message}`)
+      }
+    }
+    
+    // Eliminar la relación proyecto-material
+    const { error } = await supabase
+      .from('project_materials')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
 }
 
 // Exportar tipos de Prisma para uso en la aplicación
