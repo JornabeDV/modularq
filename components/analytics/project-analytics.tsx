@@ -18,6 +18,7 @@ import {
   PlayCircle,
   Target,
   FolderKanban,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -45,7 +46,12 @@ import {
 } from "@/components/ui/chart";
 
 // Estados reales del proyecto según el schema
-export type ProjectStatusType = "planning" | "active" | "paused" | "completed";
+export type ProjectStatusType =
+  | "planning"
+  | "active"
+  | "paused"
+  | "completed"
+  | "delivered";
 
 interface ProjectStatusInfo {
   type: ProjectStatusType;
@@ -83,6 +89,13 @@ const STATUS_CONFIG: ProjectStatusInfo[] = [
     color: "text-gray-600",
     bgColor: "bg-gray-100",
     icon: <CheckCircle2 className="h-4 w-4" />,
+  },
+  {
+    type: "delivered",
+    label: "Entregado",
+    color: "text-purple-600",
+    bgColor: "bg-purple-100",
+    icon: <Package className="h-4 w-4" />,
   },
 ];
 
@@ -232,20 +245,33 @@ export function ProjectAnalytics() {
     },
     planning: {
       label: "Planificación",
-      color: "#3b82f6",
+      color: "#3b82f6", // Azul
     },
     active: {
       label: "Activo",
-      color: "#22c55e",
+      color: "#22c55e", // Verde
     },
     paused: {
       label: "En Pausa",
-      color: "#eab308",
+      color: "#f59e0b", // Naranja/Ámbar más oscuro
     },
     completed: {
       label: "Completado",
-      color: "#6b7280",
+      color: "#64748b", // Gris slate más oscuro
     },
+    delivered: {
+      label: "Entregado",
+      color: "#a855f7", // Púrpura
+    },
+  };
+
+  // Mapa de colores para el gráfico de torta
+  const statusColors: Record<ProjectStatusType, string> = {
+    planning: "#3b82f6", // Azul
+    active: "#22c55e", // Verde
+    paused: "#f59e0b", // Naranja/Ámbar
+    completed: "#64748b", // Gris slate
+    delivered: "#a855f7", // Púrpura
   };
 
   // Preparar datos para gráficos
@@ -253,14 +279,7 @@ export function ProjectAnalytics() {
     return STATUS_CONFIG.map((config) => ({
       name: config.label,
       value: stats.statusCounts[config.type] || 0,
-      fill:
-        config.type === "planning"
-          ? "#3b82f6"
-          : config.type === "active"
-          ? "#22c55e"
-          : config.type === "paused"
-          ? "#eab308"
-          : "#6b7280",
+      fill: statusColors[config.type] || "#64748b",
     }));
   }, [stats.statusCounts]);
 
@@ -425,16 +444,24 @@ export function ProjectAnalytics() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={isMobile ? 45 : 65}
+                    label={({ name, percent, value }) => {
+                      // Mostrar label solo si hay valor
+                      if (value === 0) return "";
+                      return `${name}\n${(percent * 100).toFixed(0)}%`;
+                    }}
+                    outerRadius={isMobile ? 40 : 60}
+                    innerRadius={isMobile ? 15 : 20}
                     dataKey="value"
                   >
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Pie>
+                  <ChartLegend
+                    content={<ChartLegendContent nameKey="name" />}
+                    verticalAlign="bottom"
+                    height={36}
+                  />
                 </PieChart>
               </ChartContainer>
             </div>

@@ -2,7 +2,7 @@ export interface Project {
   id: string
   name: string
   description: string
-  status: "planning" | "active" | "paused" | "completed"
+  status: "planning" | "active" | "paused" | "completed" | "delivered"
   startDate?: string
   endDate?: string
   supervisor?: string

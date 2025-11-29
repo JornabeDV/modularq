@@ -15,6 +15,7 @@ interface ProjectTableProps {
   onStatusFilterChange: (value: string) => void
   onEditProject: (project: Project) => void
   onDeleteProject: (projectId: string) => void
+  onStatusChange?: (projectId: string, newStatus: string) => Promise<void>
   onReorderProjects?: (projectOrders: { id: string; projectOrder: number }[]) => void
   isReadOnly?: boolean
 }
@@ -27,6 +28,7 @@ export function ProjectTable({
   onStatusFilterChange,
   onEditProject,
   onDeleteProject,
+  onStatusChange,
   onReorderProjects,
   isReadOnly = false
 }: ProjectTableProps) {
@@ -142,6 +144,7 @@ export function ProjectTable({
                     index={index + 1}
                     onEdit={onEditProject}
                     onDelete={onDeleteProject}
+                    onStatusChange={onStatusChange}
                     isDragging={draggedProjectId === project.id}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}

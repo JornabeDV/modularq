@@ -12,6 +12,8 @@ import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
 import { useAuth } from '@/lib/auth-context'
 import type { Project } from '@/lib/types'
 
+type ProjectStatus = 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+
 export function ProjectManagement() {
   const router = useRouter()
   const { user, userProfile } = useAuth()
@@ -76,6 +78,12 @@ export function ProjectManagement() {
 
   const handleDeleteProject = async (projectId: string) => {
     await deleteProject(projectId)
+  }
+
+  const handleStatusChange = async (projectId: string, newStatus: string) => {
+    await updateProject(projectId, { 
+      status: newStatus as ProjectStatus
+    })
   }
 
   const handleEditProject = (project: Project) => {
@@ -163,6 +171,7 @@ export function ProjectManagement() {
         onStatusFilterChange={setStatusFilter}
         onEditProject={handleEditProject}
         onDeleteProject={handleDeleteProject}
+        onStatusChange={!isReadOnly ? handleStatusChange : undefined}
         onReorderProjects={handleReorderProjects}
         isReadOnly={isReadOnly}
       />
