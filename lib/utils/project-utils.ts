@@ -1,0 +1,60 @@
+import type { Project } from "@/lib/types";
+
+export const PROJECT_STATUS_CONFIG = {
+  planning: { label: "Planificación", color: "secondary" as const },
+  active: { label: "Activo", color: "default" as const },
+  paused: { label: "En Pausa", color: "destructive" as const },
+  completed: { label: "Completado", color: "default" as const },
+  cancelled: { label: "Cancelado", color: "destructive" as const },
+} as const;
+
+export function getStatusInfo(status: string) {
+  return (
+    PROJECT_STATUS_CONFIG[status as keyof typeof PROJECT_STATUS_CONFIG] || {
+      label: status,
+      color: "default" as const,
+    }
+  );
+}
+
+export function formatProjectDate(dateString?: string): string {
+  if (!dateString) return "Sin fecha";
+
+  // Si la fecha viene en formato ISO (YYYY-MM-DD), la parseamos directamente
+  // para evitar problemas de zona horaria
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
+  // Para fechas con timestamp o formato ISO completo, usar el método normal
+  return new Date(dateString).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC", // Forzar UTC para evitar cambios de zona horaria
+  });
+}
+
+export function mapProjectFormData(projectData: Partial<Project>) {
+  return {
+    name: projectData.name,
+    description: projectData.description,
+    status: projectData.status,
+    start_date: projectData.startDate
+      ? new Date(projectData.startDate)
+      : undefined,
+    end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
+    client_id: projectData.clientId,
+    modulation: projectData.modulation,
+    height: projectData.height,
+    width: projectData.width,
+    depth: projectData.depth,
+    module_count: projectData.moduleCount,
+  };
+}
