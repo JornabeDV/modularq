@@ -1,16 +1,25 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/lib/auth-context"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { LayoutDashboard, FolderKanban, FileText, LogOut, Shield, CheckSquare, Building2 } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  FolderKanban,
+  FileText,
+  LogOut,
+  Shield,
+  CheckSquare,
+  Building2,
+  BarChart3,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 const navigation = [
   { name: "Proyectos Activos", href: "/projects", icon: FolderKanban },
-]
+];
 
 const adminNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -19,11 +28,12 @@ const adminNavigation = [
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Reportes", href: "/reports", icon: FileText },
-]
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
+];
 
 export function Sidebar() {
-  const { user, userProfile, logout } = useAuth()
-  const pathname = usePathname()
+  const { user, userProfile, logout } = useAuth();
+  const pathname = usePathname();
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r">
@@ -43,7 +53,7 @@ export function Sidebar() {
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
             <span className="text-sm font-medium text-primary">
-              {userProfile?.name && typeof userProfile.name === 'string'
+              {userProfile?.name && typeof userProfile.name === "string"
                 ? userProfile.name
                     .split(" ")
                     .map((n: string) => n[0])
@@ -67,56 +77,61 @@ export function Sidebar() {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {/* Solo operarios ven "Proyectos Activos" */}
-          {userProfile?.role === 'operario' && navigation.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              </li>
-            )
-          })}
-          
+          {userProfile?.role === "operario" &&
+            navigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.name}
+                  </Link>
+                </li>
+              );
+            })}
+
           {/* Admin and Supervisor Navigation */}
-          {(userProfile?.role === 'admin' || userProfile?.role === 'supervisor') && (
+          {(userProfile?.role === "admin" ||
+            userProfile?.role === "supervisor") && (
             <>
               {adminNavigation
                 .filter((item) => {
                   // Solo mostrar "Gestión del Personal" para admin
-                  if (item.name === "Gestión del Personal" && userProfile?.role !== 'admin') {
-                    return false
+                  if (
+                    item.name === "Gestión del Personal" &&
+                    userProfile?.role !== "admin"
+                  ) {
+                    return false;
                   }
-                  return true
+                  return true;
                 })
                 .map((item) => {
-                const isActive = pathname === item.href
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.name}
-                    </Link>
-                  </li>
-                )
-              })}
+                  const isActive = pathname === item.href;
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    </li>
+                  );
+                })}
             </>
           )}
         </ul>
@@ -134,5 +149,5 @@ export function Sidebar() {
         </Button>
       </div>
     </div>
-  )
+  );
 }
