@@ -168,7 +168,7 @@ export class PrismaTypedService {
   static async createProject(projectData: {
     name: string
     description?: string
-    status: 'planning' | 'active' | 'paused' | 'completed'
+    status: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
     start_date: Date
     end_date?: Date
     client_id?: string
@@ -208,7 +208,7 @@ export class PrismaTypedService {
   static async updateProject(id: string, projectData: {
     name?: string
     description?: string
-    status?: 'planning' | 'active' | 'paused' | 'completed'
+    status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
     start_date?: Date
     end_date?: Date
     client_id?: string

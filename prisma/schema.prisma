@@ -23,6 +23,7 @@ enum ProjectStatus {
   active
   paused
   completed
+  delivered
 }
 
 enum ProjectPriority {

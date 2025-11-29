@@ -7,7 +7,7 @@ import type { Project } from '@/lib/types'
 export interface CreateProjectData {
   name: string
   description?: string
-  status?: 'planning' | 'active' | 'paused' | 'completed'
+  status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
   start_date?: Date
   end_date?: Date
   client_id?: string
@@ -23,7 +23,7 @@ export interface CreateProjectData {
 export interface UpdateProjectData {
   name?: string
   description?: string
-  status?: 'planning' | 'active' | 'paused' | 'completed'
+  status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
   start_date?: Date
   end_date?: Date
   client_id?: string
