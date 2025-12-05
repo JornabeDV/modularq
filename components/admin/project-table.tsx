@@ -3,12 +3,18 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataPagination } from '@/components/ui/data-pagination'
 import { DraggableProjectRow } from './draggable-project-row'
 import { ProjectFilters } from './project-filters'
 import type { Project } from '@/lib/types'
 
 interface ProjectTableProps {
   projects: Project[]
+  totalItems: number
+  itemsPerPage: number
+  currentPage: number
+  onPageChange: (page: number) => void
+  onItemsPerPageChange: (itemsPerPage: number) => void
   searchTerm: string
   onSearchChange: (value: string) => void
   statusFilter: string
@@ -22,6 +28,11 @@ interface ProjectTableProps {
 
 export function ProjectTable({
   projects,
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  onPageChange,
+  onItemsPerPageChange,
   searchTerm,
   onSearchChange,
   statusFilter,
@@ -137,26 +148,45 @@ export function ProjectTable({
                   </td>
                 </tr>
               ) : (
-                localProjects.map((project, index) => (
-                  <DraggableProjectRow
-                    key={project.id}
-                    project={project}
-                    index={index + 1}
-                    onEdit={onEditProject}
-                    onDelete={onDeleteProject}
-                    onStatusChange={onStatusChange}
-                    isDragging={draggedProjectId === project.id}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    isReadOnly={isReadOnly}
-                  />
-                ))
+                localProjects.map((project, index) => {
+                  // Calcular el número de fila considerando la paginación
+                  const rowNumber = (currentPage - 1) * itemsPerPage + index + 1
+                  return (
+                    <DraggableProjectRow
+                      key={project.id}
+                      project={project}
+                      index={rowNumber}
+                      onEdit={onEditProject}
+                      onDelete={onDeleteProject}
+                      onStatusChange={onStatusChange}
+                      isDragging={draggedProjectId === project.id}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      isReadOnly={isReadOnly}
+                    />
+                  )
+                })
               )}
             </TableBody>
           </Table>
         </div>
+        
+        {/* Paginación */}
+        {totalItems > 0 && (
+          <div className="pt-4 border-t">
+            <DataPagination
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={onPageChange}
+              onItemsPerPageChange={onItemsPerPageChange}
+              itemsPerPageOptions={[5, 10, 20, 50]}
+              itemsText="proyectos"
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   )
