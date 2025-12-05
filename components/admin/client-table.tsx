@@ -3,12 +3,18 @@
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataPagination } from '@/components/ui/data-pagination'
 import { ClientFilters } from '@/components/admin/client-filters'
 import { ClientRow } from '@/components/admin/client-row'
 import type { Client } from '@/hooks/use-clients-prisma'
 
 interface ClientTableProps {
   clients: Client[]
+  totalItems: number
+  itemsPerPage: number
+  currentPage: number
+  onPageChange: (page: number) => void
+  onItemsPerPageChange: (itemsPerPage: number) => void
   searchTerm: string
   onSearchChange: (value: string) => void
   onEditClient: (client: Client) => void
@@ -18,6 +24,11 @@ interface ClientTableProps {
 
 export function ClientTable({
   clients,
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  onPageChange,
+  onItemsPerPageChange,
   searchTerm,
   onSearchChange,
   onEditClient,
@@ -53,19 +64,38 @@ export function ClientTable({
                   </td>
                 </TableRow>
               ) : (
-                clients.map((client) => (
-                  <ClientRow
-                    key={client.id}
-                    client={client}
-                    onEdit={onEditClient}
-                    onDelete={onDeleteClient}
-                    isReadOnly={isReadOnly}
-                  />
-                ))
+                clients.map((client, index) => {
+                  // Calcular el número de fila considerando la paginación
+                  const rowNumber = (currentPage - 1) * itemsPerPage + index + 1
+                  return (
+                    <ClientRow
+                      key={client.id}
+                      client={client}
+                      onEdit={onEditClient}
+                      onDelete={onDeleteClient}
+                      isReadOnly={isReadOnly}
+                    />
+                  )
+                })
               )}
             </TableBody>
           </Table>
         </div>
+        
+        {/* Paginación */}
+        {totalItems > 0 && (
+          <div className="pt-4 border-t">
+            <DataPagination
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={onPageChange}
+              onItemsPerPageChange={onItemsPerPageChange}
+              itemsPerPageOptions={[5, 10, 20, 50]}
+              itemsText="clientes"
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   )
