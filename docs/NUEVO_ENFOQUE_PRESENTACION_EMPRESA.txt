@@ -1,0 +1,160 @@
+================================================================================
+  MODULARQ - NUEVO ENFOQUE: SISTEMA DE SUPERVISIÓN Y RELEVAMIENTO DIARIO
+================================================================================
+PRESENTACIÓN PARA LA EMPRESA
+Fecha: 2025
+Versión: 2.0
+================================================================================
+  RESUMEN
+================================================================================
+Modularq evoluciona hacia un enfoque simple y práctico enfocado en facilitar la organización desde la supervisión mediante un proceso de relevamiento diario.
+OBJETIVO PRINCIPAL:
+Facilitar la organización de la empresa desde la supervisión, proporcionando herramientas simples para que los supervisores puedan organizar, planificar y registrar el avance del trabajo diario.
+================================================================================
+  1. CONCEPTO: RELEVAMIENTO DIARIO
+================================================================================
+El supervisor/administrador realiza seguimiento en campo, observa físicamente el estado de proyectos y tareas, verifica avances y carga esta información actualizando estados en el sistema. Este proceso reemplaza el registro automático de tiempo por los operarios.
+FILOSOFÍA:
+- Simplicidad: Estados claros, interfaz intuitiva
+- Control desde supervisión: Supervisor/Administrador gestiona y asigna tareas
+- Verificación en campo: Información verificada físicamente
+================================================================================
+  2. PROCESO DE RELEVAMIENTO
+================================================================================
+1. Preparación: Supervisor/Administrador revisa dashboard y planifica ruta
+2. Revisión en campo: Observa estado físico de proyectos y tareas
+3. Carga en sistema: Actualiza estados de tareas según lo observado (Pendiente → En Progreso → Completada)
+4. Organización: Asigna tareas a operarios y planifica trabajo para siguiente día
+FRECUENCIA: Diaria (una o varias veces según necesidad)
+================================================================================
+  3. ESTADOS DE TAREAS
+================================================================================
+SISTEMA SIMPLE:
+- PENDIENTE: Tarea creada pero no iniciada
+- EN PROGRESO: Tarea activa, trabajo en curso
+- COMPLETADA: Tarea finalizada exitosamente
+- CANCELADA: Tarea que ya no se realizará
+================================================================================
+  4. USUARIOS Y ACCESO
+================================================================================
+ADMINISTRADORES:
+- Acceso completo a todas las funcionalidades
+- Gestión completa de proyectos, tareas, operarios, clientes, stock y usuarios
+- Creación, edición y eliminación en todas las áreas
+- Asignación de tareas a operarios
+- Actualización de estados mediante relevamiento diario
+- Visibilidad completa de todos los proyectos
+- Gestión de clientes y sus proyectos asociados
+SUPERVISORES:
+- Acceso de solo lectura a muchas vistas (proyectos, tareas, clientes, stock)
+- Relevamiento diario: Pueden actualizar estados de tareas según observación en campo
+- Sin acceso a gestión de usuarios (solo administradores)
+- Visibilidad completa de todos los proyectos para consulta
+OPERARIOS:
+- Acceso limitado: Solo pueden ver proyectos asignados
+- Funcionalidad: Consulta de documentación técnica y planos
+================================================================================
+  5. FUNCIONALIDADES PRINCIPALES
+================================================================================
+DASHBOARD DE SUPERVISIÓN:
+- Vista completa de proyectos en curso, estado visual y progreso
+- Tareas pendientes, en progreso y completadas
+- Navegación directa y búsqueda rápida
+GESTIÓN DE PROYECTOS:
+- Creación y edición (solo administradores)
+- Consulta y visualización (administradores y supervisores)
+- Asignación de operarios (administradores y supervisores)
+- Filtros, búsqueda y organización
+GESTIÓN DE TAREAS:
+- Creación de tareas estándar y personalizadas (administradores)
+- Consulta y visualización (administradores y supervisores)
+- Asignación de tareas a operarios (administradores)
+- Actualización de estados mediante relevamiento diario (administradores y supervisores)
+- Estados simples (Pendiente, En Progreso, Completada, Cancelada)
+- Filtros por proyecto, estado, operario
+GESTIÓN DE OPERARIOS:
+- Registro de operarios (solo administradores)
+- Consulta y visualización (administradores y supervisores)
+- Asignación a proyectos y tareas (administradores)
+- Vista de distribución de carga de trabajo
+GESTIÓN DE USUARIOS:
+- Creación, edición y eliminación de usuarios del sistema (administradores)
+- Consulta y visualización (administradores y supervisores)
+GESTIÓN DE CLIENTES:
+- Creación y edición de clientes (administradores)
+- Consulta y visualización (administradores y supervisores)
+- Información de contacto y datos de la empresa
+- Asociación de clientes a proyectos
+- Filtros y búsqueda de clientes
+FUNCIONALIDADES FUTURAS:
+- Gestión de proveedores: Registro y gestión de proveedores de materiales y servicios
+
+ACCESO DE OPERARIOS:
+- Visualización de proyectos asignados
+- Consulta de documentación técnica y planos
+================================================================================
+  6. CAMBIOS RESPECTO AL ENFOQUE ANTERIOR
+================================================================================
+PRINCIPALES CAMBIOS:
+1. Simplificación de estados de tareas: Solo estados, sin avance en tiempo real de tareas. 
+2. Eliminación de cronómetro: El supervisor actualiza estados manualmente.
+3. Ocultación de métricas: Temporariamente ocultas para simplificar uso inicial.
+4. Enfoque en relevamiento diario: Supervisor observa y carga información.
+5. Asignación centralizada: El supervisor asigna todas las tareas a operarios.
+6. Acceso limitado de operarios: Solo consulta de documentación en proyectos asignados
+LO QUE SE MANTIENE:
+- Toda la funcionalidad de proyectos, tareas y asignaciones
+- Sistema de autenticación y roles
+- Base de datos y tecnologías
+- Infraestructura de métricas (oculta pero preservada)
+BENEFICIOS:
+- Simplicidad y facilidad de uso
+- Mayor control del supervisor
+- Información verificada en campo
+- Mejor organización desde la supervisión
+================================================================================
+  7. PROYECCIONES Y PLANIFICACIÓN
+================================================================================
+El sistema utiliza los tiempos estimados de las tareas para generar proyecciones de finalización de proyectos, ayudado por el relevamiento diario que realizan los supervisores y administradores.
+
+FUNCIONAMIENTO:
+- Cada tarea tiene un tiempo estimado de ejecución
+- El sistema calcula proyecciones basándose en tareas pendientes y sus tiempos estimados
+- El relevamiento diario actualiza el estado real de las tareas
+- Las proyecciones se ajustan automáticamente según el avance observado
+- Supervisores y administradores mantienen el estado actualizado para cumplir objetivos
+BENEFICIOS:
+- Visibilidad de fechas estimadas de finalización de proyectos
+- Identificación temprana de posibles retrasos
+- Planificación más precisa basada en datos reales
+- Ajuste continuo de proyecciones según el avance observado
+- Mejor cumplimiento de objetivos y plazos
+================================================================================
+  8. BENEFICIOS Y REPORTES
+================================================================================
+BENEFICIOS PRINCIPALES:
+- Organización mejorada: Visibilidad completa del estado de proyectos y tareas
+- Control y supervisión: Verificación física en campo antes de actualizar estados
+- Eficiencia operativa: Proceso simple de relevamiento y actualización
+- Toma de decisiones informada: Datos actualizados y verificados para decisiones
+- Trazabilidad: Registro completo de cambios y actualizaciones
+- Mejora continua: Datos históricos para análisis y optimización
+REPORTES DISPONIBLES:
+- Reportes de proyectos: Estado de proyectos activos y completados
+- Reportes de tareas: Resumen por estado, proyecto y operario
+- Reportes de operarios: Asignaciones y distribución de carga de trabajo
+- Métricas y estadísticas: Dashboard con información general del sistema
+================================================================================
+  9. CONCLUSIÓN
+================================================================================
+El nuevo enfoque de Modularq se centra en la SUPERVISIÓN Y ORGANIZACIÓN mediante un proceso de RELEVAMIENTO DIARIO simple y eficiente.
+BENEFICIOS PRINCIPALES:
+✓ Simplicidad y facilidad de uso
+✓ Control total desde la supervisión
+✓ Verificación en campo del trabajo
+✓ Mejor organización del trabajo diario
+✓ Acceso de operarios a documentación técnica
+✓ Base sólida para futuras mejoras
+✓ Infraestructura completa preservada
+Las métricas y funcionalidades avanzadas están preservadas en la infraestructura, listas para ser reactivadas cuando sea necesario, pero por el momento se ocultan para simplificar el uso inicial.
+

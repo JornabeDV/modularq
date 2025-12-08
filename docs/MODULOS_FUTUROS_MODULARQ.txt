@@ -1,0 +1,98 @@
+================================================================================
+  MODULARQ - MÓDULOS FUTUROS PARA EXPANSIÓN DEL SISTEMA
+================================================================================
+DOCUMENTO DE PLANIFICACIÓN
+Fecha: 2026
+================================================================================
+  INTRODUCCIÓN
+================================================================================
+Este documento describe los módulos futuros que pueden implementarse para
+agregar valor al sistema Modularq. Los módulos están pensados de forma simple
+y práctica, priorizando funcionalidades que aporten valor inmediato.
+
+================================================================================
+  1. GESTIÓN DE PROVEEDORES
+================================================================================
+- Registro de proveedores con información de contacto
+- Datos fiscales y comerciales
+- Categorización por tipo de producto o servicio
+- Evaluación y calificación de proveedores
+- Historial de relaciones comerciales
+
+BENEFICIOS: Control de proveedores y mejor organización de contactos
+
+================================================================================
+  2. GESTIÓN DE COMPRAS
+================================================================================
+- Creación de órdenes de compra
+- Seguimiento de pedidos a proveedores
+- Control de entregas y recepciones
+- Gestión de facturas de proveedores
+- Vinculación con materiales del stock
+- Historial de compras
+
+BENEFICIOS: Control de compras y mejor planificación de materiales
+
+================================================================================
+  3. GESTIÓN DE STOCK
+================================================================================
+- Control de movimientos de entrada y salida
+- Alertas de stock mínimo
+- Ubicación física de materiales
+- Inventario físico periódico
+- Valorización de inventario
+- Reportes de stock
+
+BENEFICIOS: Control preciso del inventario y optimización de materiales
+
+================================================================================
+  4. PRESUPUESTOS Y FACTURACIÓN
+================================================================================
+- Creación de presupuestos por proyecto
+- Comparación presupuesto vs real
+- Generación de facturas
+- Control de pagos y cobranzas
+- Reportes financieros básicos
+
+BENEFICIOS: Control financiero y mejor gestión de costos
+
+================================================================================
+  5. GESTIÓN DE HERRAMIENTAS
+================================================================================
+- Registro de herramientas y equipos
+- Control de asignación de herramientas a operarios
+- Historial de uso de herramientas
+- Mantenimiento y calibración de herramientas
+- Control de disponibilidad
+- Reportes de uso
+
+BENEFICIOS: Control de herramientas y mejor gestión de recursos
+
+================================================================================
+  6. GESTIÓN DE DOCUMENTOS
+================================================================================
+- Almacenamiento de documentos por proyecto
+- Organización de planos y archivos técnicos
+- Compartir documentos con clientes
+- Búsqueda de documentos
+- Control de versiones básico
+
+BENEFICIOS: Organización mejorada y acceso rápido a documentos
+
+================================================================================
+  7. REPORTES AVANZADOS
+================================================================================
+- Reportes personalizables
+- Exportación a Excel/PDF
+- Gráficos y visualizaciones
+- Análisis de tendencias
+- Reportes automáticos por email
+
+BENEFICIOS: Mejor análisis y toma de decisiones
+
+================================================================================
+  CONCLUSIÓN
+================================================================================
+Estos módulos pueden implementarse de forma gradual, priorizando aquellos que
+generen mayor valor. Cada módulo puede funcionar de forma independiente, 
+permitiendo una evolución continua del sistema.
