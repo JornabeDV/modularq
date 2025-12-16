@@ -78,13 +78,15 @@ export function DailySurveyProjectsList() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Relevamiento Diario</h1>
-        <p className="text-xs sm:text-base text-muted-foreground">
-          Revisa y actualiza el estado de las tareas de los proyectos activos
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold">Relevamiento Diario</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Revisa y actualiza el estado de las tareas de los proyectos activos
+          </p>
+        </div>
       </div>
 
       {/* Lista de proyectos */}
@@ -95,20 +97,20 @@ export function DailySurveyProjectsList() {
           return (
             <Card 
               key={project.id} 
-              className="bg-black text-white hover:shadow-lg transition-shadow cursor-pointer border-gray-800"
+              className="hover:shadow-lg transition-shadow cursor-pointer gap-0 py-0"
               onClick={() => router.push(`/admin/daily-survey/${project.id}`)}
             >
               <CardHeader className="p-3 sm:p-4 pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-sm sm:text-base mb-0.5 truncate text-white">{project.name}</CardTitle>
+                    <CardTitle className="text-sm sm:text-base mb-0.5 truncate">{project.name}</CardTitle>
                     {project.description && (
-                      <CardDescription className="text-[10px] sm:text-xs line-clamp-1 text-gray-300">
+                      <CardDescription className="text-[10px] sm:text-xs line-clamp-1">
                         {project.description}
                       </CardDescription>
                     )}
                   </div>
-                  <Badge variant="outline" className="bg-green-600 text-white border-green-500 flex-shrink-0 text-[10px] px-1.5 py-0.5">
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex-shrink-0 text-[10px] px-1.5 py-0.5">
                     Activo
                   </Badge>
                 </div>
@@ -173,7 +175,7 @@ export function DailySurveyProjectsList() {
                                       <tspan
                                         x={viewBox.cx}
                                         y={viewBox.cy}
-                                        className={`fill-white font-bold ${
+                                        className={`fill-foreground font-bold ${
                                           isMobile ? "text-[10px]" : "text-xs"
                                         }`}
                                       >
@@ -192,23 +194,23 @@ export function DailySurveyProjectsList() {
 
                   {/* Estadísticas de tareas */}
                   <div className="flex-1 grid grid-cols-3 gap-1.5 text-center">
-                    <div className="p-1.5 bg-green-900/50 border border-green-700/50 rounded-md">
-                      <div className="text-sm sm:text-base font-bold text-green-400">{stats.completedTasks}</div>
-                      <div className="text-[9px] sm:text-[10px] text-green-300">Completadas</div>
+                    <div className="p-1.5 bg-green-50 rounded-md">
+                      <div className="text-sm sm:text-base font-bold text-green-700">{stats.completedTasks}</div>
+                      <div className="text-[9px] sm:text-[10px] text-green-600">Completadas</div>
                     </div>
-                    <div className="p-1.5 bg-orange-900/50 border border-orange-700/50 rounded-md">
-                      <div className="text-sm sm:text-base font-bold text-orange-400">{stats.inProgressTasks}</div>
-                      <div className="text-[9px] sm:text-[10px] text-orange-300">En Progreso</div>
+                    <div className="p-1.5 bg-orange-50 rounded-md">
+                      <div className="text-sm sm:text-base font-bold text-orange-700">{stats.inProgressTasks}</div>
+                      <div className="text-[9px] sm:text-[10px] text-orange-600">En Progreso</div>
                     </div>
-                    <div className="p-1.5 bg-yellow-900/50 border border-yellow-700/50 rounded-md">
-                      <div className="text-sm sm:text-base font-bold text-yellow-400">{stats.pendingTasks}</div>
-                      <div className="text-[9px] sm:text-[10px] text-yellow-300">Pendientes</div>
+                    <div className="p-1.5 bg-yellow-50 rounded-md">
+                      <div className="text-sm sm:text-base font-bold text-yellow-700">{stats.pendingTasks}</div>
+                      <div className="text-[9px] sm:text-[10px] text-yellow-600">Pendientes</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Información adicional - Compacta en una línea */}
-                <div className="flex items-center gap-3 text-[10px] sm:text-xs text-gray-300">
+                <div className="flex items-center gap-3 text-[10px] sm:text-xs text-muted-foreground">
                   {project.startDate && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3 flex-shrink-0" />
@@ -226,7 +228,7 @@ export function DailySurveyProjectsList() {
                 {/* Botón de acción */}
                 <Button 
                   size="sm"
-                  className="w-full cursor-pointer text-[11px] sm:text-xs h-7 sm:h-8 bg-black border border-gray-700 text-white hover:bg-gray-900 hover:border-gray-600"
+                  className="w-full cursor-pointer text-[11px] sm:text-xs h-7 sm:h-8"
                   onClick={(e) => {
                     e.stopPropagation()
                     router.push(`/admin/daily-survey/${project.id}`)

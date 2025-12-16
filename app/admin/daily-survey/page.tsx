@@ -8,7 +8,7 @@ export default function DailySurveyPage() {
   return (
     <AdminOrSupervisorOnly>
       <MainLayout>
-        <div className="p-2 sm:p-6 space-y-3 sm:space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           <DailySurveyProjectsList />
         </div>
       </MainLayout>

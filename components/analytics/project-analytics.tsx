@@ -404,7 +404,7 @@ export function ProjectAnalytics() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+    <>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
         <div>
@@ -722,6 +722,6 @@ export function ProjectAnalytics() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }
