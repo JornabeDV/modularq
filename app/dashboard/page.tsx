@@ -1,31 +1,44 @@
 "use client"
 
-import { useState, useEffect } from 'react'
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { useOperariosPrisma } from "@/hooks/use-operarios-prisma"
 import { useClientsPrisma } from "@/hooks/use-clients-prisma"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
-import { supabase } from "@/lib/supabase"
 import { FolderKanban, Users, Clock, TrendingUp, AlertTriangle, CheckCircle, UserPlus, Shield, Settings, Calendar, Target, Timer, User, Building2 } from "lucide-react"
 import Link from "next/link"
+import {
+  RadialBarChart,
+  RadialBar,
+  PolarGrid,
+  PolarRadiusAxis,
+  Label,
+} from "recharts"
+import {
+  ChartContainer,
+  type ChartConfig,
+} from "@/components/ui/chart"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function DashboardPage() {
   const { userProfile } = useAuth()
   const { projects, loading: projectsLoading } = useProjectsPrisma()
   const { operarios } = useOperariosPrisma()
   const { clients } = useClientsPrisma()
-  
-  // Estados para cálculo de tiempo real
-  const [calculatedHours, setCalculatedHours] = useState<Record<string, number>>({})
-  const [activeSessions, setActiveSessions] = useState<Record<string, any>>({})
-  const [operarioNames, setOperarioNames] = useState<Record<string, string>>({})
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const isMobile = useIsMobile()
+
+  // Función para obtener el color del progreso
+  const getProgressColor = (percentage: number) => {
+    if (percentage === 100) return "hsl(142, 76%, 36%)" // green-600
+    if (percentage >= 75) return "hsl(262, 83%, 58%)" // purple-500
+    if (percentage >= 50) return "hsl(25, 95%, 53%)" // orange-500
+    if (percentage >= 25) return "hsl(45, 93%, 47%)" // yellow-500
+    return "hsl(217, 91%, 60%)" // blue-500
+  }
   
   // Calcular datos reales del dashboard
   const activeProjects = projects.filter(p => p.status === 'active')
@@ -43,148 +56,6 @@ export default function DashboardPage() {
     sum + project.projectTasks.filter(pt => pt.status === 'cancelled').length, 0
   )
 
-  // useEffect para calcular horas reales desde time_entries (igual que en métricas del proyecto)
-  useEffect(() => {
-    const calculateAllHours = async () => {
-      if (!projects || projects.length === 0) return
-      
-      const hoursMap: Record<string, number> = {}
-      const activeSessionsMap: Record<string, any> = {}
-      const operarioNamesMap: Record<string, string> = {}
-      
-      for (const project of projects) {
-        for (const task of project.projectTasks) {
-          if (task.taskId) {
-            try {
-              // Obtener todas las entradas de tiempo (completadas y activas)
-              const { data: timeEntries, error } = await supabase
-                .from('time_entries')
-                .select('hours, start_time, end_time, user_id')
-                .eq('task_id', task.taskId)
-                .eq('project_id', project.id)
-                .order('start_time', { ascending: false })
-
-              if (error) {
-                console.error('Error fetching time entries:', error)
-                hoursMap[task.id] = 0
-                continue
-              }
-
-              let totalHours = 0
-              let activeSession: { startTime: string; elapsedHours: number; operarioId: string } | null = null
-
-              timeEntries?.forEach((entry: any) => {
-                if (entry.end_time) {
-                  // Sesión completada - usar horas calculadas si existe y es válido, sino calcular desde fechas
-                  if (entry.hours != null && entry.hours !== undefined && !isNaN(entry.hours) && entry.hours > 0) {
-                    totalHours += parseFloat(entry.hours)
-                  } else {
-                    // Si no tiene hours o es 0, calcular desde start_time y end_time
-                    const startTime = new Date(entry.start_time)
-                    const endTime = new Date(entry.end_time)
-                    const elapsedMs = endTime.getTime() - startTime.getTime()
-                    const elapsedHours = elapsedMs / (1000 * 60 * 60)
-                    totalHours += elapsedHours
-                  }
-                } else {
-                  // Sesión activa - calcular tiempo transcurrido
-                  const startTime = new Date(entry.start_time)
-                  const now = new Date()
-                  const elapsedMs = now.getTime() - startTime.getTime()
-                  const elapsedHours = elapsedMs / (1000 * 60 * 60)
-                  totalHours += elapsedHours
-                  
-                  // Guardar información de sesión activa
-                  activeSession = {
-                    startTime: entry.start_time,
-                    elapsedHours,
-                    operarioId: entry.user_id
-                  }
-                }
-              })
-
-              hoursMap[task.id] = totalHours
-              if (activeSession) {
-                activeSessionsMap[task.taskId] = activeSession
-                
-                // Obtener nombre del operario si no lo tenemos
-                const operarioId = (activeSession as { operarioId: string }).operarioId
-                if (!operarioNamesMap[operarioId]) {
-                  try {
-                    const { data: user, error: userError } = await supabase
-                      .from('users')
-                      .select('name')
-                      .eq('id', operarioId)
-                      .single()
-                    
-                    if (!userError && user) {
-                      operarioNamesMap[operarioId] = user.name
-                    } else {
-                      operarioNamesMap[operarioId] = 'Operario desconocido'
-                    }
-                  } catch (err) {
-                    operarioNamesMap[operarioId] = 'Operario desconocido'
-                  }
-                }
-              }
-            } catch (err) {
-              console.error('Error calculating hours for task:', task.id, err)
-              hoursMap[task.id] = 0
-            }
-          } else {
-            hoursMap[task.id] = 0
-          }
-        }
-      }
-      
-      setCalculatedHours(hoursMap)
-      setActiveSessions(activeSessionsMap)
-      setOperarioNames(operarioNamesMap)
-      setLastUpdate(new Date())
-    }
-
-    if (projects && projects.length > 0) {
-      calculateAllHours()
-      
-      // Actualizar cada 10 segundos para sesiones activas y cambios en sesiones completadas
-      const interval = setInterval(calculateAllHours, 10000)
-      return () => clearInterval(interval)
-    }
-  }, [projects])
-
-  // Función para formatear tiempo transcurrido
-  const formatElapsedTime = (elapsedHours: number) => {
-    const hours = Math.floor(elapsedHours)
-    const minutes = Math.round((elapsedHours - hours) * 60)
-    
-    if (hours === 0) {
-      return `${minutes}min`
-    } else if (minutes === 0) {
-      return `${hours}h`
-    } else {
-      return `${hours}h ${minutes}min`
-    }
-  }
-
-  // Función para formatear tiempo trabajado (siempre en minutos, con horas cuando sea necesario)
-  const formatWorkedTime = (hours: number) => {
-    const totalMinutes = Math.round(hours * 60)
-    const hoursPart = Math.floor(totalMinutes / 60)
-    const minutesPart = totalMinutes % 60
-    
-    if (hoursPart === 0) {
-      return `${minutesPart}min`
-    } else if (minutesPart === 0) {
-      return `${hoursPart}h`
-    } else {
-      return `${hoursPart}h ${minutesPart}min`
-    }
-  }
-
-  // Función para obtener nombre del operario
-  const getOperarioName = (operarioId: string) => {
-    return operarioNames[operarioId] || 'Operario desconocido'
-  }
 
   // Función para calcular el progreso real del proyecto basado en progreso de tareas
   const calculateProjectProgress = (project: any) => {
@@ -213,7 +84,7 @@ export default function DashboardPage() {
     const pendingTasks = project.projectTasks.filter((pt: any) => pt.status === 'pending').length
     const totalOperarios = project.projectOperarios.length
     
-    // Calcular horas totales estimadas y trabajadas usando calculatedHours (desde time_entries)
+    // Calcular horas totales estimadas
     // Usar estimatedHours del projectTask (tiempo total del proyecto) en lugar del tiempo base de la tarea
     // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
     const estimatedHours = project.projectTasks.reduce((sum: number, pt: any) => {
@@ -225,12 +96,8 @@ export default function DashboardPage() {
       }
       return sum + taskEstimated
     }, 0)
-    const actualHours = Math.round(project.projectTasks.reduce((sum: number, pt: any) => 
-      sum + (calculatedHours[pt.id] || 0), 0
-    ) * 100) / 100 // Redondear a 2 decimales para evitar problemas de precisión
 
-    // Calcular progreso de tiempo estimado y eficiencia real
-    // Progreso de tiempo estimado: horas estimadas de tareas completadas vs total estimado
+    // Calcular progreso de tiempo estimado: horas estimadas de tareas completadas vs total estimado
     const completedEstimatedHours = project.projectTasks
       .filter((pt: any) => pt.status === 'completed')
       .reduce((sum: number, pt: any) => {
@@ -242,12 +109,6 @@ export default function DashboardPage() {
         }
         return sum + taskEstimated
       }, 0)
-    
-    // Eficiencia real: horas trabajadas de tareas completadas vs horas estimadas totales del proyecto
-    const completedActualHours = Math.round(project.projectTasks
-      .filter((pt: any) => pt.status === 'completed')
-      .reduce((sum: number, pt: any) => sum + (calculatedHours[pt.id] || 0), 0) * 100
-    ) / 100
 
     return {
       totalTasks,
@@ -256,22 +117,8 @@ export default function DashboardPage() {
       pendingTasks,
       totalOperarios,
       estimatedHours: Math.round(estimatedHours * 10) / 10,
-      actualHours: Math.round(actualHours * 10) / 10,
       completedEstimatedHours: Math.round(completedEstimatedHours * 10) / 10,
-      completedActualHours: Math.round(completedActualHours * 10) / 10,
-      hasEfficiencyData: completedEstimatedHours > 0
     }
-  }
-
-  // Función para determinar el color de eficiencia
-  const getEfficiencyColor = (actualHours: number, estimatedHours: number) => {
-    if (actualHours <= estimatedHours) return 'text-green-600' // Terminó antes o a tiempo
-    return 'text-red-600'                                      // Terminó después del estimado
-  }
-
-  const getEfficiencyBgColor = (actualHours: number, estimatedHours: number) => {
-    if (actualHours <= estimatedHours) return 'bg-green-100' // Terminó antes o a tiempo
-    return 'bg-red-100'                                      // Terminó después del estimado
   }
 
   // Función para formatear fechas
@@ -334,9 +181,6 @@ export default function DashboardPage() {
                 : 'Resumen general del sistema de gestión de operarios'
               }
             </p>
-            <div className="text-xs text-muted-foreground mt-1">
-              Actualizado: {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-            </div>
           </div>
           
         </div>
@@ -503,21 +347,6 @@ export default function DashboardPage() {
                   const metrics = getProjectMetrics(project)
                   const progress = calculateProjectProgress(project)
                   
-                  // Contar sesiones activas únicas en este proyecto (operarios únicos)
-                  // Solo mostrar si la tarea está asignada a un operario y en progreso
-                  const projectActiveSessions = project.projectTasks
-                    .filter((pt: any) => 
-                      pt.taskId && 
-                      activeSessions[pt.taskId] && 
-                      pt.assignedUser && 
-                      (pt.status === 'in_progress' || pt.status === 'assigned')
-                    )
-                    .map((pt: any) => activeSessions[pt.taskId].operarioId)
-                    .filter((operarioId: string, index: number, array: string[]) => 
-                      array.indexOf(operarioId) === index
-                    ).length
-                  
-                  
                   return (
                     <Card key={project.id} className="hover:shadow-md transition-shadow relative">
                       <CardHeader className="pb-3">
@@ -551,190 +380,188 @@ export default function DashboardPage() {
                       </CardHeader>
                       
                       <CardContent className="space-y-4">
-                        {/* Progreso de Tareas */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <Target className="h-4 w-4" />
-                              Progreso de Tareas
-                            </span>
-                            <span className="font-semibold">
-                              {metrics.totalTasks > 0 
-                                ? `${Math.round((metrics.completedTasks / metrics.totalTasks) * 100)}%`
-                                : '0%'
-                              }
-                            </span>
-                          </div>
-                          <Progress 
-                            value={metrics.totalTasks > 0 
-                              ? (metrics.completedTasks / metrics.totalTasks) * 100
-                              : 0
-                            } 
-                            className="h-2" 
-                          />
-                        </div>
+                        {/* Progreso de Tareas - Círculo */}
+                        {(() => {
+                          const taskProgress = metrics.totalTasks > 0 
+                            ? Math.round((metrics.completedTasks / metrics.totalTasks) * 100)
+                            : 0
+                          const progressColor = getProgressColor(taskProgress)
+                          const radialData = [{
+                            name: "progreso",
+                            value: taskProgress,
+                            fill: progressColor,
+                          }]
+                          const radialChartConfig = {
+                            progreso: {
+                              label: "Progreso",
+                              color: progressColor,
+                            },
+                          } satisfies ChartConfig
 
-                        {/* Tiempo Estimado Completado */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <Timer className="h-4 w-4" />
-                              Tiempo Estimado Completado
-                            </span>
-                            <span className="font-semibold">
-                              {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
-                            </span>
-                          </div>
-                          <Progress 
-                            value={metrics.estimatedHours > 0 
-                              ? Math.min((metrics.completedEstimatedHours / metrics.estimatedHours) * 100, 100)
-                              : 0
-                            } 
-                            className="h-2" 
-                          />
-                        </div>
-
-                        {/* Progreso Real del Proyecto */}
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              Progreso Real
-                            </span>
-                            {metrics.estimatedHours > 0 ? (
-                              <span className="font-semibold text-white">
-                                {formatWorkedTime(metrics.actualHours)}
-                              </span>
-                            ) : (
-                              <span className="font-semibold text-gray-500">Sin datos</span>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="h-2 bg-primary/20 rounded-full">
-                              {metrics.estimatedHours > 0 ? (
-                                <div 
-                                  className={`h-2 rounded-full transition-all duration-300 ${
-                                    metrics.actualHours <= metrics.estimatedHours ? 'bg-green-500' : 'bg-orange-500'
-                                  }`}
-                                  style={{ 
-                                    width: `${Math.min((metrics.actualHours / metrics.estimatedHours) * 100, 100)}%` 
-                                  }}
-                                />
-                              ) : (
-                                <div className="h-2 bg-primary/20 rounded-full" />
-                              )}
-                            </div>
-                            {metrics.estimatedHours > 0 && (
-                              <div className="text-center mt-3">
-                                <div className="space-y-2">
-                                  {(() => {
-                                    const percentageUsed = Math.round((metrics.actualHours / metrics.estimatedHours) * 100)
-                                    if (percentageUsed > 100) {
-                                      const extraPercentage = percentageUsed - 100
-                                      const remainingHours = metrics.estimatedHours - metrics.actualHours
-                                      return (
-                                        <div className="space-y-2">
-                                          <div className="text-red-600 font-bold text-base">
-                                            Tiempo extra utilizado: {extraPercentage}%
-                                          </div>
-                                          <div className="text-red-600 font-semibold text-sm">
-                                            Retraso: {formatWorkedTime(Math.abs(remainingHours))}
-                                          </div>
-                                        </div>
-                                      )
-                                    } else {
-                                      const remainingHours = metrics.estimatedHours - metrics.actualHours
-                                      return (
-                                        <div className="space-y-2">
-                                          <div className="text-green-600 font-bold text-base">
-                                            {percentageUsed}% del tiempo estimado utilizado
-                                          </div>
-                                          <div className="text-green-600 font-semibold text-sm">
-                                            Tiempo restante: {formatWorkedTime(remainingHours)}
-                                          </div>
-                                        </div>
-                                      )
-                                    }
-                                  })()}
-                                </div>
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1 text-sm">
+                                <Target className="h-4 w-4 flex-shrink-0" />
+                                <span className="truncate">Progreso de Tareas</span>
                               </div>
-                            )}
-                          </div>
-                        </div>
+                              <ChartContainer
+                                config={radialChartConfig}
+                                className="mx-auto aspect-square max-h-[100px] sm:max-h-[120px]"
+                              >
+                                <RadialBarChart
+                                  data={radialData}
+                                  endAngle={90 + taskProgress * 3.6}
+                                  innerRadius={isMobile ? 30 : 35}
+                                  outerRadius={isMobile ? 45 : 50}
+                                  startAngle={90}
+                                  width={isMobile ? 100 : 120}
+                                  height={isMobile ? 100 : 120}
+                                >
+                                  <PolarGrid
+                                    gridType="circle"
+                                    radialLines={false}
+                                    stroke="none"
+                                    className="first:fill-muted last:fill-background"
+                                    polarRadius={isMobile ? [35, 25] : [40, 30]}
+                                  />
+                                  <RadialBar
+                                    dataKey="value"
+                                    background
+                                    cornerRadius={8}
+                                  />
+                                  <PolarRadiusAxis
+                                    tick={false}
+                                    tickLine={false}
+                                    axisLine={false}
+                                  >
+                                    <Label
+                                      content={({ viewBox }) => {
+                                        if (
+                                          viewBox &&
+                                          "cx" in viewBox &&
+                                          "cy" in viewBox
+                                        ) {
+                                          return (
+                                            <text
+                                              x={viewBox.cx}
+                                              y={viewBox.cy}
+                                              textAnchor="middle"
+                                              dominantBaseline="middle"
+                                            >
+                                              <tspan
+                                                x={viewBox.cx}
+                                                y={viewBox.cy}
+                                                className={`fill-foreground font-bold ${
+                                                  isMobile ? "text-lg" : "text-xl"
+                                                }`}
+                                              >
+                                                {taskProgress}%
+                                              </tspan>
+                                            </text>
+                                          )
+                                        }
+                                      }}
+                                    />
+                                  </PolarRadiusAxis>
+                                </RadialBarChart>
+                              </ChartContainer>
+                            </div>
+                          )
+                        })()}
 
-                        {/* Estado Temporal del Proyecto */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <Timer className="h-4 w-4" />
-                              Estado Temporal
-                            </span>
-                            {(() => {
-                              // Si no hay fechas, calcular estado basado en progreso real vs estimado
-                              if (!project.startDate || !project.endDate) {
-                                if (metrics.estimatedHours > 0) {
-                                  const progress = (metrics.actualHours / metrics.estimatedHours) * 100
-                                  if (progress > 100) {
-                                    return (
-                                      <span className="font-semibold text-red-600">
-                                        {Math.round(progress - 100)}% retrasado
-                                      </span>
-                                    )
-                                  } else if (progress < 50) {
-                                    return (
-                                      <span className="font-semibold text-yellow-600">
-                                        En progreso
-                                      </span>
-                                    )
-                                  } else {
-                                    return (
-                                      <span className="font-semibold text-blue-600">
-                                        En progreso
-                                      </span>
-                                    )
-                                  }
-                                } else {
-                                  return (
-                                    <span className="font-semibold text-gray-500">
-                                      Sin datos
-                                    </span>
-                                  )
-                                }
-                              }
-                              
-                              const now = new Date()
-                              const startDate = new Date(project.startDate)
-                              const endDate = new Date(project.endDate)
-                              
-                              const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-                              const elapsedDays = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-                              const expectedProgress = Math.min((elapsedDays / totalDays) * 100, 100)
-                              const actualProgress = metrics.estimatedHours > 0 ? (metrics.actualHours / metrics.estimatedHours) * 100 : 0
-                              const timeDifference = actualProgress - expectedProgress
-                              
-                              if (timeDifference > 5) {
-                                return (
-                                  <span className="font-semibold text-green-600">
-                                    {Math.round(timeDifference)}% adelantado
-                                  </span>
-                                )
-                              } else if (timeDifference < -5) {
-                                return (
-                                  <span className="font-semibold text-red-600">
-                                    {Math.round(Math.abs(timeDifference))}% atrasado
-                                  </span>
-                                )
-                              } else {
-                                return (
-                                  <span className="font-semibold text-blue-600">
-                                    Según cronograma
-                                  </span>
-                                )
-                              }
-                            })()}
-                          </div>
-                        </div>
+                        {/* Tiempo Estimado Completado - Gráfico Circular */}
+                        {(() => {
+                          const timeProgress = metrics.estimatedHours > 0 
+                            ? Math.min(Math.round((metrics.completedEstimatedHours / metrics.estimatedHours) * 100), 100)
+                            : 0
+                          const progressColor = getProgressColor(timeProgress)
+                          const radialData = [{
+                            name: "tiempo",
+                            value: timeProgress,
+                            fill: progressColor,
+                          }]
+                          const radialChartConfig = {
+                            tiempo: {
+                              label: "Tiempo",
+                              color: progressColor,
+                            },
+                          } satisfies ChartConfig
+
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="flex items-center gap-1">
+                                  <Timer className="h-4 w-4 flex-shrink-0" />
+                                  <span className="truncate">Tiempo Estimado Completado</span>
+                                </span>
+                                <span className="font-semibold">
+                                  {metrics.completedEstimatedHours % 1 === 0 ? metrics.completedEstimatedHours : metrics.completedEstimatedHours}hs de {metrics.estimatedHours % 1 === 0 ? metrics.estimatedHours : metrics.estimatedHours}hs
+                                </span>
+                              </div>
+                              <ChartContainer
+                                config={radialChartConfig}
+                                className="mx-auto aspect-square max-h-[100px] sm:max-h-[120px]"
+                              >
+                                <RadialBarChart
+                                  data={radialData}
+                                  endAngle={90 + timeProgress * 3.6}
+                                  innerRadius={isMobile ? 30 : 35}
+                                  outerRadius={isMobile ? 45 : 50}
+                                  startAngle={90}
+                                  width={isMobile ? 100 : 120}
+                                  height={isMobile ? 100 : 120}
+                                >
+                                  <PolarGrid
+                                    gridType="circle"
+                                    radialLines={false}
+                                    stroke="none"
+                                    className="first:fill-muted last:fill-background"
+                                    polarRadius={isMobile ? [35, 25] : [40, 30]}
+                                  />
+                                  <RadialBar
+                                    dataKey="value"
+                                    background
+                                    cornerRadius={8}
+                                  />
+                                  <PolarRadiusAxis
+                                    tick={false}
+                                    tickLine={false}
+                                    axisLine={false}
+                                  >
+                                    <Label
+                                      content={({ viewBox }) => {
+                                        if (
+                                          viewBox &&
+                                          "cx" in viewBox &&
+                                          "cy" in viewBox
+                                        ) {
+                                          return (
+                                            <text
+                                              x={viewBox.cx}
+                                              y={viewBox.cy}
+                                              textAnchor="middle"
+                                              dominantBaseline="middle"
+                                            >
+                                              <tspan
+                                                x={viewBox.cx}
+                                                y={viewBox.cy}
+                                                className={`fill-foreground font-bold ${
+                                                  isMobile ? "text-lg" : "text-xl"
+                                                }`}
+                                              >
+                                                {timeProgress}%
+                                              </tspan>
+                                            </text>
+                                          )
+                                        }
+                                      }}
+                                    />
+                                  </PolarRadiusAxis>
+                                </RadialBarChart>
+                              </ChartContainer>
+                            </div>
+                          )
+                        })()}
 
                         {/* Métricas de tareas */}
                         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -758,48 +585,7 @@ export default function DashboardPage() {
                             <span className="text-muted-foreground">Operarios</span>
                             <span className="font-semibold">{metrics.totalOperarios}</span>
                           </div>
-                          <div className="flex items-center gap-2 col-span-2">
-                            {projectActiveSessions > 0 ? (
-                              <>
-                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span className="text-green-600 font-medium text-xs">
-                                  {projectActiveSessions} operario{projectActiveSessions > 1 ? 's' : ''} trabajando ahora
-                                </span>
-                                <div className="text-xs text-muted-foreground">
-                                  ({project.projectTasks
-                                    .filter((pt: any) => 
-                                      pt.taskId && 
-                                      activeSessions[pt.taskId] && 
-                                      pt.assignedUser && 
-                                      (pt.status === 'in_progress' || pt.status === 'assigned')
-                                    )
-                                    .map((pt: any) => getOperarioName(activeSessions[pt.taskId].operarioId))
-                                    .filter((name: string, index: number, array: string[]) => 
-                                      array.indexOf(name) === index
-                                    ).join(', ')})
-                                </div>
-                              </>
-                            ) : (
-                              <div className="text-xs text-muted-foreground">
-                                Sin actividad
-                              </div>
-                            )}
-                          </div>
                         </div>
-
-                        {/* Resumen de Horas */}
-                        <div className="pt-2 border-t">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-1">
-                              <Timer className="h-4 w-4" />
-                              Horas Trabajadas
-                            </span>
-                            <span className="text-muted-foreground font-medium">
-                              {formatWorkedTime(metrics.actualHours)} de {formatWorkedTime(metrics.estimatedHours)}
-                            </span>
-                          </div>
-                        </div>
-
 
                         {/* Botones de acción */}
                         <div className="pt-2">

@@ -114,7 +114,10 @@ export class PrismaTypedService {
           progress_percentage,
           notes,
           assigned_at,
-          assigned_by,
+          started_by,
+          started_at,
+          completed_by,
+          completed_at,
           created_at,
           updated_at,
           task:task_id (
@@ -129,6 +132,16 @@ export class PrismaTypedService {
             updated_at
           ),
           assigned_user:assigned_to (
+            id,
+            name,
+            role
+          ),
+          started_by_user:started_by (
+            id,
+            name,
+            role
+          ),
+          completed_by_user:completed_by (
             id,
             name,
             role
@@ -467,6 +480,16 @@ export class PrismaTypedService {
           name,
           role
         ),
+        started_by_user:started_by (
+          id,
+          name,
+          role
+        ),
+        completed_by_user:completed_by (
+          id,
+          name,
+          role
+        ),
         collaborators:task_collaborators (
           id,
           project_task_id,
@@ -502,7 +525,7 @@ export class PrismaTypedService {
   static async createProjectTask(projectTaskData: {
     project_id: string
     task_id: string
-    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
     estimated_hours?: number  // Tiempo estimado total para este proyecto
     actual_hours?: number
     assigned_to?: string
@@ -510,7 +533,6 @@ export class PrismaTypedService {
     end_date?: string
     progress_percentage?: number
     notes?: string
-    assigned_by?: string
   }): Promise<any> {
     const insertData: any = {
       project_id: projectTaskData.project_id,
@@ -521,8 +543,7 @@ export class PrismaTypedService {
       start_date: projectTaskData.start_date,
       end_date: projectTaskData.end_date,
       progress_percentage: projectTaskData.progress_percentage || 0,
-      notes: projectTaskData.notes,
-      assigned_by: projectTaskData.assigned_by
+      notes: projectTaskData.notes
     }
     
     // Solo incluir estimated_hours si se proporciona
@@ -541,7 +562,7 @@ export class PrismaTypedService {
   }
 
   static async updateProjectTask(id: string, projectTaskData: {
-    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
     estimated_hours?: number
     actual_hours?: number
     assigned_to?: string
@@ -550,6 +571,10 @@ export class PrismaTypedService {
     progress_percentage?: number
     notes?: string
     task_order?: number
+    started_by?: string
+    started_at?: string
+    completed_by?: string
+    completed_at?: string
   }): Promise<any> {
     const updateData: any = {}
     
@@ -557,11 +582,19 @@ export class PrismaTypedService {
     if (projectTaskData.estimated_hours !== undefined) updateData.estimated_hours = projectTaskData.estimated_hours
     if (projectTaskData.actual_hours !== undefined) updateData.actual_hours = projectTaskData.actual_hours
     if (projectTaskData.assigned_to !== undefined) updateData.assigned_to = projectTaskData.assigned_to
-    if (projectTaskData.start_date !== undefined) updateData.start_date = projectTaskData.start_date
-    if (projectTaskData.end_date !== undefined) updateData.end_date = projectTaskData.end_date
+    if (projectTaskData.start_date !== undefined) {
+      updateData.start_date = projectTaskData.start_date === null ? null : projectTaskData.start_date
+    }
+    if (projectTaskData.end_date !== undefined) {
+      updateData.end_date = projectTaskData.end_date === null ? null : projectTaskData.end_date
+    }
     if (projectTaskData.progress_percentage !== undefined) updateData.progress_percentage = projectTaskData.progress_percentage
     if (projectTaskData.notes !== undefined) updateData.notes = projectTaskData.notes
     if (projectTaskData.task_order !== undefined) updateData.task_order = projectTaskData.task_order
+    if (projectTaskData.started_by !== undefined) updateData.started_by = projectTaskData.started_by
+    if (projectTaskData.started_at !== undefined) updateData.started_at = projectTaskData.started_at
+    if (projectTaskData.completed_by !== undefined) updateData.completed_by = projectTaskData.completed_by
+    if (projectTaskData.completed_at !== undefined) updateData.completed_at = projectTaskData.completed_at
 
     const { data, error } = await supabase
       .from('project_tasks')

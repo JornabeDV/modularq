@@ -8,7 +8,7 @@ import type { ProjectTask } from '@/lib/types'
 export interface CreateProjectTaskData {
   projectId: string
   taskId: string
-  status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   estimatedHours?: number  // Tiempo estimado total para este proyecto (opcional, se calcula automáticamente si no se proporciona)
   actualHours?: number
   assignedTo?: string
@@ -16,7 +16,6 @@ export interface CreateProjectTaskData {
   endDate?: string
   progressPercentage?: number
   notes?: string
-  assignedBy?: string
 }
 
 export interface UpdateProjectTaskData extends Partial<CreateProjectTaskData> {
@@ -50,10 +49,13 @@ export function useProjectTasksPrisma(projectId?: string) {
         progressPercentage: pt.progress_percentage || 0,
         notes: pt.notes,
         assignedAt: pt.assigned_at,
-        assignedBy: pt.assigned_by,
         createdAt: pt.created_at,
         updatedAt: pt.updated_at,
         taskOrder: pt.task_order || 0,
+        startedBy: pt.started_by,
+        startedAt: pt.started_at,
+        completedBy: pt.completed_by,
+        completedAt: pt.completed_at,
         task: pt.task ? {
           id: pt.task.id,
           title: pt.task.title,
@@ -70,6 +72,16 @@ export function useProjectTasksPrisma(projectId?: string) {
           id: pt.assigned_user.id,
           name: pt.assigned_user.name,
           role: pt.assigned_user.role
+        } : undefined,
+        startedByUser: pt.started_by_user ? {
+          id: pt.started_by_user.id,
+          name: pt.started_by_user.name,
+          role: pt.started_by_user.role
+        } : undefined,
+        completedByUser: pt.completed_by_user ? {
+          id: pt.completed_by_user.id,
+          name: pt.completed_by_user.name,
+          role: pt.completed_by_user.role
         } : undefined,
         collaborators: (pt.collaborators || []).map((collaborator: any) => ({
           id: collaborator.id,
@@ -133,8 +145,7 @@ export function useProjectTasksPrisma(projectId?: string) {
         start_date: projectTaskData.startDate,
         end_date: projectTaskData.endDate,
         progress_percentage: projectTaskData.progressPercentage || 0,
-        notes: projectTaskData.notes,
-        assigned_by: projectTaskData.assignedBy
+        notes: projectTaskData.notes
       })
 
       // Actualizar estado local
@@ -150,9 +161,52 @@ export function useProjectTasksPrisma(projectId?: string) {
   }
 
   // Actualizar project_task
-  const updateProjectTask = async (projectTaskId: string, projectTaskData: UpdateProjectTaskData, skipRefetch: boolean = false): Promise<{ success: boolean; error?: string }> => {
+  const updateProjectTask = async (projectTaskId: string, projectTaskData: UpdateProjectTaskData, skipRefetch: boolean = false, userId?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
+      
+      // Validación: si el nuevo estado es 'in_progress' o 'completed', verificar que haya un operario asignado
+      if (projectTaskData.status === 'in_progress' || projectTaskData.status === 'completed') {
+        // Obtener la tarea actual para verificar si tiene operario asignado
+        const currentTask = projectTasks.find(pt => pt.id === projectTaskId)
+        const assignedTo = projectTaskData.assignedTo || currentTask?.assignedTo
+        
+        if (!assignedTo) {
+          return { 
+            success: false, 
+            error: 'Debe asignar un operario antes de cambiar el estado a "En Progreso" o "Completada"' 
+          }
+        }
+      }
+      
+      // Obtener la tarea actual para verificar el estado anterior
+      const currentTask = projectTasks.find(pt => pt.id === projectTaskId)
+      const previousStatus = currentTask?.status
+      const newStatus = projectTaskData.status
+      
+      // Preparar datos de actualización con tracking
+      const updateData: any = {
+        status: projectTaskData.status,
+        actual_hours: projectTaskData.actualHours,
+        assigned_to: projectTaskData.assignedTo,
+        start_date: projectTaskData.startDate,
+        end_date: projectTaskData.endDate,
+        progress_percentage: projectTaskData.progressPercentage,
+        notes: projectTaskData.notes,
+        task_order: projectTaskData.taskOrder
+      }
+      
+      // Si el estado cambia a 'in_progress' y no estaba ya en 'in_progress', guardar started_by y started_at
+      if (newStatus === 'in_progress' && previousStatus !== 'in_progress' && userId) {
+        updateData.started_by = userId
+        updateData.started_at = new Date().toISOString()
+      }
+      
+      // Si el estado cambia a 'completed' y no estaba ya en 'completed', guardar completed_by y completed_at
+      if (newStatus === 'completed' && previousStatus !== 'completed' && userId) {
+        updateData.completed_by = userId
+        updateData.completed_at = new Date().toISOString()
+      }
       
       // Si se está completando la tarea, cerrar todas las sesiones activas primero
       if (projectTaskData.status === 'completed') {
@@ -197,16 +251,7 @@ export function useProjectTasksPrisma(projectId?: string) {
         }
       }
       
-      await PrismaTypedService.updateProjectTask(projectTaskId, {
-        status: projectTaskData.status,
-        actual_hours: projectTaskData.actualHours,
-        assigned_to: projectTaskData.assignedTo,
-        start_date: projectTaskData.startDate,
-        end_date: projectTaskData.endDate,
-        progress_percentage: projectTaskData.progressPercentage,
-        notes: projectTaskData.notes,
-        task_order: projectTaskData.taskOrder
-      })
+      await PrismaTypedService.updateProjectTask(projectTaskId, updateData)
 
       // Verificar si todas las tareas están completadas y actualizar el proyecto
       if (projectTaskData.status === 'completed' && projectId) {
@@ -274,11 +319,10 @@ export function useProjectTasksPrisma(projectId?: string) {
   }
 
   // Asignar tarea estándar a proyecto
-  const assignStandardTaskToProject = async (projectId: string, taskId: string, assignedBy?: string): Promise<{ success: boolean; error?: string }> => {
+  const assignStandardTaskToProject = async (projectId: string, taskId: string): Promise<{ success: boolean; error?: string }> => {
     return createProjectTask({
       projectId,
-      taskId,
-      assignedBy
+      taskId
     })
   }
 

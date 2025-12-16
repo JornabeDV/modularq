@@ -86,11 +86,7 @@ export function DraggableTaskRow({
             {task.type === 'standard' ? 'Estándar' : 'Personalizada'}
           </Badge>
         </TableCell>
-        <TableCell className="text-center">
-          <div className="text-sm">
-            <div className="font-medium">{task.estimatedHours}hs</div>
-          </div>
-        </TableCell>
+        {/* Celda de horas oculta - Simplificado a solo estados */}
         {!isReadOnly && (
           <TableCell className="text-center">
             <div className="flex items-center justify-center space-x-2">

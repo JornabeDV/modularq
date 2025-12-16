@@ -60,7 +60,7 @@ export interface ProjectTask {
   id: string
   projectId: string
   taskId: string
-  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   estimatedHours: number  // Tiempo estimado total para este proyecto (task.estimatedHours * project.moduleCount)
   actualHours: number
   assignedTo?: string
@@ -69,13 +69,19 @@ export interface ProjectTask {
   progressPercentage: number
   notes?: string
   assignedAt: string
-  assignedBy?: string
   createdAt: string
   updatedAt: string
   taskOrder: number
+  // Campos de tracking de estado
+  startedBy?: string
+  startedAt?: string
+  completedBy?: string
+  completedAt?: string
   // Relaciones
   task?: Task
   assignedUser?: { id: string; name: string; role: string }
+  startedByUser?: { id: string; name: string; role: string }
+  completedByUser?: { id: string; name: string; role: string }
   collaborators?: TaskCollaborator[]
 }
 
@@ -96,7 +102,7 @@ export interface TaskCollaborator {
 // Para compatibilidad con componentes existentes
 export interface TaskWithProject extends Task {
   projectId: string
-  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
   assignedTo?: string
   assignedUsers?: Array<{ id: string; name: string; role: string }>
   actualHours: number

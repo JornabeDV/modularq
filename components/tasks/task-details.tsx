@@ -86,16 +86,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <Label className="text-base font-semibold text-muted-foreground">Tiempo Estimado</Label>
-            <p className="text-2xl font-bold">{task.task?.estimatedHours || 0} horas</p>
-          </div>
-          <div>
-            <Label className="text-base font-semibold text-muted-foreground">Tiempo Trabajado</Label>
-            <p className="text-2xl font-bold">{formatHours(task.totalHoursWithActive || task.actualHours)}</p>
-          </div>
-        </div>
+        {/* Tiempo estimado y trabajado ocultos - Simplificado a solo estados */}
         
         <div className="grid grid-cols-2 gap-6">
           <div>
@@ -109,7 +100,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         </div>
 
         <div>
-          <Label className="text-base font-semibold text-muted-foreground">Progreso de la Tarea</Label>
+          <Label className="text-base font-semibold text-muted-foreground">Estado de la Tarea</Label>
           <div className="mt-3">
             <Progress 
               value={task.progressPercentage} 
@@ -119,11 +110,6 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
               <p className="text-lg font-semibold text-muted-foreground">
                 {task.progressPercentage}% completado
               </p>
-              {task.task?.estimatedHours && (
-                <p className="text-base text-muted-foreground">
-                  {formatHours(task.totalHoursWithActive || task.actualHours)} / {task.task.estimatedHours}hs
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -168,7 +154,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         )}
 
         {/* Botón de Completar Tarea */}
-        {(task.status === 'in_progress' || task.status === 'assigned') && onComplete && (
+        {task.status === 'in_progress' && onComplete && (
           <div className="pt-6 border-t">
             <button 
               onClick={onComplete}

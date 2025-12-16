@@ -95,7 +95,7 @@ export interface Database {
           project_id: string
           title: string
           description: string | null
-          status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+          status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'critical'
           assigned_to: string | null
           estimated_hours: number
@@ -111,7 +111,7 @@ export interface Database {
           project_id: string
           title: string
           description?: string | null
-          status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+          status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'critical'
           assigned_to?: string | null
           estimated_hours: number

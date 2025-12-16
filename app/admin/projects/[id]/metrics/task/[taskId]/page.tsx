@@ -49,6 +49,20 @@ export default function TaskMetricsPage() {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
   const [operarioName, setOperarioName] = useState<string>('')
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  // Estado local para mantener los datos de tracking actualizados
+  const [taskState, setTaskState] = useState<any>(null)
+
+  // Actualizar estado local cuando cambie projectTask
+  useEffect(() => {
+    if (projectTask) {
+      setTaskState({
+        startedByUser: projectTask.startedByUser,
+        startedAt: projectTask.startedAt,
+        completedByUser: projectTask.completedByUser,
+        completedAt: projectTask.completedAt
+      })
+    }
+  }, [projectTask])
 
   // Función para formatear fechas
   const formatDate = (dateString?: string) => {
@@ -346,8 +360,6 @@ export default function TaskMetricsPage() {
                     ? 'bg-green-50 text-green-700 border-green-200' 
                     : projectTask.status === 'in_progress' 
                     ? 'bg-orange-50 text-orange-700 border-orange-200' 
-                    : projectTask.status === 'assigned'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
                     : projectTask.status === 'pending'
                     ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
                     : 'bg-gray-50 text-gray-700 border-gray-200'
@@ -355,7 +367,6 @@ export default function TaskMetricsPage() {
               >
                 {projectTask.status === 'completed' ? 'Completada' : 
                  projectTask.status === 'in_progress' ? 'En Progreso' : 
-                 projectTask.status === 'assigned' ? 'Asignada' :
                  projectTask.status === 'pending' ? 'Pendiente' : 
                  projectTask.status}
               </Badge>
@@ -459,6 +470,16 @@ export default function TaskMetricsPage() {
                     <span className="truncate">Fecha de Inicio</span>
                   </div>
                   <p className="font-medium text-sm sm:text-base">{formatDate(projectTask.startDate)}</p>
+                  {(taskState?.startedByUser || projectTask.startedByUser) && (taskState?.startedAt || projectTask.startedAt) && (
+                    <p className="text-xs text-muted-foreground">
+                      Iniciada por: {(taskState?.startedByUser || projectTask.startedByUser)?.name} - {formatDateTime(taskState?.startedAt || projectTask.startedAt)}
+                    </p>
+                  )}
+                  {projectTask.status === 'in_progress' && !(taskState?.startedByUser || projectTask.startedByUser) && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Información de inicio no disponible
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2 p-3 border rounded-lg">
@@ -467,6 +488,11 @@ export default function TaskMetricsPage() {
                     <span className="truncate">Fecha de Fin</span>
                   </div>
                   <p className="font-medium text-sm sm:text-base">{formatDate(projectTask.endDate)}</p>
+                  {(taskState?.completedByUser || projectTask.completedByUser) && (taskState?.completedAt || projectTask.completedAt) && (
+                    <p className="text-xs text-muted-foreground">
+                      Completada por: {(taskState?.completedByUser || projectTask.completedByUser)?.name} - {formatDateTime(taskState?.completedAt || projectTask.completedAt)}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2 p-3 border rounded-lg sm:col-span-2 lg:col-span-1">

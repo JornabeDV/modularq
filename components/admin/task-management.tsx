@@ -41,7 +41,7 @@ export function TaskManagement() {
     const createData: CreateTaskData = {
       title: taskData.title,
       description: taskData.description || "",
-      estimatedHours: taskData.estimatedHours || taskData.estimated_hours || 0,
+      estimatedHours: 0, // Oculto - Simplificado a solo estados
       category: taskData.category || "",
       type: taskData.type || "custom",
       createdBy: user.id,

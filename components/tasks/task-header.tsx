@@ -50,8 +50,6 @@ export function TaskHeader({ task, onBack }: TaskHeaderProps) {
     switch (status) {
       case 'pending':
         return 'Pendiente'
-      case 'assigned':
-        return 'Asignada'
       case 'in_progress':
         return 'En Progreso'
       case 'completed':

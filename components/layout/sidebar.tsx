@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Building2,
   BarChart3,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +24,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Relevamiento Diario", href: "/admin/daily-survey", icon: ClipboardList },
   { name: "Gestión del Personal", href: "/admin/users", icon: Shield },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },

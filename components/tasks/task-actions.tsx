@@ -30,53 +30,6 @@ export function TaskActions({
   onTotalHoursUpdate,
   refreshTimeEntries
 }: TaskActionsProps) {
-  return (
-    <>
-      {/* Time Tracker */}
-      {(task.status === 'in_progress' || task.status === 'assigned') && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              Cronómetro de Trabajo
-            </CardTitle>
-            <CardDescription className="text-base">
-              Presiona INICIAR para comenzar a trabajar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TimeTracker 
-              operarioId={operarioId || ''} 
-              taskId={task.projectTaskId}
-              projectId={projectId}
-              onTimeEntryCreate={onTimeEntryCreate}
-              onProgressUpdate={onProgressUpdate}
-              onTaskComplete={onTaskComplete}
-              onTotalHoursUpdate={onTotalHoursUpdate}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Historial de Tiempo */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            Sesiones de Trabajo
-          </CardTitle>
-          <CardDescription className="text-base">
-            Historial de todas las sesiones de trabajo en esta tarea
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TimeEntriesList 
-            operarioId={operarioId} 
-            taskId={task.taskId}
-            projectId={projectId}
-            limit={10}
-            refreshTrigger={refreshTimeEntries}
-          />
-        </CardContent>
-      </Card>
-    </>
-  )
+  // Cronómetro y sesiones de trabajo ocultos - Simplificado a solo estados
+  return null
 }

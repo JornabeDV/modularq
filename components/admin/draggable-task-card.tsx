@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GripVertical, CheckCircle } from "lucide-react";
+import { GripVertical, CheckCircle, User } from "lucide-react";
 import type { ProjectTask } from "@/lib/types";
 
 interface DraggableTaskCardProps {
@@ -106,66 +106,74 @@ export function DraggableTaskCard({
                   {projectTask.task?.category}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground">
-                <span>
-                  {projectTask.estimatedHours ||
-                    projectTask.task?.estimatedHours ||
-                    0}
-                  h estimadas
-                </span>
-                {projectTask.actualHours > 0 && (
-                  <span>{projectTask.actualHours}h reales</span>
+              <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
+                {projectTask.assignedUser ? (
+                  <Badge variant="outline" className="text-xs">
+                    <User className="h-3 w-3 mr-1" />
+                    {projectTask.assignedUser.name}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                    <User className="h-3 w-3 mr-1" />
+                    Sin asignar
+                  </Badge>
                 )}
+                {/* Horas ocultas - Simplificado a solo estados */}
               </div>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
-            {!isReadOnly ? (
-              <div className="flex items-center gap-2">
-                {onComplete &&
-                  projectTask.status !== "completed" &&
-                  projectStatus === "active" && (
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onComplete(projectTask);
-                      }}
-                      className="cursor-pointer bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Completar</span>
-                      <span className="sm:hidden">✓</span>
-                    </Button>
-                  )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(projectTask);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <span className="hidden sm:inline">Editar</span>
-                  <span className="sm:hidden">Editar</span>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUnassign(projectTask.id);
-                  }}
-                  className="cursor-pointer"
-                >
-                  Quitar
-                </Button>
-              </div>
-            ) : null}
+            <div className="flex items-center gap-2">
+              {/* Botón Editar - Disponible para todos (incluye supervisores) */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(projectTask);
+                }}
+                className="cursor-pointer"
+              >
+                <span className="hidden sm:inline">Editar</span>
+                <span className="sm:hidden">Editar</span>
+              </Button>
+              
+              {/* Acciones solo para admins */}
+              {!isReadOnly && (
+                <>
+                  {onComplete &&
+                    projectTask.status !== "completed" &&
+                    projectStatus === "active" && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onComplete(projectTask);
+                        }}
+                        className="cursor-pointer bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Completar</span>
+                        <span className="sm:hidden">✓</span>
+                      </Button>
+                    )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUnassign(projectTask.id);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    Quitar
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

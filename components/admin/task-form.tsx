@@ -64,7 +64,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
     onSubmit({
       title: formData.title,
       description: formData.description,
-      estimatedHours: formData.estimatedHours,
+      estimatedHours: 0, // Oculto - Simplificado a solo estados
       category: formData.category,
       type: formData.type,
       taskOrder: 0,
@@ -138,23 +138,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
                 </Select>
               </div>
             )}
-            <div>
-              <Label htmlFor="estimatedHours" className="mb-2">Horas Estimadas</Label>
-              <Input
-                id="estimatedHours"
-                type="number"
-                value={formData.estimatedHours === 0 ? '' : formData.estimatedHours}
-                onChange={(e) => {
-                  const value = e.target.value
-                  const numValue = value === '' ? 0 : parseFloat(value)
-                  handleInputChange('estimatedHours', isNaN(numValue) ? 0 : numValue)
-                }}
-                required
-                min="0"
-                step="0.1"
-                placeholder="Ej: 8.5"
-              />
-            </div>
+            {/* Campo de horas estimadas oculto - Simplificado a solo estados */}
           </div>
 
           <div>

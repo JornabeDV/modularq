@@ -185,6 +185,15 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         isReadOnly={isReadOnly}
       />
 
+      {/* Diálogo de edición de tarea - Disponible para supervisores también */}
+      <EditTaskDialog
+        isOpen={!!editingTask}
+        task={editingTask}
+        project={project}
+        onClose={() => setEditingTask(null)}
+        onSave={handleTaskSave}
+      />
+
       {!isReadOnly && (
         <>
           <ProjectForm
@@ -201,14 +210,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             onSubmit={handleCreateTask}
             isEditing={false}
             projectId={project.id}
-          />
-
-          <EditTaskDialog
-            isOpen={!!editingTask}
-            task={editingTask}
-            project={project}
-            onClose={() => setEditingTask(null)}
-            onSave={handleTaskSave}
           />
 
           <ActivateProjectDialog

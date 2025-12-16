@@ -142,14 +142,13 @@ export function TaskTable({
                 <TableHead className="min-w-[200px]">Tarea</TableHead>
                 <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
                 <TableHead className="text-center min-w-[100px]">Tipo</TableHead>
-                <TableHead className="text-center min-w-[100px]">Horas</TableHead>
                 {!isReadOnly && <TableHead className="text-center min-w-[120px]">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={isReadOnly ? 5 : 6} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={isReadOnly ? 4 : 5} className="text-center py-8 text-muted-foreground">
                     No se encontraron tareas
                   </td>
                 </tr>
