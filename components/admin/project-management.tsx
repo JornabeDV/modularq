@@ -36,6 +36,7 @@ export function ProjectManagement() {
       name: projectData.name,
       description: projectData.description,
       status: projectData.status,
+      condition: projectData.condition || 'venta',
       start_date: projectData.startDate ? new Date(projectData.startDate) : new Date(),
       end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
       client_id: projectData.clientId || undefined,
@@ -61,6 +62,7 @@ export function ProjectManagement() {
     if (projectData.name !== undefined) updateData.name = projectData.name
     if (projectData.description !== undefined) updateData.description = projectData.description
     if (projectData.status !== undefined) updateData.status = projectData.status
+    if (projectData.condition !== undefined) updateData.condition = projectData.condition
     if (projectData.startDate !== undefined) updateData.start_date = new Date(projectData.startDate)
     if (projectData.endDate !== undefined) updateData.end_date = projectData.endDate ? new Date(projectData.endDate) : undefined
     if (projectData.clientId !== undefined) updateData.client_id = projectData.clientId || undefined

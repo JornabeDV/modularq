@@ -3,6 +3,7 @@ export interface Project {
   name: string
   description: string
   status: "planning" | "active" | "paused" | "completed" | "delivered"
+  condition: "alquiler" | "venta"
   startDate?: string
   endDate?: string
   supervisor?: string
