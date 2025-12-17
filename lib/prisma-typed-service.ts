@@ -169,6 +169,7 @@ export class PrismaTypedService {
     name: string
     description?: string
     status: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+    condition?: 'alquiler' | 'venta'
     start_date: Date
     end_date?: Date
     client_id?: string
@@ -179,13 +180,14 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
-  }): Promise<Project> {
+  }): Promise<any> {
     const { data, error } = await supabase
       .from('projects')
       .insert({
         name: projectData.name,
         description: projectData.description,
         status: projectData.status,
+        condition: projectData.condition || 'venta',
         start_date: projectData.start_date.toISOString(),
         end_date: projectData.end_date?.toISOString(),
         client_id: projectData.client_id,
@@ -202,13 +204,14 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
-    return data as Project
+    return data as any
   }
 
   static async updateProject(id: string, projectData: {
     name?: string
     description?: string
     status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+    condition?: 'alquiler' | 'venta'
     start_date?: Date
     end_date?: Date
     client_id?: string
@@ -220,12 +223,13 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
-  }): Promise<Project> {
+  }): Promise<any> {
     const updateData: any = {}
     
     if (projectData.name !== undefined) updateData.name = projectData.name
     if (projectData.description !== undefined) updateData.description = projectData.description
     if (projectData.status !== undefined) updateData.status = projectData.status
+    if (projectData.condition !== undefined) updateData.condition = projectData.condition
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date.toISOString()
     if (projectData.end_date !== undefined) updateData.end_date = projectData.end_date.toISOString()
     if (projectData.client_id !== undefined) updateData.client_id = projectData.client_id
@@ -246,7 +250,7 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
-    return data as Project
+    return data as any
   }
 
   static async deleteProject(id: string): Promise<void> {

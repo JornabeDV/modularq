@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { Plus } from 'lucide-react'
@@ -25,6 +25,8 @@ export function ClientManagement() {
   
   const [isUpdating, setIsUpdating] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const handleCreateClient = async (clientData: CreateClientData) => {
     const result = await createClient(clientData)
@@ -76,9 +78,35 @@ export function ClientManagement() {
     return matchesSearch
   }) || []
 
+  // Calcular paginación
+  const totalItems = filteredClients.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedClients = filteredClients.slice(startIndex, endIndex)
+
+  // Resetear a la primera página si la página actual está fuera de rango o cambian los filtros
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [totalPages, currentPage, searchTerm])
+
   // Calcular estadísticas
   const totalClients = clients?.length || 0
   const totalProjects = projects?.filter(p => p.clientId).length || 0
+
+  // Handlers de paginación
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    // Scroll al inicio de la tabla
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Resetear a la primera página
+  }
 
   if (loading) {
     return (
@@ -133,7 +161,12 @@ export function ClientManagement() {
 
       {/* Clients Table */}
       <ClientTable
-        clients={filteredClients}
+        clients={paginatedClients}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onEditClient={handleEditClient}

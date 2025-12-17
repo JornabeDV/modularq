@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
@@ -32,6 +32,8 @@ export function TaskManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const handleCreateTask = async (taskData: any) => {
     if (!user?.id) return;
@@ -110,10 +112,36 @@ export function TaskManagement() {
       return matchesSearch && matchesCategory && matchesType;
     }) || [];
 
+  // Calcular paginación
+  const totalItems = filteredTasks.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+
+  // Resetear a la primera página si la página actual está fuera de rango o cambian los filtros
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage, searchTerm, categoryFilter, typeFilter]);
+
   // Calcular estadísticas
   const totalTasks = tasks?.length || 0;
   const standardTasks = tasks?.filter((t) => t.type === "standard").length || 0;
   const customTasks = tasks?.filter((t) => t.type === "custom").length || 0;
+
+  // Handlers de paginación
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll al inicio de la tabla
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Resetear a la primera página
+  };
 
   if (loading) {
     return (
@@ -172,7 +200,12 @@ export function TaskManagement() {
 
       {/* Tasks Table */}
       <TaskTable
-        tasks={filteredTasks as any}
+        tasks={paginatedTasks as any}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         categoryFilter={categoryFilter}

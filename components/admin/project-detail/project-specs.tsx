@@ -21,14 +21,14 @@ export function ProjectSpecs({ project }: ProjectSpecsProps) {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <Label className="text-xs font-medium text-muted-foreground">
+            <Label className="text-sm font-medium text-muted-foreground">
               Modulación
             </Label>
             <p className="text-sm font-medium">{project.modulation}</p>
           </div>
 
           <div>
-            <Label className="text-xs font-medium text-muted-foreground">
+            <Label className="text-sm font-medium text-muted-foreground">
               Medidas
             </Label>
             <p className="text-sm font-medium">
@@ -42,7 +42,7 @@ export function ProjectSpecs({ project }: ProjectSpecsProps) {
           </div>
 
           <div>
-            <Label className="text-xs font-medium text-muted-foreground">
+            <Label className="text-sm font-medium text-muted-foreground">
               Módulos
             </Label>
             <p className="text-sm font-medium">{project.moduleCount} módulos</p>

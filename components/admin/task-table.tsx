@@ -3,12 +3,18 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataPagination } from '@/components/ui/data-pagination'
 import { DraggableTaskRow } from './draggable-task-row'
 import { TaskFilters } from './task-filters'
 import type { Task } from '@/lib/types'
 
 interface TaskTableProps {
   tasks: Task[]
+  totalItems: number
+  itemsPerPage: number
+  currentPage: number
+  onPageChange: (page: number) => void
+  onItemsPerPageChange: (itemsPerPage: number) => void
   searchTerm: string
   onSearchChange: (value: string) => void
   categoryFilter: string
@@ -23,6 +29,11 @@ interface TaskTableProps {
 
 export function TaskTable({
   tasks,
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  onPageChange,
+  onItemsPerPageChange,
   searchTerm,
   onSearchChange,
   categoryFilter,
@@ -143,26 +154,45 @@ export function TaskTable({
                   </td>
                 </tr>
               ) : (
-                localTasks.map((task, index) => (
-                  <DraggableTaskRow
-                    key={task.id}
-                    task={task}
-                    index={index + 1}
-                    onEdit={onEditTask}
-                    onDelete={onDeleteTask}
-                    isDragging={draggedTaskId === task.id}
-                    isReordering={isReordering}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    isReadOnly={isReadOnly}
-                  />
-                ))
+                localTasks.map((task, index) => {
+                  // Calcular el número de fila considerando la paginación
+                  const rowNumber = (currentPage - 1) * itemsPerPage + index + 1
+                  return (
+                    <DraggableTaskRow
+                      key={task.id}
+                      task={task}
+                      index={rowNumber}
+                      onEdit={onEditTask}
+                      onDelete={onDeleteTask}
+                      isDragging={draggedTaskId === task.id}
+                      isReordering={isReordering}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      isReadOnly={isReadOnly}
+                    />
+                  )
+                })
               )}
             </TableBody>
           </Table>
         </div>
+        
+        {/* Paginación */}
+        {totalItems > 0 && (
+          <div className="pt-4 border-t">
+            <DataPagination
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              currentPage={currentPage}
+              onPageChange={onPageChange}
+              onItemsPerPageChange={onItemsPerPageChange}
+              itemsPerPageOptions={[5, 10, 20, 50]}
+              itemsText="tareas"
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   )

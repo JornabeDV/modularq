@@ -172,6 +172,11 @@ export function DraggableProjectRow({
         )}
       </TableCell>
       <TableCell className="text-center">
+        <Badge variant={project.condition === 'alquiler' ? 'default' : 'outline'}>
+          {project.condition === 'alquiler' ? 'Alquiler' : 'Venta'}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-center">
         <div className="text-sm">
           <div className="font-medium">{formatDate(project.startDate)}</div>
         </div>

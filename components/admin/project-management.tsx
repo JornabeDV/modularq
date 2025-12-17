@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
@@ -26,6 +26,8 @@ export function ProjectManagement() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const handleCreateProject = async (projectData: any) => {
     if (!user?.id) return
@@ -34,6 +36,7 @@ export function ProjectManagement() {
       name: projectData.name,
       description: projectData.description,
       status: projectData.status,
+      condition: projectData.condition || 'venta',
       start_date: projectData.startDate ? new Date(projectData.startDate) : new Date(),
       end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
       client_id: projectData.clientId || undefined,
@@ -59,6 +62,7 @@ export function ProjectManagement() {
     if (projectData.name !== undefined) updateData.name = projectData.name
     if (projectData.description !== undefined) updateData.description = projectData.description
     if (projectData.status !== undefined) updateData.status = projectData.status
+    if (projectData.condition !== undefined) updateData.condition = projectData.condition
     if (projectData.startDate !== undefined) updateData.start_date = new Date(projectData.startDate)
     if (projectData.endDate !== undefined) updateData.end_date = projectData.endDate ? new Date(projectData.endDate) : undefined
     if (projectData.clientId !== undefined) updateData.client_id = projectData.clientId || undefined
@@ -105,11 +109,37 @@ export function ProjectManagement() {
     return matchesSearch && matchesStatus
   }) || []
 
+  // Calcular paginación
+  const totalItems = filteredProjects.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedProjects = filteredProjects.slice(startIndex, endIndex)
+
+  // Resetear a la primera página si la página actual está fuera de rango o cambian los filtros
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [totalPages, currentPage, searchTerm, statusFilter])
+
   // Calcular estadísticas
   const totalProjects = projects?.length || 0
   const activeProjects = projects?.filter(p => p.status === 'active').length || 0
   const completedProjects = projects?.filter(p => p.status === 'completed').length || 0
   const planningProjects = projects?.filter(p => p.status === 'planning').length || 0
+
+  // Handlers de paginación
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    // Scroll al inicio de la tabla
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1) // Resetear a la primera página
+  }
 
   if (loading) {
     return (
@@ -164,7 +194,12 @@ export function ProjectManagement() {
 
       {/* Projects Table */}
       <ProjectTable
-        projects={filteredProjects}
+        projects={paginatedProjects}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         statusFilter={statusFilter}
