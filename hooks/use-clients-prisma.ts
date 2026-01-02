@@ -3,23 +3,44 @@
 import { useState, useEffect } from 'react'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
 
+export interface ClientContact {
+  id: string
+  name: string
+  email: string
+  phone: string
+  role: string
+  isPrimary: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Client {
   id: string
   cuit: string
   companyName: string
-  representative: string
-  email: string
-  phone: string
+  representative?: string
+  email?: string
+  phone?: string
+  contacts?: ClientContact[]
   createdAt: string
   updatedAt: string
+}
+
+export interface CreateContactData {
+  name: string
+  email: string
+  phone: string
+  role: string
+  isPrimary?: boolean
 }
 
 export interface CreateClientData {
   cuit: string
   company_name: string
-  representative: string
-  email: string
-  phone: string
+  representative?: string
+  email?: string
+  phone?: string
+  contacts?: CreateContactData[]
 }
 
 export interface UpdateClientData {
@@ -28,6 +49,7 @@ export interface UpdateClientData {
   representative?: string
   email?: string
   phone?: string
+  contacts?: CreateContactData[]
 }
 
 export function useClientsPrisma() {
@@ -35,25 +57,39 @@ export function useClientsPrisma() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Cargar clientes
   const fetchClients = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const data = await PrismaTypedService.getAllClients()
+      const [data, contactsByClient] = await Promise.all([
+        PrismaTypedService.getAllClients(),
+        PrismaTypedService.getAllClientContacts()
+      ])
       
-      // Convertir datos al formato Client
-      const formattedClients: Client[] = data.map(client => ({
-        id: client.id,
-        cuit: client.cuit,
-        companyName: client.company_name,
-        representative: client.representative,
-        email: client.email,
-        phone: client.phone,
-        createdAt: typeof client.created_at === 'string' ? client.created_at : client.created_at.toISOString(),
-        updatedAt: typeof client.updated_at === 'string' ? client.updated_at : client.updated_at.toISOString()
-      }))
+      const formattedClients: Client[] = data.map((client) => {
+        const contacts = contactsByClient[client.id] || []
+        return {
+          id: client.id,
+          cuit: client.cuit,
+          companyName: client.company_name,
+          representative: client.representative || undefined,
+          email: client.email || undefined,
+          phone: client.phone || undefined,
+          contacts: contacts.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone,
+            role: contact.role,
+            isPrimary: contact.is_primary || false,
+            createdAt: typeof contact.created_at === 'string' ? contact.created_at : contact.created_at.toISOString(),
+            updatedAt: typeof contact.updated_at === 'string' ? contact.updated_at : contact.updated_at.toISOString()
+          })),
+          createdAt: typeof client.created_at === 'string' ? client.created_at : client.created_at.toISOString(),
+          updatedAt: typeof client.updated_at === 'string' ? client.updated_at : client.updated_at.toISOString()
+        }
+      })
       
       setClients(formattedClients)
     } catch (err) {
@@ -64,64 +100,130 @@ export function useClientsPrisma() {
     }
   }
 
-  // Crear nuevo cliente
   const createClient = async (clientData: CreateClientData): Promise<{ success: boolean; error?: string; client?: Client }> => {
     try {
       setError(null)
       
-      const client = await PrismaTypedService.createClient(clientData)
+      const { contacts, ...clientFields } = clientData
+      
+      const client = await PrismaTypedService.createClient(clientFields)
 
-      // Convertir el cliente de Prisma al formato Client personalizado
+      if (contacts && contacts.length > 0) {
+        await Promise.all(
+          contacts.map(contact =>
+            PrismaTypedService.createClientContact(client.id, contact)
+          )
+        )
+      }
+
+      const clientContacts = await PrismaTypedService.getClientContacts(client.id)
       const formattedClient: Client = {
         id: client.id,
         cuit: client.cuit,
         companyName: client.company_name,
-        representative: client.representative,
-        email: client.email,
-        phone: client.phone,
+        representative: client.representative || undefined,
+        email: client.email || undefined,
+        phone: client.phone || undefined,
+        contacts: clientContacts?.map(contact => ({
+          id: contact.id,
+          name: contact.name,
+          email: contact.email,
+          phone: contact.phone,
+          role: contact.role,
+          isPrimary: contact.is_primary || false,
+          createdAt: typeof contact.created_at === 'string' ? contact.created_at : contact.created_at.toISOString(),
+          updatedAt: typeof contact.updated_at === 'string' ? contact.updated_at : contact.updated_at.toISOString()
+        })) || [],
         createdAt: typeof client.created_at === 'string' ? client.created_at : client.created_at.toISOString(),
         updatedAt: typeof client.updated_at === 'string' ? client.updated_at : client.updated_at.toISOString()
       }
 
-      // Actualizar estado local
       await fetchClients()
       
       return { success: true, client: formattedClient }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating client:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al crear cliente'
-      setError(errorMessage)
+      let errorMessage = 'Error al crear cliente'
+      
+      if (err && typeof err === 'object') {
+        const errorCode = err.code
+        const errorMsg = err.message || ''
+        
+        if (errorCode === '23505' || 
+            errorMsg.includes('duplicate key') || 
+            errorMsg.includes('already exists') ||
+            (err.details && err.details.includes('already exists'))) {
+          errorMessage = 'El CUIT ingresado ya existe. Por favor, verifica el número de CUIT.'
+        } else if (err.message) {
+          errorMessage = err.message
+        }
+      } else if (err instanceof Error) {
+        if (err.message.includes('duplicate key') || err.message.includes('already exists')) {
+          errorMessage = 'El CUIT ingresado ya existe. Por favor, verifica el número de CUIT.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+
       return { success: false, error: errorMessage }
     }
   }
 
-  // Actualizar cliente
   const updateClient = async (clientId: string, clientData: UpdateClientData): Promise<{ success: boolean; error?: string; client?: Client }> => {
     try {
       setError(null)
       
-      const client = await PrismaTypedService.updateClient(clientId, clientData)
+      const { contacts } = clientData
+      
+      if (contacts !== undefined) {
+        await PrismaTypedService.deleteAllClientContacts(clientId)
+        
+        if (contacts.length > 0) {
+          await Promise.all(
+            contacts.map(contact =>
+              PrismaTypedService.createClientContact(clientId, contact)
+            )
+          )
+        }
+      }
 
-      // Actualizar estado local
       await fetchClients()
       
       return { success: true, client: undefined }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating client:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar cliente'
-      setError(errorMessage)
+      let errorMessage = 'Error al actualizar cliente'
+      
+      if (err && typeof err === 'object') {
+        const errorCode = err.code
+        const errorMsg = err.message || ''
+        
+        if (errorCode === '23505' || 
+            errorMsg.includes('duplicate key') || 
+            errorMsg.includes('already exists') ||
+            (err.details && err.details.includes('already exists'))) {
+          errorMessage = 'El CUIT ingresado ya existe. Por favor, verifica el número de CUIT.'
+        } else if (err.message) {
+          errorMessage = err.message
+        }
+      } else if (err instanceof Error) {
+        if (err.message.includes('duplicate key') || err.message.includes('already exists')) {
+          errorMessage = 'El CUIT ingresado ya existe. Por favor, verifica el número de CUIT.'
+        } else {
+          errorMessage = err.message
+        }
+      }
+      
       return { success: false, error: errorMessage }
     }
   }
 
-  // Eliminar cliente
   const deleteClient = async (clientId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       
       await PrismaTypedService.deleteClient(clientId)
 
-      // Actualizar estado local
       await fetchClients()
       
       return { success: true }
@@ -133,12 +235,10 @@ export function useClientsPrisma() {
     }
   }
 
-  // Obtener cliente por ID
   const getClientById = (clientId: string): Client | undefined => {
     return clients.find(c => c.id === clientId)
   }
 
-  // Cargar datos al montar el componente
   useEffect(() => {
     fetchClients()
   }, [])

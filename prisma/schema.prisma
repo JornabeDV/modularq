@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
@@ -84,7 +81,6 @@ model User {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  // Relations
   supervised_projects Project[] @relation("ProjectSupervisor")
   assigned_tasks      Task[]    @relation("TaskAssignee")
   time_entries        TimeEntry[]
@@ -108,8 +104,6 @@ model Project {
   project_order Int?
   supervisor_id String?
   client_id     String?
-  
-  // Especificaciones técnicas
   modulation    String          @default("standard")
   height        Float           @default(2.0)
   width         Float           @default(1.5)
@@ -119,7 +113,6 @@ model Project {
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
 
-  // Relations
   supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id])
   client         Client?          @relation(fields: [client_id], references: [id])
   time_entries   TimeEntry[]
@@ -140,7 +133,6 @@ model Task {
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
 
-  // Relations
   assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
   time_entries TimeEntry[]
 
@@ -160,7 +152,6 @@ model TimeEntry {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  // Relations
   user    User    @relation(fields: [user_id], references: [id])
   task    Task    @relation(fields: [task_id], references: [id], onDelete: Cascade)
   project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
@@ -180,7 +171,6 @@ model AuditLog {
   ip_address   String?
   created_at   DateTime   @default(now())
 
-  // Relations
   user User @relation(fields: [user_id], references: [id])
 
   @@map("audit_logs")
@@ -196,7 +186,6 @@ model Report {
   data         Json?
   created_at   DateTime   @default(now())
 
-  // Relations
   generated_by_user User @relation(fields: [generated_by], references: [id])
 
   @@map("reports")
@@ -209,7 +198,6 @@ model ProjectOperario {
   assigned_at DateTime @default(now())
   assigned_by String?
 
-  // Relations
   project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [user_id], references: [id])
 
@@ -221,14 +209,30 @@ model Client {
   id           String   @id @default(cuid())
   cuit         String   @unique
   company_name String
-  representative String
-  email        String
-  phone        String
+  representative String?
+  email        String?
+  phone        String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  // Relations
   projects     Project[]
+  contacts     ClientContact[]
 
   @@map("clients")
+}
+
+model ClientContact {
+  id         String   @id @default(cuid())
+  client_id  String
+  name       String
+  email      String
+  phone      String
+  role       String
+  is_primary Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  @@map("client_contacts")
 }

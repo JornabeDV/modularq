@@ -1,8 +1,13 @@
-"use client"
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,23 +18,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 
 interface DeleteClientButtonProps {
-  clientId: string
-  clientName: string
-  onDelete: (clientId: string) => void
+  clientId: string;
+  clientName: string;
+  onDelete: (clientId: string) => void;
 }
 
-export function DeleteClientButton({ clientId, clientName, onDelete }: DeleteClientButtonProps) {
+export function DeleteClientButton({
+  clientId,
+  clientName,
+  onDelete,
+}: DeleteClientButtonProps) {
   const handleDelete = async () => {
     try {
-      await onDelete(clientId)
+      onDelete(clientId);
     } catch (error) {
-      console.error('Error deleting client:', error)
-      // El error ya se maneja en el hook y se muestra en la UI
+      console.error("Error deleting client:", error);
     }
-  }
+  };
 
   return (
     <TooltipProvider>
@@ -37,7 +45,12 @@ export function DeleteClientButton({ clientId, clientName, onDelete }: DeleteCli
         <Tooltip>
           <TooltipTrigger asChild>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="cursor-pointer">
+              <Button
+                variant="outline"
+                size="sm"
+                className="cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
@@ -50,17 +63,21 @@ export function DeleteClientButton({ clientId, clientName, onDelete }: DeleteCli
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente el cliente "{clientName}" y todos sus datos asociados.
+              Esta acción no se puede deshacer. Se eliminará permanentemente el
+              cliente "{clientName}" y todos sus datos asociados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="cursor-pointer">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="cursor-pointer"
+            >
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </TooltipProvider>
-  )
+  );
 }
