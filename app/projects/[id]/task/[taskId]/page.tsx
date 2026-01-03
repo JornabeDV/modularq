@@ -105,19 +105,11 @@ export default function TaskDetailPage() {
         // Actualizar horas totales
         setTotalHoursWithActive(totalHours)
 
-        // Calcular progreso basado en horas trabajadas vs estimadas
-        const estimatedHours = task.estimatedHours || task.task?.estimatedHours || 0
-        if (estimatedHours > 0) {
-          const calculatedProgress = Math.min(Math.round((totalHours / estimatedHours) * 100), 100)
-          const currentProgress = progressPercentage
-          
-          // Solo actualizar si el progreso calculado es diferente al actual
-          if (Math.abs(calculatedProgress - currentProgress) > 0.1) {
-            setProgressPercentage(calculatedProgress)
-            
-            // Actualizar progreso en la base de datos
-            updateProjectTask(task.id, { progressPercentage: calculatedProgress }, true)
-          }
+        // El progreso se basa solo en el estado de la tarea, no en horas trabajadas
+        // Solo actualizar si la tarea está completada y el progreso no es 100%
+        if (task.status === 'completed' && progressPercentage !== 100) {
+          setProgressPercentage(100)
+          updateProjectTask(task.id, { progressPercentage: 100 }, true)
         }
 
         // Actualizar fecha de inicio si no existe y hay entradas de tiempo

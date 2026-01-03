@@ -9,6 +9,7 @@ import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ArrowLeft, AlertCircle, Target } from "lucide-react";
+import { getProgressColor } from "@/lib/utils/project-utils";
 import {
   RadialBarChart,
   RadialBar,
@@ -55,60 +56,38 @@ export function DailySurveyProjectTasks({
   const progressPercentage =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Función para obtener el color del progreso
-  const getProgressColor = (percentage: number) => {
-    if (percentage === 100) return "hsl(142, 76%, 36%)"; // green-600
-    if (percentage >= 75) return "hsl(262, 83%, 58%)"; // purple-500
-    if (percentage >= 50) return "hsl(25, 95%, 53%)"; // orange-500
-    if (percentage >= 25) return "hsl(45, 93%, 47%)"; // yellow-500
-    return "hsl(217, 91%, 60%)"; // blue-500
-  };
-
   const handleStatusChange = async (taskId: string, newStatus: string) => {
-    // Calcular progreso basado en estado
-    let progressPercentage = 0;
-    if (newStatus === "completed") {
-      progressPercentage = 100;
-    } else if (newStatus === "in_progress") {
-      progressPercentage = 50;
-    } else {
-      progressPercentage = 0;
-    }
-
-    // Obtener la tarea actual para verificar fechas existentes
     const currentTask = projectTasks.find((t) => t.id === taskId);
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-    // Preparar datos de actualización con fechas según el estado
     const updateData: any = {
       status: newStatus as any,
-      progressPercentage,
     };
 
-    // Guardar fechas según el cambio de estado
+    if (newStatus === "completed") {
+      updateData.progressPercentage = 100;
+    } else if (newStatus === "pending") {
+      updateData.progressPercentage = 0;
+    }
+
     if (newStatus === "in_progress") {
-      // Si pasa a "en progreso" y no tiene fecha de inicio, guardarla
       if (!currentTask?.startDate) {
         updateData.startDate = today;
       }
-      // Si estaba completada y vuelve a otro estado, limpiar fecha de fin
       if (currentTask?.endDate) {
-        updateData.endDate = null; // null para limpiar el campo
+        updateData.endDate = null;
       }
     } else if (newStatus === "completed") {
-      // Si se completa, guardar fecha de fin
       updateData.endDate = today;
-      // Si no tiene fecha de inicio, guardarla también
       if (!currentTask?.startDate) {
         updateData.startDate = today;
       }
     } else if (newStatus === "pending") {
-      // Si vuelve a pendiente, limpiar fechas
       if (currentTask?.startDate) {
-        updateData.startDate = null; // null para limpiar el campo
+        updateData.startDate = null;
       }
       if (currentTask?.endDate) {
-        updateData.endDate = null; // null para limpiar el campo
+        updateData.endDate = null;
       }
     }
 
@@ -176,7 +155,6 @@ export function DailySurveyProjectTasks({
     );
   }
 
-  // Ordenar tareas: en progreso primero, luego pendientes, luego completadas
   const sortedTasks = [...projectTasks].sort((a, b) => {
     const statusOrder: Record<string, number> = {
       in_progress: 0,
@@ -189,7 +167,6 @@ export function DailySurveyProjectTasks({
 
   return (
     <div className="space-y-3 sm:space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-2 sm:gap-4">
         <Button
           variant="outline"
@@ -210,48 +187,14 @@ export function DailySurveyProjectTasks({
         </div>
       </div>
 
-      {/* Resumen del proyecto */}
-      <Card className="p-2.5 sm:p-4">
+      <Card className="p-2.5 sm:p-4 gap-0 sm:gap-4">
         <CardHeader className="p-0 pb-2">
           <CardTitle className="text-base sm:text-lg">
             Resumen del Proyecto
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-            <div className="text-center p-2 bg-green-50 rounded-lg">
-              <div className="text-xl font-bold text-green-700">
-                {completedTasks}
-              </div>
-              <div className="text-xs text-green-600">Completadas</div>
-            </div>
-            <div className="text-center p-2 bg-orange-50 rounded-lg">
-              <div className="text-xl font-bold text-orange-700">
-                {inProgressTasks}
-              </div>
-              <div className="text-xs text-orange-600">En Progreso</div>
-            </div>
-            <div className="text-center p-2 bg-yellow-50 rounded-lg">
-              <div className="text-xl font-bold text-yellow-700">
-                {pendingTasks}
-              </div>
-              <div className="text-xs text-yellow-600">Pendientes</div>
-            </div>
-            <div className="text-center p-2 bg-blue-50 rounded-lg">
-              <div className="text-xl font-bold text-blue-700">
-                {totalTasks}
-              </div>
-              <div className="text-xs text-blue-600">Total</div>
-            </div>
-          </div>
-          <div className="mt-3 sm:mt-4">
-            <div className="flex items-center justify-between text-xs sm:text-sm mb-2 sm:mb-3">
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <Target className="h-3 w-3 sm:h-4 sm:w-4" />
-                Progreso General
-              </span>
-              <span className="font-semibold">{progressPercentage}%</span>
-            </div>
+          <div className="flex sm:flex-col items-center gap-3">
             {(() => {
               const progressColor = getProgressColor(progressPercentage);
               const radialData = [
@@ -271,25 +214,25 @@ export function DailySurveyProjectTasks({
               return (
                 <ChartContainer
                   config={radialChartConfig}
-                  className="mx-auto aspect-square max-h-[120px] sm:max-h-[150px]"
+                  className="aspect-square h-36 sm:h-44 flex-shrink-0"
                 >
                   <RadialBarChart
                     data={radialData}
                     endAngle={90 + progressPercentage * 3.6}
-                    innerRadius={isMobile ? 30 : 35}
-                    outerRadius={isMobile ? 45 : 50}
+                    innerRadius={isMobile ? 45 : 55}
+                    outerRadius={isMobile ? 72 : 88}
                     startAngle={90}
-                    width={isMobile ? 120 : 150}
-                    height={isMobile ? 120 : 150}
+                    width={isMobile ? 144 : 176}
+                    height={isMobile ? 144 : 176}
                   >
                     <PolarGrid
                       gridType="circle"
                       radialLines={false}
                       stroke="none"
                       className="first:fill-muted last:fill-background"
-                      polarRadius={isMobile ? [35, 25] : [40, 30]}
+                      polarRadius={isMobile ? [55, 35] : [65, 40]}
                     />
-                    <RadialBar dataKey="value" background cornerRadius={8} />
+                    <RadialBar dataKey="value" background cornerRadius={6} />
                     <PolarRadiusAxis
                       tick={false}
                       tickLine={false}
@@ -309,7 +252,7 @@ export function DailySurveyProjectTasks({
                                   x={viewBox.cx}
                                   y={viewBox.cy}
                                   className={`fill-foreground font-bold ${
-                                    isMobile ? "text-lg" : "text-xl"
+                                    isMobile ? "text-sm" : "text-base"
                                   }`}
                                 >
                                   {progressPercentage}%
@@ -324,11 +267,45 @@ export function DailySurveyProjectTasks({
                 </ChartContainer>
               );
             })()}
+
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 text-center min-w-[80px] w-full">
+              <div className="p-1 border rounded-md">
+                <div className="text-xs sm:text-sm font-bold text-foreground">
+                  {completedTasks}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  Completadas
+                </div>
+              </div>
+              <div className="p-1 border rounded-md">
+                <div className="text-xs sm:text-sm font-bold text-foreground">
+                  {inProgressTasks}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  En Progreso
+                </div>
+              </div>
+              <div className="p-1 border rounded-md">
+                <div className="text-xs sm:text-sm font-bold text-foreground">
+                  {pendingTasks}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  Pendientes
+                </div>
+              </div>
+              <div className="p-1 border rounded-md">
+                <div className="text-xs sm:text-sm font-bold text-foreground">
+                  {totalTasks}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  Total
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de tareas */}
       <div className="space-y-2.5 sm:space-y-4">
         <h2 className="text-base sm:text-xl font-semibold">
           Tareas del Proyecto

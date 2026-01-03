@@ -21,6 +21,7 @@ import {
   Package,
 } from "lucide-react";
 import Link from "next/link";
+import { getProgressColor } from "@/lib/utils/project-utils";
 import {
   PieChart,
   Pie,
@@ -593,15 +594,6 @@ export function ProjectAnalytics() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredProjects.map((project) => {
                 const statusInfo = project.statusInfo;
-
-                // Determinar color del progreso para el gráfico radial
-                const getProgressColor = (percentage: number) => {
-                  if (percentage === 100) return "hsl(142, 76%, 36%)"; // green-600
-                  if (percentage >= 75) return "hsl(262, 83%, 58%)"; // purple-500
-                  if (percentage >= 50) return "hsl(25, 95%, 53%)"; // orange-500
-                  if (percentage >= 25) return "hsl(45, 93%, 47%)"; // yellow-500
-                  return "hsl(217, 91%, 60%)"; // blue-500
-                };
 
                 const progressColor = getProgressColor(
                   project.completionPercentage

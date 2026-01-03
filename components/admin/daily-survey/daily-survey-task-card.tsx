@@ -80,20 +80,17 @@ export function DailySurveyTaskCard({
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow py-0 sm:py-4">
       <CardContent className="p-2.5 sm:p-4">
         <div className="space-y-2.5 sm:space-y-4">
-          {/* Header de la tarea */}
           <div className="flex items-start gap-2 sm:gap-3">
-            {/* Número de tarea */}
             <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
               {taskNumber}
             </div>
 
-            {/* Información de la tarea */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-1.5 sm:gap-2 mb-1 sm:mb-2">
-                <h3 className="font-semibold text-sm sm:text-lg truncate">
+                <h3 className="font-semibold text-base sm:text-lg truncate">
                   {task.task?.title || "Tarea sin título"}
                 </h3>
                 <Badge
@@ -111,18 +108,15 @@ export function DailySurveyTaskCard({
                 </Badge>
               </div>
 
-              {/* Descripción (si existe) */}
               {task.task?.description && (
-                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-2 sm:mb-3">
+                <p className="text-sm sm:text-base text-muted-foreground line-clamp-2 mb-2 sm:mb-3">
                   {task.task.description}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Selector de estado y operario - Siempre visible */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-            {/* Selector de estado */}
+          <div className="sm:grid max-sm:flex sm:grid-cols-2 gap-2 sm:gap-3">
             <div>
               <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
                 Estado
@@ -144,9 +138,8 @@ export function DailySurveyTaskCard({
               </Select>
             </div>
 
-            {/* Selector de operario */}
             {projectOperarios.length > 0 && (
-              <div>
+              <div className="min-w-0">
                 <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
                   Operario
                 </label>
@@ -154,7 +147,7 @@ export function DailySurveyTaskCard({
                   value={task.assignedTo || "none"}
                   onValueChange={(value) => onAssignOperario(task.id, value)}
                 >
-                  <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
+                  <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm truncate">
                     <SelectValue placeholder="Seleccionar operario..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -166,9 +159,9 @@ export function DailySurveyTaskCard({
                         key={operario.user_id}
                         value={operario.user_id}
                       >
-                        <div className="flex items-center gap-2">
-                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="text-xs sm:text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm truncate min-w-0">
                             {operario.user?.name || "Operario"}
                           </span>
                         </div>

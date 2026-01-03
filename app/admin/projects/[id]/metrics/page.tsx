@@ -26,6 +26,7 @@ import { SupabaseFileStorage } from "@/lib/supabase-storage"
 import { ArrowLeft, Target, Timer, Clock, CheckCircle, AlertTriangle, Calendar, Users, FileText, Download, Eye } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import Link from "next/link"
+import { getProgressColor } from "@/lib/utils/project-utils"
 
 export default function ProjectMetricsPage() {
   const params = useParams()
@@ -36,15 +37,6 @@ export default function ProjectMetricsPage() {
   
   const project = projects?.find(p => p.id === projectId)
   const isMobile = useIsMobile()
-
-  // Función para obtener el color del progreso
-  const getProgressColor = (percentage: number) => {
-    if (percentage === 100) return "hsl(142, 76%, 36%)" // green-600
-    if (percentage >= 75) return "hsl(262, 83%, 58%)" // purple-500
-    if (percentage >= 50) return "hsl(25, 95%, 53%)" // orange-500
-    if (percentage >= 25) return "hsl(45, 93%, 47%)" // yellow-500
-    return "hsl(217, 91%, 60%)" // blue-500
-  }
 
   // Función para formatear fechas
   const formatDate = (dateString?: string) => {

@@ -48,7 +48,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
     }
   }
 
-  const progressPercentage = (task.task?.estimatedHours || 0) > 0 ? Math.min(((task.actualHours || 0) / (task.task?.estimatedHours || 1)) * 100, 100) : 0
+  const progressPercentage = task.status === 'completed' ? 100 : (task.progressPercentage || 0)
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha"

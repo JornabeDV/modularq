@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
@@ -15,7 +14,6 @@ import {
   Target, 
   Timer, 
   Clock, 
-  CheckCircle, 
   Calendar, 
   Users, 
   TrendingUp,
@@ -23,7 +21,6 @@ import {
   FileText,
   User
 } from "lucide-react"
-import Link from "next/link"
 
 interface ActiveSession {
   startTime: string
@@ -42,17 +39,14 @@ export default function TaskMetricsPage() {
   const projectTask = project?.projectTasks?.find(pt => pt.id === taskId)
   const task = projectTask?.task
 
-  // Estados para métricas detalladas
   const [timeEntries, setTimeEntries] = useState<any[]>([])
   const [calculatedHours, setCalculatedHours] = useState(0)
   const [loadingMetrics, setLoadingMetrics] = useState(true)
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
   const [operarioName, setOperarioName] = useState<string>('')
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-  // Estado local para mantener los datos de tracking actualizados
   const [taskState, setTaskState] = useState<any>(null)
 
-  // Actualizar estado local cuando cambie projectTask
   useEffect(() => {
     if (projectTask) {
       setTaskState({
@@ -64,7 +58,6 @@ export default function TaskMetricsPage() {
     }
   }, [projectTask])
 
-  // Función para formatear fechas
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Sin fecha'
     
@@ -99,7 +92,6 @@ export default function TaskMetricsPage() {
     return `${hours % 1 === 0 ? hours : hours.toFixed(1)}hs`
   }
 
-  // Función para formatear tiempo trabajado (consistente con métricas del proyecto)
   const formatWorkedTime = (hours: number) => {
     const totalMinutes = Math.round(hours * 60)
     const hoursPart = Math.floor(totalMinutes / 60)
@@ -198,32 +190,16 @@ export default function TaskMetricsPage() {
           setCalculatedHours(totalHours)
           setActiveSession(currentActiveSession)
 
-          // Recalcular y actualizar progreso si hay horas trabajadas
-          if (totalHours > 0 && projectTask) {
-            // Calcular estimatedHours del projectTask (tiempo total del proyecto)
-            let taskEstimatedHours = projectTask.estimatedHours || 0
-            if (taskEstimatedHours === 0 && task?.estimatedHours && project?.moduleCount) {
-              taskEstimatedHours = task.estimatedHours * project.moduleCount
-            } else if (taskEstimatedHours === 0) {
-              taskEstimatedHours = task?.estimatedHours || 0
-            }
-            
-            // Si hay tiempo estimado, recalcular progreso
-            if (taskEstimatedHours > 0) {
-              const calculatedProgress = Math.min(Math.round((totalHours / taskEstimatedHours) * 100), 100)
-              const currentProgress = projectTask.progressPercentage || 0
-              
-              // Actualizar solo si hay una diferencia significativa (más de 1%)
-              if (Math.abs(calculatedProgress - currentProgress) > 1) {
-                try {
-                  await supabase
-                    .from('project_tasks')
-                    .update({ progress_percentage: calculatedProgress })
-                    .eq('id', projectTask.id)
-                } catch (err) {
-                  console.error('Error actualizando progreso de tarea:', err)
-                }
-              }
+          // El progreso se basa solo en el estado de la tarea, no en horas trabajadas
+          // Solo actualizar si el estado es completed y el progreso no es 100%
+          if (projectTask && projectTask.status === 'completed' && projectTask.progressPercentage !== 100) {
+            try {
+              await supabase
+                .from('project_tasks')
+                .update({ progress_percentage: 100 })
+                .eq('id', projectTask.id)
+            } catch (err) {
+              console.error('Error actualizando progreso de tarea:', err)
             }
           }
 
@@ -322,18 +298,14 @@ export default function TaskMetricsPage() {
     estimatedHours = task?.estimatedHours || 0
   }
   
-  // Recalcular progreso basado en horas reales trabajadas vs estimadas
-  // Esto asegura que el progreso sea preciso incluso si el valor en la BD está desactualizado
+  // El progreso se basa solo en el estado de la tarea, no en horas trabajadas
   let progressPercentage = projectTask.progressPercentage || 0
-  if (estimatedHours > 0 && actualHours > 0) {
-    const calculatedProgress = Math.min(Math.round((actualHours / estimatedHours) * 100), 100)
-    // Usar el progreso calculado si hay una diferencia significativa (más de 1%)
-    if (Math.abs(calculatedProgress - progressPercentage) > 1) {
-      progressPercentage = calculatedProgress
-    }
-  } else if (projectTask.status === 'completed') {
+  if (projectTask.status === 'completed') {
     progressPercentage = 100
+  } else if (projectTask.status === 'pending') {
+    progressPercentage = 0
   }
+  // Si está en "in_progress", mantener el progreso actual (no asignar un valor fijo)
   
   const efficiency = estimatedHours > 0 ? (actualHours / estimatedHours) * 100 : 0
 
