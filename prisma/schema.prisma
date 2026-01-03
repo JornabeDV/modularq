@@ -205,7 +205,6 @@ model ProjectOperario {
   project_id  String
   user_id     String
   assigned_at DateTime @default(now())
-  assigned_by String?
 
   // Relations
   project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)

@@ -133,7 +133,6 @@ export function useProjectDetail({
         const projectTaskResult = await createProjectTask({
           projectId: project.id,
           taskId: createdTask.id,
-          assignedBy: userId,
         });
 
         if (projectTaskResult.success) {
@@ -271,7 +270,6 @@ export function useProjectDetail({
       const result = await createProjectTask({
         projectId: project.id,
         taskId: taskId,
-        assignedBy: userId,
       });
 
       if (result.success) {

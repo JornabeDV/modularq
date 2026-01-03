@@ -152,7 +152,6 @@ export class PrismaTypedService {
           project_id,
           user_id,
           assigned_at,
-          assigned_by,
           user:user_id (
             id,
             name,
@@ -425,14 +424,12 @@ export class PrismaTypedService {
   static async assignOperarioToProject(assignmentData: {
     project_id: string
     user_id: string
-    assigned_by?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('project_operarios')
       .insert({
         project_id: assignmentData.project_id,
-        user_id: assignmentData.user_id,
-        assigned_by: assignmentData.assigned_by
+        user_id: assignmentData.user_id
       })
       .select(`
         *,
@@ -653,7 +650,6 @@ export class PrismaTypedService {
           progress_percentage,
           notes,
           assigned_at,
-          assigned_by,
           created_at,
           updated_at,
           task:task_id (

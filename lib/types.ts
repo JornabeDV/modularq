@@ -36,7 +36,6 @@ export interface ProjectOperario {
   projectId: string
   userId: string
   assignedAt: string
-  assignedBy?: string
   // Relaciones
   user?: { id: string; name: string; role: string }
 }

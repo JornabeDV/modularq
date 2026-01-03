@@ -31,7 +31,6 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
     type: 'custom' as 'standard' | 'custom'
   })
   
-  // Si es para un proyecto, siempre es personalizada
   const isProjectTask = !!projectId
 
   useEffect(() => {
@@ -64,7 +63,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
     onSubmit({
       title: formData.title,
       description: formData.description,
-      estimatedHours: 0, // Oculto - Simplificado a solo estados
+      estimatedHours: 0,
       category: formData.category,
       type: formData.type,
       taskOrder: 0,

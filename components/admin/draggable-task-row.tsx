@@ -1,32 +1,37 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Edit, Trash2, GripVertical } from 'lucide-react'
-import { DeleteTaskButton } from './delete-task-button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import type { Task } from '@/lib/types'
+import { useState } from "react";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Edit, GripVertical } from "lucide-react";
+import { DeleteTaskButton } from "./delete-task-button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { Task } from "@/lib/types";
 
 interface DraggableTaskRowProps {
-  task: Task
-  index: number
-  onEdit: (task: Task) => void
-  onDelete: (taskId: string) => void
-  isDragging?: boolean
-  isReordering?: boolean
-  onDragStart?: (e: React.DragEvent, taskId: string) => void
-  onDragEnd?: (e: React.DragEvent) => void
-  onDragOver?: (e: React.DragEvent) => void
-  onDrop?: (e: React.DragEvent, taskId: string) => void
-  isReadOnly?: boolean
+  task: Task;
+  index: number;
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
+  isDragging?: boolean;
+  isReordering?: boolean;
+  onDragStart?: (e: React.DragEvent, taskId: string) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, taskId: string) => void;
+  isReadOnly?: boolean;
 }
 
-export function DraggableTaskRow({ 
-  task, 
+export function DraggableTaskRow({
+  task,
   index,
-  onEdit, 
+  onEdit,
   onDelete,
   isDragging = false,
   isReordering = false,
@@ -34,29 +39,29 @@ export function DraggableTaskRow({
   onDragEnd,
   onDragOver,
   onDrop,
-  isReadOnly = false
+  isReadOnly = false,
 }: DraggableTaskRowProps) {
-  const [isHovered, setIsHovered] = useState(false)
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleEdit = () => {
-    onEdit(task)
-  }
+    onEdit(task);
+  };
 
   return (
     <TooltipProvider>
-      <TableRow 
+      <TableRow
         className={`transition-all duration-200 select-none ${
-          isDragging 
-            ? 'opacity-50 shadow-lg' 
+          isDragging
+            ? "opacity-50 shadow-lg"
             : isReordering
-              ? 'opacity-75'
-              : isHovered 
-                ? 'shadow-md' 
-                : isReadOnly 
-                  ? 'hover:!bg-background' 
-                  : 'hover:shadow-sm'
+            ? "opacity-75"
+            : isHovered
+            ? "shadow-md"
+            : isReadOnly
+            ? "hover:!bg-background"
+            : "hover:shadow-sm"
         }`}
-        style={isReadOnly ? { backgroundColor: 'transparent' } : undefined}
+        style={isReadOnly ? { backgroundColor: "transparent" } : undefined}
         draggable={!isReadOnly}
         onDragStart={(e) => !isReadOnly && onDragStart?.(e, task.id)}
         onDragEnd={onDragEnd}
@@ -67,7 +72,9 @@ export function DraggableTaskRow({
       >
         <TableCell className="text-center">
           <div className="flex items-center justify-center gap-2">
-            {!isReadOnly && <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />}
+            {!isReadOnly && (
+              <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+            )}
             <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
               {index}
             </div>
@@ -77,16 +84,13 @@ export function DraggableTaskRow({
           <div className="font-medium">{task.title}</div>
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant="secondary">
-            {task.category}
-          </Badge>
+          <Badge variant="secondary">{task.category}</Badge>
         </TableCell>
         <TableCell className="text-center">
-          <Badge variant={task.type === 'standard' ? 'default' : 'outline'}>
-            {task.type === 'standard' ? 'Estándar' : 'Personalizada'}
+          <Badge variant={task.type === "standard" ? "default" : "outline"}>
+            {task.type === "standard" ? "Estándar" : "Personalizada"}
           </Badge>
         </TableCell>
-        {/* Celda de horas oculta - Simplificado a solo estados */}
         {!isReadOnly && (
           <TableCell className="text-center">
             <div className="flex items-center justify-center space-x-2">
@@ -115,5 +119,5 @@ export function DraggableTaskRow({
         )}
       </TableRow>
     </TooltipProvider>
-  )
+  );
 }

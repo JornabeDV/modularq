@@ -16,7 +16,6 @@ export interface ProjectOperarioWithUser extends ProjectOperario {
 export interface CreateProjectOperarioData {
   projectId: string
   userId: string
-  assignedBy?: string
 }
 
 export function useProjectOperariosPrisma(projectId?: string) {
@@ -47,8 +46,7 @@ export function useProjectOperariosPrisma(projectId?: string) {
       
       const operario = await PrismaTypedService.assignOperarioToProject({
         project_id: assignmentData.projectId,
-        user_id: assignmentData.userId,
-        assigned_by: assignmentData.assignedBy
+        user_id: assignmentData.userId
       })
 
       // Actualizar estado local

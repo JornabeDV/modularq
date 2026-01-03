@@ -39,7 +39,6 @@ export function DraggableTaskCard({
   const [isHovered, setIsHovered] = useState(false);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // No abrir el modal si se hace click en botones o en el drag handle
     const target = e.target as HTMLElement;
     if (
       target.closest("button") ||
@@ -71,12 +70,10 @@ export function DraggableTaskCard({
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* Task Number */}
             <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold">
               {taskNumber}
             </div>
 
-            {/* Drag Handle */}
             {!isReadOnly && (
               <div
                 data-drag-handle
@@ -96,7 +93,6 @@ export function DraggableTaskCard({
               </div>
             )}
 
-            {/* Task Info */}
             <div className="flex-1 min-w-0">
               <h5 className="font-medium text-sm sm:text-base truncate">
                 {projectTask.task?.title}
@@ -113,20 +109,20 @@ export function DraggableTaskCard({
                     {projectTask.assignedUser.name}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-muted-foreground"
+                  >
                     <User className="h-3 w-3 mr-1" />
                     Sin asignar
                   </Badge>
                 )}
-                {/* Horas ocultas - Simplificado a solo estados */}
               </div>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
             <div className="flex items-center gap-2">
-              {/* Botón Editar - Disponible para todos (incluye supervisores) */}
               <Button
                 size="sm"
                 variant="outline"
@@ -139,8 +135,7 @@ export function DraggableTaskCard({
                 <span className="hidden sm:inline">Editar</span>
                 <span className="sm:hidden">Editar</span>
               </Button>
-              
-              {/* Acciones solo para admins */}
+
               {!isReadOnly && (
                 <>
                   {onComplete &&

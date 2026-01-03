@@ -129,7 +129,6 @@ export function useProjectsPrisma() {
           projectId: po.project_id,
           userId: po.user_id,
           assignedAt: po.assigned_at,
-          assignedBy: po.assigned_by,
           user: po.user ? {
             id: po.user.id,
             name: po.user.name,

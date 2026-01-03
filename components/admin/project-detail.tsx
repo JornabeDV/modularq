@@ -185,7 +185,6 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         isReadOnly={isReadOnly}
       />
 
-      {/* Diálogo de edición de tarea - Disponible para supervisores también */}
       <EditTaskDialog
         isOpen={!!editingTask}
         task={editingTask}

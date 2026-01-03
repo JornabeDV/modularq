@@ -256,21 +256,18 @@ export interface Database {
           project_id: string
           user_id: string
           assigned_at: string
-          assigned_by: string | null
         }
         Insert: {
           id?: string
           project_id: string
           user_id: string
           assigned_at?: string
-          assigned_by?: string | null
         }
         Update: {
           id?: string
           project_id?: string
           user_id?: string
           assigned_at?: string
-          assigned_by?: string | null
         }
       }
     }

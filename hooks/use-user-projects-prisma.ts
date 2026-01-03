@@ -47,7 +47,6 @@ export function useUserProjectsPrisma(userId?: string) {
           progressPercentage: pt.progress_percentage || 0,
           notes: pt.notes,
           assignedAt: pt.assigned_at,
-          assignedBy: pt.assigned_by,
           createdAt: pt.created_at,
           updatedAt: pt.updated_at,
           taskOrder: pt.task_order || 0,
@@ -74,7 +73,6 @@ export function useUserProjectsPrisma(userId?: string) {
           projectId: po.project_id,
           userId: po.user_id,
           assignedAt: po.assigned_at,
-          assignedBy: po.assigned_by,
           user: po.user ? {
             id: po.user.id,
             name: po.user.name,
