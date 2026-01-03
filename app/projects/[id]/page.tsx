@@ -3,27 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { MainLayout } from "@/components/layout/main-layout"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   ArrowLeft, 
-  Calendar, 
-  Users, 
-  FolderOpen, 
   Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  Play, 
-  Pause, 
   Target,
-  Timer,
-  TrendingUp,
-  AlertCircle,
-  Star,
   Zap
 } from "lucide-react"
 import { TaskSelfAssignment } from "@/components/operario/task-self-assignment"
@@ -54,29 +39,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     }
   }, [projects, params.id])
 
-  // Verificar si el operario está asignado al proyecto
   const isAssignedToProject = projectOperarios?.some(po => po.user_id === user?.id) || false
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Sin fecha'
-    
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateString.split('-')
-      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      })
-    }
-    
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      timeZone: 'UTC'
-    })
-  }
 
   if (projectsLoading || operariosLoading) {
     return (
@@ -132,19 +95,6 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       </MainLayout>
     )
   }
-
-  const completedTasks = projectTasks.filter(task => task.status === 'completed').length
-  const inProgressTasks = projectTasks.filter(task => task.status === 'in_progress').length
-  const pendingTasksArray = projectTasks.filter(task => task.status === 'pending')
-  const pendingTasks = pendingTasksArray.length
-  const totalTasks = projectTasks.length
-  const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
-
-  // Tareas del operario actual
-  const myTasks = projectTasks.filter(task => task.assignedTo === user?.id)
-  const myInProgressTasks = myTasks.filter(task => task.status === 'in_progress')
-  const myCompletedTasks = myTasks.filter(task => task.status === 'completed')
-  const myPendingTasks = myTasks.filter(task => task.status === 'pending')
 
   // Calcular días restantes
   const getDaysRemaining = () => {
