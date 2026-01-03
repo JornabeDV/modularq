@@ -33,6 +33,11 @@ enum ProjectPriority {
   critical
 }
 
+enum ProjectCondition {
+  alquiler
+  venta
+}
+
 enum TaskStatus {
   pending
   in_progress
@@ -98,6 +103,7 @@ model Project {
   description   String?
   status        ProjectStatus
   priority      ProjectPriority
+  condition     ProjectCondition @default(venta)
   start_date    DateTime
   end_date      DateTime?
   progress      Float           @default(0)

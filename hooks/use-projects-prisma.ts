@@ -8,6 +8,7 @@ export interface CreateProjectData {
   name: string
   description?: string
   status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+  condition?: 'alquiler' | 'venta'
   start_date?: Date
   end_date?: Date
   client_id?: string
@@ -24,6 +25,7 @@ export interface UpdateProjectData {
   name?: string
   description?: string
   status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+  condition?: 'alquiler' | 'venta'
   start_date?: Date
   end_date?: Date
   client_id?: string
@@ -50,11 +52,12 @@ export function useProjectsPrisma() {
       const data = await PrismaTypedService.getAllProjects()
       
       // Convertir datos al formato Project
-      const formattedProjects: Project[] = data.map(project => ({
+      const formattedProjects: Project[] = data.map((project: any) => ({
         id: project.id,
         name: project.name,
         description: project.description || '',
         status: project.status as Project['status'],
+        condition: (project.condition || 'venta') as Project['condition'],
         startDate: project.start_date,
         endDate: project.end_date,
         supervisor: project.supervisor,
@@ -156,6 +159,7 @@ export function useProjectsPrisma() {
         name: projectData.name,
         description: projectData.description,
         status: projectData.status || 'planning',
+        condition: projectData.condition || 'venta',
         start_date: projectData.start_date || new Date(),
         end_date: projectData.end_date,
         client_id: projectData.client_id,
@@ -193,6 +197,7 @@ export function useProjectsPrisma() {
         name: project.name,
         description: project.description || '',
         status: project.status as Project['status'],
+        condition: (project.condition || 'venta') as Project['condition'],
         startDate: typeof project.start_date === 'string' ? project.start_date : project.start_date.toISOString(),
         endDate: project.end_date ? (typeof project.end_date === 'string' ? project.end_date : project.end_date.toISOString()) : undefined,
         supervisor: project.supervisor_id || undefined,
@@ -233,6 +238,7 @@ export function useProjectsPrisma() {
         name: projectData.name,
         description: projectData.description,
         status: projectData.status,
+        condition: projectData.condition,
         start_date: projectData.start_date,
         end_date: projectData.end_date,
         client_id: projectData.client_id,

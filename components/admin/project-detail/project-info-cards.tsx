@@ -33,13 +33,13 @@ export function ProjectInfoCards({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-sm font-medium text-muted-foreground">
                 Creado
               </label>
               <p className="text-sm">{formatProjectDate(project.createdAt)}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-sm font-medium text-muted-foreground">
                 Última Actualización
               </label>
               <p className="text-sm">{formatProjectDate(project.updatedAt)}</p>
@@ -47,13 +47,13 @@ export function ProjectInfoCards({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-sm font-medium text-muted-foreground">
                 Fecha de Inicio
               </label>
               <p className="text-sm">{formatProjectDate(project.startDate)}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">
+              <label className="text-sm font-medium text-muted-foreground">
                 Fecha de Finalización
               </label>
               <p className="text-sm">{formatProjectDate(project.endDate)}</p>
@@ -63,15 +63,28 @@ export function ProjectInfoCards({
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Estado</CardTitle>
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <Badge variant={statusInfo.color}>{statusInfo.label}</Badge>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Estado</CardTitle>
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Badge variant={statusInfo.color}>{statusInfo.label}</Badge>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Condición</CardTitle>
+              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Badge variant={project.condition === 'alquiler' ? 'default' : 'outline'}>
+                {project.condition === 'alquiler' ? 'Alquiler' : 'Venta'}
+              </Badge>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -80,7 +93,7 @@ export function ProjectInfoCards({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{projectTasksCount}</div>
-            <p className="text-xs text-muted-foreground">tareas asignadas</p>
+            <p className="text-sm text-muted-foreground">Tareas asignadas</p>
           </CardContent>
         </Card>
 
@@ -92,8 +105,8 @@ export function ProjectInfoCards({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{projectFilesCount}</div>
-              <p className="text-xs text-muted-foreground">
-                archivo{projectFilesCount !== 1 ? "s" : ""} subido
+              <p className="text-sm text-muted-foreground">
+                Archivo{projectFilesCount !== 1 ? "s" : ""} subido
                 {projectFilesCount !== 1 ? "s" : ""}
               </p>
             </CardContent>

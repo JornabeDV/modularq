@@ -26,6 +26,7 @@ interface ProjectFormData {
   name: string;
   description: string;
   status: "planning" | "active" | "paused" | "completed" | "delivered";
+  condition: "alquiler" | "venta";
   startDate?: string;
   endDate?: string;
   clientId?: string;
@@ -56,6 +57,11 @@ const PROJECT_STATUSES = [
   { value: "delivered", label: "Entregado" },
 ];
 
+const PROJECT_CONDITIONS = [
+  { value: "alquiler", label: "Alquiler" },
+  { value: "venta", label: "Venta" },
+];
+
 export function ProjectForm({
   isOpen,
   onClose,
@@ -73,6 +79,7 @@ export function ProjectForm({
       | "paused"
       | "completed"
       | "delivered",
+    condition: "venta" as "alquiler" | "venta",
     startDate: "",
     endDate: "",
     clientId: "none",
@@ -90,6 +97,7 @@ export function ProjectForm({
         name: initialData.name,
         description: initialData.description,
         status: initialData.status,
+        condition: initialData.condition || "venta",
         startDate: initialData.startDate || "",
         endDate: initialData.endDate || "",
         clientId: initialData.clientId || "none",
@@ -105,6 +113,7 @@ export function ProjectForm({
         name: "",
         description: "",
         status: "planning",
+        condition: "venta",
         startDate: "",
         endDate: "",
         clientId: "none",
@@ -205,7 +214,26 @@ export function ProjectForm({
                 </SelectContent>
               </Select>
             </div>
-            <div>{/* Espacio vacío para mantener el layout */}</div>
+            <div>
+              <Label htmlFor="condition" className="mb-2">
+                Condición
+              </Label>
+              <Select
+                value={formData.condition}
+                onValueChange={(value) => handleInputChange("condition", value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECT_CONDITIONS.map((condition) => (
+                    <SelectItem key={condition.value} value={condition.value}>
+                      {condition.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
