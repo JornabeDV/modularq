@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Calendar, Users, DollarSign, MoreHorizontal, FolderOpen, Eye } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Calendar, FolderOpen, Eye } from "lucide-react"
 import { useUserProjectsPrisma } from "@/hooks/use-user-projects-prisma"
 import { useAuth } from "@/lib/auth-context"
 import Link from "next/link"
+import { formatDate } from "@/lib/utils"
 
 export default function ProjectsPage() {
   return (
@@ -54,14 +54,6 @@ function ProjectsContent() {
     }
   }
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Sin fecha"
-    return new Date(dateString).toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
-  }
 
   // Filtrar proyectos activos (ya vienen filtrados por usuario)
   const activeProjects = projects.filter(p => p.status === "active")

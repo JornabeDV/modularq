@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 import { supabase } from "@/lib/supabase"
+import { formatDate } from "@/lib/utils"
 import { 
   ArrowLeft, 
   Target, 
@@ -57,20 +58,6 @@ export default function TaskMetricsPage() {
       })
     }
   }, [projectTask])
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Sin fecha'
-    
-    const date = dateString.includes('T') 
-      ? new Date(dateString) 
-      : new Date(dateString + 'T00:00:00')
-    
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
-  }
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -289,8 +276,6 @@ export default function TaskMetricsPage() {
 
 
   const actualHours = calculatedHours
-  // Usar estimatedHours del projectTask (tiempo total del proyecto)
-  // Si es 0 o no existe, calcularlo: task.estimatedHours * project.moduleCount
   let estimatedHours = projectTask.estimatedHours || 0
   if (estimatedHours === 0 && task?.estimatedHours && project?.moduleCount) {
     estimatedHours = task.estimatedHours * project.moduleCount
@@ -298,14 +283,12 @@ export default function TaskMetricsPage() {
     estimatedHours = task?.estimatedHours || 0
   }
   
-  // El progreso se basa solo en el estado de la tarea, no en horas trabajadas
   let progressPercentage = projectTask.progressPercentage || 0
   if (projectTask.status === 'completed') {
     progressPercentage = 100
   } else if (projectTask.status === 'pending') {
     progressPercentage = 0
   }
-  // Si está en "in_progress", mantener el progreso actual (no asignar un valor fijo)
   
   const efficiency = estimatedHours > 0 ? (actualHours / estimatedHours) * 100 : 0
 

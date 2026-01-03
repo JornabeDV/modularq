@@ -130,7 +130,6 @@ export function ProjectAnalytics() {
   );
   const isMobile = useIsMobile();
 
-  // Calcular métricas para cada proyecto usando el estado real del proyecto
   const projectsWithStatus = useMemo(() => {
     if (!projects) return [];
 
@@ -151,7 +150,6 @@ export function ProjectAnalytics() {
       const completionPercentage =
         totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-      // Usar el estado real del proyecto (planning, active, paused, completed)
       const status = project.status as ProjectStatusType;
       const statusInfo = getStatusInfo(status);
       const progressLevel = getProgressLevel(completionPercentage);
@@ -187,7 +185,6 @@ export function ProjectAnalytics() {
     });
   }, [projectsWithStatus, searchTerm, statusFilter]);
 
-  // Calcular estadísticas agregadas basadas en estados reales
   const stats = useMemo(() => {
     const totalProjects = projectsWithStatus.length;
     const statusCounts = STATUS_CONFIG.reduce((acc, config) => {
@@ -380,18 +377,6 @@ export function ProjectAnalytics() {
       };
     });
   }, [projects]);
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Sin fecha";
-    const date = dateString.includes("T")
-      ? new Date(dateString)
-      : new Date(dateString + "T00:00:00");
-    return date.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
 
   if (loading) {
     return (
