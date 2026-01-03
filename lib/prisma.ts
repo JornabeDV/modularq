@@ -1,6 +1,4 @@
 import { PrismaClient } from './generated/prisma/index'
-import fs from 'fs'
-import path from 'path'
 
 let prismaInstance: PrismaClient
 
