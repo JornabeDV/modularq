@@ -188,7 +188,7 @@ export function useProjectTasksPrisma(projectId?: string) {
       const updateData: any = {
         status: projectTaskData.status,
         actual_hours: projectTaskData.actualHours,
-        assigned_to: projectTaskData.assignedTo,
+        assigned_to: projectTaskData.assignedTo === undefined ? undefined : (projectTaskData.assignedTo || null),
         start_date: projectTaskData.startDate,
         end_date: projectTaskData.endDate,
         progress_percentage: projectTaskData.progressPercentage,
@@ -222,23 +222,18 @@ export function useProjectTasksPrisma(projectId?: string) {
             const now = new Date()
             const { data: activeEntries, error: entriesError } = await supabase
               .from('time_entries')
-              .select('id, start_time, description')
+              .select('id, description')
               .eq('task_id', projectTask.task_id)
               .eq('project_id', projectTask.project_id)
               .is('end_time', null)
 
             if (!entriesError && activeEntries && activeEntries.length > 0) {
-              // Cerrar todas las sesiones activas
+              // Cerrar todas las sesiones activas sin calcular horas
               for (const entry of activeEntries) {
-                const startTime = new Date(entry.start_time)
-                const elapsedMs = now.getTime() - startTime.getTime()
-                const elapsedHours = elapsedMs / (1000 * 60 * 60)
-                
                 await supabase
                   .from('time_entries')
                   .update({
                     end_time: now.toISOString(),
-                    hours: elapsedHours,
                     description: entry.description || 'Sesión cerrada al completar la tarea'
                   })
                   .eq('id', entry.id)
@@ -258,16 +253,123 @@ export function useProjectTasksPrisma(projectId?: string) {
         await checkAndUpdateProjectStatus(projectId)
       }
 
-      // Actualizar estado local solo si no se omite el refetch
+      const optimisticUpdate = (prev: ProjectTask[]) => {
+        return prev.map(pt => {
+          if (pt.id !== projectTaskId) return pt
+          
+          const updated: ProjectTask = {
+            ...pt,
+            ...(projectTaskData.status !== undefined && { status: projectTaskData.status as any }),
+            ...(projectTaskData.actualHours !== undefined && { actualHours: projectTaskData.actualHours }),
+            ...(projectTaskData.assignedTo !== undefined && { assignedTo: projectTaskData.assignedTo }),
+            ...(projectTaskData.startDate !== undefined && { startDate: projectTaskData.startDate }),
+            ...(projectTaskData.endDate !== undefined && { endDate: projectTaskData.endDate }),
+            ...(projectTaskData.progressPercentage !== undefined && { progressPercentage: projectTaskData.progressPercentage }),
+            ...(projectTaskData.notes !== undefined && { notes: projectTaskData.notes }),
+            ...(projectTaskData.taskOrder !== undefined && { taskOrder: projectTaskData.taskOrder }),
+            ...(projectTaskData.assignedTo === null && pt.assignedTo !== undefined
+              ? { assignedUser: undefined }
+              : {}
+            ),
+            ...(newStatus === 'in_progress' && previousStatus !== 'in_progress' && userId
+              ? { startedBy: userId, startedAt: new Date().toISOString() }
+              : {}
+            ),
+            ...(newStatus === 'completed' && previousStatus !== 'completed' && userId
+              ? { completedBy: userId, completedAt: new Date().toISOString() }
+              : {}
+            ),
+          }
+          
+          return updated
+        })
+      }
+      
+      setProjectTasks(optimisticUpdate)
+
       if (!skipRefetch) {
         await fetchProjectTasks(projectId)
       } else {
-        // Actualizar solo el elemento específico en el estado local
-        setProjectTasks(prev => prev.map(pt => 
-          pt.id === projectTaskId 
-            ? { ...pt, ...projectTaskData }
-            : pt
-        ))
+        try {
+          const tasks = await PrismaTypedService.getProjectTasks(projectId)
+          const updatedTask = tasks.find((t: any) => t.id === projectTaskId)
+          
+          if (updatedTask) {
+            const formattedTask: ProjectTask = {
+              id: updatedTask.id,
+              projectId: updatedTask.project_id,
+              taskId: updatedTask.task_id,
+              status: updatedTask.status,
+              estimatedHours: parseFloat(updatedTask.estimated_hours) || 0,
+              actualHours: parseFloat(updatedTask.actual_hours) || 0,
+              assignedTo: updatedTask.assigned_to,
+              startDate: updatedTask.start_date,
+              endDate: updatedTask.end_date,
+              progressPercentage: updatedTask.progress_percentage || 0,
+              notes: updatedTask.notes,
+              assignedAt: updatedTask.assigned_at,
+              createdAt: updatedTask.created_at,
+              updatedAt: updatedTask.updated_at,
+              taskOrder: updatedTask.task_order || 0,
+              startedBy: updatedTask.started_by,
+              startedAt: updatedTask.started_at,
+              completedBy: updatedTask.completed_by,
+              completedAt: updatedTask.completed_at,
+              task: updatedTask.task ? {
+                id: updatedTask.task.id,
+                title: updatedTask.task.title,
+                description: updatedTask.task.description || '',
+                category: updatedTask.task.category || '',
+                type: updatedTask.task.type || 'custom',
+                estimatedHours: parseFloat(updatedTask.task.estimated_hours) || 0,
+                taskOrder: updatedTask.task.task_order || 0,
+                createdBy: updatedTask.task.created_by || '',
+                createdAt: updatedTask.task.created_at,
+                updatedAt: updatedTask.task.updated_at
+              } : undefined,
+              assignedUser: updatedTask.assigned_user ? {
+                id: updatedTask.assigned_user.id,
+                name: updatedTask.assigned_user.name,
+                role: updatedTask.assigned_user.role
+              } : undefined,
+              startedByUser: updatedTask.started_by_user ? {
+                id: updatedTask.started_by_user.id,
+                name: updatedTask.started_by_user.name,
+                role: updatedTask.started_by_user.role
+              } : undefined,
+              completedByUser: updatedTask.completed_by_user ? {
+                id: updatedTask.completed_by_user.id,
+                name: updatedTask.completed_by_user.name,
+                role: updatedTask.completed_by_user.role
+              } : undefined,
+              collaborators: (updatedTask.collaborators || []).map((collaborator: any) => ({
+                id: collaborator.id,
+                projectTaskId: collaborator.project_task_id,
+                userId: collaborator.user_id,
+                addedBy: collaborator.added_by,
+                addedAt: collaborator.added_at,
+                createdAt: collaborator.created_at,
+                updatedAt: collaborator.updated_at,
+                user: collaborator.user ? {
+                  id: collaborator.user.id,
+                  name: collaborator.user.name,
+                  role: collaborator.user.role
+                } : undefined,
+                addedByUser: collaborator.added_by_user ? {
+                  id: collaborator.added_by_user.id,
+                  name: collaborator.added_by_user.name,
+                  role: collaborator.added_by_user.role
+                } : undefined
+              }))
+            }
+            
+            setProjectTasks(prev => prev.map(pt => 
+              pt.id === projectTaskId ? formattedTask : pt
+            ))
+          }
+        } catch (fetchErr) {
+          console.error('Error fetching updated task:', fetchErr)
+        }
       }
       
       return { success: true }
@@ -275,6 +377,9 @@ export function useProjectTasksPrisma(projectId?: string) {
       console.error('Error updating project task:', err)
       const errorMessage = err instanceof Error ? err.message : 'Error al actualizar tarea del proyecto'
       setError(errorMessage)
+      
+      await fetchProjectTasks(projectId)
+      
       return { success: false, error: errorMessage }
     }
   }

@@ -28,21 +28,19 @@ export function DailySurveyProjectsList() {
   const { projects, loading } = useProjectsPrisma();
   const isMobile = useIsMobile();
 
-  // Filtrar solo proyectos activos
   const activeProjects = projects.filter((p) => p.status === "active");
 
-  // Calcular estadísticas por proyecto
   const getProjectStats = (project: any) => {
-    const totalTasks = project.projectTasks?.length || 0;
+    const activeTasks = project.projectTasks?.filter(
+      (pt: any) => pt.status !== "cancelled"
+    ) || [];
+    const totalTasks = activeTasks.length;
     const completedTasks =
-      project.projectTasks?.filter((pt: any) => pt.status === "completed")
-        .length || 0;
+      activeTasks.filter((pt: any) => pt.status === "completed").length || 0;
     const inProgressTasks =
-      project.projectTasks?.filter((pt: any) => pt.status === "in_progress")
-        .length || 0;
+      activeTasks.filter((pt: any) => pt.status === "in_progress").length || 0;
     const pendingTasks =
-      project.projectTasks?.filter((pt: any) => pt.status === "pending")
-        .length || 0;
+      activeTasks.filter((pt: any) => pt.status === "pending").length || 0;
     const progressPercentage =
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -81,7 +79,6 @@ export function DailySurveyProjectsList() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Relevamiento Diario</h2>
@@ -122,9 +119,7 @@ export function DailySurveyProjectsList() {
                 </div>
               </CardHeader>
               <CardContent className="p-3 sm:p-4 space-y-2.5">
-                {/* Progreso y Estadísticas en fila */}
                 <div className="flex items-center gap-3">
-                  {/* Gráfico Circular */}
                   {(() => {
                     const progressColor = getProgressColor(
                       stats.progressPercentage
@@ -257,7 +252,6 @@ export function DailySurveyProjectsList() {
                     )}
                 </div>
 
-                {/* Botón de acción */}
                 <Button
                   size="sm"
                   className="w-full cursor-pointer text-xs sm:text-sm h-7 sm:h-8"

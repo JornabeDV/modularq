@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle, Clock, AlertCircle, User } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, User, XCircle } from "lucide-react";
 import type { ProjectTask } from "@/lib/types";
 
 interface DailySurveyTaskCardProps {
@@ -29,6 +29,7 @@ export function DailySurveyTaskCard({
   onAssignOperario,
 }: DailySurveyTaskCardProps) {
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const hasOperario = !!task.assignedTo;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -40,6 +41,8 @@ export function DailySurveyTaskCard({
         return (
           <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
         );
+      case "cancelled":
+        return <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />;
       default:
         return <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />;
     }
@@ -53,6 +56,8 @@ export function DailySurveyTaskCard({
         return "bg-orange-50 text-orange-700 border-orange-200";
       case "pending":
         return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      case "cancelled":
+        return "bg-red-50 text-red-700 border-red-200";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
     }
@@ -74,6 +79,13 @@ export function DailySurveyTaskCard({
   };
 
   const handleStatusChange = async (newStatus: string) => {
+    if (
+      (newStatus === "in_progress" || newStatus === "completed") &&
+      !hasOperario
+    ) {
+      return;
+    }
+
     setIsChangingStatus(true);
     onStatusChange(task.id, newStatus);
     setIsChangingStatus(false);
@@ -117,27 +129,6 @@ export function DailySurveyTaskCard({
           </div>
 
           <div className="sm:grid max-sm:flex sm:grid-cols-2 gap-2 sm:gap-3">
-            <div>
-              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
-                Estado
-              </label>
-              <Select
-                value={task.status}
-                onValueChange={(value) => handleStatusChange(value)}
-                disabled={isChangingStatus}
-              >
-                <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="in_progress">En Progreso</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="cancelled">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {projectOperarios.length > 0 && (
               <div className="min-w-0">
                 <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
@@ -171,6 +162,57 @@ export function DailySurveyTaskCard({
                 </Select>
               </div>
             )}
+
+            <div>
+              <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
+                Estado
+              </label>
+              <Select
+                value={task.status}
+                onValueChange={(value) => handleStatusChange(value)}
+                disabled={isChangingStatus}
+              >
+                <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem
+                    value="in_progress"
+                    disabled={!hasOperario}
+                    className={
+                      !hasOperario ? "opacity-50 cursor-not-allowed" : ""
+                    }
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span>En Progreso</span>
+                      {!hasOperario && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (Requiere operario)
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                  <SelectItem
+                    value="completed"
+                    disabled={!hasOperario}
+                    className={
+                      !hasOperario ? "opacity-50 cursor-not-allowed" : ""
+                    }
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span>Completada</span>
+                      {!hasOperario && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (Requiere operario)
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="cancelled">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </CardContent>

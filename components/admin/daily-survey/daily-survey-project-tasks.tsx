@@ -42,22 +42,39 @@ export function DailySurveyProjectTasks({
   const loading = projectsLoading || tasksLoading || operariosLoading;
   const isMobile = useIsMobile();
 
-  // Calcular estadísticas
-  const totalTasks = projectTasks.length;
-  const completedTasks = projectTasks.filter(
+  const activeTasks = projectTasks.filter((pt) => pt.status !== "cancelled");
+  const totalTasks = activeTasks.length;
+  const completedTasks = activeTasks.filter(
     (pt) => pt.status === "completed"
   ).length;
-  const inProgressTasks = projectTasks.filter(
+  const inProgressTasks = activeTasks.filter(
     (pt) => pt.status === "in_progress"
   ).length;
-  const pendingTasks = projectTasks.filter(
+  const pendingTasks = activeTasks.filter(
     (pt) => pt.status === "pending"
+  ).length;
+  const cancelledTasks = projectTasks.filter(
+    (pt) => pt.status === "cancelled"
   ).length;
   const progressPercentage =
     totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     const currentTask = projectTasks.find((t) => t.id === taskId);
+
+    if (
+      (newStatus === "in_progress" || newStatus === "completed") &&
+      !currentTask?.assignedTo
+    ) {
+      toast({
+        title: "Operario requerido",
+        description:
+          "Debes asignar un operario antes de cambiar el estado a 'En Progreso' o 'Completada'",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
     const updateData: any = {
@@ -66,7 +83,7 @@ export function DailySurveyProjectTasks({
 
     if (newStatus === "completed") {
       updateData.progressPercentage = 100;
-    } else if (newStatus === "pending") {
+    } else if (newStatus === "pending" || newStatus === "cancelled") {
       updateData.progressPercentage = 0;
     }
 
@@ -82,7 +99,7 @@ export function DailySurveyProjectTasks({
       if (!currentTask?.startDate) {
         updateData.startDate = today;
       }
-    } else if (newStatus === "pending") {
+    } else if (newStatus === "pending" || newStatus === "cancelled") {
       if (currentTask?.startDate) {
         updateData.startDate = null;
       }
@@ -91,7 +108,8 @@ export function DailySurveyProjectTasks({
       }
     }
 
-    const result = await updateProjectTask(taskId, updateData);
+    // Use skipRefetch: true to avoid refetching all tasks
+    const result = await updateProjectTask(taskId, updateData, true);
 
     if (result.success) {
       toast({
@@ -102,27 +120,61 @@ export function DailySurveyProjectTasks({
     } else {
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado de la tarea",
+        description:
+          result.error || "No se pudo actualizar el estado de la tarea",
         variant: "destructive",
       });
     }
   };
 
   const handleAssignOperario = async (taskId: string, operarioId: string) => {
-    const result = await updateProjectTask(taskId, {
-      assignedTo: operarioId === "none" ? undefined : operarioId,
-    });
+    const currentTask = projectTasks.find((t) => t.id === taskId);
+    const isDesasignando = operarioId === "none";
+
+    const updateData: any = {
+      assignedTo: isDesasignando ? null : operarioId,
+    };
+
+    if (
+      isDesasignando &&
+      currentTask &&
+      (currentTask.status === "in_progress" ||
+        currentTask.status === "completed")
+    ) {
+      updateData.status = "pending";
+      updateData.progressPercentage = 0;
+      if (currentTask.startDate) {
+        updateData.startDate = null;
+      }
+      if (currentTask.endDate) {
+        updateData.endDate = null;
+      }
+    }
+
+    const result = await updateProjectTask(
+      taskId,
+      updateData,
+      true
+    );
 
     if (result.success) {
       toast({
-        title: "✓ Operario asignado",
-        description: "El operario ha sido asignado a la tarea",
+        title: isDesasignando
+          ? "✓ Operario desasignado"
+          : "✓ Operario asignado",
+        description: isDesasignando
+          ? currentTask?.status === "in_progress" ||
+            currentTask?.status === "completed"
+            ? "El operario ha sido desasignado y el estado se cambió a 'Pendiente'"
+            : "El operario ha sido desasignado de la tarea"
+          : "El operario ha sido asignado a la tarea",
         variant: "default",
       });
     } else {
       toast({
         title: "Error",
-        description: "No se pudo asignar el operario",
+        description:
+          result.error || "No se pudo actualizar la asignación del operario",
         variant: "destructive",
       });
     }
@@ -268,7 +320,11 @@ export function DailySurveyProjectTasks({
               );
             })()}
 
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-1 text-center min-w-[80px] w-full">
+            <div
+              className={`flex-1 grid grid-cols-1 sm:grid-cols-2 ${
+                cancelledTasks > 0 ? "lg:grid-cols-5" : "lg:grid-cols-4"
+              } gap-1 text-center min-w-[80px] w-full`}
+            >
               <div className="p-1 border rounded-md">
                 <div className="text-xs sm:text-sm font-bold text-foreground">
                   {completedTasks}
@@ -298,16 +354,26 @@ export function DailySurveyProjectTasks({
                   {totalTasks}
                 </div>
                 <div className="text-xs sm:text-sm text-muted-foreground">
-                  Total
+                  Total Activas
                 </div>
               </div>
+              {cancelledTasks > 0 && (
+                <div className="p-1 border rounded-md">
+                  <div className="text-xs sm:text-sm font-bold text-foreground">
+                    {cancelledTasks}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    Canceladas
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="space-y-2.5 sm:space-y-4">
-        <h2 className="text-base sm:text-xl font-semibold">
+        <h2 className="text-base sm:text-xl font-semibold max-sm:mt-6">
           Tareas del Proyecto
         </h2>
         {sortedTasks.length === 0 ? (

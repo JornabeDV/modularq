@@ -551,9 +551,9 @@ export class PrismaTypedService {
     status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
     estimated_hours?: number
     actual_hours?: number
-    assigned_to?: string
-    start_date?: string
-    end_date?: string
+    assigned_to?: string | null
+    start_date?: string | null
+    end_date?: string | null
     progress_percentage?: number
     notes?: string
     task_order?: number
@@ -567,7 +567,10 @@ export class PrismaTypedService {
     if (projectTaskData.status !== undefined) updateData.status = projectTaskData.status
     if (projectTaskData.estimated_hours !== undefined) updateData.estimated_hours = projectTaskData.estimated_hours
     if (projectTaskData.actual_hours !== undefined) updateData.actual_hours = projectTaskData.actual_hours
-    if (projectTaskData.assigned_to !== undefined) updateData.assigned_to = projectTaskData.assigned_to
+    
+    if (projectTaskData.assigned_to !== undefined) {
+      updateData.assigned_to = projectTaskData.assigned_to === null ? null : projectTaskData.assigned_to
+    }
     if (projectTaskData.start_date !== undefined) {
       updateData.start_date = projectTaskData.start_date === null ? null : projectTaskData.start_date
     }
