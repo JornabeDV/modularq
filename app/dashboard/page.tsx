@@ -58,7 +58,6 @@ export default function DashboardPage() {
   );
 
   const getProjectMetrics = (project: any) => {
-    // Excluir tareas canceladas del cálculo
     const activeTasks = project.projectTasks.filter(
       (pt: any) => pt.status !== "cancelled"
     );
@@ -119,12 +118,10 @@ export default function DashboardPage() {
     };
   };
 
-
   return (
     <AdminOrSupervisorOnly>
       <MainLayout>
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-balance">
@@ -138,7 +135,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -199,7 +195,6 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* Admin and Supervisor Section */}
           {(userProfile?.role === "admin" ||
             userProfile?.role === "supervisor") && (
             <Card>
@@ -219,7 +214,6 @@ export default function DashboardPage() {
                       : "lg:grid-cols-3"
                   } gap-4`}
                 >
-                  {/* Solo administradores pueden gestionar personal */}
                   {userProfile?.role === "admin" && (
                     <div className="p-4 border rounded-lg flex flex-col justify-between">
                       <div className="flex items-center justify-between mb-2">
@@ -307,17 +301,20 @@ export default function DashboardPage() {
           )}
 
           {/* Projects Overview */}
-          <Card>
+          <Card className="max-sm:gap-3">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex max-sm:flex-col max-sm:gap-4 sm:items-center justify-between">
+                <div className="max-sm:flex max-sm:flex-col max-sm:gap-3">
                   <CardTitle>Proyectos Activos</CardTitle>
                   <CardDescription>
                     Estado actual de los proyectos en curso
                   </CardDescription>
                 </div>
-                <Link href="/admin/projects">
-                  <Button variant="outline" className="gap-2 cursor-pointer">
+                <Link href="/admin/projects" className="max-sm:w-full">
+                  <Button
+                    variant="outline"
+                    className="gap-2 cursor-pointer max-sm:w-full"
+                  >
                     <FolderKanban className="h-4 w-4" />
                     Gestionar Proyectos
                   </Button>
@@ -342,9 +339,9 @@ export default function DashboardPage() {
                     return (
                       <Card
                         key={project.id}
-                        className="hover:shadow-md transition-shadow relative"
+                        className="hover:shadow-md transition-shadow relative flex flex-col justify-between "
                       >
-                        <CardHeader className="pb-3">
+                        <CardHeader className="px-3 sm:px-6 pb-3">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
                               <CardTitle className="text-xl">
@@ -362,7 +359,7 @@ export default function DashboardPage() {
                           )}
 
                           {/* Fechas */}
-                          <div className="grid grid-cols-2 gap-2 pt-2 text-sm text-muted-foreground">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4" />
                               <span>
@@ -378,227 +375,217 @@ export default function DashboardPage() {
                           </div>
                         </CardHeader>
 
-                        <CardContent className="space-y-4">
-                          {/* Progreso de Tareas - Círculo */}
-                          {(() => {
-                            const taskProgress =
-                              metrics.totalTasks > 0
-                                ? Math.round(
-                                    (metrics.completedTasks /
-                                      metrics.totalTasks) *
-                                      100
-                                  )
-                                : 0;
-                            const progressColor =
-                              getProgressColor(taskProgress);
-                            const radialData = [
-                              {
-                                name: "progreso",
-                                value: taskProgress,
-                                fill: progressColor,
-                              },
-                            ];
-                            const radialChartConfig = {
-                              progreso: {
-                                label: "Progreso",
-                                color: progressColor,
-                              },
-                            } satisfies ChartConfig;
-
-                            return (
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-1 text-sm">
-                                  <Target className="h-4 w-4 flex-shrink-0" />
-                                  <span className="truncate">
-                                    Progreso de Tareas
-                                  </span>
-                                </div>
-                                <ChartContainer
-                                  config={radialChartConfig}
-                                  className="mx-auto aspect-square max-h-[100px] sm:max-h-[120px]"
-                                >
-                                  <RadialBarChart
-                                    data={radialData}
-                                    endAngle={90 + taskProgress * 3.6}
-                                    innerRadius={isMobile ? 30 : 35}
-                                    outerRadius={isMobile ? 45 : 50}
-                                    startAngle={90}
-                                    width={isMobile ? 100 : 120}
-                                    height={isMobile ? 100 : 120}
-                                  >
-                                    <PolarGrid
-                                      gridType="circle"
-                                      radialLines={false}
-                                      stroke="none"
-                                      className="first:fill-muted last:fill-background"
-                                      polarRadius={
-                                        isMobile ? [35, 25] : [40, 30]
-                                      }
-                                    />
-                                    <RadialBar
-                                      dataKey="value"
-                                      background
-                                      cornerRadius={8}
-                                    />
-                                    <PolarRadiusAxis
-                                      tick={false}
-                                      tickLine={false}
-                                      axisLine={false}
-                                    >
-                                      <Label
-                                        content={({ viewBox }) => {
-                                          if (
-                                            viewBox &&
-                                            "cx" in viewBox &&
-                                            "cy" in viewBox
-                                          ) {
-                                            return (
-                                              <text
-                                                x={viewBox.cx}
-                                                y={viewBox.cy}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                              >
-                                                <tspan
-                                                  x={viewBox.cx}
-                                                  y={viewBox.cy}
-                                                  className={`fill-foreground font-bold ${
-                                                    isMobile
-                                                      ? "text-lg"
-                                                      : "text-xl"
-                                                  }`}
-                                                >
-                                                  {taskProgress}%
-                                                </tspan>
-                                              </text>
-                                            );
-                                          }
-                                        }}
-                                      />
-                                    </PolarRadiusAxis>
-                                  </RadialBarChart>
-                                </ChartContainer>
-                              </div>
-                            );
-                          })()}
-
-                          {/* Tiempo Estimado Completado - Gráfico Circular */}
-                          {(() => {
-                            const timeProgress =
-                              metrics.estimatedHours > 0
-                                ? Math.min(
-                                    Math.round(
-                                      (metrics.completedEstimatedHours /
-                                        metrics.estimatedHours) *
+                        <CardContent className="space-y-4 max-sm:px-3">
+                          <div className="flex max-sm:flex-col gap-4">
+                            {(() => {
+                              const taskProgress =
+                                metrics.totalTasks > 0
+                                  ? Math.round(
+                                      (metrics.completedTasks /
+                                        metrics.totalTasks) *
                                         100
-                                    ),
-                                    100
-                                  )
-                                : 0;
-                            const progressColor =
-                              getProgressColor(timeProgress);
-                            const radialData = [
-                              {
-                                name: "tiempo",
-                                value: timeProgress,
-                                fill: progressColor,
-                              },
-                            ];
-                            const radialChartConfig = {
-                              tiempo: {
-                                label: "Tiempo",
-                                color: progressColor,
-                              },
-                            } satisfies ChartConfig;
+                                    )
+                                  : 0;
+                              const progressColor =
+                                getProgressColor(taskProgress);
+                              const radialData = [
+                                {
+                                  name: "progreso",
+                                  value: taskProgress,
+                                  fill: progressColor,
+                                },
+                              ];
+                              const radialChartConfig = {
+                                progreso: {
+                                  label: "Progreso",
+                                  color: progressColor,
+                                },
+                              } satisfies ChartConfig;
 
-                            return (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span className="flex items-center gap-1">
-                                    <Timer className="h-4 w-4 flex-shrink-0" />
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <Target className="h-4 w-4 flex-shrink-0" />
                                     <span className="truncate">
-                                      Tiempo Estimado Completado
+                                      Progreso de Tareas
                                     </span>
-                                  </span>
-                                  <span className="font-semibold">
-                                    {metrics.completedEstimatedHours % 1 === 0
-                                      ? metrics.completedEstimatedHours
-                                      : metrics.completedEstimatedHours}
-                                    hs de{" "}
-                                    {metrics.estimatedHours % 1 === 0
-                                      ? metrics.estimatedHours
-                                      : metrics.estimatedHours}
-                                    hs
-                                  </span>
-                                </div>
-                                <ChartContainer
-                                  config={radialChartConfig}
-                                  className="mx-auto aspect-square max-h-[100px] sm:max-h-[120px]"
-                                >
-                                  <RadialBarChart
-                                    data={radialData}
-                                    endAngle={90 + timeProgress * 3.6}
-                                    innerRadius={isMobile ? 30 : 35}
-                                    outerRadius={isMobile ? 45 : 50}
-                                    startAngle={90}
-                                    width={isMobile ? 100 : 120}
-                                    height={isMobile ? 100 : 120}
+                                  </div>
+                                  <ChartContainer
+                                    config={radialChartConfig}
+                                    className="mx-auto aspect-square max-h-[140px] sm:max-h-[160px]"
                                   >
-                                    <PolarGrid
-                                      gridType="circle"
-                                      radialLines={false}
-                                      stroke="none"
-                                      className="first:fill-muted last:fill-background"
-                                      polarRadius={
-                                        isMobile ? [35, 25] : [40, 30]
-                                      }
-                                    />
-                                    <RadialBar
-                                      dataKey="value"
-                                      background
-                                      cornerRadius={8}
-                                    />
-                                    <PolarRadiusAxis
-                                      tick={false}
-                                      tickLine={false}
-                                      axisLine={false}
+                                    <RadialBarChart
+                                      data={radialData}
+                                      endAngle={90 + taskProgress * 3.6}
+                                      innerRadius={isMobile ? 40 : 50}
+                                      outerRadius={isMobile ? 60 : 70}
+                                      startAngle={90}
+                                      width={isMobile ? 140 : 160}
+                                      height={isMobile ? 140 : 160}
                                     >
-                                      <Label
-                                        content={({ viewBox }) => {
-                                          if (
-                                            viewBox &&
-                                            "cx" in viewBox &&
-                                            "cy" in viewBox
-                                          ) {
-                                            return (
-                                              <text
-                                                x={viewBox.cx}
-                                                y={viewBox.cy}
-                                                textAnchor="middle"
-                                                dominantBaseline="middle"
-                                              >
-                                                <tspan
+                                      <PolarGrid
+                                        gridType="circle"
+                                        radialLines={false}
+                                        stroke="none"
+                                        className="first:fill-muted last:fill-background"
+                                        polarRadius={
+                                          isMobile ? [50, 35] : [60, 40]
+                                        }
+                                      />
+                                      <RadialBar
+                                        dataKey="value"
+                                        background
+                                        cornerRadius={8}
+                                      />
+                                      <PolarRadiusAxis
+                                        tick={false}
+                                        tickLine={false}
+                                        axisLine={false}
+                                      >
+                                        <Label
+                                          content={({ viewBox }) => {
+                                            if (
+                                              viewBox &&
+                                              "cx" in viewBox &&
+                                              "cy" in viewBox
+                                            ) {
+                                              return (
+                                                <text
                                                   x={viewBox.cx}
                                                   y={viewBox.cy}
-                                                  className={`fill-foreground font-bold ${
-                                                    isMobile
-                                                      ? "text-lg"
-                                                      : "text-xl"
-                                                  }`}
+                                                  textAnchor="middle"
+                                                  dominantBaseline="middle"
                                                 >
-                                                  {timeProgress}%
-                                                </tspan>
-                                              </text>
-                                            );
-                                          }
-                                        }}
+                                                  <tspan
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    className={`fill-foreground font-bold ${
+                                                      isMobile
+                                                        ? "text-xl"
+                                                        : "text-2xl"
+                                                    }`}
+                                                  >
+                                                    {taskProgress}%
+                                                  </tspan>
+                                                </text>
+                                              );
+                                            }
+                                          }}
+                                        />
+                                      </PolarRadiusAxis>
+                                    </RadialBarChart>
+                                  </ChartContainer>
+                                </div>
+                              );
+                            })()}
+
+                            {(() => {
+                              const timeProgress =
+                                metrics.estimatedHours > 0
+                                  ? Math.min(
+                                      Math.round(
+                                        (metrics.completedEstimatedHours /
+                                          metrics.estimatedHours) *
+                                          100
+                                      ),
+                                      100
+                                    )
+                                  : 0;
+                              const progressColor =
+                                getProgressColor(timeProgress);
+                              const radialData = [
+                                {
+                                  name: "tiempo",
+                                  value: timeProgress,
+                                  fill: progressColor,
+                                },
+                              ];
+                              const radialChartConfig = {
+                                tiempo: {
+                                  label: "Tiempo",
+                                  color: progressColor,
+                                },
+                              } satisfies ChartConfig;
+
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-1">
+                                      <Timer className="h-4 w-4 flex-shrink-0" />
+                                      <span className="truncate">
+                                        Tiempo Completado
+                                      </span>
+                                    </span>
+                                  </div>
+                                  <ChartContainer
+                                    config={radialChartConfig}
+                                    className="mx-auto aspect-square max-h-[140px] sm:max-h-[160px]"
+                                  >
+                                    <RadialBarChart
+                                      data={radialData}
+                                      endAngle={90 + timeProgress * 3.6}
+                                      innerRadius={isMobile ? 40 : 50}
+                                      outerRadius={isMobile ? 60 : 70}
+                                      startAngle={90}
+                                      width={isMobile ? 140 : 160}
+                                      height={isMobile ? 140 : 160}
+                                    >
+                                      <PolarGrid
+                                        gridType="circle"
+                                        radialLines={false}
+                                        stroke="none"
+                                        className="first:fill-muted last:fill-background"
+                                        polarRadius={
+                                          isMobile ? [50, 35] : [60, 40]
+                                        }
                                       />
-                                    </PolarRadiusAxis>
-                                  </RadialBarChart>
-                                </ChartContainer>
-                              </div>
-                            );
-                          })()}
+                                      <RadialBar
+                                        dataKey="value"
+                                        background
+                                        cornerRadius={8}
+                                      />
+                                      <PolarRadiusAxis
+                                        tick={false}
+                                        tickLine={false}
+                                        axisLine={false}
+                                      >
+                                        <Label
+                                          content={({ viewBox }) => {
+                                            if (
+                                              viewBox &&
+                                              "cx" in viewBox &&
+                                              "cy" in viewBox
+                                            ) {
+                                              return (
+                                                <text
+                                                  x={viewBox.cx}
+                                                  y={viewBox.cy}
+                                                  textAnchor="middle"
+                                                  dominantBaseline="middle"
+                                                >
+                                                  <tspan
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    className={`fill-foreground font-bold ${
+                                                      isMobile
+                                                        ? "text-xl"
+                                                        : "text-2xl"
+                                                    }`}
+                                                  >
+                                                    {timeProgress}%
+                                                  </tspan>
+                                                </text>
+                                              );
+                                            }
+                                          }}
+                                        />
+                                      </PolarRadiusAxis>
+                                    </RadialBarChart>
+                                  </ChartContainer>
+                                </div>
+                              );
+                            })()}
+                          </div>
 
                           {/* Métricas de tareas */}
                           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -639,22 +626,18 @@ export default function DashboardPage() {
                               </span>
                             </div>
                           </div>
-
-                          {/* Botones de acción */}
-                          <div className="pt-2">
-                            <Link
-                              href={`/admin/projects/${project.id}/metrics`}
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full cursor-pointer"
-                              >
-                                Ver Métricas
-                              </Button>
-                            </Link>
-                          </div>
                         </CardContent>
+                        <div className="px-3 sm:px-6">
+                          <Link href={`/admin/projects/${project.id}/metrics`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full cursor-pointer"
+                            >
+                              Ver Métricas
+                            </Button>
+                          </Link>
+                        </div>
                       </Card>
                     );
                   })}

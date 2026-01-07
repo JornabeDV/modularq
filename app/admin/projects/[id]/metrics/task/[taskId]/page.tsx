@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard";
-import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
   Target,
@@ -49,8 +48,10 @@ export default function TaskMetricsPage() {
     }
   }, [projectTask]);
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | null | undefined) => {
+    if (!dateString) return null;
     const date = new Date(dateString);
+    if (isNaN(date.getTime()) || date.getTime() === 0) return null;
     return date.toLocaleString("es-ES", {
       day: "2-digit",
       month: "2-digit",
@@ -76,7 +77,6 @@ export default function TaskMetricsPage() {
     };
   }, [loading, refetch]);
 
-  // Si no hay proyecto o tarea después de cargar, mostrar error
   if (!loading && (!project || !projectTask || !task)) {
     return (
       <MainLayout>
@@ -222,33 +222,37 @@ export default function TaskMetricsPage() {
                     <Calendar className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Fecha de Inicio</span>
                   </div>
-                  <p className="font-medium text-sm sm:text-base">
-                    {formatDateTime(
-                      taskState?.startedAt || projectTask.startedAt
-                    )}
-                  </p>
-                  {(taskState?.startedByUser || projectTask.startedByUser) &&
-                    (taskState?.startedAt || projectTask.startedAt) && (
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Iniciada por:{" "}
-                        <span className="font-semibold text-foreground">
-                          {
-                            (
-                              taskState?.startedByUser ||
-                              projectTask.startedByUser
-                            )?.name
-                          }
-                        </span>
+                  {(() => {
+                    const startedAt =
+                      taskState?.startedAt || projectTask.startedAt;
+                    const formattedDate = formatDateTime(startedAt);
+                    const startedByUser =
+                      taskState?.startedByUser || projectTask.startedByUser;
+
+                    if (formattedDate) {
+                      return (
+                        <>
+                          <p className="font-medium text-sm sm:text-base">
+                            {formattedDate}
+                          </p>
+                          {startedByUser && (
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Iniciada por:{" "}
+                              <span className="font-semibold text-foreground">
+                                {startedByUser?.name}
+                              </span>
+                            </p>
+                          )}
+                        </>
+                      );
+                    }
+
+                    return (
+                      <p className="font-medium text-sm sm:text-base text-foreground">
+                        Sin fecha
                       </p>
-                    )}
-                  {projectTask.status === "in_progress" &&
-                    !(
-                      taskState?.startedByUser || projectTask.startedByUser
-                    ) && (
-                      <p className="text-xs text-muted-foreground italic">
-                        Información de inicio no disponible
-                      </p>
-                    )}
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-2 p-3 border rounded-lg">
@@ -256,26 +260,43 @@ export default function TaskMetricsPage() {
                     <Calendar className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Fecha de Fin</span>
                   </div>
-                  <p className="font-medium text-sm sm:text-base">
-                    {formatDate(projectTask.endDate)}
-                  </p>
-                  {(taskState?.completedByUser ||
-                    projectTask.completedByUser) &&
-                    (taskState?.completedAt || projectTask.completedAt) && (
-                      <p className="text-xs text-muted-foreground">
-                        Completada por:{" "}
-                        {
-                          (
-                            taskState?.completedByUser ||
-                            projectTask.completedByUser
-                          )?.name
-                        }{" "}
-                        -{" "}
-                        {formatDateTime(
-                          taskState?.completedAt || projectTask.completedAt
-                        )}
+                  {(() => {
+                    const endDate =
+                      taskState?.completedAt ||
+                      projectTask.completedAt ||
+                      projectTask.endDate;
+                    const formattedDate = formatDateTime(endDate);
+
+                    if (formattedDate) {
+                      return (
+                        <>
+                          <p className="font-medium text-sm sm:text-base">
+                            {formattedDate}
+                          </p>
+                          {(taskState?.completedByUser ||
+                            projectTask.completedByUser) && (
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Completada por:{" "}
+                              <span className="font-semibold text-foreground">
+                                {
+                                  (
+                                    taskState?.completedByUser ||
+                                    projectTask.completedByUser
+                                  )?.name
+                                }
+                              </span>
+                            </p>
+                          )}
+                        </>
+                      );
+                    }
+
+                    return (
+                      <p className="font-medium text-sm sm:text-base text-foreground">
+                        Sin fecha
                       </p>
-                    )}
+                    );
+                  })()}
                 </div>
 
                 <div className="space-y-2 p-3 border rounded-lg sm:col-span-2 lg:col-span-1">
