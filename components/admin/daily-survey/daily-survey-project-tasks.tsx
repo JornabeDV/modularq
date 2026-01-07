@@ -8,6 +8,7 @@ import { useProjectTasksPrisma } from "@/hooks/use-project-tasks-prisma";
 import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, AlertCircle, Target } from "lucide-react";
 import { getProgressColor } from "@/lib/utils/project-utils";
 import {
@@ -29,6 +30,7 @@ export function DailySurveyProjectTasks({
 }: DailySurveyProjectTasksProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { projects, loading: projectsLoading } = useProjectsPrisma();
   const {
     projectTasks,
@@ -108,8 +110,7 @@ export function DailySurveyProjectTasks({
       }
     }
 
-    // Use skipRefetch: true to avoid refetching all tasks
-    const result = await updateProjectTask(taskId, updateData, true);
+    const result = await updateProjectTask(taskId, updateData, true, user?.id);
 
     if (result.success) {
       toast({
@@ -154,7 +155,8 @@ export function DailySurveyProjectTasks({
     const result = await updateProjectTask(
       taskId,
       updateData,
-      true
+      true,
+      user?.id
     );
 
     if (result.success) {

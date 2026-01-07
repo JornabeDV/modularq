@@ -140,7 +140,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
   }
 
   const handleStartTask = async (projectTaskId: string) => {
-    const result = await startTask(projectTaskId)
+    const result = await startTask(projectTaskId, user?.id)
     if (result.success) {
       onTaskUpdate?.()
     }
@@ -161,7 +161,7 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
   const handleComplete = async () => {
     if (!completingTask) return
 
-    const result = await completeTask(completingTask.id, actualHours, notes)
+    const result = await completeTask(completingTask.id, actualHours, notes, user?.id)
     if (result.success) {
       setCompletingTask(null)
       setActualHours(0)

@@ -178,13 +178,13 @@ export function useProjectDetail({
       if (taskData.assignedTo !== undefined)
         updateData.assignedTo = taskData.assignedTo;
 
-      const result = await updateProjectTask(projectTaskId, updateData);
+      const result = await updateProjectTask(projectTaskId, updateData, false, userId);
       if (result.success) {
         setEditingTask(null);
       }
       return result;
     },
-    [updateProjectTask]
+    [updateProjectTask, userId]
   );
 
   const handleEditTask = useCallback(
@@ -242,7 +242,7 @@ export function useProjectDetail({
         status: "completed",
         endDate: new Date().toISOString(),
         actualHours: actualHours,
-      });
+      }, false, userId);
 
       if (result.success) {
         toast({
