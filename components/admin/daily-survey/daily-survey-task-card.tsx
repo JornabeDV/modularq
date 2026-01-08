@@ -10,8 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle, Clock, AlertCircle, User, XCircle } from "lucide-react";
+import { User } from "lucide-react";
 import type { ProjectTask } from "@/lib/types";
+import { getStatusIcon, getStatusLabel } from "@/lib/utils/status-label";
 
 interface DailySurveyTaskCardProps {
   task: ProjectTask;
@@ -31,23 +32,6 @@ export function DailySurveyTaskCard({
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const hasOperario = !!task.assignedTo;
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />;
-      case "in_progress":
-        return <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />;
-      case "pending":
-        return (
-          <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
-        );
-      case "cancelled":
-        return <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />;
-      default:
-        return <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />;
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -60,21 +44,6 @@ export function DailySurveyTaskCard({
         return "bg-red-50 text-red-700 border-red-200";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "Completada";
-      case "in_progress":
-        return "En Progreso";
-      case "pending":
-        return "Pendiente";
-      case "cancelled":
-        return "Cancelada";
-      default:
-        return status;
     }
   };
 

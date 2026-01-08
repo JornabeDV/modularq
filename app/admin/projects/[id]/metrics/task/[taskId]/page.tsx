@@ -14,12 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard";
+import { StatusBadge } from "@/components/admin/metrics/status-badge";
 import {
   ArrowLeft,
   Target,
   Calendar,
   Users,
-  Activity,
   FileText,
   User,
 } from "lucide-react";
@@ -60,22 +60,6 @@ export default function TaskMetricsPage() {
       minute: "2-digit",
     });
   };
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    const refreshInterval = setInterval(() => {
-      if (refetch) {
-        refetch();
-      }
-    }, 30000);
-
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, [loading, refetch]);
 
   if (!loading && (!project || !projectTask || !task)) {
     return (
@@ -120,18 +104,10 @@ export default function TaskMetricsPage() {
     estimatedHours = task?.estimatedHours || 0;
   }
 
-  let progressPercentage = projectTask.progressPercentage || 0;
-  if (projectTask.status === "completed") {
-    progressPercentage = 100;
-  } else if (projectTask.status === "pending") {
-    progressPercentage = 0;
-  }
-
   return (
     <AdminOrSupervisorOnly>
       <MainLayout>
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* Header */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <Button
@@ -145,26 +121,10 @@ export default function TaskMetricsPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Volver</span>
               </Button>
-              <Badge
-                variant="outline"
-                className={`font-medium text-xs sm:text-sm ${
-                  projectTask.status === "completed"
-                    ? "bg-green-50 text-green-700 border-green-200"
-                    : projectTask.status === "in_progress"
-                    ? "bg-orange-50 text-orange-700 border-orange-200"
-                    : projectTask.status === "pending"
-                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                    : "bg-gray-50 text-gray-700 border-gray-200"
-                }`}
-              >
-                {projectTask.status === "completed"
-                  ? "Completada"
-                  : projectTask.status === "in_progress"
-                  ? "En Progreso"
-                  : projectTask.status === "pending"
-                  ? "Pendiente"
-                  : projectTask.status}
-              </Badge>
+              <StatusBadge
+                status={projectTask.status}
+                className="font-medium text-xs sm:text-sm"
+              />
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold leading-tight break-words">
@@ -184,7 +144,7 @@ export default function TaskMetricsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <Target className="h-4 w-4 flex-shrink-0" />
@@ -194,29 +154,15 @@ export default function TaskMetricsPage() {
                     {estimatedHours}hs
                   </p>
                 </div>
-
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                    <Activity className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Progreso</span>
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Operario Asignado</span>
                   </div>
-                  <p className="text-lg sm:text-2xl font-bold">
-                    {progressPercentage}%
+                  <p className="font-medium text-sm sm:text-base truncate">
+                    {projectTask.assignedUser?.name || "Sin asignar"}
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Fechas y Asignación
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4 flex-shrink-0" />
@@ -254,7 +200,6 @@ export default function TaskMetricsPage() {
                     );
                   })()}
                 </div>
-
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4 flex-shrink-0" />
@@ -298,20 +243,9 @@ export default function TaskMetricsPage() {
                     );
                   })()}
                 </div>
-
-                <div className="space-y-2 p-3 border rounded-lg sm:col-span-2 lg:col-span-1">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                    <User className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Operario Asignado</span>
-                  </div>
-                  <p className="font-medium text-sm sm:text-base truncate">
-                    {projectTask.assignedUser?.name || "Sin asignar"}
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>
-
           {projectTask.collaborators &&
             projectTask.collaborators.length > 0 && (
               <Card>

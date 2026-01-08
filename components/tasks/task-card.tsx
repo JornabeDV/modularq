@@ -16,16 +16,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Clock,
-  Calendar,
-  MoreHorizontal,
-  Play,
-  Pause,
-  CheckCircle,
-} from "lucide-react";
-import type { Task, ProjectTask } from "@/lib/types";
+import { Calendar, MoreHorizontal } from "lucide-react";
+import type { ProjectTask } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { getStatusIcon } from "@/lib/utils/status-label";
 
 interface TaskCardProps {
   task: ProjectTask;
@@ -48,21 +42,6 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
         return "destructive";
       default:
         return "secondary";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "in_progress":
-        return <Play className="h-4 w-4 text-blue-500" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case "cancelled":
-        return <Pause className="h-4 w-4 text-red-500" />;
-      default:
-        return <Clock className="h-4 w-4" />;
     }
   };
 

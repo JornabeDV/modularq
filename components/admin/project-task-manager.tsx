@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Plus, CheckCircle, Clock, AlertCircle, User } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useTasksPrisma } from '@/hooks/use-tasks-prisma'
 import { DraggableTaskCard } from './draggable-task-card'
@@ -56,26 +56,6 @@ export function ProjectTaskManager({
 
   const standardTasks = availableTasks.filter(t => t.type === 'standard')
   const customTasks = availableTasks.filter(t => t.type === 'custom')
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      case 'in_progress': return <Clock className="h-4 w-4 text-orange-500" />
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'cancelled': return <AlertCircle className="h-4 w-4 text-red-500" />
-      default: return <AlertCircle className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'in_progress': return 'bg-orange-100 text-orange-800'
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'cancelled': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   // Funciones de drag and drop
   const handleDragStart = (e: React.DragEvent, taskId: string) => {

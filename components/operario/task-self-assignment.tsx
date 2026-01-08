@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, Clock, Play, Square, User, ExternalLink, ArrowRight, Zap, Users } from 'lucide-react'
+import { CheckCircle, Clock, Play, Square, User, Zap, Users } from 'lucide-react'
 import { useTaskSelfAssignment } from '@/hooks/use-task-self-assignment'
 import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
@@ -167,16 +167,6 @@ export function TaskSelfAssignment({ projectTasks, projectId, projectOperarios, 
       setActualHours(0)
       setNotes('')
       onTaskUpdate?.()
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Play className="h-4 w-4 text-yellow-500" />
-      case 'assigned': return <User className="h-4 w-4 text-blue-500" />
-      case 'in_progress': return <Clock className="h-4 w-4 text-orange-500" />
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />
-      default: return <Play className="h-4 w-4 text-gray-500" />
     }
   }
 
