@@ -2,12 +2,18 @@ import { supabase } from './supabase'
 import type { User, Project, Task } from './generated/prisma/index'
 
 export class PrismaTypedService {
-  static async getAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase
+  static async getAllUsers(includeDeleted = false): Promise<User[]> {
+    let query = supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false })
-    
+
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data, error } = await query
+
     if (error) throw error
     return data as User[]
   }
@@ -79,9 +85,19 @@ export class PrismaTypedService {
   static async deleteUser(id: string): Promise<void> {
     const { error } = await supabase
       .from('users')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
-    
+      .is('deleted_at', null)
+
+    if (error) throw error
+  }
+
+  static async restoreUser(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .update({ deleted_at: null })
+      .eq('id', id)
+
     if (error) throw error
   }
 
@@ -417,7 +433,8 @@ export class PrismaTypedService {
           id,
           name,
           email,
-          role
+          role,
+          deleted_at
         )
       `)
 

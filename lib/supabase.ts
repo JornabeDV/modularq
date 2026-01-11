@@ -24,6 +24,7 @@ export interface Database {
           role: 'admin' | 'supervisor' | 'operario'
           total_hours: number
           efficiency: number
+          deleted_at: string | null
           created_at: string
           updated_at: string
         }
@@ -34,6 +35,7 @@ export interface Database {
           role: 'admin' | 'supervisor' | 'operario'
           total_hours?: number
           efficiency?: number
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -44,6 +46,7 @@ export interface Database {
           role?: 'admin' | 'supervisor' | 'operario'
           total_hours?: number
           efficiency?: number
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
         }

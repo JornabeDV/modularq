@@ -30,7 +30,8 @@ export function useProjectOperariosPrisma(projectId?: string) {
       setError(null)
       
       const operarios = await PrismaTypedService.getProjectOperarios(filterProjectId)
-      setProjectOperarios(operarios)
+      const activeOperarios = operarios.filter(operario => !operario.user?.deleted_at)
+      setProjectOperarios(activeOperarios)
     } catch (err) {
       console.error('Error fetching project operarios:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar operarios del proyecto')
