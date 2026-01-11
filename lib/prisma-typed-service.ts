@@ -141,6 +141,25 @@ export class PrismaTypedService {
             id,
             name,
             role
+          ),
+          collaborators:task_collaborators (
+            id,
+            project_task_id,
+            user_id,
+            added_by,
+            added_at,
+            created_at,
+            updated_at,
+            user:user_id (
+              id,
+              name,
+              role
+            ),
+            added_by_user:added_by (
+              id,
+              name,
+              role
+            )
           )
         ),
         project_operarios (

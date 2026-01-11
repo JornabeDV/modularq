@@ -376,7 +376,7 @@ export default function DashboardPage() {
                         </CardHeader>
 
                         <CardContent className="space-y-4 max-sm:px-3">
-                          <div className="flex max-sm:flex-col gap-4">
+                          <div className="flex max-sm:flex-col justify-between gap-4">
                             {(() => {
                               const taskProgress =
                                 metrics.totalTasks > 0

@@ -182,6 +182,8 @@ export function DailySurveyProjectTasks({
     }
   };
 
+  const handleCollaboratorsChange = () => {};
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -397,6 +399,7 @@ export function DailySurveyProjectTasks({
                 projectOperarios={projectOperarios || []}
                 onStatusChange={handleStatusChange}
                 onAssignOperario={handleAssignOperario}
+                onCollaboratorsChange={handleCollaboratorsChange}
               />
             ))}
           </div>

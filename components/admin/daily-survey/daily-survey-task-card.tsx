@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,8 +11,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User } from "lucide-react";
-import type { ProjectTask } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  User,
+  Users,
+  Crown,
+  Save,
+  X as XIcon,
+} from "lucide-react";
+import { useTaskCollaborators } from "@/hooks/use-task-collaborators";
+import { useAuth } from "@/lib/auth-context";
+import type { ProjectTask, TaskCollaborator } from "@/lib/types";
 import { getStatusIcon, getStatusLabel } from "@/lib/utils/status-label";
 
 interface DailySurveyTaskCardProps {
@@ -20,6 +38,7 @@ interface DailySurveyTaskCardProps {
   projectOperarios: any[];
   onStatusChange: (taskId: string, newStatus: string) => void;
   onAssignOperario: (taskId: string, operarioId: string) => void;
+  onCollaboratorsChange?: () => void;
 }
 
 export function DailySurveyTaskCard({
@@ -28,9 +47,129 @@ export function DailySurveyTaskCard({
   projectOperarios,
   onStatusChange,
   onAssignOperario,
+  onCollaboratorsChange,
 }: DailySurveyTaskCardProps) {
   const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [collaborators, setCollaborators] = useState<TaskCollaborator[]>([]);
+  const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [pendingAdditions, setPendingAdditions] = useState<Set<string>>(
+    new Set()
+  );
+  const [pendingRemovals, setPendingRemovals] = useState<Set<string>>(
+    new Set()
+  );
+
+  const { user } = useAuth();
+  const { addCollaborator, removeCollaborator, getCollaborators } =
+    useTaskCollaborators();
+
   const hasOperario = !!task.assignedTo;
+
+  useEffect(() => {
+    loadCollaborators();
+  }, [task.id]);
+
+  useEffect(() => {
+    if (isCollaboratorsOpen) {
+      setPendingAdditions(new Set());
+      setPendingRemovals(new Set());
+    }
+  }, [isCollaboratorsOpen]);
+
+  const loadCollaborators = async () => {
+    const data = await getCollaborators(task.id);
+    setCollaborators(data);
+  };
+
+  const availableOperarios = projectOperarios.filter(
+    (operario) =>
+      operario.user_id !== task.assignedTo &&
+      !collaborators.some((c) => c.userId === operario.user_id)
+  );
+
+  const currentCollaborators = collaborators.filter(
+    (c) => !pendingRemovals.has(c.id)
+  );
+  const availableForAddition = availableOperarios.filter(
+    (operario) => !pendingAdditions.has(operario.user_id)
+  );
+
+  const pendingAdditionOperarios = availableOperarios.filter((operario) =>
+    pendingAdditions.has(operario.user_id)
+  );
+
+  const hasPendingChanges =
+    pendingAdditions.size > 0 || pendingRemovals.size > 0;
+
+  const handleToggleCollaborator = (
+    operarioId: string,
+    isCurrentlyCollaborator: boolean
+  ) => {
+    if (isCurrentlyCollaborator) {
+      const collaborator = collaborators.find((c) => c.userId === operarioId);
+      if (collaborator) {
+        const newRemovals = new Set(pendingRemovals);
+        if (newRemovals.has(collaborator.id)) {
+          newRemovals.delete(collaborator.id);
+        } else {
+          newRemovals.add(collaborator.id);
+        }
+        setPendingRemovals(newRemovals);
+      }
+    } else {
+      const newAdditions = new Set(pendingAdditions);
+      if (newAdditions.has(operarioId)) {
+        newAdditions.delete(operarioId);
+      } else {
+        newAdditions.add(operarioId);
+      }
+      setPendingAdditions(newAdditions);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!user?.id) return;
+
+    setIsLoading(true);
+    try {
+      for (const operarioId of pendingAdditions) {
+        const result = await addCollaborator({
+          projectTaskId: task.id,
+          userId: operarioId,
+          addedBy: user.id,
+        });
+        if (!result.success) {
+          throw new Error(result.error || "Error al agregar colaborador");
+        }
+      }
+
+      for (const collaboratorId of pendingRemovals) {
+        const result = await removeCollaborator(collaboratorId);
+        if (!result.success) {
+          throw new Error(result.error || "Error al remover colaborador");
+        }
+      }
+
+      setPendingAdditions(new Set());
+      setPendingRemovals(new Set());
+      await loadCollaborators();
+      onCollaboratorsChange?.();
+
+      setIsCollaboratorsOpen(false);
+    } catch (error) {
+      console.error("Error saving collaborator changes:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelChanges = () => {
+    setPendingAdditions(new Set());
+    setPendingRemovals(new Set());
+    setIsCollaboratorsOpen(false);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -183,6 +322,280 @@ export function DailySurveyTaskCard({
               </Select>
             </div>
           </div>
+
+          {hasOperario && (
+            <div className="space-y-2 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <label className="text-xs sm:text-sm font-medium">
+                  Colaboradores ({collaborators.length})
+                </label>
+                <Dialog
+                  open={isCollaboratorsOpen}
+                  onOpenChange={setIsCollaboratorsOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs cursor-pointer"
+                      onClick={() => setIsCollaboratorsOpen(true)}
+                    >
+                      <Users className="h-3 w-3 mr-1" />
+                      Gestionar
+                    </Button>
+                  </DialogTrigger>
+
+                  <DialogContent className="w-full h-full max-w-full max-h-full md:w-[90vw] md:h-auto md:max-w-lg md:max-h-[90vh] md:rounded-lg rounded-none m-0 md:m-6 overflow-y-auto top-0 left-0 translate-x-0 translate-y-0 md:top-[50%] md:left-[50%] md:translate-x-[-50%] md:translate-y-[-50%]">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                        Gestionar Colaboradores
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
+                      <div className="space-y-3">
+                        <h4 className="text-sm sm:text-base font-medium text-muted-foreground">
+                          Responsable
+                        </h4>
+                        <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                          <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
+                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                            <AvatarFallback className="text-xs">
+                              {task.assignedUser?.name
+                                ?.split(" ")
+                                .map((n: string) => n[0])
+                                .join("") || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm sm:text-base font-medium truncate">
+                              {task.assignedUser?.name || "Sin asignar"}
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              Responsable principal
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="text-sm sm:text-base font-medium text-muted-foreground">
+                          Colaboradores Actuales
+                        </h4>
+                        {currentCollaborators.length === 0 ? (
+                          <p className="text-sm sm:text-base text-muted-foreground text-center py-8 sm:py-6">
+                            No hay colaboradores asignados
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {currentCollaborators.map((collaborator) => {
+                              const willBeRemoved = pendingRemovals.has(
+                                collaborator.id
+                              );
+                              return (
+                                <div
+                                  key={collaborator.id}
+                                  className="flex items-center gap-3 p-4 border rounded-lg"
+                                >
+                                  <Checkbox
+                                    checked={!willBeRemoved}
+                                    onCheckedChange={() =>
+                                      handleToggleCollaborator(
+                                        collaborator.userId!,
+                                        true
+                                      )
+                                    }
+                                    disabled={isLoading}
+                                    className="flex-shrink-0"
+                                  />
+                                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                                    <AvatarFallback className="text-xs">
+                                      {collaborator.user?.name
+                                        ?.split(" ")
+                                        .map((n: string) => n[0])
+                                        .join("") || "U"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p
+                                      className={`text-sm sm:text-base font-medium truncate ${
+                                        willBeRemoved ? "line-through" : ""
+                                      }`}
+                                    >
+                                      {collaborator.user?.name || "Usuario"}
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                                      Agregado por{" "}
+                                      {collaborator.addedByUser?.name}
+                                      {willBeRemoved && (
+                                        <span className="ml-1">
+                                          (se removerá)
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {pendingAdditionOperarios.length > 0 && (
+                        <div className="space-y-3">
+                          <h4 className="text-sm sm:text-base font-medium text-muted-foreground">
+                            Se agregarán
+                          </h4>
+                          <div className="space-y-3">
+                            {pendingAdditionOperarios.map((operario) => (
+                              <div
+                                key={operario.user_id}
+                                className="flex items-center gap-3 p-4 border rounded-lg"
+                              >
+                                <Checkbox
+                                  checked={true}
+                                  onCheckedChange={() =>
+                                    handleToggleCollaborator(
+                                      operario.user_id,
+                                      false
+                                    )
+                                  }
+                                  disabled={isLoading}
+                                  className="flex-shrink-0"
+                                />
+                                <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                                  <AvatarFallback className="text-xs">
+                                    {operario.user?.name
+                                      ?.split(" ")
+                                      .map((n: string) => n[0])
+                                      .join("") || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm sm:text-base font-medium truncate">
+                                    {operario.user?.name || "Operario"}
+                                  </p>
+                                  <p className="text-xs sm:text-sm text-muted-foreground">
+                                    Se agregará como colaborador
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {availableForAddition.length > 0 && (
+                        <div className="space-y-3 pt-6 border-t">
+                          <h4 className="text-sm sm:text-base font-medium text-muted-foreground">
+                            Operarios Disponibles
+                          </h4>
+                          <div className="space-y-3">
+                            {availableForAddition.map((operario) => {
+                              const willBeAdded = pendingAdditions.has(
+                                operario.user_id
+                              );
+                              return (
+                                <div
+                                  key={operario.user_id}
+                                  className={`flex items-center gap-3 p-4 border rounded-lg ${
+                                    willBeAdded
+                                      ? "border-green-200 bg-green-50"
+                                      : "border-border"
+                                  }`}
+                                >
+                                  <Checkbox
+                                    checked={willBeAdded}
+                                    onCheckedChange={() =>
+                                      handleToggleCollaborator(
+                                        operario.user_id,
+                                        false
+                                      )
+                                    }
+                                    disabled={isLoading}
+                                    className="flex-shrink-0"
+                                  />
+                                  <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
+                                    <AvatarFallback className="text-xs">
+                                      {operario.user?.name
+                                        ?.split(" ")
+                                        .map((n: string) => n[0])
+                                        .join("") || "U"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm sm:text-base font-medium truncate">
+                                      {operario.user?.name || "Operario"}
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-muted-foreground">
+                                      Disponible
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t justify-end">
+                        <Button
+                          variant="outline"
+                          onClick={handleCancelChanges}
+                          disabled={isLoading}
+                          className="cursor-pointer h-10 sm:h-9"
+                          size="sm"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          onClick={handleSaveChanges}
+                          disabled={!hasPendingChanges || isLoading}
+                          className="cursor-pointer h-10 sm:h-9"
+                          size="sm"
+                        >
+                          {isLoading
+                            ? "Guardando..."
+                            : hasPendingChanges
+                            ? `Guardar (${
+                                pendingAdditions.size > 0
+                                  ? `+${pendingAdditions.size}`
+                                  : ""
+                              }${
+                                pendingRemovals.size > 0
+                                  ? `-${pendingRemovals.size}`
+                                  : ""
+                              })`
+                            : "Guardar Cambios"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {collaborators.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {collaborators.slice(0, 3).map((collaborator) => (
+                    <Badge
+                      key={collaborator.id}
+                      variant="secondary"
+                      className="text-xs px-2 py-0.5"
+                    >
+                      <User className="h-3 w-3 mr-1" />
+                      {collaborator.user?.name?.split(" ")[0] || "Colaborador"}
+                    </Badge>
+                  ))}
+                  {collaborators.length > 3 && (
+                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                      +{collaborators.length - 3} más
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
