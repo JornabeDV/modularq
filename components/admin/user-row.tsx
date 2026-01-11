@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Edit, Shield, Users, Wrench } from "lucide-react";
 import { DeleteUserButton } from "./delete-user-button";
-import { RestoreUserButton } from "./restore-user-button";
 import {
   Tooltip,
   TooltipContent,
@@ -120,14 +119,6 @@ export function UserRow({
                       onDelete={onDelete}
                     />
                   </>
-                )}
-
-                {isDeleted && onRestore && (
-                  <RestoreUserButton
-                    userId={user.id}
-                    userName={user.name}
-                    onRestore={onRestore}
-                  />
                 )}
               </>
             )}
