@@ -118,7 +118,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               onClick={() => router.push("/projects")}
               className="shrink-0 cursor-pointer"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Volver</span>
             </Button>
             <div className="min-w-0 flex-1">
