@@ -116,7 +116,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             onClick={() => router.push("/admin/projects")}
             className="mt-4 cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4" />
             Volver a Proyectos
           </Button>
         </div>

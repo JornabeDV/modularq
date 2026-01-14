@@ -220,18 +220,17 @@ export function useTaskSelfAssignment() {
 
       const projectId = taskData.project_id
 
-      // Obtener todas las tareas del proyecto
       const { data: tasks, error } = await supabase
         .from('project_tasks')
         .select('status')
         .eq('project_id', projectId)
+        .neq('status', 'cancelled')
 
       if (error) {
         console.error('Error checking project tasks:', error)
         return
       }
 
-      // Verificar si todas las tareas están completadas
       const allTasksCompleted = tasks && tasks.length > 0 && tasks.every((task: any) => task.status === 'completed')
 
       if (allTasksCompleted) {
@@ -240,14 +239,13 @@ export function useTaskSelfAssignment() {
           .from('projects')
           .update({
             status: 'completed',
-            end_date: new Date().toISOString().split('T')[0],
+            end_date: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('id', projectId)
 
         if (updateError) {
           console.error('Error updating project status:', updateError)
-        } else {
         }
       }
     } catch (err) {

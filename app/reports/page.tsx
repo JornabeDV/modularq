@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { CheckCircle, FolderKanban, Calendar } from "lucide-react";
 import Link from "next/link";
@@ -91,40 +90,31 @@ function ReportsContent() {
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <CardTitle className="text-lg">
+                            <CardTitle className="text-base sm:text-lg">
                               {project.name}
                             </CardTitle>
-                            <CardDescription className="line-clamp-2">
+                            <CardDescription className="line-clamp-2 text-sm">
                               {project.description}
                             </CardDescription>
                           </div>
-                          <Badge variant="secondary">Completado</Badge>
+                          <Badge variant="secondary" className="text-xs">Completado</Badge>
                         </div>
                       </CardHeader>
 
                       <CardContent className="space-y-4">
-                        {/* Progreso del proyecto */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Progreso del proyecto</span>
-                            <span className="font-medium">100%</span>
-                          </div>
-                          <Progress value={100} className="h-2" />
-                        </div>
-
                         {/* Información del proyecto */}
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="text-muted-foreground">
                               Inicio:
                             </span>
-                            <span>{formatDate(project.startDate)}</span>
+                            <span className="truncate">{formatDate(project.startDate)}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="text-muted-foreground">Fin:</span>
-                            <span>{formatDate(project.endDate)}</span>
+                            <span className="truncate">{formatDate(project.endDate)}</span>
                           </div>
                         </div>
 

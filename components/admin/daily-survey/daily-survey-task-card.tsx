@@ -242,32 +242,41 @@ export function DailySurveyTaskCard({
                 <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
                   Operario
                 </label>
-                <Select
-                  value={task.assignedTo || "none"}
-                  onValueChange={(value) => onAssignOperario(task.id, value)}
-                >
-                  <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm truncate">
-                    <SelectValue placeholder="Seleccionar operario..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <span className="text-muted-foreground">Sin asignar</span>
-                    </SelectItem>
-                    {projectOperarios.map((operario) => (
-                      <SelectItem
-                        key={operario.user_id}
-                        value={operario.user_id}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span className="text-xs sm:text-sm truncate min-w-0">
-                            {operario.user?.name || "Operario"}
-                          </span>
-                        </div>
+                {task.status === "completed" ? (
+                  <div className="h-[36px] w-fit px-3 py-2 text-xs sm:text-sm border border-input rounded-md bg-muted flex items-center gap-2">
+                    <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 text-muted-foreground" />
+                    <span className="truncate min-w-0">
+                      {task.assignedUser?.name || "Sin asignar"}
+                    </span>
+                  </div>
+                ) : (
+                  <Select
+                    value={task.assignedTo || "none"}
+                    onValueChange={(value) => onAssignOperario(task.id, value)}
+                  >
+                    <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm truncate">
+                      <SelectValue placeholder="Seleccionar operario..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">Sin asignar</span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {projectOperarios.map((operario) => (
+                        <SelectItem
+                          key={operario.user_id}
+                          value={operario.user_id}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span className="text-xs sm:text-sm truncate min-w-0">
+                              {operario.user?.name || "Operario"}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             )}
 

@@ -35,9 +35,13 @@ export function ProjectAnalytics() {
       const pendingTasks =
         project.projectTasks?.filter((task: any) => task.status === "pending")
           .length || 0;
+      const cancelledTasks =
+        project.projectTasks?.filter((task: any) => task.status === "cancelled")
+          .length || 0;
 
+      const validTasks = totalTasks - cancelledTasks;
       const completionPercentage =
-        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        validTasks > 0 ? Math.round((completedTasks / validTasks) * 100) : 0;
 
       const status = project.status as ProjectStatusType;
       const statusInfo = getStatusInfo(status);

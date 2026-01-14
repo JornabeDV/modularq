@@ -186,14 +186,14 @@ export function useProjectTasksPrisma(projectId?: string) {
       
       // Preparar datos de actualización con tracking
       const updateData: any = {
-        status: projectTaskData.status,
-        actual_hours: projectTaskData.actualHours,
-        assigned_to: projectTaskData.assignedTo === undefined ? undefined : (projectTaskData.assignedTo || null),
-        start_date: projectTaskData.startDate,
-        end_date: projectTaskData.endDate,
-        progress_percentage: projectTaskData.progressPercentage,
-        notes: projectTaskData.notes,
-        task_order: projectTaskData.taskOrder
+        ...(projectTaskData.status !== undefined && { status: projectTaskData.status }),
+        ...(projectTaskData.actualHours !== undefined && { actual_hours: projectTaskData.actualHours }),
+        ...(projectTaskData.assignedTo !== undefined && { assigned_to: projectTaskData.assignedTo || null }),
+        ...(projectTaskData.startDate !== undefined && { start_date: projectTaskData.startDate }),
+        ...(projectTaskData.endDate !== undefined && { end_date: projectTaskData.endDate }),
+        ...(projectTaskData.progressPercentage !== undefined && { progress_percentage: projectTaskData.progressPercentage }),
+        ...(projectTaskData.notes !== undefined && { notes: projectTaskData.notes }),
+        ...(projectTaskData.taskOrder !== undefined && { task_order: projectTaskData.taskOrder })
       }
       
       // Si el estado cambia a 'in_progress' y no estaba ya en 'in_progress', guardar started_by y started_at
@@ -388,9 +388,8 @@ export function useProjectTasksPrisma(projectId?: string) {
   const checkAndUpdateProjectStatus = async (projectId: string) => {
     try {
       const tasks = await PrismaTypedService.getProjectTasks(projectId)
-      
-      // Verificar si todas las tareas están completadas
-      const allTasksCompleted = tasks && tasks.length > 0 && tasks.every(task => task.status === 'completed')
+      const activeTasks = tasks.filter(task => task.status !== 'cancelled')
+      const allTasksCompleted = activeTasks.length > 0 && activeTasks.every(task => task.status === 'completed')
 
       if (allTasksCompleted) {
         // Actualizar el proyecto a completado

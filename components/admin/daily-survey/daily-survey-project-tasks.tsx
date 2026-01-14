@@ -9,7 +9,7 @@ import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, AlertCircle, Target } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import { getProgressColor } from "@/lib/utils/project-utils";
 import {
   RadialBarChart,
@@ -58,8 +58,9 @@ export function DailySurveyProjectTasks({
   const cancelledTasks = projectTasks.filter(
     (pt) => pt.status === "cancelled"
   ).length;
+  const validTasks = totalTasks - cancelledTasks;
   const progressPercentage =
-    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    validTasks > 0 ? Math.round((completedTasks / validTasks) * 100) : 0;
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     const currentTask = projectTasks.find((t) => t.id === taskId);
@@ -152,12 +153,7 @@ export function DailySurveyProjectTasks({
       }
     }
 
-    const result = await updateProjectTask(
-      taskId,
-      updateData,
-      true,
-      user?.id
-    );
+    const result = await updateProjectTask(taskId, updateData, true, user?.id);
 
     if (result.success) {
       toast({
@@ -204,7 +200,7 @@ export function DailySurveyProjectTasks({
           onClick={() => router.push("/admin/daily-survey")}
           className="cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4" />
           Volver a Relevamiento Diario
         </Button>
       </div>

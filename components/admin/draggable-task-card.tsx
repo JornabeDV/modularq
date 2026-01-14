@@ -53,19 +53,29 @@ export function DraggableTaskCard({
   return (
     <Card
       className={`p-4 transition-all duration-200 select-none ${
-        isReadOnly ? "cursor-default" : "cursor-pointer"
+        isReadOnly || projectStatus === "active"
+          ? "cursor-default"
+          : "cursor-pointer"
       } ${
         isDragging
           ? "opacity-50 shadow-lg"
-          : isHovered
+          : isHovered && projectStatus !== "active"
           ? "shadow-md bg-muted/50 border-primary/20"
-          : "hover:shadow-md hover:bg-muted/30 hover:border-primary/10"
+          : projectStatus !== "active"
+          ? "hover:shadow-md hover:bg-muted/30 hover:border-primary/10"
+          : ""
       }`}
-      onDragOver={!isReadOnly ? onDragOver : undefined}
-      onDrop={!isReadOnly ? (e) => onDrop?.(e, projectTask.id) : undefined}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={handleCardClick}
+      onDragOver={
+        !isReadOnly && projectStatus !== "active" ? onDragOver : undefined
+      }
+      onDrop={
+        !isReadOnly && projectStatus !== "active"
+          ? (e) => onDrop?.(e, projectTask.id)
+          : undefined
+      }
+      onMouseEnter={() => projectStatus !== "active" && setIsHovered(true)}
+      onMouseLeave={() => projectStatus !== "active" && setIsHovered(false)}
+      onClick={projectStatus !== "active" ? handleCardClick : undefined}
     >
       <CardContent className="p-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -74,7 +84,7 @@ export function DraggableTaskCard({
               {taskNumber}
             </div>
 
-            {!isReadOnly && (
+            {!isReadOnly && projectStatus !== "active" && (
               <div
                 data-drag-handle
                 className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors cursor-grab active:cursor-grabbing"
@@ -123,49 +133,53 @@ export function DraggableTaskCard({
 
           <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(projectTask);
-                }}
-                className="cursor-pointer"
-              >
-                <span className="hidden sm:inline">Editar</span>
-                <span className="sm:hidden">Editar</span>
-              </Button>
-
-              {!isReadOnly && (
+              {projectStatus !== "active" && (
                 <>
-                  {onComplete &&
-                    projectTask.status !== "completed" &&
-                    projectStatus === "active" && (
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onComplete(projectTask);
-                        }}
-                        className="cursor-pointer bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Completar</span>
-                        <span className="sm:hidden">✓</span>
-                      </Button>
-                    )}
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onUnassign(projectTask.id);
+                      onEdit(projectTask);
                     }}
                     className="cursor-pointer"
                   >
-                    Quitar
+                    <span className="hidden sm:inline">Editar</span>
+                    <span className="sm:hidden">Editar</span>
                   </Button>
+
+                  {!isReadOnly && (
+                    <>
+                      {onComplete &&
+                        projectTask.status !== "completed" &&
+                        projectStatus === "active" && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onComplete(projectTask);
+                            }}
+                            className="cursor-pointer bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <span className="hidden sm:inline">Completar</span>
+                            <span className="sm:hidden">✓</span>
+                          </Button>
+                        )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onUnassign(projectTask.id);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        Quitar
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </div>

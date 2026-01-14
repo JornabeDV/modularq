@@ -63,7 +63,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               onClick={() => router.push("/projects")}
               className="mt-4 cursor-pointer"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4" />
               Volver a Proyectos
             </Button>
           </div>
@@ -87,7 +87,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               onClick={() => router.push("/projects")}
               className="mt-4 cursor-pointer"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4" />
               Volver a Proyectos
             </Button>
           </div>

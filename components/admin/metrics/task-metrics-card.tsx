@@ -110,8 +110,8 @@ export function TaskMetricsCard({ project, projectId }: Props) {
                     <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                     <span className="text-muted-foreground">Inicio:</span>
                     <span className="text-xs font-semibold truncate">
-                      {projectTask.startDate
-                        ? formatDate(projectTask.startDate)
+                      {projectTask.startedAt
+                        ? formatDate(projectTask.startedAt)
                         : "Sin fecha"}
                     </span>
                   </div>

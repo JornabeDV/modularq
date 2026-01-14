@@ -74,7 +74,7 @@ export default function TaskMetricsPage() {
             onClick={() => router.push(`/admin/projects/${projectId}/metrics`)}
             className="cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4" />
             Volver a Métricas del Proyecto
           </Button>
         </div>
@@ -118,7 +118,7 @@ export default function TaskMetricsPage() {
                 }
                 className="cursor-pointer"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Volver</span>
               </Button>
               <StatusBadge

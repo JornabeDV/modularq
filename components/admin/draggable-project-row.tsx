@@ -89,12 +89,17 @@ export function DraggableProjectRow({
 
   const calculateProgress = () => {
     const totalTasks = project.projectTasks.length;
-    if (totalTasks === 0) return 0;
+    const cancelledTasks = project.projectTasks.filter(
+      (task) => task.status === "cancelled"
+    ).length;
+
+    const validTasks = totalTasks - cancelledTasks;
+    if (validTasks === 0) return 0;
 
     const completedTasks = project.projectTasks.filter(
       (task) => task.status === "completed"
     ).length;
-    return Math.round((completedTasks / totalTasks) * 100);
+    return Math.round((completedTasks / validTasks) * 100);
   };
 
   const progress = calculateProgress();
