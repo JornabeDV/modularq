@@ -68,6 +68,15 @@ enum ReportType {
   operario_performance
 }
 
+enum PlanningChecklistItem {
+  requirements        // Requerimientos del cliente
+  general_plan        // Plano general y de estructura
+  electrical_plan     // Plano de instalación eléctrica y listado materiales
+  sanitary_plan       // Plano de instalación sanitaria y listado de materiales
+  materials           // Materiales necesarios para dar inicio
+  carpentry_plans     // Planos de carpintería
+}
+
 // Models
 model User {
   id          String   @id @default(cuid())
@@ -90,6 +99,7 @@ model User {
   assigned_project_tasks ProjectTask[] @relation("ProjectTaskAssignee")
   started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")
   completed_project_tasks ProjectTask[] @relation("ProjectTaskCompletedBy")
+  completed_planning_items ProjectPlanningChecklist[]
 
   @@map("users")
 }
@@ -121,6 +131,7 @@ model Project {
   time_entries   TimeEntry[]
   project_operarios ProjectOperario[]
   project_tasks  ProjectTask[]
+  planning_checklist ProjectPlanningChecklist[]
 
   @@map("projects")
 }
@@ -271,4 +282,22 @@ model ClientContact {
   client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
 
   @@map("client_contacts")
+}
+
+model ProjectPlanningChecklist {
+  id             String                @id @default(cuid())
+  project_id     String
+  checklist_item PlanningChecklistItem
+  is_completed   Boolean               @default(false)
+  notes          String?
+  completed_at   DateTime?
+  completed_by   String?
+  created_at     DateTime              @default(now())
+  updated_at     DateTime              @updatedAt
+
+  project       Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  completed_by_user User? @relation(fields: [completed_by], references: [id])
+
+  @@unique([project_id, checklist_item])
+  @@map("project_planning_checklist")
 }
