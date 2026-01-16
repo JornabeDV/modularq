@@ -27,7 +27,7 @@ export default function ReportsPage() {
 function ReportsContent() {
   const { projects, loading: projectsLoading } = useProjectsPrisma();
 
-  const completedProjects = projects.filter((p) => p.status === "completed");
+  const completedProjects = projects.filter((p) => p.status === "completed" || p.status === "delivered");
 
   return (
     <MainLayout>
@@ -95,8 +95,11 @@ function ReportsContent() {
                               {project.description}
                             </CardDescription>
                           </div>
-                          <Badge variant="secondary" className="text-xs">
-                            Completado
+                          <Badge
+                            variant={project.status === 'completed' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {project.status === 'completed' ? 'Completado' : 'Entregado'}
                           </Badge>
                         </div>
                       </CardHeader>

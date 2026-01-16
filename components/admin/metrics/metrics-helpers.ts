@@ -16,6 +16,8 @@ export const getStatusColor = (status: string) => {
       return "bg-yellow-500";
     case "completed":
       return "bg-gray-500";
+    case "delivered":
+      return "bg-indigo-500";
     default:
       return "bg-gray-500";
   }
@@ -31,6 +33,8 @@ export const getStatusText = (status: string) => {
       return "Pausado";
     case "completed":
       return "Completado";
+    case "delivered":
+      return "Entregado";
     default:
       return status;
   }
