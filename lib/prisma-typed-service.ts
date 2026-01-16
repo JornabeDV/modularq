@@ -956,8 +956,77 @@ export class PrismaTypedService {
       .from('client_contacts')
       .delete()
       .eq('client_id', clientId)
-    
+
     if (error) throw error
+  }
+
+  static async getProjectPlanningChecklist(projectId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('project_planning_checklist')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async updateProjectPlanningChecklistItem(
+    projectId: string,
+    checklistItem: string,
+    updates: {
+      is_completed?: boolean;
+      notes?: string;
+      completed_by?: string;
+      completed_at?: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: existing, error: selectError } = await supabase
+        .from('project_planning_checklist')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('checklist_item', checklistItem)
+        .limit(1)
+
+      if (selectError) throw selectError
+
+      if (existing && existing.length > 0) {
+        const { error } = await supabase
+          .from('project_planning_checklist')
+          .update({
+            is_completed: updates.is_completed,
+            notes: updates.notes,
+            completed_by: updates.completed_by,
+            completed_at: updates.completed_at,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing[0].id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('project_planning_checklist')
+          .insert({
+            project_id: projectId,
+            checklist_item: checklistItem,
+            is_completed: updates.is_completed || false,
+            notes: updates.notes,
+            completed_by: updates.completed_by,
+            completed_at: updates.completed_at
+          })
+
+        if (error) throw error
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating planning checklist item:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
   }
 }
 
