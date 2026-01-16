@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,8 @@ import { ProjectInfoCards } from "./project-detail/project-info-cards";
 import { ProjectSpecs } from "./project-detail/project-specs";
 import { EditTaskDialog } from "./project-detail/edit-task-dialog";
 import { ActivateProjectDialog } from "./project-detail/activate-project-dialog";
+import { PlanningChecklist } from "./planning-checklist";
+import { useProjectPlanningChecklist } from "@/hooks/use-project-planning-checklist";
 import type { ProjectTask } from "@/lib/types";
 
 interface ProjectDetailProps {
@@ -34,6 +36,9 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter();
   const { user, userProfile } = useAuth();
   const isReadOnly = userProfile?.role === "supervisor";
+
+  const checklistHook = useProjectPlanningChecklist(projectId, user?.id || "");
+  const { checklist, checklistItems } = checklistHook;
 
   const {
     project,
@@ -57,6 +62,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     projectId,
     userId: user?.id,
     isReadOnly,
+    checklist,
+    checklistItems,
   });
 
   const { files: projectFiles } = useProjectFiles(
@@ -64,6 +71,25 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     user?.id || "",
     userProfile?.role === "admin" || userProfile?.role === "supervisor"
   );
+
+  const [showActivateButton, setShowActivateButton] = useState(false);
+
+  const handleChecklistChange = useCallback(
+    (updatedChecklist?: typeof checklist) => {
+      const currentChecklist = updatedChecklist || checklist;
+      const allCompleted = checklistItems.every(
+        (item) =>
+          currentChecklist.find((c) => c.checklist_item === item)
+            ?.is_completed === true
+      );
+      setShowActivateButton(allCompleted);
+    },
+    [checklist, checklistItems]
+  );
+
+  useEffect(() => {
+    handleChecklistChange();
+  }, [handleChecklistChange]);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -102,7 +128,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     );
   }
 
-  if (projectsError || !project) {
+  if (projectsError || (!projectsLoading && !project)) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -124,15 +150,20 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     );
   }
 
+  if (!project) {
+    return null;
+  }
+
   const showFiles =
     userProfile?.role === "admin" || userProfile?.role === "supervisor";
 
   return (
     <div className="space-y-6">
       <ProjectHeader
-        project={project}
+        project={project!}
         isReadOnly={isReadOnly}
         isEditDialogOpen={isEditDialogOpen}
+        showActivateButton={showActivateButton}
         onEditClick={() => setIsEditDialogOpen(!isEditDialogOpen)}
         onActivateClick={handleActivateClick}
         onDeactivateClick={handleDeactivateClick}
@@ -147,6 +178,14 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       />
 
       <ProjectSpecs project={project} />
+
+      {project.status === "planning" && (
+        <PlanningChecklist
+          projectId={project.id}
+          userId={user?.id || ""}
+          onChecklistChange={handleChecklistChange}
+        />
+      )}
 
       <ProjectOperariosManager projectId={project.id} isReadOnly={isReadOnly} />
 
@@ -201,6 +240,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             onSubmit={handleUpdateProject}
             isEditing={true}
             initialData={project}
+            checklistComplete={showActivateButton}
           />
 
           <TaskForm
