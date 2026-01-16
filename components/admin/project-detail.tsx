@@ -179,11 +179,12 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
 
       <ProjectSpecs project={project} />
 
-      {project.status === "planning" && (
+      {(project.status === "planning" || project.status === "active") && (
         <PlanningChecklist
           projectId={project.id}
           userId={user?.id || ""}
           onChecklistChange={handleChecklistChange}
+          isReadOnly={project.status === "active"} // Solo lectura cuando está activo
         />
       )}
 

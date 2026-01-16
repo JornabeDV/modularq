@@ -15,6 +15,7 @@ interface PlanningChecklistProps {
   projectId: string;
   userId: string;
   onChecklistChange?: (updatedChecklist?: any[]) => void;
+  isReadOnly?: boolean;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export function PlanningChecklist({
   projectId,
   userId,
   onChecklistChange,
+  isReadOnly = false,
   className,
 }: PlanningChecklistProps) {
   const {
@@ -154,13 +156,21 @@ export function PlanningChecklist({
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Planificación del Proyecto
+            {isReadOnly && (
+              <Badge variant="outline" className="text-xs">
+                Referencia
+              </Badge>
+            )}
           </CardTitle>
           <Badge variant={isAllCompleted() ? "default" : "secondary"}>
             {progress.completed}/{progress.total} completado
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          Complete todos los elementos antes de activar el proyecto
+          {isReadOnly
+            ? "Información de planificación completada para referencia del proyecto"
+            : "Complete todos los elementos antes de activar el proyecto"
+          }
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -173,83 +183,129 @@ export function PlanningChecklist({
 
           return (
             <div key={item} className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="flex items-center space-x-2 flex-1">
-                  <Checkbox
-                    id={item}
-                    checked={checklistItem?.is_completed || false}
-                    onCheckedChange={() => handleToggleItem(item)}
-                    disabled={isUpdating}
-                    className="mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={item}
-                      className={cn(
-                        "text-sm font-medium cursor-pointer",
-                        checklistItem?.is_completed &&
-                          "line-through text-muted-foreground"
-                      )}
-                    >
-                      {checklistLabels[item]}
-                    </Label>
-                    {checklistItem?.is_completed && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <CheckCircle2 className="h-3 w-3 text-green-600" />
-                        <span className="text-xs text-green-600">
-                          Completado
-                        </span>
-                      </div>
+              <div className={cn(
+                "p-4 rounded-lg transition-colors",
+                isReadOnly
+                  ? "bg-muted/20 border border-muted/30"
+                  : "bg-muted/10 hover:bg-muted/20 border border-transparent hover:border-muted/20"
+              )}>
+                {!isReadOnly && (
+                  <div className="flex items-start space-x-3 mb-3">
+                    <Checkbox
+                      id={item}
+                      checked={checklistItem?.is_completed || false}
+                      onCheckedChange={() => handleToggleItem(item)}
+                      disabled={isUpdating}
+                      className="mt-0.5 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Label
+                        htmlFor={item}
+                        className={cn(
+                          "text-sm font-medium block cursor-pointer",
+                          checklistItem?.is_completed && "line-through text-muted-foreground"
+                        )}
+                      >
+                        {checklistLabels[item]}
+                      </Label>
+                    </div>
+                    {isUpdating && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary flex-shrink-0"></div>
                     )}
                   </div>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-foreground">
+                      {checklistLabels[item]}
+                    </h4>
+
+                    <div className="flex items-center gap-2">
+                      {checklistItem?.is_completed && (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-green-600" />
+                          <span className="text-xs text-green-600 font-medium">
+                            Completado
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {isReadOnly && getNotesValue(item).trim() && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-md border border-blue-200/30 dark:border-blue-800/30">
+                      <div className="flex items-start gap-2">
+                        <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                            Notas de planificación:
+                          </p>
+                          <p className="text-sm text-muted-foreground leading-relaxed break-words">
+                            {getNotesValue(item)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isReadOnly && isUpdating && (
+                    <div className="flex justify-end mt-2">
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="ml-7 space-y-2">
-                <Textarea
-                  placeholder="Agregar notas (opcional)..."
-                  value={getNotesValue(item)}
-                  onChange={(e) => handleNotesChange(item, e.target.value)}
-                  className={cn(
-                    "min-h-[60px] text-sm resize-none",
-                    unsavedNotes && "border-amber-300 bg-amber-50/30"
+              {!isReadOnly && (
+                <div className="ml-7 space-y-2">
+                  <Textarea
+                    placeholder="Agregar notas (opcional)..."
+                    value={getNotesValue(item)}
+                    onChange={(e) => handleNotesChange(item, e.target.value)}
+                    className={cn(
+                      "min-h-[60px] text-sm resize-none",
+                      unsavedNotes && "border-amber-300 bg-amber-50/30"
+                    )}
+                    disabled={isUpdating}
+                  />
+                  {unsavedNotes && (
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={() => handleSaveNotes(item)}
+                        disabled={isUpdating}
+                        className="text-xs cursor-pointer"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        {isUpdating ? "Guardando..." : "Guardar notas"}
+                      </Button>
+                    </div>
                   )}
-                  disabled={isUpdating}
-                />
-                {unsavedNotes && (
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      onClick={() => handleSaveNotes(item)}
-                      disabled={isUpdating}
-                      className="text-xs cursor-pointer"
-                    >
-                      <Save className="h-3 w-3 mr-1" />
-                      {isUpdating ? "Guardando..." : "Guardar notas"}
-                    </Button>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           );
         })}
 
-        <div className="pt-4 border-t">
-          {isAllCompleted() ? (
-            <div className="flex items-center gap-2 text-green-600">
-              <span className="text-sm font-medium">
-                ¡Planificación completa! Ya puede activar el proyecto.
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-amber-600">
-              <span className="text-sm">
-                Complete los {progress.total - progress.completed} elementos
-                restantes para activar el proyecto.
-              </span>
-            </div>
-          )}
-        </div>
+        {!isReadOnly && (
+          <div className="pt-4 border-t">
+            {isAllCompleted() ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <span className="text-sm font-medium">
+                  ¡Planificación completa! Ya puede activar el proyecto.
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-amber-600">
+                <span className="text-sm">
+                  Complete los {progress.total - progress.completed} elementos
+                  restantes para activar el proyecto.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
