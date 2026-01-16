@@ -32,7 +32,6 @@ function ReportsContent() {
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold">Reportes</h2>
@@ -42,7 +41,6 @@ function ReportsContent() {
           </div>
         </div>
 
-        {/* Proyectos Completados */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -86,7 +84,7 @@ function ReportsContent() {
                   const totalTasks = project.projectTasks.length;
 
                   return (
-                    <Card key={project.id}>
+                    <Card key={project.id} className="justify-between">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
@@ -97,28 +95,32 @@ function ReportsContent() {
                               {project.description}
                             </CardDescription>
                           </div>
-                          <Badge variant="secondary" className="text-xs">Completado</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Completado
+                          </Badge>
                         </div>
                       </CardHeader>
 
                       <CardContent className="space-y-4">
-                        {/* Información del proyecto */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="text-muted-foreground">
                               Inicio:
                             </span>
-                            <span className="truncate">{formatDate(project.startDate)}</span>
+                            <span className="truncate">
+                              {formatDate(project.startDate)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="text-muted-foreground">Fin:</span>
-                            <span className="truncate">{formatDate(project.endDate)}</span>
+                            <span className="truncate">
+                              {formatDate(project.endDate)}
+                            </span>
                           </div>
                         </div>
 
-                        {/* Métricas del proyecto */}
                         <div className="grid grid-cols-3 gap-4 text-center">
                           <div>
                             <div className="text-lg font-semibold">
@@ -143,20 +145,19 @@ function ReportsContent() {
                             </div>
                           </div>
                         </div>
-
-                        {/* Botones de acción */}
-                        <div className="pt-2">
-                          <Link href={`/admin/projects/${project.id}/metrics`}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full cursor-pointer"
-                            >
-                              Ver Métricas
-                            </Button>
-                          </Link>
-                        </div>
                       </CardContent>
+                      <Link
+                        className="px-3 sm:px-6"
+                        href={`/admin/projects/${project.id}/metrics`}
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full cursor-pointer"
+                        >
+                          Ver Métricas
+                        </Button>
+                      </Link>
                     </Card>
                   );
                 })}
