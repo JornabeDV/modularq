@@ -24,6 +24,7 @@ export interface Database {
           role: 'admin' | 'supervisor' | 'operario'
           total_hours: number
           efficiency: number
+          deleted_at: string | null
           created_at: string
           updated_at: string
         }
@@ -34,6 +35,7 @@ export interface Database {
           role: 'admin' | 'supervisor' | 'operario'
           total_hours?: number
           efficiency?: number
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -44,6 +46,7 @@ export interface Database {
           role?: 'admin' | 'supervisor' | 'operario'
           total_hours?: number
           efficiency?: number
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -95,7 +98,7 @@ export interface Database {
           project_id: string
           title: string
           description: string | null
-          status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+          status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'critical'
           assigned_to: string | null
           estimated_hours: number
@@ -111,7 +114,7 @@ export interface Database {
           project_id: string
           title: string
           description?: string | null
-          status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+          status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
           priority: 'low' | 'medium' | 'high' | 'critical'
           assigned_to?: string | null
           estimated_hours: number
@@ -256,21 +259,18 @@ export interface Database {
           project_id: string
           user_id: string
           assigned_at: string
-          assigned_by: string | null
         }
         Insert: {
           id?: string
           project_id: string
           user_id: string
           assigned_at?: string
-          assigned_by?: string | null
         }
         Update: {
           id?: string
           project_id?: string
           user_id?: string
           assigned_at?: string
-          assigned_by?: string | null
         }
       }
     }

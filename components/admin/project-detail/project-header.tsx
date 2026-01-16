@@ -11,6 +11,7 @@ interface ProjectHeaderProps {
   project: Project;
   isReadOnly: boolean;
   isEditDialogOpen: boolean;
+  showActivateButton: boolean;
   onEditClick: () => void;
   onActivateClick: () => void;
   onDeactivateClick: () => void;
@@ -21,6 +22,7 @@ export function ProjectHeader({
   project,
   isReadOnly,
   isEditDialogOpen,
+  showActivateButton,
   onEditClick,
   onActivateClick,
   onDeactivateClick,
@@ -38,7 +40,7 @@ export function ProjectHeader({
             onClick={() => router.push("/admin/projects")}
             className="cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4" />
             Volver
           </Button>
           <div>
@@ -63,7 +65,7 @@ export function ProjectHeader({
                   </Button>
                 </DialogTrigger>
               </Dialog>
-              {project.status === "planning" && (
+              {project.status === "planning" && showActivateButton && (
                 <Button
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
                   size="sm"
@@ -101,7 +103,6 @@ export function ProjectHeader({
         </div>
       </div>
 
-      {/* Project Status Indicator - Solo móvil */}
       {project.status === "active" && (
         <div className="flex justify-start sm:hidden">
           <div className="text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md inline-block">

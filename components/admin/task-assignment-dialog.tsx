@@ -53,8 +53,7 @@ export function TaskAssignmentDialog({ isOpen, onClose, projectId, projectName }
       for (const taskId of selectedTasks) {
         await createProjectTask({
           projectId,
-          taskId,
-          assignedBy: user.id
+          taskId
         })
       }
       setSelectedTasks([])

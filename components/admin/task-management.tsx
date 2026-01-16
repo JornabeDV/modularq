@@ -41,7 +41,7 @@ export function TaskManagement() {
     const createData: CreateTaskData = {
       title: taskData.title,
       description: taskData.description || "",
-      estimatedHours: taskData.estimatedHours || taskData.estimated_hours || 0,
+      estimatedHours: 0,
       category: taskData.category || "",
       type: taskData.type || "custom",
       createdBy: user.id,
@@ -54,7 +54,7 @@ export function TaskManagement() {
   };
 
   const handleUpdateTask = async (taskId: string, taskData: any) => {
-    if (isUpdating) return; // Evitar múltiples actualizaciones simultáneas
+    if (isUpdating) return;
 
     setIsUpdating(true);
 
@@ -112,35 +112,30 @@ export function TaskManagement() {
       return matchesSearch && matchesCategory && matchesType;
     }) || [];
 
-  // Calcular paginación
   const totalItems = filteredTasks.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
 
-  // Resetear a la primera página si la página actual está fuera de rango o cambian los filtros
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
   }, [totalPages, currentPage, searchTerm, categoryFilter, typeFilter]);
 
-  // Calcular estadísticas
   const totalTasks = tasks?.length || 0;
   const standardTasks = tasks?.filter((t) => t.type === "standard").length || 0;
   const customTasks = tasks?.filter((t) => t.type === "custom").length || 0;
 
-  // Handlers de paginación
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll al inicio de la tabla
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Resetear a la primera página
+    setCurrentPage(1);
   };
 
   if (loading) {

@@ -16,7 +16,6 @@ export interface ProjectOperarioWithUser extends ProjectOperario {
 export interface CreateProjectOperarioData {
   projectId: string
   userId: string
-  assignedBy?: string
 }
 
 export function useProjectOperariosPrisma(projectId?: string) {
@@ -31,7 +30,8 @@ export function useProjectOperariosPrisma(projectId?: string) {
       setError(null)
       
       const operarios = await PrismaTypedService.getProjectOperarios(filterProjectId)
-      setProjectOperarios(operarios)
+      const activeOperarios = operarios.filter(operario => !operario.user?.deleted_at)
+      setProjectOperarios(activeOperarios)
     } catch (err) {
       console.error('Error fetching project operarios:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar operarios del proyecto')
@@ -47,8 +47,7 @@ export function useProjectOperariosPrisma(projectId?: string) {
       
       const operario = await PrismaTypedService.assignOperarioToProject({
         project_id: assignmentData.projectId,
-        user_id: assignmentData.userId,
-        assigned_by: assignmentData.assignedBy
+        user_id: assignmentData.userId
       })
 
       // Actualizar estado local

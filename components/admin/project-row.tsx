@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Edit, Eye } from 'lucide-react'
 import { DeleteProjectButton } from './delete-project-button'
 import type { Project } from '@/lib/types'
+import { formatDate } from '@/lib/utils'
 
 interface ProjectRowProps {
   project: Project
@@ -28,16 +29,6 @@ export function ProjectRow({ project, onEdit, onDelete }: ProjectRowProps) {
 
   const handleEdit = () => {
     onEdit(project)
-  }
-
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Sin fecha'
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
   }
 
   // Calcular tiempo estimado total del proyecto

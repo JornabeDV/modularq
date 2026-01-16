@@ -44,9 +44,10 @@ interface ProjectFormData {
 interface ProjectFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ProjectFormData) => void;
+  onSubmit: (data: ProjectFormData) => Promise<any>; // Ahora retorna Promise
   isEditing: boolean;
   initialData?: Project | null;
+  checklistComplete?: boolean;
 }
 
 const PROJECT_STATUSES = [
@@ -68,6 +69,7 @@ export function ProjectForm({
   onSubmit,
   isEditing,
   initialData,
+  checklistComplete = false,
 }: ProjectFormProps) {
   const { clients, loading: clientsLoading } = useClientsPrisma();
   const [formData, setFormData] = useState({
@@ -83,7 +85,6 @@ export function ProjectForm({
     startDate: "",
     endDate: "",
     clientId: "none",
-    // Valores por defecto del modelo estándar
     modulation: "standard",
     height: 2.0,
     width: 1.5,
@@ -101,7 +102,6 @@ export function ProjectForm({
         startDate: initialData.startDate || "",
         endDate: initialData.endDate || "",
         clientId: initialData.clientId || "none",
-        // Campos técnicos
         modulation: initialData.modulation || "standard",
         height: initialData.height || 2.0,
         width: initialData.width || 1.5,
@@ -117,7 +117,6 @@ export function ProjectForm({
         startDate: "",
         endDate: "",
         clientId: "none",
-        // Valores por defecto del modelo estándar
         modulation: "standard",
         height: 2.0,
         width: 1.5,
@@ -131,15 +130,34 @@ export function ProjectForm({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Convertir "none" a undefined para el clientId
-    const submitData = {
-      ...formData,
-      clientId: formData.clientId === "none" ? undefined : formData.clientId,
-    };
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-    onSubmit(submitData);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const submitData = {
+        ...formData,
+        clientId: formData.clientId === "none" ? undefined : formData.clientId,
+      };
+
+      const result = await onSubmit(submitData);
+
+      if (result && !result.success) {
+        setSubmitError(result.error || "Error al guardar el proyecto");
+        setIsSubmitting(false);
+        return;
+      }
+
+      onClose();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setSubmitError("Error inesperado al guardar el proyecto");
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -206,11 +224,21 @@ export function ProjectForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROJECT_STATUSES.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
+                  {PROJECT_STATUSES.map((status) => {
+                    if (
+                      isEditing &&
+                      initialData?.status === "planning" &&
+                      status.value === "active" &&
+                      !checklistComplete
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -285,11 +313,9 @@ export function ProjectForm({
             </div>
           </div>
 
-          {/* Especificaciones Técnicas */}
           <div className="space-y-4 border-t pt-6">
             <h3 className="text-lg font-medium">Especificaciones Técnicas</h3>
 
-            {/* Modulación */}
             <div className="space-y-2">
               <Label htmlFor="modulation">Modulación</Label>
               <Input
@@ -302,7 +328,6 @@ export function ProjectForm({
               />
             </div>
 
-            {/* Medidas */}
             <div className="space-y-2">
               <Label>Medidas (metros)</Label>
               <div className="grid grid-cols-3 gap-4">
@@ -375,7 +400,6 @@ export function ProjectForm({
               </div>
             </div>
 
-            {/* Cantidad de Módulos */}
             <div className="space-y-2">
               <Label htmlFor="moduleCount">Cantidad de Módulos</Label>
               <Input
@@ -394,17 +418,32 @@ export function ProjectForm({
             </div>
           </div>
 
+          {submitError && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded p-3">
+              <p className="text-destructive text-sm">{submitError}</p>
+            </div>
+          )}
+
           <div className="flex justify-end space-x-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
+              disabled={isSubmitting}
               className="cursor-pointer"
             >
               Cancelar
             </Button>
-            <Button type="submit" className="cursor-pointer">
-              {isEditing ? "Actualizar Proyecto" : "Crear Proyecto"}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="cursor-pointer"
+            >
+              {isSubmitting
+                ? "Guardando..."
+                : isEditing
+                ? "Actualizar Proyecto"
+                : "Crear Proyecto"}
             </Button>
           </div>
         </form>

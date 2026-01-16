@@ -1,73 +1,56 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { FileText, CheckCircle, Users } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { FileText, CheckCircle, Users } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 interface TaskDetailsProps {
   task: {
     task?: {
-      estimatedHours?: number
-    }
-    actualHours: number
-    totalHoursWithActive?: number
-    startDate?: string
-    endDate?: string
-    progressPercentage: number
-    notes?: string
-    status: string
+      estimatedHours?: number;
+    };
+    actualHours: number;
+    totalHoursWithActive?: number;
+    startDate?: string;
+    endDate?: string;
+    progressPercentage: number;
+    notes?: string;
+    status: string;
     collaborators?: Array<{
-      id: string
-      userId: string
+      id: string;
+      userId: string;
       user?: {
-        id: string
-        name: string
-        role: string
-      }
+        id: string;
+        name: string;
+        role: string;
+      };
       addedByUser?: {
-        id: string
-        name: string
-        role: string
-      }
-    }>
-  }
-  onComplete?: () => void
+        id: string;
+        name: string;
+        role: string;
+      };
+    }>;
+  };
+  onComplete?: () => void;
 }
 
 export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Sin fecha'
-    
-    // Si la fecha viene en formato YYYY-MM-DD (sin hora), parsearla directamente
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateString.split('-')
-      return `${day}/${month}/${year}`
-    }
-    
-    // Si viene con hora, usar la fecha local
-    const date = new Date(dateString)
-    // Usar métodos locales para evitar problemas de zona horaria
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const year = date.getFullYear()
-    return `${day}/${month}/${year}`
-  }
-
   const formatHours = (hours: number) => {
     if (hours < 0.0001) {
-      return '< 1m'
+      return "< 1m";
     }
     if (hours < 1) {
-      const minutes = Math.round(hours * 60)
-      return minutes < 1 ? '< 1m' : `${minutes}m`
+      const minutes = Math.round(hours * 60);
+      return minutes < 1 ? "< 1m" : `${minutes}m`;
     }
-    return `${hours % 1 === 0 ? hours : hours.toFixed(1)}hs`
-  }
+    return `${hours % 1 === 0 ? hours : hours.toFixed(1)}hs`;
+  };
 
-  const isCompleted = task.status === 'completed'
+  const isCompleted = task.status === "completed";
 
   return (
     <Card>
@@ -86,54 +69,42 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <Label className="text-base font-semibold text-muted-foreground">Tiempo Estimado</Label>
-            <p className="text-2xl font-bold">{task.task?.estimatedHours || 0} horas</p>
-          </div>
-          <div>
-            <Label className="text-base font-semibold text-muted-foreground">Tiempo Trabajado</Label>
-            <p className="text-2xl font-bold">{formatHours(task.totalHoursWithActive || task.actualHours)}</p>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <Label className="text-base font-semibold text-muted-foreground">Fecha de Inicio</Label>
+            <Label className="text-base font-semibold text-muted-foreground">
+              Fecha de Inicio
+            </Label>
             <p className="text-lg">{formatDate(task.startDate)}</p>
           </div>
           <div>
-            <Label className="text-base font-semibold text-muted-foreground">Fecha de Fin</Label>
+            <Label className="text-base font-semibold text-muted-foreground">
+              Fecha de Fin
+            </Label>
             <p className="text-lg">{formatDate(task.endDate)}</p>
           </div>
         </div>
 
         <div>
-          <Label className="text-base font-semibold text-muted-foreground">Progreso de la Tarea</Label>
+          <Label className="text-base font-semibold text-muted-foreground">
+            Estado de la Tarea
+          </Label>
           <div className="mt-3">
-            <Progress 
-              value={task.progressPercentage} 
-              className="h-4"
-            />
+            <Progress value={task.progressPercentage} className="h-4" />
             <div className="flex justify-between items-center mt-2">
               <p className="text-lg font-semibold text-muted-foreground">
                 {task.progressPercentage}% completado
               </p>
-              {task.task?.estimatedHours && (
-                <p className="text-base text-muted-foreground">
-                  {formatHours(task.totalHoursWithActive || task.actualHours)} / {task.task.estimatedHours}hs
-                </p>
-              )}
             </div>
           </div>
         </div>
 
         {task.notes && (
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Notas</Label>
-            <p className="text-sm mt-1 p-3 bg-muted rounded-lg">
-              {task.notes}
-            </p>
+            <Label className="text-sm font-medium text-muted-foreground">
+              Notas
+            </Label>
+            <p className="text-sm mt-1 p-3 bg-muted rounded-lg">{task.notes}</p>
           </div>
         )}
 
@@ -146,20 +117,28 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
             </Label>
             <div className="mt-2 space-y-2">
               {task.collaborators.map((collaborator) => (
-                <div key={collaborator.id} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <div
+                  key={collaborator.id}
+                  className="flex items-center gap-3 p-3 bg-muted rounded-lg"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="text-xs">
-                      {collaborator.user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                      {collaborator.user?.name
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("") || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{collaborator.user?.name || 'Usuario'}</p>
+                    <p className="text-sm font-medium">
+                      {collaborator.user?.name || "Usuario"}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Agregado por {collaborator.addedByUser?.name || 'Sistema'}
+                      Agregado por {collaborator.addedByUser?.name || "Sistema"}
                     </p>
                   </div>
                   <Badge variant="secondary" className="text-xs">
-                    {collaborator.user?.role || 'operario'}
+                    {collaborator.user?.role || "operario"}
                   </Badge>
                 </div>
               ))}
@@ -168,14 +147,24 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         )}
 
         {/* Botón de Completar Tarea */}
-        {(task.status === 'in_progress' || task.status === 'assigned') && onComplete && (
+        {task.status === "in_progress" && onComplete && (
           <div className="pt-6 border-t">
-            <button 
+            <button
               onClick={onComplete}
               className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-bold text-xl flex items-center justify-center gap-3 shadow-lg cursor-pointer"
             >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               FINALIZAR TAREA
             </button>
@@ -183,5 +172,5 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -59,3 +59,15 @@ export function mapProjectFormData(projectData: Partial<Project>) {
     module_count: projectData.moduleCount,
   };
 }
+
+/**
+ * @param percentage - Porcentaje de progreso (0-100)
+ * @returns Color HSL como string
+ */
+export function getProgressColor(percentage: number): string {
+  if (percentage === 100) return "hsl(142, 76%, 36%)"; // green-600
+  if (percentage >= 75) return "hsl(262, 83%, 58%)"; // purple-500
+  if (percentage >= 50) return "hsl(25, 95%, 53%)"; // orange-500
+  if (percentage >= 25) return "hsl(45, 93%, 47%)"; // yellow-500
+  return "hsl(217, 91%, 60%)"; // blue-500
+}

@@ -7,7 +7,6 @@ export interface TaskAssignment {
   id: string
   taskId: string
   userId: string
-  assignedBy?: string
   assignedAt: string
   createdAt: string
   updatedAt: string
@@ -21,7 +20,6 @@ export interface TaskAssignment {
 export interface CreateTaskAssignmentData {
   taskId: string
   userId: string
-  assignedBy?: string
 }
 
 export function useTaskAssignments(taskId?: string) {
@@ -62,7 +60,6 @@ export function useTaskAssignments(taskId?: string) {
         id: assignment.id,
         taskId: assignment.task_id,
         userId: assignment.user_id,
-        assignedBy: assignment.assigned_by,
         assignedAt: assignment.assigned_at,
         createdAt: assignment.created_at,
         updatedAt: assignment.updated_at,
@@ -91,8 +88,7 @@ export function useTaskAssignments(taskId?: string) {
         .from('task_assignments')
         .insert({
           task_id: assignmentData.taskId,
-          user_id: assignmentData.userId,
-          assigned_by: assignmentData.assignedBy || null
+          user_id: assignmentData.userId
         })
         .select()
         .single()
@@ -161,8 +157,7 @@ export function useTaskAssignments(taskId?: string) {
             .from('task_assignments')
             .insert({
               task_id: op.data.taskId,
-              user_id: op.data.userId,
-              assigned_by: op.data.assignedBy || null
+              user_id: op.data.userId
             })
             .select()
             .single()

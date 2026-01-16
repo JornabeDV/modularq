@@ -37,7 +37,6 @@ enum ProjectCondition {
 
 enum TaskStatus {
   pending
-  assigned
   in_progress
   completed
   cancelled
@@ -69,6 +68,15 @@ enum ReportType {
   operario_performance
 }
 
+enum PlanningChecklistItem {
+  requirements        // Requerimientos del cliente
+  general_plan        // Plano general y de estructura
+  electrical_plan     // Plano de instalación eléctrica y listado materiales
+  sanitary_plan       // Plano de instalación sanitaria y listado de materiales
+  materials           // Materiales necesarios para dar inicio
+  carpentry_plans     // Planos de carpintería
+}
+
 // Models
 model User {
   id          String   @id @default(cuid())
@@ -78,6 +86,7 @@ model User {
   role        UserRole
   total_hours Float    @default(0)
   efficiency  Float    @default(0)
+  deleted_at  DateTime?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
@@ -87,6 +96,10 @@ model User {
   audit_logs          AuditLog[]
   assigned_projects    ProjectOperario[]
   reports_generated    Report[]
+  assigned_project_tasks ProjectTask[] @relation("ProjectTaskAssignee")
+  started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")
+  completed_project_tasks ProjectTask[] @relation("ProjectTaskCompletedBy")
+  completed_planning_items ProjectPlanningChecklist[]
 
   @@map("users")
 }
@@ -117,6 +130,8 @@ model Project {
   client         Client?          @relation(fields: [client_id], references: [id])
   time_entries   TimeEntry[]
   project_operarios ProjectOperario[]
+  project_tasks  ProjectTask[]
+  planning_checklist ProjectPlanningChecklist[]
 
   @@map("projects")
 }
@@ -135,6 +150,7 @@ model Task {
 
   assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
   time_entries TimeEntry[]
+  project_tasks ProjectTask[]
 
   @@map("tasks")
 }
@@ -196,7 +212,6 @@ model ProjectOperario {
   project_id  String
   user_id     String
   assigned_at DateTime @default(now())
-  assigned_by String?
 
   project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [user_id], references: [id])
@@ -221,6 +236,38 @@ model Client {
   @@map("clients")
 }
 
+model ProjectTask {
+  id                String     @id @default(cuid())
+  project_id        String
+  task_id           String
+  status            TaskStatus @default(pending)
+  estimated_hours   Float      @default(0)
+  actual_hours      Float      @default(0)
+  assigned_to       String?
+  start_date        DateTime?
+  end_date          DateTime?
+  progress_percentage Float    @default(0)
+  notes             String?
+  assigned_at       DateTime?
+  task_order        Int        @default(0)
+  // Campos de tracking de estado
+  started_by        String?
+  started_at        DateTime?
+  completed_by      String?
+  completed_at      DateTime?
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
+
+  // Relations
+  project           Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task              Task       @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  assigned_user     User?      @relation("ProjectTaskAssignee", fields: [assigned_to], references: [id])
+  started_by_user   User?      @relation("ProjectTaskStartedBy", fields: [started_by], references: [id])
+  completed_by_user User?      @relation("ProjectTaskCompletedBy", fields: [completed_by], references: [id])
+
+  @@map("project_tasks")
+}
+
 model ClientContact {
   id         String   @id @default(cuid())
   client_id  String
@@ -235,4 +282,22 @@ model ClientContact {
   client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
 
   @@map("client_contacts")
+}
+
+model ProjectPlanningChecklist {
+  id             String                @id @default(cuid())
+  project_id     String
+  checklist_item PlanningChecklistItem
+  is_completed   Boolean               @default(false)
+  notes          String?
+  completed_at   DateTime?
+  completed_by   String?
+  created_at     DateTime              @default(now())
+  updated_at     DateTime              @updatedAt
+
+  project       Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  completed_by_user User? @relation(fields: [completed_by], references: [id])
+
+  @@unique([project_id, checklist_item])
+  @@map("project_planning_checklist")
 }

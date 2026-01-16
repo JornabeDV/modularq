@@ -1,53 +1,71 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
-import { useUsersPrisma } from "@/hooks/use-users-prisma"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Eye, EyeOff } from "lucide-react"
-import Image from "next/image"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { useUsersPrisma } from "@/hooks/use-users-prisma";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage() {
-  const [selectedUserId, setSelectedUserId] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const { loginWithName, isLoading } = useAuth()
-  const { users, loading: usersLoading } = useUsersPrisma()
-  const router = useRouter()
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const { loginWithName, isLoading, user } = useAuth();
+  const { users, loading: usersLoading } = useUsersPrisma();
+  const router = useRouter();
+
+  // Si ya hay sesión, evitar mostrar el login y limpiar el back stack
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError("");
 
     if (!selectedUserId) {
-      setError("Por favor seleccione un usuario")
-      return
+      setError("Por favor seleccione un usuario");
+      return;
     }
 
-    const selectedUser = users.find(user => user.id === selectedUserId)
+    const selectedUser = users.find((user: any) => user.id === selectedUserId);
     if (!selectedUser) {
-      setError("Usuario no encontrado")
-      return
+      setError("Usuario no encontrado");
+      return;
     }
 
-    // Usar solo el primer nombre para el login
-    const firstName = selectedUser.name.split(' ')[0] || selectedUser.name
-    const success = await loginWithName(firstName, password)
+    const firstName = selectedUser.name.split(" ")[0] || selectedUser.name;
+    const success = await loginWithName(firstName, password);
     if (success) {
-      router.push("/dashboard")
+      router.replace("/dashboard");
     } else {
-      setError("Credenciales inválidas. Verifique la contraseña")
+      setError("Credenciales inválidas. Verifique la contraseña");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -62,24 +80,37 @@ export default function LoginPage() {
               className="object-contain"
             />
           </div>
-          <CardDescription>Ingrese sus credenciales para acceder al sistema</CardDescription>
+          <CardDescription>
+            Ingrese sus credenciales para acceder al sistema
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="user-select">Seleccionar Persona</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={usersLoading}>
+              <Select
+                value={selectedUserId}
+                onValueChange={setSelectedUserId}
+                disabled={usersLoading}
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder={usersLoading ? "Cargando personal..." : "Seleccione su nombre"} />
+                  <SelectValue
+                    placeholder={
+                      usersLoading
+                        ? "Cargando personal..."
+                        : "Seleccione su nombre"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
-                    user.id && (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    )
-                  ))}
+                  {users.map(
+                    (user: any) =>
+                      user.id && (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name}
+                        </SelectItem>
+                      )
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -117,7 +148,11 @@ export default function LoginPage() {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading || usersLoading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || usersLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -133,9 +168,8 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

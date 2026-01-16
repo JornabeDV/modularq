@@ -1,111 +1,110 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { useUsersPrisma, type CreateUserData } from '@/hooks/use-users-prisma'
-import { useAuth } from '@/lib/auth-context'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogTrigger } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { toast } from 'sonner'
-import { UserStats } from './user-stats'
-import { UserTable } from './user-table'
-import { EditUserDialog } from './edit-user-dialog'
+import { useState } from "react";
+import { useUsersPrisma, type CreateUserData } from "@/hooks/use-users-prisma";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { UserStats } from "./user-stats";
+import { UserTable } from "./user-table";
+import { EditUserDialog } from "./edit-user-dialog";
 
 export function UserManagement() {
-  const { users, loading, createUser, updateUser, deleteUser } = useUsersPrisma()
-  const { user: currentUser, userProfile } = useAuth()
-  
-  // Los supervisores solo pueden ver, no editar
-  const isReadOnly = userProfile?.role === 'supervisor'
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<any>(null)
+  const { users, loading, createUser, updateUser, fetchUsers, fetchAllUsers } =
+    useUsersPrisma();
+  const { user: currentUser, userProfile } = useAuth();
+
+  const isReadOnly = userProfile?.role === "supervisor";
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [formData, setFormData] = useState<CreateUserData>({
-    password: '',
-    name: '',
-    role: 'operario'
-  })
-  const [searchTerm, setSearchTerm] = useState('')
-  const [roleFilter, setRoleFilter] = useState('all')
+    password: "",
+    name: "",
+    role: "operario",
+  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const result = await createUser(formData)
-    
+    e.preventDefault();
+    const result = await createUser(formData);
+
     if (result.success) {
-      toast.success('Usuario creado exitosamente')
-      setIsCreateDialogOpen(false)
-      resetFormData()
+      toast.success("Usuario creado exitosamente");
+      setIsCreateDialogOpen(false);
+      resetFormData();
     } else {
-      toast.error(result.error || 'Error al crear usuario')
+      toast.error(result.error || "Error al crear usuario");
     }
-  }
+  };
 
   const handleUpdateUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingUser) return
+    e.preventDefault();
+    if (!editingUser) return;
 
-    // Filtrar password si está vacío para mantener la contraseña actual
-    const updates = { ...formData }
-    if (!updates.password || updates.password.trim() === '') {
-      delete updates.password
+    const updates = { ...formData };
+    if (!updates.password || updates.password.trim() === "") {
+      delete updates.password;
     }
 
-    const result = await updateUser(editingUser.id, updates)
-    
+    const result = await updateUser(editingUser.id, updates);
+
     if (result.success) {
-      toast.success('Usuario actualizado exitosamente')
-      setEditingUser(null)
-      resetFormData()
+      toast.success("Usuario actualizado exitosamente");
+      setEditingUser(null);
+      resetFormData();
     } else {
-      toast.error(result.error || 'Error al actualizar usuario')
+      toast.error(result.error || "Error al actualizar usuario");
     }
-  }
+  };
 
   const handleDeleteUser = async (userId: string) => {
-    const result = await deleteUser(userId, currentUser?.id)
-    
-    if (result.success) {
-      toast.success('Usuario eliminado exitosamente')
+    if (showDeleted) {
+      await fetchAllUsers();
     } else {
-      toast.error(result.error || 'Error al eliminar usuario')
+      await fetchUsers();
     }
-  }
+  };
 
   const handleEditUser = (user: any) => {
-    setEditingUser(user)
+    setEditingUser(user);
     setFormData({
-      password: '',
+      password: "",
       name: user.name,
-      role: user.role
-    })
-  }
+      role: user.role,
+    });
+  };
 
   const resetFormData = () => {
     setFormData({
-      password: '',
-      name: '',
-      role: 'operario'
-    })
-  }
+      password: "",
+      name: "",
+      role: "operario",
+    });
+  };
 
-  // Filtrar usuarios
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = users.filter((user) => {
     try {
-      const matchesSearch = searchTerm === '' || 
-        (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      
-      const matchesRole = roleFilter === 'all' || (user.role && user.role === roleFilter)
-      
-      return matchesSearch && matchesRole
-    } catch (error) {
-      console.error('Error filtrando usuario:', error, user)
-      return false
-    }
-  })
+      const matchesSearch =
+        searchTerm === "" ||
+        (user.name &&
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // Calcular estadísticas
-  const adminCount = users.filter(u => u.role === 'admin').length
-  const operarioCount = users.filter(u => u.role === 'operario').length
+      const matchesRole =
+        roleFilter === "all" || (user.role && user.role === roleFilter);
+
+      return matchesSearch && matchesRole;
+    } catch (error) {
+      console.error("Error filtrando usuario:", error, user);
+      return false;
+    }
+  });
+
+  const adminCount = users.filter((u) => u.role === "admin").length;
+  const operarioCount = users.filter((u) => u.role === "operario").length;
 
   if (loading) {
     return (
@@ -115,20 +114,24 @@ export function UserManagement() {
           <p className="mt-2 text-muted-foreground">Cargando usuarios...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Gestión de Personal</h2>
-          <p className="text-sm sm:text-base text-muted-foreground">Administra personal, roles y permisos del sistema</p>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Administra personal, roles y permisos del sistema
+          </p>
         </div>
-        
+
         {!isReadOnly && (
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button type="button" className="w-full sm:w-auto cursor-pointer">
                 <Plus className="h-4 w-4 mr-2" />
@@ -139,14 +142,12 @@ export function UserManagement() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <UserStats 
+      <UserStats
         totalUsers={users.length}
         adminCount={adminCount}
         operarioCount={operarioCount}
       />
 
-      {/* Users Table */}
       <UserTable
         users={filteredUsers as any}
         currentUserId={currentUser?.id}
@@ -157,9 +158,9 @@ export function UserManagement() {
         onEditUser={handleEditUser}
         onDeleteUser={handleDeleteUser}
         isReadOnly={isReadOnly}
+        showDeleted={showDeleted}
       />
 
-      {/* Create User Dialog */}
       <EditUserDialog
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
@@ -169,7 +170,6 @@ export function UserManagement() {
         isEditing={false}
       />
 
-      {/* Edit User Dialog */}
       <EditUserDialog
         isOpen={!!editingUser}
         onClose={() => setEditingUser(null)}
@@ -179,5 +179,5 @@ export function UserManagement() {
         isEditing={true}
       />
     </div>
-  )
+  );
 }

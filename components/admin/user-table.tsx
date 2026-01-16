@@ -1,22 +1,36 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { UserRow } from './user-row'
-import { UserFilters } from './user-filters'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { UserRow } from "./user-row";
+import { UserFilters } from "./user-filters";
 
-import type { User as PrismaUser } from '@/lib/prisma-typed-service'
+import type { User as PrismaUser } from "@/lib/prisma-typed-service";
 
 interface UserTableProps {
-  users: PrismaUser[]
-  currentUserId?: string
-  searchTerm: string
-  onSearchChange: (value: string) => void
-  roleFilter: string
-  onRoleFilterChange: (value: string) => void
-  onEditUser: (user: PrismaUser) => void
-  onDeleteUser: (userId: string) => void
-  isReadOnly?: boolean
+  users: PrismaUser[];
+  currentUserId?: string;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  roleFilter: string;
+  onRoleFilterChange: (value: string) => void;
+  onEditUser: (user: PrismaUser) => void;
+  onDeleteUser: (userId: string) => void;
+  onRestoreUser?: (userId: string) => void;
+  isReadOnly?: boolean;
+  showDeleted?: boolean;
 }
 
 export function UserTable({
@@ -28,11 +42,13 @@ export function UserTable({
   onRoleFilterChange,
   onEditUser,
   onDeleteUser,
-  isReadOnly = false
+  onRestoreUser,
+  isReadOnly = false,
+  showDeleted = false,
 }: UserTableProps) {
   return (
     <Card>
-      <CardHeader>        
+      <CardHeader>
         <UserFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}
@@ -43,17 +59,22 @@ export function UserTable({
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader >
+            <TableHeader>
               <TableRow className="hover:bg-background">
                 <TableHead className="min-w-[200px]">Usuario</TableHead>
                 <TableHead className="text-center min-w-[120px]">Rol</TableHead>
-                <TableHead className="text-center min-w-[120px]">Acciones</TableHead>
+                <TableHead className="text-center min-w-[120px]">
+                  Acciones
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="text-center py-8 text-muted-foreground">
+                  <td
+                    colSpan={3}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     No se encontraron usuarios
                   </td>
                 </tr>
@@ -65,7 +86,9 @@ export function UserTable({
                     currentUserId={currentUserId}
                     onEdit={onEditUser}
                     onDelete={onDeleteUser}
+                    onRestore={onRestoreUser}
                     isReadOnly={isReadOnly}
+                    showDeleted={showDeleted}
                   />
                 ))
               )}
@@ -74,5 +97,5 @@ export function UserTable({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

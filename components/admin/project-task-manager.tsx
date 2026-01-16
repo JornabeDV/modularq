@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Plus, CheckCircle, Clock, AlertCircle, User } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useTasksPrisma } from '@/hooks/use-tasks-prisma'
 import { DraggableTaskCard } from './draggable-task-card'
@@ -56,26 +56,6 @@ export function ProjectTaskManager({
 
   const standardTasks = availableTasks.filter(t => t.type === 'standard')
   const customTasks = availableTasks.filter(t => t.type === 'custom')
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      case 'assigned': return <User className="h-4 w-4 text-blue-500" />
-      case 'in_progress': return <Clock className="h-4 w-4 text-orange-500" />
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />
-      default: return <AlertCircle className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'assigned': return 'bg-blue-100 text-blue-800'
-      case 'in_progress': return 'bg-orange-100 text-orange-800'
-      case 'completed': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   // Funciones de drag and drop
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -141,6 +121,7 @@ export function ProjectTaskManager({
               <span className="sm:hidden">Crear Tarea</span>
             </Button>
           )}
+          {/* Asignar tarea existente - Solo para admins */}
           {!isReadOnly && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -281,11 +262,14 @@ export function ProjectTaskManager({
               - Arrastra y suelta para reordenar
             </span>
           )}
+          <span className="text-sm text-muted-foreground ml-2">
+            - Haz clic en una tarea para editarla
+          </span>
         </h4>
         <div className="space-y-3">
           {projectTasks
             .sort((a, b) => {
-              const statusOrder = { in_progress: 0, assigned: 1, pending: 2, completed: 3, cancelled: 4 }
+              const statusOrder = { in_progress: 0, pending: 1, completed: 2, cancelled: 3 }
               return statusOrder[a.status] - statusOrder[b.status]
             })
             .map((projectTask, index) => (

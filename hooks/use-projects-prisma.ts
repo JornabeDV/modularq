@@ -94,9 +94,12 @@ export function useProjectsPrisma() {
           progressPercentage: pt.progress_percentage || 0,
           notes: pt.notes,
           assignedAt: pt.assigned_at,
-          assignedBy: pt.assigned_by,
           createdAt: pt.created_at,
           updatedAt: pt.updated_at,
+          startedBy: pt.started_by,
+          startedAt: pt.started_at,
+          completedBy: pt.completed_by,
+          completedAt: pt.completed_at,
           task: pt.task ? {
             id: pt.task.id,
             title: pt.task.title,
@@ -112,14 +115,42 @@ export function useProjectsPrisma() {
             id: pt.assigned_user.id,
             name: pt.assigned_user.name,
             role: pt.assigned_user.role
-          } : undefined
+          } : undefined,
+          startedByUser: pt.started_by_user ? {
+            id: pt.started_by_user.id,
+            name: pt.started_by_user.name,
+            role: pt.started_by_user.role
+          } : undefined,
+          completedByUser: pt.completed_by_user ? {
+            id: pt.completed_by_user.id,
+            name: pt.completed_by_user.name,
+            role: pt.completed_by_user.role
+          } : undefined,
+          collaborators: (pt.collaborators || []).map((collaborator: any) => ({
+            id: collaborator.id,
+            projectTaskId: collaborator.project_task_id,
+            userId: collaborator.user_id,
+            addedBy: collaborator.added_by,
+            addedAt: collaborator.added_at,
+            createdAt: collaborator.created_at,
+            updatedAt: collaborator.updated_at,
+            user: collaborator.user ? {
+              id: collaborator.user.id,
+              name: collaborator.user.name,
+              role: collaborator.user.role
+            } : undefined,
+            addedByUser: collaborator.added_by_user ? {
+              id: collaborator.added_by_user.id,
+              name: collaborator.added_by_user.name,
+              role: collaborator.added_by_user.role
+            } : undefined
+          }))
         })),
         projectOperarios: (project.project_operarios || []).map((po: any) => ({
           id: po.id,
           projectId: po.project_id,
           userId: po.user_id,
           assignedAt: po.assigned_at,
-          assignedBy: po.assigned_by,
           user: po.user ? {
             id: po.user.id,
             name: po.user.name,
@@ -164,21 +195,13 @@ export function useProjectsPrisma() {
       try {
         const standardTasks = await PrismaTypedService.getAllTasks()
         const standardTasksOnly = standardTasks.filter(task => task.type === 'standard')
-        const moduleCount = projectData.module_count || 1
         
-        // Crear project_tasks para cada tarea estándar
+        // Crear project_tasks para cada tarea estándar (solo con estado)
         for (const task of standardTasksOnly) {
-          // Calcular tiempo estimado total: tiempo base de la tarea * cantidad de módulos
-          const estimatedHours = (task.estimated_hours || 0) * moduleCount
-          
           await PrismaTypedService.createProjectTask({
             project_id: project.id,
             task_id: task.id,
-            status: 'pending',
-            estimated_hours: estimatedHours,
-            actual_hours: 0,
-            progress_percentage: 0,
-            assigned_by: projectData.created_by
+            status: 'pending'
           })
         }
         

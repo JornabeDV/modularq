@@ -48,8 +48,7 @@ export function ProjectOperariosManager({ projectId, isReadOnly = false }: Proje
       for (const userId of selectedUserIds) {
         await assignOperarioToProject({
           projectId,
-          userId,
-          assignedBy: user.id
+          userId
         })
       }
       setSelectedUserIds([])

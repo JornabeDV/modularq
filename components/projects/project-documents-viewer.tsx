@@ -100,7 +100,7 @@ export function ProjectDocumentsViewer({ projectId }: ProjectDocumentsViewerProp
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex max-sm:flex-col max-sm:gap-2 sm:items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <FolderOpen className="h-5 w-5" />

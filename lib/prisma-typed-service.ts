@@ -2,12 +2,18 @@ import { supabase } from './supabase'
 import type { User, Project, Task } from './generated/prisma/index'
 
 export class PrismaTypedService {
-  static async getAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase
+  static async getAllUsers(includeDeleted = false): Promise<User[]> {
+    let query = supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false })
-    
+
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data, error } = await query
+
     if (error) throw error
     return data as User[]
   }
@@ -79,9 +85,19 @@ export class PrismaTypedService {
   static async deleteUser(id: string): Promise<void> {
     const { error } = await supabase
       .from('users')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
-    
+      .is('deleted_at', null)
+
+    if (error) throw error
+  }
+
+  static async restoreUser(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .update({ deleted_at: null })
+      .eq('id', id)
+
     if (error) throw error
   }
 
@@ -110,7 +126,10 @@ export class PrismaTypedService {
           progress_percentage,
           notes,
           assigned_at,
-          assigned_by,
+          started_by,
+          started_at,
+          completed_by,
+          completed_at,
           created_at,
           updated_at,
           task:task_id (
@@ -128,6 +147,35 @@ export class PrismaTypedService {
             id,
             name,
             role
+          ),
+          started_by_user:started_by (
+            id,
+            name,
+            role
+          ),
+          completed_by_user:completed_by (
+            id,
+            name,
+            role
+          ),
+          collaborators:task_collaborators (
+            id,
+            project_task_id,
+            user_id,
+            added_by,
+            added_at,
+            created_at,
+            updated_at,
+            user:user_id (
+              id,
+              name,
+              role
+            ),
+            added_by_user:added_by (
+              id,
+              name,
+              role
+            )
           )
         ),
         project_operarios (
@@ -135,7 +183,6 @@ export class PrismaTypedService {
           project_id,
           user_id,
           assigned_at,
-          assigned_by,
           user:user_id (
             id,
             name,
@@ -386,7 +433,8 @@ export class PrismaTypedService {
           id,
           name,
           email,
-          role
+          role,
+          deleted_at
         )
       `)
 
@@ -403,14 +451,12 @@ export class PrismaTypedService {
   static async assignOperarioToProject(assignmentData: {
     project_id: string
     user_id: string
-    assigned_by?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('project_operarios')
       .insert({
         project_id: assignmentData.project_id,
-        user_id: assignmentData.user_id,
-        assigned_by: assignmentData.assigned_by
+        user_id: assignmentData.user_id
       })
       .select(`
         *,
@@ -457,6 +503,16 @@ export class PrismaTypedService {
           name,
           role
         ),
+        started_by_user:started_by (
+          id,
+          name,
+          role
+        ),
+        completed_by_user:completed_by (
+          id,
+          name,
+          role
+        ),
         collaborators:task_collaborators (
           id,
           project_task_id,
@@ -492,15 +548,14 @@ export class PrismaTypedService {
   static async createProjectTask(projectTaskData: {
     project_id: string
     task_id: string
-    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
-    estimated_hours?: number
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+    estimated_hours?: number  // Tiempo estimado total para este proyecto
     actual_hours?: number
     assigned_to?: string
     start_date?: string
     end_date?: string
     progress_percentage?: number
     notes?: string
-    assigned_by?: string
   }): Promise<any> {
     const insertData: any = {
       project_id: projectTaskData.project_id,
@@ -511,8 +566,7 @@ export class PrismaTypedService {
       start_date: projectTaskData.start_date,
       end_date: projectTaskData.end_date,
       progress_percentage: projectTaskData.progress_percentage || 0,
-      notes: projectTaskData.notes,
-      assigned_by: projectTaskData.assigned_by
+      notes: projectTaskData.notes
     }
     
     if (projectTaskData.estimated_hours !== undefined) {
@@ -530,27 +584,42 @@ export class PrismaTypedService {
   }
 
   static async updateProjectTask(id: string, projectTaskData: {
-    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
     estimated_hours?: number
     actual_hours?: number
-    assigned_to?: string
-    start_date?: string
-    end_date?: string
+    assigned_to?: string | null
+    start_date?: string | null
+    end_date?: string | null
     progress_percentage?: number
     notes?: string
     task_order?: number
+    started_by?: string
+    started_at?: string
+    completed_by?: string
+    completed_at?: string
   }): Promise<any> {
     const updateData: any = {}
     
     if (projectTaskData.status !== undefined) updateData.status = projectTaskData.status
     if (projectTaskData.estimated_hours !== undefined) updateData.estimated_hours = projectTaskData.estimated_hours
     if (projectTaskData.actual_hours !== undefined) updateData.actual_hours = projectTaskData.actual_hours
-    if (projectTaskData.assigned_to !== undefined) updateData.assigned_to = projectTaskData.assigned_to
-    if (projectTaskData.start_date !== undefined) updateData.start_date = projectTaskData.start_date
-    if (projectTaskData.end_date !== undefined) updateData.end_date = projectTaskData.end_date
+    
+    if (projectTaskData.assigned_to !== undefined) {
+      updateData.assigned_to = projectTaskData.assigned_to === null ? null : projectTaskData.assigned_to
+    }
+    if (projectTaskData.start_date !== undefined) {
+      updateData.start_date = projectTaskData.start_date === null ? null : projectTaskData.start_date
+    }
+    if (projectTaskData.end_date !== undefined) {
+      updateData.end_date = projectTaskData.end_date === null ? null : projectTaskData.end_date
+    }
     if (projectTaskData.progress_percentage !== undefined) updateData.progress_percentage = projectTaskData.progress_percentage
     if (projectTaskData.notes !== undefined) updateData.notes = projectTaskData.notes
     if (projectTaskData.task_order !== undefined) updateData.task_order = projectTaskData.task_order
+    if (projectTaskData.started_by !== undefined) updateData.started_by = projectTaskData.started_by
+    if (projectTaskData.started_at !== undefined) updateData.started_at = projectTaskData.started_at
+    if (projectTaskData.completed_by !== undefined) updateData.completed_by = projectTaskData.completed_by
+    if (projectTaskData.completed_at !== undefined) updateData.completed_at = projectTaskData.completed_at
 
     const { data, error } = await supabase
       .from('project_tasks')
@@ -608,7 +677,6 @@ export class PrismaTypedService {
           progress_percentage,
           notes,
           assigned_at,
-          assigned_by,
           created_at,
           updated_at,
           task:task_id (
@@ -888,8 +956,77 @@ export class PrismaTypedService {
       .from('client_contacts')
       .delete()
       .eq('client_id', clientId)
-    
+
     if (error) throw error
+  }
+
+  static async getProjectPlanningChecklist(projectId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('project_planning_checklist')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async updateProjectPlanningChecklistItem(
+    projectId: string,
+    checklistItem: string,
+    updates: {
+      is_completed?: boolean;
+      notes?: string;
+      completed_by?: string;
+      completed_at?: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: existing, error: selectError } = await supabase
+        .from('project_planning_checklist')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('checklist_item', checklistItem)
+        .limit(1)
+
+      if (selectError) throw selectError
+
+      if (existing && existing.length > 0) {
+        const { error } = await supabase
+          .from('project_planning_checklist')
+          .update({
+            is_completed: updates.is_completed,
+            notes: updates.notes,
+            completed_by: updates.completed_by,
+            completed_at: updates.completed_at,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing[0].id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('project_planning_checklist')
+          .insert({
+            project_id: projectId,
+            checklist_item: checklistItem,
+            is_completed: updates.is_completed || false,
+            notes: updates.notes,
+            completed_by: updates.completed_by,
+            completed_at: updates.completed_at
+          })
+
+        if (error) throw error
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating planning checklist item:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
   }
 }
 

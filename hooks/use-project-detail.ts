@@ -12,11 +12,15 @@ interface UseProjectDetailProps {
   projectId: string;
   userId?: string;
   isReadOnly?: boolean;
+  checklist?: any[];
+  checklistItems?: any[];
 }
 
 export function useProjectDetail({
   projectId,
   userId,
+  checklist = [],
+  checklistItems = [],
 }: UseProjectDetailProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -63,6 +67,29 @@ export function useProjectDetail({
     async (projectData: Partial<Project>) => {
       if (!project) return;
 
+      // ✅ VALIDACIÓN: Si se intenta activar proyecto desde edición, verificar checklist
+      if (projectData.status === "active" && project.status === "planning") {
+        const checklistComplete = checklistItems.every(item =>
+          checklist.find(c => c.checklist_item === item)?.is_completed === true
+        );
+
+        if (!checklistComplete) {
+          console.error("❌ No se puede activar proyecto desde edición: checklist incompleto");
+
+          // Mostrar toast de error
+          toast({
+            title: "No se puede activar el proyecto",
+            description: "Debe completar toda la planificación antes de activar el proyecto.",
+            variant: "destructive",
+          });
+
+          return {
+            success: false,
+            error: "Checklist de planificación incompleto. Complete todos los elementos antes de activar el proyecto."
+          };
+        }
+      }
+
       const mappedData = mapProjectFormData(projectData);
       const result = await updateProject(project.id, mappedData);
 
@@ -72,7 +99,7 @@ export function useProjectDetail({
 
       return result;
     },
-    [project, updateProject]
+    [project, updateProject, checklist, checklistItems, toast]
   );
 
   const handleActivateProject = useCallback(async () => {
@@ -133,7 +160,6 @@ export function useProjectDetail({
         const projectTaskResult = await createProjectTask({
           projectId: project.id,
           taskId: createdTask.id,
-          assignedBy: userId,
         });
 
         if (projectTaskResult.success) {
@@ -179,13 +205,13 @@ export function useProjectDetail({
       if (taskData.assignedTo !== undefined)
         updateData.assignedTo = taskData.assignedTo;
 
-      const result = await updateProjectTask(projectTaskId, updateData);
+      const result = await updateProjectTask(projectTaskId, updateData, false, userId);
       if (result.success) {
         setEditingTask(null);
       }
       return result;
     },
-    [updateProjectTask]
+    [updateProjectTask, userId]
   );
 
   const handleEditTask = useCallback(
@@ -243,7 +269,7 @@ export function useProjectDetail({
         status: "completed",
         endDate: new Date().toISOString(),
         actualHours: actualHours,
-      });
+      }, false, userId);
 
       if (result.success) {
         toast({
@@ -271,7 +297,6 @@ export function useProjectDetail({
       const result = await createProjectTask({
         projectId: project.id,
         taskId: taskId,
-        assignedBy: userId,
       });
 
       if (result.success) {
