@@ -339,6 +339,7 @@ export function useProjectDetail({
 
   return {
     project,
+    projects,
     projectsLoading,
     projectsError,
     projectTasks,
