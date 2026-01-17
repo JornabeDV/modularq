@@ -26,7 +26,7 @@ import { EditTaskDialog } from "./project-detail/edit-task-dialog";
 import { ActivateProjectDialog } from "./project-detail/activate-project-dialog";
 import { PlanningChecklist } from "./planning-checklist";
 import { useProjectPlanningChecklist } from "@/hooks/use-project-planning-checklist";
-import type { ProjectTask } from "@/lib/types";
+import type { Project, ProjectTask } from "@/lib/types";
 
 interface ProjectDetailProps {
   projectId: string;
@@ -40,8 +40,17 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const checklistHook = useProjectPlanningChecklist(projectId, user?.id || "");
   const { checklist, checklistItems } = checklistHook;
 
+  const projectDetailResult = useProjectDetail({
+    projectId,
+    userId: user?.id,
+    isReadOnly,
+    checklist,
+    checklistItems,
+  });
+
   const {
     project,
+    projects,
     projectsLoading,
     projectsError,
     projectTasks,
@@ -58,13 +67,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     handleAssignTask,
     handleUnassignTask,
     handleReorderTasks,
-  } = useProjectDetail({
-    projectId,
-    userId: user?.id,
-    isReadOnly,
-    checklist,
-    checklistItems,
-  });
+  } = projectDetailResult as typeof projectDetailResult & { projects: Project[] };
 
   const { files: projectFiles } = useProjectFiles(
     projectId,
@@ -128,7 +131,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     );
   }
 
-  if (projectsError || (!projectsLoading && !project)) {
+  if (projectsError || (!projectsLoading && projects.length > 0 && !project)) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
