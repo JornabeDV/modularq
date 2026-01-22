@@ -26,7 +26,7 @@ import { EditTaskDialog } from "./project-detail/edit-task-dialog";
 import { ActivateProjectDialog } from "./project-detail/activate-project-dialog";
 import { PlanningChecklist } from "./planning-checklist";
 import { useProjectPlanningChecklist } from "@/hooks/use-project-planning-checklist";
-import type { Project, ProjectTask } from "@/lib/types";
+import type { Project, ProjectTask, Task } from "@/lib/types";
 
 interface ProjectDetailProps {
   projectId: string;
@@ -88,6 +88,17 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       setShowActivateButton(allCompleted);
     },
     [checklist, checklistItems]
+  );
+
+  const handleCreateTaskAndClose = useCallback(
+    async (taskData: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
+      const result = await handleCreateTask(taskData);
+      if (result?.success) {
+        setIsTaskDialogOpen(false);
+      }
+      return result;
+    },
+    [handleCreateTask]
   );
 
   useEffect(() => {
@@ -250,7 +261,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
           <TaskForm
             isOpen={isTaskDialogOpen}
             onClose={() => setIsTaskDialogOpen(false)}
-            onSubmit={handleCreateTask}
+            onSubmit={handleCreateTaskAndClose}
             isEditing={false}
             projectId={project.id}
           />
