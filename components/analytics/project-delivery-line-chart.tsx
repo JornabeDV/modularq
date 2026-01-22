@@ -16,7 +16,7 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { chartConfig } from "./analytics-config";
+import { type ChartConfig } from "@/components/ui/chart";
 
 interface ProjectDeliveryLineChartProps {
   deliveredWeeklyChartData: Array<{
@@ -30,6 +30,13 @@ export function ProjectDeliveryLineChart({
   deliveredWeeklyChartData,
 }: ProjectDeliveryLineChartProps) {
   const isMobile = useIsMobile();
+
+  const deliveredChartConfig: ChartConfig = {
+    proyectos: {
+      label: "Proyectos Entregados",
+      color: "hsl(var(--chart-1))",
+    },
+  };
 
   const displayData =
     isMobile && deliveredWeeklyChartData.length > 12
@@ -54,7 +61,7 @@ export function ProjectDeliveryLineChart({
         ) : (
           <div className="w-full overflow-hidden relative max-w-full">
             <ChartContainer
-              config={chartConfig}
+              config={deliveredChartConfig}
               className="h-[200px] sm:h-[300px] w-full !aspect-auto [&>div]:overflow-hidden [&>div]:max-w-full"
             >
               <LineChart
@@ -90,7 +97,7 @@ export function ProjectDeliveryLineChart({
                     <ChartTooltipContent
                       formatter={(value, name) => {
                         const itemConfig =
-                          chartConfig[name as keyof typeof chartConfig];
+                          deliveredChartConfig[name as keyof typeof deliveredChartConfig];
                         const label = itemConfig?.label || name;
                         return (
                           <div className="flex items-center gap-2">

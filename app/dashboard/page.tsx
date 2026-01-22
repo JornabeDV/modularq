@@ -40,6 +40,7 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getProgressColor } from "@/lib/utils/project-utils";
 import { formatDate } from "@/lib/utils";
+import { getStatusText } from "@/components/admin/metrics/metrics-helpers";
 
 export default function DashboardPage() {
   const { userProfile } = useAuth();
@@ -135,9 +136,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <Card className="py-3 sm:py-3 flex justify-between flex-col">
+              <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Proyectos Activos
                 </CardTitle>
@@ -147,27 +148,27 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">
                   {activeProjects.length}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   de {projects.length} proyectos totales
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card className="py-3 sm:py-3 flex justify-between flex-col">
+              <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Operarios</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalOperarios}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   operarios registrados
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card className="py-3 sm:py-3 flex justify-between flex-col">
+              <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Tareas Activas
                 </CardTitle>
@@ -175,20 +176,20 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{activeTasks}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   tareas en progreso
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card className="py-3 sm:py-3 flex justify-between flex-col">
+              <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Clientes</CardTitle>
                 <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{clients?.length || 0}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   clientes registrados
                 </p>
               </CardContent>
@@ -349,7 +350,7 @@ export default function DashboardPage() {
                               </CardTitle>
                             </div>
                             <Badge variant="default" className="text-xs">
-                              {project.status}
+                              {getStatusText(project.status)}
                             </Badge>
                           </div>
                           {project.description && (

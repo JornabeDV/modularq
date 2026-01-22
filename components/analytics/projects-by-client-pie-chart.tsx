@@ -12,41 +12,64 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
 } from "@/components/ui/chart";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  chartConfig,
-  statusColors,
-  STATUS_CONFIG,
-  type ProjectStatusType,
-} from "./analytics-config";
-import { Badge } from "@/components/ui/badge";
 
-interface ProjectStatusPieChartProps {
-  statusCounts: Record<ProjectStatusType, number>;
+export interface ClientProjectsData {
+  clientName: string;
+  projectCount: number;
+  clientId?: string;
 }
 
-export function ProjectStatusPieChart({
-  statusCounts,
-}: ProjectStatusPieChartProps) {
+interface ProjectsByClientPieChartProps {
+  clientProjects: ClientProjectsData[];
+}
+
+const CLIENT_COLORS = [
+  "#3b82f6", // Azul
+  "#22c55e", // Verde
+  "#f59e0b", // Ámbar
+  "#ef4444", // Rojo
+  "#a855f7", // Púrpura
+  "#06b6d4", // Cyan
+  "#84cc16", // Lime
+  "#f97316", // Orange
+  "#ec4899", // Pink
+  "#6b7280", // Gray
+];
+
+export function ProjectsByClientPieChart({
+  clientProjects,
+}: ProjectsByClientPieChartProps) {
   const isMobile = useIsMobile();
 
-  const chartData = STATUS_CONFIG.filter(
-    (config) => config.type !== "completed",
-  ).map((config) => ({
-    name: config.label,
-    value: statusCounts[config.type] || 0,
-    fill: statusColors[config.type] || "#64748b",
+  const chartData = clientProjects.map((client, index) => ({
+    name: client.clientName || "Sin cliente",
+    value: client.projectCount,
+    fill: CLIENT_COLORS[index % CLIENT_COLORS.length],
   }));
+
+  const chartConfig = clientProjects.reduce(
+    (config, client, index) => {
+      config[client.clientId || `client-${index}`] = {
+        label: client.clientName || "Sin cliente",
+        color: CLIENT_COLORS[index % CLIENT_COLORS.length],
+      };
+      return config;
+    },
+    {} as Record<string, { label: string; color: string }>,
+  );
 
   return (
     <Card className="max-sm:py-3">
       <CardHeader className="pb-3 sm:pb-6">
         <CardTitle className="text-base sm:text-lg">
-          Distribución Porcentual por Estado
+          Proyectos por Cliente
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
-          Porcentaje de proyectos en cada estado del proyecto
+          Distribución de proyectos entre diferentes clientes
         </CardDescription>
       </CardHeader>
       <CardContent className="px-2 sm:px-6 pb-4 sm:pb-6">
@@ -81,32 +104,23 @@ export function ProjectStatusPieChart({
 
       <div className="px-2 sm:px-6 pb-4 sm:pb-6">
         <div className="text-xs sm:text-sm text-muted-foreground mb-3">
-          <strong>Estados del proyecto:</strong>
+          <strong>Clientes y proyectos:</strong>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {STATUS_CONFIG.filter((config) => config.type !== "completed").map(
-            (config) => (
-              <div key={config.type} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: statusColors[config.type] }}
-                />
-                <span className="text-xs sm:text-sm">
-                  <Badge variant="outline" className="text-xs mr-1 px-1 py-0">
-                    {config.label}
-                  </Badge>
-                  {config.type === "planning" &&
-                    "Proyecto en fase de planificación"}
-                  {config.type === "active" &&
-                    "Proyecto actualmente en ejecución"}
-                  {config.type === "paused" &&
-                    "Proyecto temporalmente detenido"}
-                  {config.type === "delivered" &&
-                    "Proyecto finalizado y entregado"}
+          {chartData.map((client, index) => (
+            <div key={client.name} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: client.fill }}
+              />
+              <span className="text-xs sm:text-sm">
+                <span className="font-medium">{client.name}</span>
+                <span className="text-muted-foreground ml-1">
+                  ({client.value} proyecto{client.value !== 1 ? "s" : ""})
                 </span>
-              </div>
-            ),
-          )}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </Card>

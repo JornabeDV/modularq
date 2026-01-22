@@ -5,6 +5,7 @@ import { BarChart3 } from "lucide-react";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProjectStatusPieChart } from "./project-status-pie-chart";
+import { ProjectsByClientPieChart, type ClientProjectsData } from "./projects-by-client-pie-chart";
 import { ProjectCreationLineChart } from "./project-creation-line-chart";
 import { ProjectDeliveryLineChart } from "./project-delivery-line-chart";
 import { ProjectProgressGrid } from "./project-progress-grid";
@@ -15,9 +16,8 @@ export function ProjectAnalytics() {
   const { projects, loading } = useProjectsPrisma();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProjectStatusType | "all">(
-    "active"
+    "active",
   );
-  const isMobile = useIsMobile();
 
   const projectsWithStatus = useMemo(() => {
     if (!projects) return [];
@@ -30,7 +30,7 @@ export function ProjectAnalytics() {
       const inProgressTasks =
         project.projectTasks?.filter(
           (task: any) =>
-            task.status === "in_progress" || task.status === "assigned"
+            task.status === "in_progress" || task.status === "assigned",
         ).length || 0;
       const pendingTasks =
         project.projectTasks?.filter((task: any) => task.status === "pending")
@@ -87,39 +87,42 @@ export function ProjectAnalytics() {
         "completed",
         "delivered",
       ] as ProjectStatusType[]
-    ).reduce((acc, statusType) => {
-      acc[statusType] = projectsWithStatus.filter(
-        (p) => p.status === statusType
-      ).length;
-      return acc;
-    }, {} as Record<ProjectStatusType, number>);
+    ).reduce(
+      (acc, statusType) => {
+        acc[statusType] = projectsWithStatus.filter(
+          (p) => p.status === statusType,
+        ).length;
+        return acc;
+      },
+      {} as Record<ProjectStatusType, number>,
+    );
 
     const totalTasks = projectsWithStatus.reduce(
       (sum, p) => sum + p.totalTasks,
-      0
+      0,
     );
     const totalCompletedTasks = projectsWithStatus.reduce(
       (sum, p) => sum + p.completedTasks,
-      0
+      0,
     );
     const averageCompletion =
       totalProjects > 0
         ? Math.round(
             projectsWithStatus.reduce(
               (sum, p) => sum + p.completionPercentage,
-              0
-            ) / totalProjects
+              0,
+            ) / totalProjects,
           )
         : 0;
 
     const activeProjects = projectsWithStatus.filter(
-      (p) => p.status === "active"
+      (p) => p.status === "active",
     );
     const activeProjectsAverage =
       activeProjects.length > 0
         ? Math.round(
             activeProjects.reduce((sum, p) => sum + p.completionPercentage, 0) /
-              activeProjects.length
+              activeProjects.length,
           )
         : 0;
 
@@ -134,9 +137,31 @@ export function ProjectAnalytics() {
     };
   }, [projectsWithStatus]);
 
+  const clientProjectsData = useMemo((): ClientProjectsData[] => {
+    if (!projects) return [];
+
+    const clientGroups = projects.reduce((acc, project) => {
+      const clientId = project.clientId || "no-client";
+      const clientName = project.client?.companyName || "Sin cliente asignado";
+
+      if (!acc[clientId]) {
+        acc[clientId] = {
+          clientId,
+          clientName,
+          projectCount: 0,
+        };
+      }
+
+      acc[clientId].projectCount++;
+      return acc;
+    }, {} as Record<string, ClientProjectsData>);
+
+    return Object.values(clientGroups).sort((a, b) => b.projectCount - a.projectCount);
+  }, [projects]);
+
   const weeklyChartData = useMemo(
     () => processWeeklyProjectData(projects || [], "createdAt"),
-    [projects]
+    [projects],
   );
 
   const deliveredWeeklyChartData = useMemo(
@@ -144,9 +169,9 @@ export function ProjectAnalytics() {
       processWeeklyProjectData(
         projects || [],
         "updatedAt",
-        (p: any) => p.status === "delivered"
+        (p: any) => p.status === "delivered",
       ),
-    [projects]
+    [projects],
   );
 
   if (loading) {
@@ -175,8 +200,9 @@ export function ProjectAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
         <ProjectStatusPieChart statusCounts={stats.statusCounts} />
+        <ProjectsByClientPieChart clientProjects={clientProjectsData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
