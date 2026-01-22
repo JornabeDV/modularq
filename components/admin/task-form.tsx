@@ -1,37 +1,56 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Task } from '@/lib/types'
-import { TASK_CATEGORIES } from '@/lib/constants'
-import { useAuth } from '@/lib/auth-context'
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Task } from "@/lib/types";
+import { TASK_CATEGORIES } from "@/lib/constants";
+import { useAuth } from "@/lib/auth-context";
 
 interface TaskFormProps {
-  isOpen: boolean
-  onClose: () => void
-  onSubmit: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void
-  isEditing: boolean
-  initialData?: Task | null
-  projectId?: string
-  isLoading?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<Task, "id" | "createdAt" | "updatedAt">) => void;
+  isEditing: boolean;
+  initialData?: Task | null;
+  projectId?: string;
+  isLoading?: boolean;
 }
 
-export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, projectId, isLoading = false }: TaskFormProps) {
-  const { user } = useAuth()
+export function TaskForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  isEditing,
+  initialData,
+  projectId,
+  isLoading = false,
+}: TaskFormProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    estimatedHours: 0 as number,
-    category: '',
-    type: 'custom' as 'standard' | 'custom'
-  })
-  
-  const isProjectTask = !!projectId
+    title: "",
+    description: "",
+    estimatedHours: "" as string | number,
+    category: "",
+    type: "custom" as "standard" | "custom",
+  });
+
+  const isProjectTask = !!projectId;
 
   useEffect(() => {
     if (isEditing && initialData) {
@@ -40,66 +59,89 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
         description: initialData.description,
         estimatedHours: initialData.estimatedHours,
         category: initialData.category,
-        type: initialData.type
-      })
+        type: initialData.type,
+      });
     } else {
       setFormData({
-        title: '',
-        description: '',
-        estimatedHours: 0,
-        category: '',
-        type: isProjectTask ? 'custom' : 'standard'
-      })
+        title: "",
+        description: "",
+        estimatedHours: "",
+        category: "",
+        type: isProjectTask ? "custom" : "standard",
+      });
     }
-  }, [isEditing, initialData?.id, isProjectTask])
+  }, [isEditing, initialData?.id, isProjectTask]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
+    const estimatedHoursValue =
+      typeof formData.estimatedHours === "string"
+        ? parseFloat(formData.estimatedHours)
+        : formData.estimatedHours;
+
+    if (isProjectTask && (!estimatedHoursValue || estimatedHoursValue <= 0)) {
+      alert(
+        "Las horas estimadas deben ser mayores a 0 para tareas personalizadas.",
+      );
+      return;
+    }
+
     onSubmit({
       title: formData.title,
       description: formData.description,
-      estimatedHours: 0,
+      estimatedHours: estimatedHoursValue || 0,
       category: formData.category,
       type: formData.type,
       taskOrder: 0,
-      createdBy: user?.id || '00000000-0000-0000-0000-000000000000'
-    })
-  }
+      createdBy: user?.id || "00000000-0000-0000-0000-000000000000",
+    });
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open && !isLoading) {
-        onClose()
-      }
-    }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isLoading) {
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="w-auto max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Editar Tarea' : (isProjectTask ? 'Crear Tarea Personalizada' : 'Crear Nueva Tarea Estándar')}
+            {isEditing
+              ? "Editar Tarea"
+              : isProjectTask
+                ? "Crear Tarea Personalizada"
+                : "Crear Nueva Tarea Estándar"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="title" className="mb-2">Título de la Tarea</Label>
+              <Label htmlFor="title" className="mb-2">
+                Título de la Tarea
+              </Label>
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 required
                 placeholder="Ej: Instalación Sistema Eléctrico"
               />
             </div>
             <div>
-              <Label htmlFor="category" className="mb-2">Categoría</Label>
+              <Label htmlFor="category" className="mb-2">
+                Categoría
+              </Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => handleInputChange('category', value)}
+                onValueChange={(value) => handleInputChange("category", value)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar categoría" />
@@ -118,10 +160,12 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {!isProjectTask && (
               <div>
-                <Label htmlFor="type" className="mb-2">Tipo de Tarea</Label>
+                <Label htmlFor="type" className="mb-2">
+                  Tipo de Tarea
+                </Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value) => handleInputChange('type', value)}
+                  onValueChange={(value) => handleInputChange("type", value)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Seleccionar tipo" />
@@ -137,35 +181,69 @@ export function TaskForm({ isOpen, onClose, onSubmit, isEditing, initialData, pr
                 </Select>
               </div>
             )}
-            {/* Campo de horas estimadas oculto - Simplificado a solo estados */}
+            {isProjectTask && (
+              <div>
+                <Label htmlFor="estimatedHours" className="mb-2">
+                  Horas Estimadas *
+                </Label>
+                <Input
+                  id="estimatedHours"
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={formData.estimatedHours}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "estimatedHours",
+                      e.target.value === ""
+                        ? ""
+                        : parseFloat(e.target.value) || "",
+                    )
+                  }
+                  required={isProjectTask}
+                  placeholder="Ej: 2.5"
+                />
+              </div>
+            )}
           </div>
 
           <div>
-            <Label htmlFor="description" className="mb-2">Descripción</Label>
+            <Label htmlFor="description" className="mb-2">
+              Descripción
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="Describe detalladamente la tarea..."
               rows={3}
             />
           </div>
 
-
-
-
-
-
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="cursor-pointer">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+              className="cursor-pointer"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading} className="cursor-pointer">
-              {isLoading ? 'Guardando...' : (isEditing ? 'Actualizar Tarea' : 'Crear Tarea')}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="cursor-pointer"
+            >
+              {isLoading
+                ? "Guardando..."
+                : isEditing
+                  ? "Actualizar Tarea"
+                  : "Crear Tarea"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
