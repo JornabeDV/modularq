@@ -111,9 +111,14 @@ export function TaskForm({
         }
       }}
     >
-      <DialogContent className="w-auto max-w-2xl">
+      <DialogContent
+        className="
+          h-[100dvh] w-[100dvw] max-w-none rounded-none
+          md:h-auto md:w-full md:max-w-2xl md:rounded-lg
+        "
+      >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="max-sm:mt-12">
             {isEditing
               ? "Editar Tarea"
               : isProjectTask
@@ -121,67 +126,73 @@ export function TaskForm({
                 : "Crear Nueva Tarea Estándar"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="title" className="mb-2">
-                Título de la Tarea
-              </Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                required
-                placeholder="Ej: Instalación Sistema Eléctrico"
-              />
-            </div>
-            <div>
-              <Label htmlFor="category" className="mb-2">
-                Categoría
-              </Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => handleInputChange("category", value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar categoría" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {!isProjectTask && (
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 flex flex-col justify-between"
+        >
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
               <div>
-                <Label htmlFor="type" className="mb-2">
-                  Tipo de Tarea
+                <Label htmlFor="title" className="mb-2">
+                  Título de la Tarea
+                </Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  required
+                  placeholder="Ej: Instalación Sistema Eléctrico"
+                  className="placeholder:text-sm"
+                />
+              </div>
+              <div>
+                <Label htmlFor="category" className="mb-2">
+                  Categoría
                 </Label>
                 <Select
-                  value={formData.type}
-                  onValueChange={(value) => handleInputChange("type", value)}
+                  value={formData.category}
+                  onValueChange={(value) =>
+                    handleInputChange("category", value)
+                  }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar tipo" />
+                    <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="standard">
-                      Estándar (aparece en todos los proyectos)
-                    </SelectItem>
-                    <SelectItem value="custom">
-                      Personalizada (asignada manualmente)
-                    </SelectItem>
+                    {TASK_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-            )}
-            {isProjectTask && (
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
+              {!isProjectTask && (
+                <div>
+                  <Label htmlFor="type" className="mb-2">
+                    Tipo de Tarea
+                  </Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => handleInputChange("type", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">
+                        Estándar (aparece en todos los proyectos)
+                      </SelectItem>
+                      <SelectItem value="custom">
+                        Personalizada (asignada manualmente)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <Label htmlFor="estimatedHours" className="mb-2">
                   Horas Estimadas *
@@ -202,22 +213,26 @@ export function TaskForm({
                   }
                   required={isProjectTask}
                   placeholder="Ej: 2.5"
+                  className="placeholder:text-sm"
                 />
               </div>
-            )}
-          </div>
+            </div>
 
-          <div>
-            <Label htmlFor="description" className="mb-2">
-              Descripción
-            </Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              placeholder="Describe detalladamente la tarea..."
-              rows={3}
-            />
+            <div>
+              <Label htmlFor="description" className="mb-2">
+                Descripción
+              </Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
+                placeholder="Describe detalladamente la tarea..."
+                rows={3}
+                className="placeholder:text-sm"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2">

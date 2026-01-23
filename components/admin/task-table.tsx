@@ -1,30 +1,40 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DataPagination } from '@/components/ui/data-pagination'
-import { DraggableTaskRow } from './draggable-task-row'
-import { TaskFilters } from './task-filters'
-import type { Task } from '@/lib/types'
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DataPagination } from "@/components/ui/data-pagination";
+import { DraggableTaskRow } from "./draggable-task-row";
+import { TaskFilters } from "./task-filters";
+import type { Task } from "@/lib/types";
 
 interface TaskTableProps {
-  tasks: Task[]
-  totalItems: number
-  itemsPerPage: number
-  currentPage: number
-  onPageChange: (page: number) => void
-  onItemsPerPageChange: (itemsPerPage: number) => void
-  searchTerm: string
-  onSearchChange: (value: string) => void
-  categoryFilter: string
-  onCategoryFilterChange: (value: string) => void
-  typeFilter: string
-  onTypeFilterChange: (value: string) => void
-  onEditTask: (task: Task) => void
-  onDeleteTask: (taskId: string) => void
-  onReorderTasks?: (taskOrders: { id: string; taskOrder: number }[]) => void
-  isReadOnly?: boolean
+  tasks: Task[];
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (itemsPerPage: number) => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  categoryFilter: string;
+  onCategoryFilterChange: (value: string) => void;
+  typeFilter: string;
+  onTypeFilterChange: (value: string) => void;
+  onEditTask: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
+  onReorderTasks?: (taskOrders: { id: string; taskOrder: number }[]) => void;
+  isReadOnly?: boolean;
 }
 
 export function TaskTable({
@@ -43,83 +53,81 @@ export function TaskTable({
   onEditTask,
   onDeleteTask,
   onReorderTasks,
-  isReadOnly = false
+  isReadOnly = false,
 }: TaskTableProps) {
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
-  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null)
-  const [localTasks, setLocalTasks] = useState(tasks)
-  const [isReordering, setIsReordering] = useState(false)
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [localTasks, setLocalTasks] = useState(tasks);
+  const [isReordering, setIsReordering] = useState(false);
 
-  // Sincronizar localTasks con tasks cuando cambien
   React.useEffect(() => {
-    setLocalTasks(tasks)
-  }, [tasks])
+    setLocalTasks(tasks);
+  }, [tasks]);
 
-  // Funciones de drag and drop
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    setDraggedTaskId(taskId)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', taskId)
-  }
+    setDraggedTaskId(taskId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", taskId);
+  };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    setDraggedTaskId(null)
-    setDragOverTaskId(null)
-  }
+    setDraggedTaskId(null);
+    setDragOverTaskId(null);
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
 
   const handleDrop = async (e: React.DragEvent, targetTaskId: string) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!draggedTaskId || draggedTaskId === targetTaskId) {
-      setDragOverTaskId(null)
-      return
+      setDragOverTaskId(null);
+      return;
     }
 
-    // Encontrar las posiciones de las tareas
-    const draggedIndex = localTasks.findIndex(task => task.id === draggedTaskId)
-    const targetIndex = localTasks.findIndex(task => task.id === targetTaskId)
-    
+    const draggedIndex = localTasks.findIndex(
+      (task) => task.id === draggedTaskId,
+    );
+    const targetIndex = localTasks.findIndex(
+      (task) => task.id === targetTaskId,
+    );
+
     if (draggedIndex === -1 || targetIndex === -1) {
-      setDragOverTaskId(null)
-      return
+      setDragOverTaskId(null);
+      return;
     }
 
-    // Crear nuevo array con las tareas reordenadas
-    const newTasks = [...localTasks]
-    const [draggedTask] = newTasks.splice(draggedIndex, 1)
-    newTasks.splice(targetIndex, 0, draggedTask)
+    const newTasks = [...localTasks];
+    const [draggedTask] = newTasks.splice(draggedIndex, 1);
+    newTasks.splice(targetIndex, 0, draggedTask);
 
-    // Actualizar el orden de las tareas
     const taskOrders = newTasks.map((task, index) => ({
       id: task.id,
-      taskOrder: index + 1
-    }))
+      taskOrder: index + 1,
+    }));
 
-    // Actualización optimista: mostrar el nuevo orden inmediatamente
-    setLocalTasks(newTasks.map((task, index) => ({
-      ...task,
-      taskOrder: index + 1
-    })))
-    setIsReordering(true)
+    setLocalTasks(
+      newTasks.map((task, index) => ({
+        ...task,
+        taskOrder: index + 1,
+      })),
+    );
+    setIsReordering(true);
 
     try {
-      // Actualizar en el backend
-      await onReorderTasks?.(taskOrders)
+      await onReorderTasks?.(taskOrders);
     } catch (error) {
-      // Si falla, revertir al estado anterior
-      setLocalTasks(tasks)
-      console.error('Error reordering tasks:', error)
+      setLocalTasks(tasks);
+      console.error("Error reordering tasks:", error);
     } finally {
-      setIsReordering(false)
+      setIsReordering(false);
     }
 
-    setDragOverTaskId(null)
-  }
+    setDragOverTaskId(null);
+  };
 
   return (
     <Card>
@@ -140,22 +148,33 @@ export function TaskTable({
               <TableRow className="hover:bg-background">
                 <TableHead className="text-center min-w-[60px]">#</TableHead>
                 <TableHead className="min-w-[200px]">Tarea</TableHead>
-                <TableHead className="text-center min-w-[120px]">Categoría</TableHead>
-                <TableHead className="text-center min-w-[100px]">Tipo</TableHead>
-                {!isReadOnly && <TableHead className="text-center min-w-[120px]">Acciones</TableHead>}
+                <TableHead className="text-center min-w-[120px]">
+                  Categoría
+                </TableHead>
+                <TableHead className="text-center min-w-[100px]">
+                  Tipo
+                </TableHead>
+                {!isReadOnly && (
+                  <TableHead className="text-center min-w-[120px]">
+                    Acciones
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {tasks.length === 0 ? (
                 <tr>
-                  <td colSpan={isReadOnly ? 4 : 5} className="text-center py-8 text-muted-foreground">
+                  <td
+                    colSpan={isReadOnly ? 4 : 5}
+                    className="text-center py-8 text-muted-foreground"
+                  >
                     No se encontraron tareas
                   </td>
                 </tr>
               ) : (
                 localTasks.map((task, index) => {
-                  // Calcular el número de fila considerando la paginación
-                  const rowNumber = (currentPage - 1) * itemsPerPage + index + 1
+                  const rowNumber =
+                    (currentPage - 1) * itemsPerPage + index + 1;
                   return (
                     <DraggableTaskRow
                       key={task.id}
@@ -171,14 +190,13 @@ export function TaskTable({
                       onDrop={handleDrop}
                       isReadOnly={isReadOnly}
                     />
-                  )
+                  );
                 })
               )}
             </TableBody>
           </Table>
         </div>
-        
-        {/* Paginación */}
+
         {totalItems > 0 && (
           <div className="pt-4 border-t">
             <DataPagination
@@ -194,5 +212,5 @@ export function TaskTable({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
