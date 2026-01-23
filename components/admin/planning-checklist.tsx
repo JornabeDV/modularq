@@ -156,11 +156,6 @@ export function PlanningChecklist({
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Planificación del Proyecto
-            {isReadOnly && (
-              <Badge variant="outline" className="text-xs">
-                Referencia
-              </Badge>
-            )}
           </CardTitle>
           <Badge variant={isAllCompleted() ? "default" : "secondary"}>
             {progress.completed}/{progress.total} completado

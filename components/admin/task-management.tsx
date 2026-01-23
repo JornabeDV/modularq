@@ -13,7 +13,6 @@ import { useAuth } from "@/lib/auth-context";
 export function TaskManagement() {
   const { user, userProfile } = useAuth();
 
-  // Los supervisores solo pueden ver, no editar
   const isReadOnly = userProfile?.role === "supervisor";
 
   const {
@@ -33,7 +32,7 @@ export function TaskManagement() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   const handleCreateTask = async (taskData: any) => {
     if (!user?.id) return;
@@ -91,12 +90,11 @@ export function TaskManagement() {
   };
 
   const handleReorderTasks = async (
-    taskOrders: { id: string; taskOrder: number }[]
+    taskOrders: { id: string; taskOrder: number }[],
   ) => {
     await reorderTasks(taskOrders);
   };
 
-  // Filtrar tareas
   const filteredTasks =
     tasks?.filter((task) => {
       const matchesSearch =
@@ -130,7 +128,7 @@ export function TaskManagement() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
@@ -193,7 +191,6 @@ export function TaskManagement() {
         customTasks={customTasks}
       />
 
-      {/* Tasks Table */}
       <TaskTable
         tasks={paginatedTasks as any}
         totalItems={totalItems}
@@ -213,7 +210,6 @@ export function TaskManagement() {
         isReadOnly={isReadOnly}
       />
 
-      {/* Create Task Dialog */}
       <TaskForm
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
@@ -221,7 +217,6 @@ export function TaskManagement() {
         isEditing={false}
       />
 
-      {/* Edit Task Dialog */}
       <TaskForm
         isOpen={!!editingTask}
         onClose={() => {
