@@ -45,16 +45,32 @@ export function ProjectsByClientPieChart({
 }: ProjectsByClientPieChartProps) {
   const isMobile = useIsMobile();
 
-  const chartData = clientProjects.map((client, index) => ({
-    name: client.clientName || "Sin cliente",
-    value: client.projectCount,
-    fill: CLIENT_COLORS[index % CLIENT_COLORS.length],
-  }));
+  const sortedClients = [...clientProjects].sort((a, b) => b.projectCount - a.projectCount);
+  const top5Clients = sortedClients.slice(0, 5);
 
-  const chartConfig = clientProjects.reduce(
+  const remainingClients = sortedClients.slice(5);
+  const otherProjectsTotal = remainingClients.reduce((total, client) => total + client.projectCount, 0);
+
+  const chartData = [
+    ...top5Clients.map((client, index) => ({
+      name: client.clientName || "Sin cliente",
+      value: client.projectCount,
+      fill: CLIENT_COLORS[index % CLIENT_COLORS.length],
+    })),
+    ...(otherProjectsTotal > 0 ? [{
+      name: "Otros clientes",
+      value: otherProjectsTotal,
+      fill: CLIENT_COLORS[5 % CLIENT_COLORS.length],
+    }] : [])
+  ];
+
+  const chartConfig = [
+    ...top5Clients,
+    ...(otherProjectsTotal > 0 ? [{ clientName: "Otros clientes", projectCount: otherProjectsTotal, clientId: "others" }] : [])
+  ].reduce(
     (config, client, index) => {
       config[client.clientId || `client-${index}`] = {
-        label: client.clientName || "Sin cliente",
+        label: client.clientName || "Otros clientes",
         color: CLIENT_COLORS[index % CLIENT_COLORS.length],
       };
       return config;
