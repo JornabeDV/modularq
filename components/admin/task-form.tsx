@@ -42,40 +42,44 @@ export function TaskForm({
   isLoading = false,
 }: TaskFormProps) {
   const { user } = useAuth();
+  const isProjectTask = !!projectId;
+
+  // Estado del formulario
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    estimatedHours: "",
+    estimatedHours: "1", // Valor seguro >0
     category: "",
     type: "custom" as "standard" | "custom",
   });
 
-  const isProjectTask = !!projectId;
-
+  // Cargar datos iniciales si estamos editando
   useEffect(() => {
     if (isEditing && initialData) {
       setFormData({
-        title: initialData.title,
-        description: initialData.description,
-        estimatedHours: String(initialData.estimatedHours),
-        category: initialData.category,
-        type: initialData.type,
+        title: initialData.title || "",
+        description: initialData.description || "",
+        estimatedHours: String(initialData.estimatedHours || 1),
+        category: initialData.category || "",
+        type: initialData.type || (isProjectTask ? "custom" : "standard"),
       });
     } else {
       setFormData({
         title: "",
         description: "",
-        estimatedHours: "",
+        estimatedHours: "1",
         category: "",
         type: isProjectTask ? "custom" : "standard",
       });
     }
   }, [isEditing, initialData?.id, isProjectTask]);
 
+  // Actualizar campo
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -86,14 +90,19 @@ export function TaskForm({
       return;
     }
 
+    const typeValue =
+      formData.type === "standard" || formData.type === "custom"
+        ? formData.type
+        : "custom"; // fallback seguro
+
     onSubmit({
-      title: formData.title.trim(),
-      description: formData.description.trim(),
+      title: formData.title,
+      description: formData.description,
       estimatedHours: estimatedHoursValue,
       category: formData.category,
-      type: formData.type,
+      type: typeValue,
       taskOrder: 0,
-      createdBy: user?.id ?? "00000000-0000-0000-0000-000000000000",
+      createdBy: user?.id || "00000000-0000-0000-0000-000000000000",
     });
   };
 
@@ -101,9 +110,7 @@ export function TaskForm({
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open && !isLoading) {
-          onClose();
-        }
+        if (!open && !isLoading) onClose();
       }}
     >
       <DialogContent
@@ -121,11 +128,13 @@ export function TaskForm({
                 : "Crear Nueva Tarea Estándar"}
           </DialogTitle>
         </DialogHeader>
+
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 flex flex-col justify-between"
+          className="flex flex-col justify-between h-full space-y-4"
         >
           <div>
+            {/* Título y categoría */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
               <div>
                 <Label htmlFor="title" className="mb-2">
@@ -164,6 +173,7 @@ export function TaskForm({
               </div>
             </div>
 
+            {/* Tipo y horas estimadas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
               {!isProjectTask && (
                 <div>
@@ -195,20 +205,20 @@ export function TaskForm({
                 <Input
                   id="estimatedHours"
                   type="number"
-                  inputMode="decimal"
                   step="0.1"
                   min="0.1"
+                  required
                   value={formData.estimatedHours}
                   onChange={(e) =>
                     handleInputChange("estimatedHours", e.target.value)
                   }
-                  required
                   placeholder="Ej: 2.5"
                   className="placeholder:text-sm"
                 />
               </div>
             </div>
 
+            {/* Descripción */}
             <div>
               <Label htmlFor="description" className="mb-2">
                 Descripción
@@ -226,21 +236,17 @@ export function TaskForm({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2">
+          {/* Botones siempre abajo */}
+          <div className="flex justify-end space-x-2 mt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="cursor-pointer"
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="cursor-pointer"
-            >
+            <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? "Guardando..."
                 : isEditing
