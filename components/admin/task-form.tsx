@@ -45,7 +45,7 @@ export function TaskForm({
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    estimatedHours: "" as string | number,
+    estimatedHours: "",
     category: "",
     type: "custom" as "standard" | "custom",
   });
@@ -57,7 +57,7 @@ export function TaskForm({
       setFormData({
         title: initialData.title,
         description: initialData.description,
-        estimatedHours: initialData.estimatedHours,
+        estimatedHours: String(initialData.estimatedHours),
         category: initialData.category,
         type: initialData.type,
       });
@@ -79,26 +79,21 @@ export function TaskForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const estimatedHoursValue =
-      typeof formData.estimatedHours === "string"
-        ? parseFloat(formData.estimatedHours)
-        : formData.estimatedHours;
+    const estimatedHoursValue = Number(formData.estimatedHours);
 
-    if (isProjectTask && (!estimatedHoursValue || estimatedHoursValue <= 0)) {
-      alert(
-        "Las horas estimadas deben ser mayores a 0 para tareas personalizadas.",
-      );
+    if (!Number.isFinite(estimatedHoursValue) || estimatedHoursValue <= 0) {
+      alert("Las horas estimadas deben ser un número mayor a 0");
       return;
     }
 
     onSubmit({
-      title: formData.title,
-      description: formData.description,
-      estimatedHours: estimatedHoursValue || 0,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      estimatedHours: estimatedHoursValue,
       category: formData.category,
       type: formData.type,
       taskOrder: 0,
-      createdBy: user?.id || "00000000-0000-0000-0000-000000000000",
+      createdBy: user?.id ?? "00000000-0000-0000-0000-000000000000",
     });
   };
 
@@ -200,18 +195,14 @@ export function TaskForm({
                 <Input
                   id="estimatedHours"
                   type="number"
+                  inputMode="decimal"
                   step="0.1"
                   min="0.1"
                   value={formData.estimatedHours}
                   onChange={(e) =>
-                    handleInputChange(
-                      "estimatedHours",
-                      e.target.value === ""
-                        ? ""
-                        : parseFloat(e.target.value) || "",
-                    )
+                    handleInputChange("estimatedHours", e.target.value)
                   }
-                  required={isProjectTask}
+                  required
                   placeholder="Ej: 2.5"
                   className="placeholder:text-sm"
                 />
