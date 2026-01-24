@@ -19,7 +19,7 @@ export function TaskStats({
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
             <p className="text-lg font-bold">{totalTasks}</p>
           </div>
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
@@ -29,7 +29,7 @@ export function TaskStats({
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Estándar</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Estándar</p>
             <p className="text-lg font-bold">{standardTasks}</p>
           </div>
           <Star className="h-4 w-4 text-blue-500" />
@@ -39,7 +39,7 @@ export function TaskStats({
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Personalizadas</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Personalizadas</p>
             <p className="text-lg font-bold">{customTasks}</p>
           </div>
           <Wrench className="h-4 w-4 text-green-500" />

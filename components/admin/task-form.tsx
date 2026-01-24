@@ -44,16 +44,14 @@ export function TaskForm({
   const { user } = useAuth();
   const isProjectTask = !!projectId;
 
-  // Estado del formulario
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    estimatedHours: "1", // Valor seguro >0
+    estimatedHours: "1",
     category: "",
     type: "custom" as "standard" | "custom",
   });
 
-  // Cargar datos iniciales si estamos editando
   useEffect(() => {
     if (isEditing && initialData) {
       setFormData({
@@ -74,16 +72,22 @@ export function TaskForm({
     }
   }, [isEditing, initialData?.id, isProjectTask]);
 
-  // Actualizar campo
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Submit
+  const handleEstimatedHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === "" || /^\d*[.,]?\d*$/.test(value)) {
+      handleInputChange("estimatedHours", value);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const estimatedHoursValue = Number(formData.estimatedHours);
+    const normalizedValue = formData.estimatedHours.replace(",", ".");
+    const estimatedHoursValue = parseFloat(normalizedValue);
 
     if (!Number.isFinite(estimatedHoursValue) || estimatedHoursValue <= 0) {
       alert("Las horas estimadas deben ser un número mayor a 0");
@@ -93,7 +97,7 @@ export function TaskForm({
     const typeValue =
       formData.type === "standard" || formData.type === "custom"
         ? formData.type
-        : "custom"; // fallback seguro
+        : "custom";
 
     onSubmit({
       title: formData.title,
@@ -129,10 +133,7 @@ export function TaskForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col justify-between h-full space-y-4"
-        >
+        <div className="flex flex-col justify-between h-full space-y-4">
           <div>
             {/* Título y categoría */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
@@ -204,15 +205,12 @@ export function TaskForm({
                 </Label>
                 <Input
                   id="estimatedHours"
-                  type="number"
-                  step="0.1"
-                  min="0.1"
+                  type="text"
+                  inputMode="decimal"
                   required
                   value={formData.estimatedHours}
-                  onChange={(e) =>
-                    handleInputChange("estimatedHours", e.target.value)
-                  }
-                  placeholder="Ej: 2.5"
+                  onChange={handleEstimatedHoursChange}
+                  placeholder="Ej: 2.5 o 2,5"
                   className="placeholder:text-sm"
                 />
               </div>
@@ -246,7 +244,7 @@ export function TaskForm({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button onClick={handleSubmit} disabled={isLoading}>
               {isLoading
                 ? "Guardando..."
                 : isEditing
@@ -254,7 +252,7 @@ export function TaskForm({
                   : "Crear Tarea"}
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

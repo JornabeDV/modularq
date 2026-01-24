@@ -64,8 +64,6 @@ export function TaskManagement() {
         updateData.description = taskData.description;
       if (taskData.estimatedHours !== undefined)
         updateData.estimated_hours = taskData.estimatedHours;
-      if (taskData.estimated_hours !== undefined)
-        updateData.estimated_hours = taskData.estimated_hours;
       if (taskData.category !== undefined)
         updateData.category = taskData.category;
       if (taskData.type !== undefined) updateData.type = taskData.type;
@@ -160,7 +158,6 @@ export function TaskManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Gestión de Tareas</h2>
@@ -184,7 +181,6 @@ export function TaskManagement() {
         )}
       </div>
 
-      {/* Stats Cards */}
       <TaskStats
         totalTasks={totalTasks}
         standardTasks={standardTasks}

@@ -18,7 +18,9 @@ export interface CreateTaskData {
   createdBy: string
 }
 
-export interface UpdateTaskData extends Partial<CreateTaskData> {}
+export interface UpdateTaskData extends Partial<CreateTaskData> {
+  estimated_hours: number | undefined;
+}
 
 export function useTasksPrisma() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -83,7 +85,7 @@ export function useTasksPrisma() {
       const task = await PrismaTypedService.updateTask(taskId, {
         title: taskData.title,
         description: taskData.description,
-        estimated_hours: taskData.estimatedHours,
+        estimated_hours: taskData.estimated_hours,
         category: taskData.category,
         type: taskData.type
       })
