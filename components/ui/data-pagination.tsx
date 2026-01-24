@@ -149,17 +149,14 @@ export function DataPagination({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
         {showItemsPerPageSelector && onItemsPerPageChange && (
           <div className="flex items-center gap-2 order-2 sm:order-1">
-            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap hidden sm:inline">
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap sm:inline">
               Por página:
-            </span>
-            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap sm:hidden">
-              Por pág:
             </span>
             <Select
               value={itemsPerPage.toString()}
               onValueChange={handleItemsPerPageChange}
             >
-              <SelectTrigger className="h-8 w-[60px] sm:w-[70px] text-xs sm:text-sm">
+              <SelectTrigger className="h-8 w-[70px] text-xs sm:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

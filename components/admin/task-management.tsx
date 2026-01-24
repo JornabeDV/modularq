@@ -9,9 +9,11 @@ import { TaskTable } from "./task-table";
 import { TaskForm } from "./task-form";
 import { useTasksPrisma, type CreateTaskData } from "@/hooks/use-tasks-prisma";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 export function TaskManagement() {
   const { user, userProfile } = useAuth();
+  const { toast } = useToast();
 
   const isReadOnly = userProfile?.role === "supervisor";
 
@@ -49,6 +51,16 @@ export function TaskManagement() {
     const result = await createTask(createData);
     if (result.success) {
       setIsCreateDialogOpen(false);
+      toast({
+        title: "✓ Tarea creada",
+        description: `"${taskData.title}" se ha creado exitosamente`,
+      });
+    } else {
+      toast({
+        title: "Error al crear tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
     }
   };
 
@@ -71,9 +83,24 @@ export function TaskManagement() {
       const result = await updateTask(taskId, updateData);
       if (result.success) {
         setEditingTask(null);
+        toast({
+          title: "✓ Tarea actualizada",
+          description: `"${taskData.title}" se ha actualizado exitosamente`,
+        });
+      } else {
+        toast({
+          title: "Error al actualizar tarea",
+          description: result.error || "Ocurrió un error inesperado",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error updating task:", error);
+      toast({
+        title: "Error al actualizar tarea",
+        description: "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdating(false);
     }
