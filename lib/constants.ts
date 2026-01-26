@@ -9,7 +9,8 @@ export const TASK_CATEGORIES = [
   'Zinguerías',
   'Instalaciones',
   'Acabados',
-  'Finalización'
+  'Finalización',
+  'Mobiliario'
 ] as const
 
 export type TaskCategory = typeof TASK_CATEGORIES[number]

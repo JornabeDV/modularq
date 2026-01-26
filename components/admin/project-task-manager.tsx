@@ -319,15 +319,7 @@ export function ProjectTaskManager({
         </h4>
         <div className="space-y-3">
           {projectTasks
-            .sort((a, b) => {
-              const statusOrder = {
-                in_progress: 0,
-                pending: 1,
-                completed: 2,
-                cancelled: 3,
-              };
-              return statusOrder[a.status] - statusOrder[b.status];
-            })
+            .sort((a, b) => (a.taskOrder ?? 0) - (b.taskOrder ?? 0))
             .map((projectTask, index) => (
               <DraggableTaskCard
                 key={projectTask.id}
