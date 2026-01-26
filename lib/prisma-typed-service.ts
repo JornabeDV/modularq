@@ -554,6 +554,7 @@ export class PrismaTypedService {
     end_date?: string
     progress_percentage?: number
     notes?: string
+    task_order?: number
   }): Promise<any> {
     const insertData: any = {
       project_id: projectTaskData.project_id,
@@ -564,7 +565,8 @@ export class PrismaTypedService {
       start_date: projectTaskData.start_date,
       end_date: projectTaskData.end_date,
       progress_percentage: projectTaskData.progress_percentage || 0,
-      notes: projectTaskData.notes
+      notes: projectTaskData.notes,
+      ...(projectTaskData.task_order !== undefined && { task_order: projectTaskData.task_order })
     }
     
     if (projectTaskData.estimated_hours !== undefined) {

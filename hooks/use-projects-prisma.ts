@@ -96,6 +96,7 @@ export function useProjectsPrisma() {
           assignedAt: pt.assigned_at,
           createdAt: pt.created_at,
           updatedAt: pt.updated_at,
+          taskOrder: pt.task_order || 0,
           startedBy: pt.started_by,
           startedAt: pt.started_at,
           completedBy: pt.completed_by,
@@ -201,7 +202,8 @@ export function useProjectsPrisma() {
           await PrismaTypedService.createProjectTask({
             project_id: project.id,
             task_id: task.id,
-            status: 'pending'
+            status: 'pending',
+            task_order: task.task_order || undefined
           })
         }
         
