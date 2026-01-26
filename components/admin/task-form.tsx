@@ -43,14 +43,21 @@ export function TaskForm({
 }: TaskFormProps) {
   const { user } = useAuth();
   const isProjectTask = !!projectId;
+  type TaskFormErrors = {
+    category?: string;
+    estimatedHours?: string;
+  };
 
-  const [formData, setFormData] = useState({
+  const getDefaultFormData = () => ({
     title: "",
     description: "",
     estimatedHours: "1",
     category: "",
-    type: "custom" as "standard" | "custom",
+    type: isProjectTask ? "custom" : "standard",
   });
+
+  const [formData, setFormData] = useState(getDefaultFormData());
+  const [errors, setErrors] = useState<TaskFormErrors>({});
 
   useEffect(() => {
     if (isEditing && initialData) {
@@ -62,24 +69,43 @@ export function TaskForm({
         type: initialData.type || (isProjectTask ? "custom" : "standard"),
       });
     } else {
-      setFormData({
-        title: "",
-        description: "",
-        estimatedHours: "1",
-        category: "",
-        type: isProjectTask ? "custom" : "standard",
-      });
+      setFormData(getDefaultFormData());
     }
+    setErrors({});
   }, [isEditing, initialData?.id, isProjectTask]);
+
+  useEffect(() => {
+    if (!isOpen && !isEditing) {
+      setFormData(getDefaultFormData());
+      setErrors({});
+    }
+  }, [isOpen, isEditing, isProjectTask]);
+
+  const clearError = (field: keyof TaskFormErrors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+  const categoryErrorId = "task-form-category-error";
+  const estimatedHoursErrorId = "task-form-estimated-hours-error";
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "category") {
+      clearError("category");
+    }
   };
 
-  const handleEstimatedHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEstimatedHoursChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const value = e.target.value;
     if (value === "" || /^\d*[.,]?\d*$/.test(value)) {
       handleInputChange("estimatedHours", value);
+      clearError("estimatedHours");
     }
   };
 
@@ -89,10 +115,21 @@ export function TaskForm({
     const normalizedValue = formData.estimatedHours.replace(",", ".");
     const estimatedHoursValue = parseFloat(normalizedValue);
 
+    const newErrors: TaskFormErrors = {};
+    if (!formData.category.trim()) {
+      newErrors.category = "La categoría es obligatoria";
+    }
     if (!Number.isFinite(estimatedHoursValue) || estimatedHoursValue <= 0) {
-      alert("Las horas estimadas deben ser un número mayor a 0");
+      newErrors.estimatedHours =
+        "Las horas estimadas deben ser un número mayor a 0";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
+    setErrors({});
 
     const typeValue =
       formData.type === "standard" || formData.type === "custom"
@@ -152,15 +189,22 @@ export function TaskForm({
               </div>
               <div>
                 <Label htmlFor="category" className="mb-2">
-                  Categoría
+                  Categoría *
                 </Label>
                 <Select
+                  required
                   value={formData.category}
                   onValueChange={(value) =>
                     handleInputChange("category", value)
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger
+                    className="w-full"
+                    aria-invalid={Boolean(errors.category)}
+                    aria-describedby={
+                      errors.category ? categoryErrorId : undefined
+                    }
+                  >
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
@@ -171,10 +215,17 @@ export function TaskForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.category && (
+                  <p
+                    className="text-xs text-destructive mt-1"
+                    id={categoryErrorId}
+                  >
+                    {errors.category}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Tipo y horas estimadas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 sm:mb-6">
               {!isProjectTask && (
                 <div>
@@ -212,11 +263,22 @@ export function TaskForm({
                   onChange={handleEstimatedHoursChange}
                   placeholder="Ej: 2.5 o 2,5"
                   className="placeholder:text-sm"
+                  aria-invalid={Boolean(errors.estimatedHours)}
+                  aria-describedby={
+                    errors.estimatedHours ? estimatedHoursErrorId : undefined
+                  }
                 />
+                {errors.estimatedHours && (
+                  <p
+                    className="text-xs text-destructive mt-1"
+                    id={estimatedHoursErrorId}
+                  >
+                    {errors.estimatedHours}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Descripción */}
             <div>
               <Label htmlFor="description" className="mb-2">
                 Descripción
@@ -234,7 +296,6 @@ export function TaskForm({
             </div>
           </div>
 
-          {/* Botones siempre abajo */}
           <div className="flex justify-end space-x-2 mt-4">
             <Button
               type="button"

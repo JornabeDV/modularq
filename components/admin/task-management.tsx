@@ -107,7 +107,19 @@ export function TaskManagement() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
+    const result = await deleteTask(taskId);
+    if (result.success) {
+      toast({
+        title: "Tarea eliminada",
+        description: "La tarea se eliminó satisfactoriamente.",
+      });
+    } else {
+      toast({
+        title: "Error al eliminar tarea",
+        description: result.error || "Ocurrió un error inesperado.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditTask = (task: any) => {

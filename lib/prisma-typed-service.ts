@@ -377,15 +377,13 @@ export class PrismaTypedService {
     if (taskData.type !== undefined) updateData.type = taskData.type
     if (taskData.task_order !== undefined) updateData.task_order = taskData.task_order
 
-    const { data, error } = await supabase
-      .from('tasks')
+    const { error } = await supabase
+      .from("tasks")
       .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
+      .eq("id", id)
     
     if (error) throw error
-    return data as Task
+    return { id, ...updateData } as Task
   }
 
   static async getTaskById(id: string): Promise<Task | null> {
@@ -621,15 +619,13 @@ export class PrismaTypedService {
     if (projectTaskData.completed_by !== undefined) updateData.completed_by = projectTaskData.completed_by
     if (projectTaskData.completed_at !== undefined) updateData.completed_at = projectTaskData.completed_at
 
-    const { data, error } = await supabase
-      .from('project_tasks')
+    const { error } = await supabase
+      .from("project_tasks")
       .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-    
+      .eq("id", id)
+
     if (error) throw error
-    return data
+    return { id, ...updateData }
   }
 
   static async deleteProjectTask(id: string): Promise<void> {

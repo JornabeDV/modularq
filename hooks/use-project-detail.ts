@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { useProjectTasksPrisma } from "@/hooks/use-project-tasks-prisma";
-import { useTasksPrisma } from "@/hooks/use-tasks-prisma";
+import { useTasksPrisma, type UpdateTaskData } from "@/hooks/use-tasks-prisma";
 import { mapProjectFormData } from "@/lib/utils/project-utils";
 import type { Project, ProjectTask, Task } from "@/lib/types";
 
@@ -38,8 +38,9 @@ export function useProjectDetail({
     updateProjectTask,
     deleteProjectTask,
     updateTaskOrder,
+    refetch: refetchProjectTasks,
   } = useProjectTasksPrisma(projectId);
-  const { tasks: allTasks } = useTasksPrisma();
+  const { tasks: allTasks, updateTask } = useTasksPrisma();
 
   const [project, setProject] = useState<Project | null>(null);
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
@@ -191,7 +192,11 @@ export function useProjectDetail({
   );
 
   const handleUpdateTask = useCallback(
-    async (projectTaskId: string, taskData: Partial<ProjectTask>) => {
+    async (
+      projectTaskId: string,
+      taskData: Partial<ProjectTask>,
+      relatedTaskUpdates?: Partial<Task>,
+    ) => {
       const updateData: any = {};
       if (taskData.status !== undefined) updateData.status = taskData.status;
       if (taskData.actualHours !== undefined)
@@ -206,12 +211,43 @@ export function useProjectDetail({
         updateData.assignedTo = taskData.assignedTo;
 
       const result = await updateProjectTask(projectTaskId, updateData, false, userId);
+      const currentTask = projectTasks.find((pt) => pt.id === projectTaskId);
+      const relatedTaskId = currentTask?.taskId;
+      if (relatedTaskUpdates && relatedTaskId) {
+        const taskUpdateData: UpdateTaskData = {
+          title: relatedTaskUpdates.title,
+          description: relatedTaskUpdates.description,
+          category: relatedTaskUpdates.category,
+          type: relatedTaskUpdates.type,
+          estimated_hours: relatedTaskUpdates.estimatedHours,
+        };
+        try {
+          await updateTask(relatedTaskId, taskUpdateData);
+        } catch (err) {
+          console.error("Error syncing task metadata:", err);
+        }
+      }
       if (result.success) {
         setEditingTask(null);
+        if (refetchProjectTasks) {
+          await refetchProjectTasks();
+        }
+        toast({
+          title: "✓ Tarea actualizada",
+          description: `${relatedTaskUpdates?.title || "La tarea"} se guardó correctamente`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Error al editar tarea",
+          description:
+            result.error || "No se pudo guardar la tarea. Intenta nuevamente.",
+          variant: "destructive",
+        });
       }
       return result;
     },
-    [updateProjectTask, userId]
+  [updateProjectTask, userId, projectTasks, updateTask]
   );
 
   const handleEditTask = useCallback(
@@ -321,9 +357,23 @@ export function useProjectDetail({
 
   const handleUnassignTask = useCallback(
     async (projectTaskId: string) => {
-      return await deleteProjectTask(projectTaskId);
+      const result = await deleteProjectTask(projectTaskId);
+      if (result.success) {
+        toast({
+          title: "Tarea eliminada",
+          description: "La tarea se eliminó del proyecto correctamente.",
+        });
+      } else {
+        toast({
+          title: "Error al eliminar tarea",
+          description:
+            result.error || "No se pudo eliminar la tarea. Probá nuevamente.",
+          variant: "destructive",
+        });
+      }
+      return result;
     },
-    [deleteProjectTask]
+    [deleteProjectTask, toast]
   );
 
   const handleReorderTasks = useCallback(
