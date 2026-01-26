@@ -212,11 +212,11 @@ export function useProjectTasksPrisma(projectId?: string) {
       if (projectTaskData.status === 'completed') {
         try {
           // Obtener información de la tarea para cerrar sesiones activas
-          const { data: projectTask, error: fetchError } = await supabase
-            .from('project_tasks')
-            .select('task_id, project_id')
-            .eq('id', projectTaskId)
-            .single()
+        const { data: projectTask, error: fetchError } = await supabase
+          .from('project_tasks')
+          .select('task_id, project_id')
+          .eq('id', projectTaskId)
+          .maybeSingle()
 
           if (!fetchError && projectTask) {
             const now = new Date()

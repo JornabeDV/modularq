@@ -181,6 +181,7 @@ export function TaskTable({
                       task={task}
                       index={rowNumber}
                       onEdit={onEditTask}
+                      onRowClick={onEditTask}
                       onDelete={onDeleteTask}
                       isDragging={draggedTaskId === task.id}
                       isReordering={isReordering}

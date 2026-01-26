@@ -26,6 +26,7 @@ interface DraggableTaskRowProps {
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent, taskId: string) => void;
   isReadOnly?: boolean;
+  onRowClick?: (task: Task) => void;
 }
 
 export function DraggableTaskRow({
@@ -40,29 +41,44 @@ export function DraggableTaskRow({
   onDragOver,
   onDrop,
   isReadOnly = false,
+  onRowClick,
 }: DraggableTaskRowProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleEdit = () => {
     onEdit(task);
   };
+  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    if (isReadOnly) return;
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("button") ||
+      target.closest("[data-drag-handle]") ||
+      target.closest('[role="button"]')
+    ) {
+      return;
+    }
+
+    onRowClick?.(task);
+  };
 
   return (
     <TooltipProvider>
       <TableRow
-        className={`transition-all duration-200 select-none ${
+        className={`transition-all duration-200 select-none cursor-pointer ${
           isDragging
             ? "opacity-50 shadow-lg"
             : isReordering
-            ? "opacity-75"
-            : isHovered
-            ? "shadow-md"
-            : isReadOnly
-            ? "hover:!bg-background"
-            : "hover:shadow-sm"
+              ? "opacity-75"
+              : isHovered
+                ? "shadow-md"
+                : isReadOnly
+                  ? "hover:!bg-background"
+                  : "hover:shadow-sm"
         }`}
         style={isReadOnly ? { backgroundColor: "transparent" } : undefined}
         draggable={!isReadOnly}
+        onClick={handleRowClick}
         onDragStart={(e) => !isReadOnly && onDragStart?.(e, task.id)}
         onDragEnd={onDragEnd}
         onDragOver={onDragOver}

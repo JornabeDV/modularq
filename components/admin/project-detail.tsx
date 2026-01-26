@@ -127,8 +127,12 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     }
   };
 
-  const handleTaskSave = async (taskId: string, data: Partial<ProjectTask>) => {
-    await handleUpdateTask(taskId, data);
+  const handleTaskSave = async (
+    taskId: string,
+    projectTaskData: Partial<ProjectTask>,
+    baseTaskData?: Partial<Task>,
+  ) => {
+    await handleUpdateTask(taskId, projectTaskData, baseTaskData);
   };
 
   if (projectsLoading) {

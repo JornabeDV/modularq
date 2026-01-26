@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,15 +21,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import type { ProjectTask, Project } from "@/lib/types";
+import { TASK_CATEGORIES } from "@/lib/constants";
+import type { ProjectTask, Project, Task } from "@/lib/types";
 
 interface EditTaskDialogProps {
   isOpen: boolean;
   task: ProjectTask | null;
   project: Project | null;
   onClose: () => void;
-  onSave: (taskId: string, data: Partial<ProjectTask>) => Promise<void>;
+  onSave: (
+    taskId: string,
+    projectTaskData: Partial<ProjectTask>,
+    baseTaskData?: Partial<Task>,
+  ) => Promise<void>;
 }
+
+type TaskFormErrors = {
+  category?: string;
+  estimatedHours?: string;
+};
 
 export function EditTaskDialog({
   isOpen,
@@ -37,25 +48,35 @@ export function EditTaskDialog({
   onClose,
   onSave,
 }: EditTaskDialogProps) {
-  const [formData, setFormData] = useState<Partial<ProjectTask>>({
-    status: "pending",
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    estimatedHours: "1",
+    status: "pending" as ProjectTask["status"],
     actualHours: 0,
     progressPercentage: 0,
     notes: "",
   });
+  const [errors, setErrors] = useState<TaskFormErrors>({});
 
   useEffect(() => {
-    if (task) {
-      setFormData({
-        status: task.status,
-        actualHours: task.actualHours || 0,
-        progressPercentage: task.progressPercentage || 0,
-        notes: task.notes || "",
-      });
-    }
+    if (!task) return;
+    setFormData({
+      title: task.task?.title || "",
+      description: task.task?.description || "",
+      category: task.task?.category || "",
+      estimatedHours: String(
+        task.estimatedHours || task.task?.estimatedHours || 1,
+      ),
+      status: task.status,
+      actualHours: task.actualHours || 0,
+      progressPercentage: task.progressPercentage || 0,
+      notes: task.notes || "",
+    });
+    setErrors({});
   }, [task]);
 
-  // Ensure status is "pending" if project is in planning
   useEffect(() => {
     if (task && project?.status === "planning") {
       setFormData((prev) => ({ ...prev, status: "pending" as any }));
@@ -64,16 +85,60 @@ export function EditTaskDialog({
 
   if (!task) return null;
 
-  const isProjectActive = project?.status === "active";
+  const clearError = (field: keyof TaskFormErrors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleEstimatedHoursChange = (value: string) => {
+    if (value === "" || /^\d*[.,]?\d*$/.test(value)) {
+      setFormData((prev) => ({ ...prev, estimatedHours: value }));
+      clearError("estimatedHours");
+    }
+  };
+
+  const handleInputChange = (field: keyof typeof formData, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "category") {
+      clearError("category");
+    }
+  };
 
   const handleSave = () => {
-    const updateData = {
-      status: isProjectActive ? formData.status : "pending",
-      actualHours: formData.actualHours,
-      progressPercentage: formData.progressPercentage,
-      notes: formData.notes,
+    if (!task) return;
+
+    const normalizedValue = formData.estimatedHours.replace(",", ".");
+    const estimatedHoursValue = parseFloat(normalizedValue);
+    const validationErrors: TaskFormErrors = {};
+    if (!formData.category.trim()) {
+      validationErrors.category = "La categoría es obligatoria";
+    }
+    if (!Number.isFinite(estimatedHoursValue) || estimatedHoursValue <= 0) {
+      validationErrors.estimatedHours =
+        "Las horas estimadas deben ser un número mayor a 0";
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors({});
+
+    const projectTaskUpdates: Partial<ProjectTask> = {
+      estimatedHours: estimatedHoursValue,
     };
-    onSave(task.id, updateData);
+    const baseTaskUpdates: Partial<Task> = {
+      title: formData.title,
+      description: formData.description,
+      category: formData.category,
+      estimatedHours: estimatedHoursValue,
+    };
+    onSave(task.id, projectTaskUpdates, baseTaskUpdates);
   };
 
   return (
@@ -84,95 +149,93 @@ export function EditTaskDialog({
             Editar Tarea del Proyecto
           </DialogTitle>
           <DialogDescription className="text-sm">
-            Actualiza la evolución de esta tarea en el proyecto
+            Actualiza los datos de esta tarea
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 sm:space-y-4">
-          <div>
-            <label className="text-sm font-medium">Tarea</label>
-            <p className="text-sm text-muted-foreground mt-1 break-words">
-              {task.task?.title}
-            </p>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Estado</label>
-            {isProjectActive ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="task-title" className="mb-2 block text-sm">
+                Título de la tarea
+              </Label>
+              <Input
+                id="task-title"
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                required
+                placeholder="Ej: Instalación Sistema Eléctrico"
+                className="placeholder:text-sm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="task-category" className="mb-2 block text-sm">
+                Categoría *
+              </Label>
               <Select
-                value={formData.status}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, status: value as any })
-                }
+                value={formData.category}
+                onValueChange={(value) => handleInputChange("category", value)}
               >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
+                <SelectTrigger
+                  id="task-category"
+                  className="w-full"
+                  aria-invalid={Boolean(errors.category)}
+                >
+                  <SelectValue placeholder="Seleccionar categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="assigned">Asignada</SelectItem>
-                  <SelectItem value="in_progress">En Progreso</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="cancelled">Cancelada</SelectItem>
+                  {TASK_CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            ) : (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-1">
-                <p className="text-sm text-muted-foreground">Pendiente</p>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] sm:text-xs w-fit"
-                >
-                  <span className="hidden sm:inline">
-                    El estado solo se puede cambiar cuando el proyecto está
-                    activo
-                  </span>
-                  <span className="sm:hidden">
-                    Solo editable cuando el proyecto está activo
-                  </span>
-                </Badge>
-              </div>
-            )}
+              {errors.category && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.category}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <label className="text-sm font-medium">Horas Reales</label>
-            <Input
-              type="number"
-              step="0.5"
-              value={formData.actualHours}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  actualHours: parseFloat(e.target.value) || 0,
-                })
-              }
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Progreso (%)</label>
-            <Input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.progressPercentage}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  progressPercentage: parseInt(e.target.value) || 0,
-                })
-              }
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Notas</label>
-            <Textarea
-              value={formData.notes || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              placeholder="Notas adicionales sobre la tarea..."
-              className="text-sm mt-1 min-h-[80px] sm:min-h-[100px]"
-            />
+
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+            <div>
+              <Label
+                htmlFor="task-estimated-hours"
+                className="mb-2 block text-sm"
+              >
+                Horas Estimadas *
+              </Label>
+              <Input
+                id="task-estimated-hours"
+                value={formData.estimatedHours}
+                onChange={(e) => handleEstimatedHoursChange(e.target.value)}
+                placeholder="Ej: 2.5 o 2,5"
+                inputMode="decimal"
+                className="placeholder:text-sm w-1/2"
+                aria-invalid={Boolean(errors.estimatedHours)}
+              />
+              {errors.estimatedHours && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.estimatedHours}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="task-description" className="mb-2 block text-sm">
+                Descripción
+              </Label>
+              <Textarea
+                id="task-description"
+                value={formData.description}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
+                placeholder="Describe detalladamente la tarea..."
+                rows={3}
+                className="placeholder:text-sm text-xs sm:text-sm"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
