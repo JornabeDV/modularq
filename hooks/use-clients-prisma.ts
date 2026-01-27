@@ -237,6 +237,22 @@ export function useClientsPrisma() {
 
   const getClientById = (clientId: string): Client | undefined => {
     return clients.find(c => c.id === clientId)
+  } 
+
+  const getUserTaskStats = async (userId: string) => {
+    try {
+      const tasks = await PrismaTypedService.getTasksByUser(userId)
+
+      const total = tasks.length
+      const completed = tasks.filter(t => t.status === 'completed').length
+      const inProgress = tasks.filter(t => t.status === 'in_progress').length
+      const pending = tasks.filter(t => t.status === 'pending').length
+
+      return { total, completed, inProgress, pending }
+    } catch (err) {
+      console.error('Error getting user task stats:', err)
+      return { total: 0, completed: 0, inProgress: 0, pending: 0 }
+    }
   }
 
   useEffect(() => {
@@ -251,6 +267,7 @@ export function useClientsPrisma() {
     updateClient,
     deleteClient,
     getClientById,
+    getUserTaskStats,
     refetch: fetchClients
   }
 }

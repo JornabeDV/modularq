@@ -75,7 +75,14 @@ export default function DashboardPage() {
     const cancelledTasks = project.projectTasks.filter(
       (pt: any) => pt.status === "cancelled"
     ).length;
-    const totalOperarios = project.projectOperarios.length;
+
+    const totalSubcontractors = project.projectOperarios.filter(
+      (pt: any) => pt.user.role === "subcontratista"
+    ).length;
+
+    const totalOperarios = project.projectOperarios.filter(
+      (pt: any) => pt.user.role === "operario"
+    ).length;
 
     const estimatedHours = activeTasks.reduce((sum: number, pt: any) => {
       let taskEstimated = pt.estimatedHours || 0;
@@ -114,6 +121,7 @@ export default function DashboardPage() {
       pendingTasks,
       cancelledTasks,
       totalOperarios,
+      totalSubcontractors,
       estimatedHours: Math.round(estimatedHours * 10) / 10,
       completedEstimatedHours: Math.round(completedEstimatedHours * 10) / 10,
     };
@@ -624,6 +632,15 @@ export default function DashboardPage() {
                               </span>
                               <span className="font-semibold">
                                 {metrics.totalOperarios}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-orange-500" />
+                              <span className="text-muted-foreground truncate">
+                                Subcontratistas
+                              </span>
+                              <span className="font-semibold">
+                                {metrics.totalSubcontractors}
                               </span>
                             </div>
                           </div>

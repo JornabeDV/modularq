@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Edit, Shield, Users, Wrench } from "lucide-react";
+import { Edit, Shield, UserCheck, Users, Wrench } from "lucide-react";
 import { DeleteUserButton } from "./delete-user-button";
 import {
   Tooltip,
@@ -40,7 +40,7 @@ export function UserRow({
       case "admin":
         return <Shield className="h-4 w-4" />;
       case "supervisor":
-        return <Users className="h-4 w-4" />;
+        return <UserCheck className="h-4 w-4" />;
       case "operario":
         return <Wrench className="h-4 w-4" />;
       default:
@@ -56,6 +56,8 @@ export function UserRow({
         return "default";
       case "operario":
         return "secondary";
+      case "subcontratista":
+        return "warning";
       default:
         return "secondary";
     }
@@ -65,9 +67,6 @@ export function UserRow({
     onEdit(user);
   };
 
-  const handleDelete = () => {
-    onDelete(user.id);
-  };
 
   return (
     <TooltipProvider>

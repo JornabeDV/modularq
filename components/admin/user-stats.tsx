@@ -1,17 +1,23 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Shield, Wrench } from 'lucide-react'
+import { Card } from "@/components/ui/card";
+import { Users, Shield, Wrench } from "lucide-react";
 
 interface UserStatsProps {
-  totalUsers: number
-  adminCount: number
-  operarioCount: number
+  totalUsers: number;
+  adminCount: number;
+  operarioCount: number;
+  subcontractorCount: number;
 }
 
-export function UserStats({ totalUsers, adminCount, operarioCount }: UserStatsProps) {
+export function UserStats({
+  totalUsers,
+  adminCount,
+  operarioCount,
+  subcontractorCount,
+}: UserStatsProps) {
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
@@ -21,7 +27,7 @@ export function UserStats({ totalUsers, adminCount, operarioCount }: UserStatsPr
           <Users className="h-4 w-4 text-muted-foreground" />
         </div>
       </Card>
-      
+
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
@@ -31,7 +37,7 @@ export function UserStats({ totalUsers, adminCount, operarioCount }: UserStatsPr
           <Shield className="h-4 w-4 text-muted-foreground" />
         </div>
       </Card>
-      
+
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
@@ -41,6 +47,16 @@ export function UserStats({ totalUsers, adminCount, operarioCount }: UserStatsPr
           <Wrench className="h-4 w-4 text-muted-foreground" />
         </div>
       </Card>
+
+      <Card className="p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Subcontratistas</p>
+            <p className="text-lg font-bold">{subcontractorCount}</p>
+          </div>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </Card>
     </div>
-  )
+  );
 }

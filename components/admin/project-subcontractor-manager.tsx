@@ -24,15 +24,15 @@ import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
 import { useUsersPrisma } from "@/hooks/use-users-prisma";
 import { useAuth } from "@/lib/auth-context";
 
-interface ProjectOperariosManagerProps {
+interface ProjectSubcontractorManagerProps {
   projectId: string;
   isReadOnly?: boolean;
 }
 
-export function ProjectOperariosManager({
+export function ProjectSubcontractorManager({
   projectId,
   isReadOnly = false,
-}: ProjectOperariosManagerProps) {
+}: ProjectSubcontractorManagerProps) {
   const { user } = useAuth();
   const {
     projectOperarios,
@@ -45,11 +45,11 @@ export function ProjectOperariosManager({
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  const operarios = users?.filter((user) => user.role === "operario") || [];
-
+  const subcontractors =
+    users?.filter((user) => user.role === "subcontratista") || [];
   const assignedUserIds = projectOperarios?.map((po) => po.user_id) || [];
-  const availableOperarios = operarios.filter(
-    (operario) => !assignedUserIds.includes(operario.id),
+  const availableSubcontractors = subcontractors.filter(
+    (sub) => !assignedUserIds.includes(sub.id),
   );
 
   const handleOperarioToggle = (userId: string) => {
@@ -74,13 +74,13 @@ export function ProjectOperariosManager({
       setSelectedUserIds([]);
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Error assigning operarios:", error);
+      console.error("Error assigning subcontractors:", error);
     } finally {
       setIsAssigning(false);
     }
   };
 
-  const handleUnassignOperario = async (assignmentId: string) => {
+  const handleUnassign = async (assignmentId: string) => {
     await unassignOperarioFromProject(assignmentId);
   };
 
@@ -91,14 +91,16 @@ export function ProjectOperariosManager({
           <div>
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Operarios Asignados</span>
-              <span className="sm:hidden">Operarios</span>
+              <span className="hidden sm:inline">
+                Subcontratistas Asignados
+              </span>
+              <span className="sm:hidden">Subcontratistas</span>
             </CardTitle>
             <CardDescription className="text-sm">
               <span className="hidden sm:inline">
-                Gestiona qué operarios pueden trabajar en este proyecto
+                Gestiona qué subcontratistas pueden trabajar en este proyecto
               </span>
-              <span className="sm:hidden">Gestiona operarios del proyecto</span>
+              <span className="sm:hidden">Gestiona subcontratistas</span>
             </CardDescription>
           </div>
           {!isReadOnly && (
@@ -109,56 +111,63 @@ export function ProjectOperariosManager({
                   className="cursor-pointer self-start sm:self-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Asignar Operarios</span>
+                  <span className="hidden sm:inline">
+                    Asignar Subcontratistas
+                  </span>
                   <span className="sm:hidden">Asignar</span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Asignar Operarios al Proyecto</DialogTitle>
+                  <DialogTitle>Asignar Subcontratistas al Proyecto</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  {availableOperarios.length === 0 ? (
-                    <div className="text-center">
+                  {availableSubcontractors.length === 0 ? (
+                    <div className="text-center sm:py-4">
                       <Users className="h-8 sm:h-12 w-8 sm:w-12 text-muted-foreground mx-auto mb-2 sm:mb-4" />
                       <h3 className="text-base sm:text-lg font-medium mb-2">
-                        No hay operarios disponibles
+                        No hay subcontratistas disponibles
                       </h3>
-                      <p className="text-sm sm:text-base text-muted-foreground">
-                        Todos los operarios ya están asignados a este proyecto
+                      <p className="text-muted-foreground">
+                        Todos los subcontratistas ya están asignados a este
+                        proyecto
                       </p>
                     </div>
                   ) : (
                     <>
                       <div className="space-y-3 max-h-60 overflow-y-auto">
-                        {availableOperarios.map((operario) => (
+                        {availableSubcontractors.map((subcontractor) => (
                           <div
-                            key={operario.id}
+                            key={subcontractor.id}
                             className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50"
                           >
                             <Checkbox
-                              id={operario.id}
-                              checked={selectedUserIds.includes(operario.id)}
+                              id={subcontractor.id}
+                              checked={selectedUserIds.includes(
+                                subcontractor.id,
+                              )}
                               onCheckedChange={() =>
-                                handleOperarioToggle(operario.id)
+                                handleOperarioToggle(subcontractor.id)
                               }
                             />
                             <label
-                              htmlFor={operario.id}
+                              htmlFor={subcontractor.id}
                               className="flex items-center gap-3 flex-1 cursor-pointer"
                             >
                               <Avatar className="h-8 w-8">
                                 <AvatarFallback className="text-sm">
-                                  {operario.name
+                                  {subcontractor.name
                                     ?.split(" ")
                                     .map((n) => n[0])
-                                    .join("") || "U"}
+                                    .join("") || "S"}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-medium">{operario.name}</p>
+                                <p className="font-medium">
+                                  {subcontractor.name}
+                                </p>
                                 <Badge variant="outline" className="text-xs">
-                                  {operario.role}
+                                  {subcontractor.role}
                                 </Badge>
                               </div>
                             </label>
@@ -167,7 +176,7 @@ export function ProjectOperariosManager({
                       </div>
                       <div className="flex justify-between items-center pt-4 border-t">
                         <p className="text-sm text-muted-foreground">
-                          {selectedUserIds.length} operario
+                          {selectedUserIds.length} subcontratista
                           {selectedUserIds.length !== 1 ? "s" : ""} seleccionado
                           {selectedUserIds.length !== 1 ? "s" : ""}
                         </p>
@@ -204,57 +213,59 @@ export function ProjectOperariosManager({
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center py-4">
+          <div className="text-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
             <p className="text-sm text-muted-foreground mt-2">
-              Cargando operarios...
+              Cargando subcontratistas...
             </p>
           </div>
         ) : !projectOperarios || projectOperarios.length === 0 ? (
-          <div className="text-center sm:py-4">
+          <div className="text-center">
             <Users className="h-8 sm:h-12 w-8 sm:w-12 text-muted-foreground mx-auto mb-2 sm:mb-4" />
             <h3 className="text-base sm:text-lg font-medium mb-2">
-              No hay operarios asignados
+              No hay subcontratistas asignados
             </h3>
-            <p className="text-sm sm:text-base text-muted-foreground sm:mb-4">
-              Asigna operarios para que puedan trabajar en este proyecto
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Asigna subcontratistas para que puedan trabajar en este proyecto
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {projectOperarios?.map((projectOperario) => (
-              <div
-                key={projectOperario.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-sm">
-                      {projectOperario.user?.name
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("") || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{projectOperario.user?.name}</p>
-                    <Badge variant="outline" className="text-xs mt-1">
-                      {projectOperario.user?.role || "operario"}
-                    </Badge>
+            {projectOperarios
+              .filter((po) => po.user?.role === "subcontratista")
+              .map((subcontractor) => (
+                <div
+                  key={subcontractor.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-sm">
+                        {subcontractor.user?.name
+                          ?.split(" ")
+                          .map((n) => n[0])
+                          .join("") || "S"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{subcontractor.user?.name}</p>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        {subcontractor.user?.role || "subcontratista"}
+                      </Badge>
+                    </div>
                   </div>
+                  {!isReadOnly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleUnassign(subcontractor.id)}
+                      className="cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-                {!isReadOnly && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleUnassignOperario(projectOperario.id)}
-                    className="cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </CardContent>

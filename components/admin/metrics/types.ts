@@ -5,6 +5,7 @@ export type SummaryMetrics = {
   inProgressTasks: number;
   pendingTasks: number;
   totalOperarios: number;
+  totalSubcontractors: number;
   estimatedHours: number;
   completedEstimatedHours: number;
 };

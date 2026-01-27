@@ -16,6 +16,7 @@ import { ProjectFilesCard } from "@/components/admin/metrics/project-files-card"
 import { OperarioDistributionCard } from "@/components/admin/metrics/operario-distribution-card";
 import { TaskMetricsCard } from "@/components/admin/metrics/task-metrics-card";
 import { buildProjectMetrics } from "@/components/admin/metrics/metrics-helpers";
+import { SubcontractorDistributionCard } from "@/components/admin/metrics/subcontractor-distributon-card";
 
 export default function ProjectMetricsPage() {
   const params = useParams();
@@ -103,6 +104,7 @@ export default function ProjectMetricsPage() {
             filesLoading={filesLoading}
           />
           <OperarioDistributionCard project={project} />
+          <SubcontractorDistributionCard project={project} />
           <TaskMetricsCard project={project} projectId={projectId} />
         </div>
       </MainLayout>

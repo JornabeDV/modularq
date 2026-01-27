@@ -1,6 +1,11 @@
 import { supabase } from './supabase'
 import type { User, Project, Task } from './generated/prisma/index'
 
+export type UserTask = {
+  id: string
+  status: 'completed' | 'in_progress' | 'pending' | 'assigned'
+}
+
 export class PrismaTypedService {
   static async getAllUsers(includeDeleted = false): Promise<User[]> {
     let query = supabase
@@ -32,7 +37,7 @@ export class PrismaTypedService {
   static async createUser(userData: {
     email: string
     name: string
-    role: 'admin' | 'supervisor' | 'operario'
+    role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
     password?: string
   }): Promise<User> {
     const { data, error } = await supabase
@@ -55,7 +60,7 @@ export class PrismaTypedService {
   static async updateUser(id: string, userData: {
     email?: string
     name?: string
-    role?: 'admin' | 'supervisor' | 'operario'
+    role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
     password?: string
     total_hours?: number
     efficiency?: number
@@ -1025,6 +1030,16 @@ export class PrismaTypedService {
         error: error instanceof Error ? error.message : 'Error desconocido'
       }
     }
+  }
+  static async getTasksByUser(userId: string): Promise<UserTask[]> {
+    const { data, error } = await supabase
+      .from('project_tasks')
+      .select('id, status')
+      .eq('assigned_to', userId)
+
+    if (error) throw error
+
+    return data ?? []
   }
 }
 

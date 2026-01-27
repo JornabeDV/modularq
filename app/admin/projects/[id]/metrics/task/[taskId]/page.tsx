@@ -157,7 +157,13 @@ export default function TaskMetricsPage() {
                 <div className="space-y-2 p-3 border rounded-lg">
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
                     <User className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Operario Asignado</span>
+                    <span className="truncate">
+                      {projectTask.assignedUser
+                        ? projectTask.assignedUser.role === "subcontratista"
+                          ? "Subcontratista Asignado:"
+                          : "Operario Asignado:"
+                        : "Operario Asignado:"}
+                    </span>
                   </div>
                   <p className="font-medium text-sm sm:text-base truncate">
                     {projectTask.assignedUser?.name || "Sin asignar"}
