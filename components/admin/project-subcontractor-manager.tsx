@@ -118,7 +118,7 @@ export function ProjectSubcontractorManager({
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
-                <DialogHeader>
+                <DialogHeader className="max-sm:mt-4">
                   <DialogTitle>Asignar Subcontratistas al Proyecto</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">

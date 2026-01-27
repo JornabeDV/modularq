@@ -104,6 +104,7 @@ export function UserManagement() {
   });
 
   const adminCount = users.filter((u) => u.role === "admin").length;
+  const supervisorCount = users.filter((u) => u.role === "supervisor").length;
   const operarioCount = users.filter((u) => u.role === "operario").length;
   const subcontractorCount = users.filter(
     (u) => u.role === "subcontratista",
@@ -150,6 +151,7 @@ export function UserManagement() {
         adminCount={adminCount}
         operarioCount={operarioCount}
         subcontractorCount={subcontractorCount}
+        supervisorCount={supervisorCount}
       />
 
       <UserTable

@@ -1,13 +1,14 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Users, Shield, Wrench } from "lucide-react";
+import { Users, Shield, Wrench, UserCheck } from "lucide-react";
 
 interface UserStatsProps {
   totalUsers: number;
   adminCount: number;
   operarioCount: number;
   subcontractorCount: number;
+  supervisorCount: number;
 }
 
 export function UserStats({
@@ -15,9 +16,10 @@ export function UserStats({
   adminCount,
   operarioCount,
   subcontractorCount,
+  supervisorCount
 }: UserStatsProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4">
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
@@ -35,6 +37,16 @@ export function UserStats({
             <p className="text-lg font-bold">{adminCount}</p>
           </div>
           <Shield className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </Card>
+
+      <Card className="p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground">Supervisor</p>
+            <p className="text-lg font-bold">{supervisorCount}</p>
+          </div>
+          <UserCheck className="h-4 w-4 text-muted-foreground" />
         </div>
       </Card>
 
