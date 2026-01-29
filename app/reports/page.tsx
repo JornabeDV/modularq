@@ -84,7 +84,7 @@ function ReportsContent() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {completedProjects.map((project) => {
-                  const { operariosCount, subcontratistasCount } =
+                  const { operariosCount, subcontractorsCount } =
                     getProjectWorkersCount(project);
                   const totalTasks = project.projectTasks.length;
 
@@ -154,14 +154,14 @@ function ReportsContent() {
                                 </div>
                               </div>
                             )}
-                            {subcontratistasCount > 0 && (
+                            {subcontractorsCount > 0 && (
                               <div>
                                 <div className="text-lg font-semibold">
-                                  {subcontratistasCount}
+                                  {subcontractorsCount}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   Subcontratista
-                                  {subcontratistasCount !== 1 ? "s" : ""}
+                                  {subcontractorsCount !== 1 ? "s" : ""}
                                 </div>
                               </div>
                             )}

@@ -52,11 +52,13 @@ export default function DashboardPage() {
 
   const activeProjects = projects.filter((p) => p.status === "active");
 
-  const totalOperarios = operarios.filter((o) => o.role === "operario").length;
+    const totalSubcontractors = operarios.filter(
+      (o: any) => o.role === "subcontratista" && !o.deletedAt,
+    ).length;
 
-  const totalSubcontractors = operarios.filter(
-    (o) => o.role === "subcontratista",
-  ).length;
+    const totalOperarios = operarios.filter(
+      (o: any) => o.role === "operario" && !o.deletedAt,
+    ).length;
 
   const activeTasks = projects.reduce(
     (sum, project) =>
@@ -82,13 +84,13 @@ export default function DashboardPage() {
     const cancelledTasks = project.projectTasks.filter(
       (pt: any) => pt.status === "cancelled",
     ).length;
-
+    
     const totalSubcontractors = project.projectOperarios.filter(
-      (pt: any) => pt.user.role === "subcontratista",
+      (pt: any) => pt.user.role === "subcontratista" && !pt.user.deletedAt,
     ).length;
 
     const totalOperarios = project.projectOperarios.filter(
-      (pt: any) => pt.user.role === "operario",
+      (pt: any) => pt.user.role === "operario" && !pt.user.deletedAt,
     ).length;
 
     const estimatedHours = activeTasks.reduce((sum: number, pt: any) => {

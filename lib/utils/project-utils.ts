@@ -95,16 +95,16 @@ export function getProjectStats (project: any) {
 export function getProjectWorkersCount(project: any) {
   const operarios =
     project.projectOperarios?.filter(
-      (po: any) => po.user?.role === "operario",
+      (po: any) => po.user?.role === "operario" && !po.user.deletedAt,
     ) ?? [];
 
   const subcontratistas =
     project.projectOperarios?.filter(
-      (po: any) => po.user?.role === "subcontratista",
+      (po: any) => po.user?.role === "subcontratista" && !po.user.deletedAt,
     ) ?? [];
 
   return {
     operariosCount: operarios.length,
-    subcontratistasCount: subcontratistas.length,
+    subcontractorsCount: subcontratistas.length,
   };
 };

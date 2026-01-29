@@ -191,7 +191,8 @@ export class PrismaTypedService {
           user:user_id (
             id,
             name,
-            role
+            role,
+            deleted_at
           )
         )
       `)

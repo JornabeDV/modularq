@@ -57,11 +57,11 @@ export const buildProjectMetrics = (project: any) => {
   ).length;
 
   const totalSubcontractors = project.projectOperarios.filter(
-    (pt: any) => pt.user.role === "subcontratista"
+    (pt: any) => pt.user.role === "subcontratista" && !pt.user.deletedAt
   ).length;
 
   const totalOperarios = project.projectOperarios.filter(
-    (pt: any) => pt.user.role === "operario"
+    (pt: any) => pt.user.role === "operario" && !pt.user.deletedAt
   ).length;
 
   const estimatedHours = activeTasks.reduce((sum: number, pt: any) => {

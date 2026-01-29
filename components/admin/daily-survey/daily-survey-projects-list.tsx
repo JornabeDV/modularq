@@ -73,13 +73,13 @@ export function DailySurveyProjectsList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         {activeProjects.map((project) => {
           const stats = getProjectStats(project);
-          const { operariosCount, subcontratistasCount } =
+          const { operariosCount, subcontractorsCount } =
             getProjectWorkersCount(project);
 
           return (
             <Card
               key={project.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer gap-0 py-0"
+              className="hover:shadow-lg sm:py-0 transition-shadow cursor-pointer gap-0 py-0"
               onClick={() => router.push(`/admin/daily-survey/${project.id}`)}
             >
               <CardHeader className="p-3 sm:p-4 pb-2">
@@ -237,12 +237,12 @@ export function DailySurveyProjectsList() {
                       </div>
                     )}
 
-                    {subcontratistasCount > 0 && (
+                    {subcontractorsCount > 0 && (
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3 flex-shrink-0" />
                         <span>
-                          {subcontratistasCount} subcontratista
-                          {subcontratistasCount !== 1 ? "s" : ""}
+                          {subcontractorsCount} subcontratista
+                          {subcontractorsCount !== 1 ? "s" : ""}
                         </span>
                       </div>
                     )}

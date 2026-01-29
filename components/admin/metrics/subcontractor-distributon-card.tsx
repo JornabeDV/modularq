@@ -19,6 +19,10 @@ export function SubcontractorDistributionCard({ project }: { project: any }) {
     (po: any) => po.user?.role === "subcontratista",
   );
 
+  if (!hasSubcontractors) {
+    return null;
+  }
+
   if (!hasSubcontractors && subcontractorStatsArray.length === 0) {
     return (
       <Card>

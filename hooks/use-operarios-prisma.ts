@@ -25,10 +25,11 @@ export function useOperariosPrisma() {
       setError(null)
       
       const allUsers = await PrismaTypedService.getAllUsers()
-      
+
       const operariosData = allUsers
         .filter(
-          (user) => user.role === "operario" || user.role === "subcontratista",
+          (user) => user.role === "operario" || user.role === "subcontratista" &&
+          user.deleted_at === null,
         )
         .map(user => ({
           ...user,
