@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  role: 'admin' | 'supervisor' | 'operario';
+  role: 'admin' | 'supervisor' | 'operario' | 'subcontratista';
   name: string;
 }
 

@@ -35,6 +35,7 @@ export function UserFilters({
           <SelectItem value="admin">Administradores</SelectItem>
           <SelectItem value="supervisor">Supervisores</SelectItem>
           <SelectItem value="operario">Operarios</SelectItem>
+          <SelectItem value="subcontratista">Subcontratistas</SelectItem>
         </SelectContent>
       </Select>
     </div>

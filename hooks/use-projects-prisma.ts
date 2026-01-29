@@ -155,7 +155,8 @@ export function useProjectsPrisma() {
           user: po.user ? {
             id: po.user.id,
             name: po.user.name,
-            role: po.user.role
+            role: po.user.role,
+            deletedAt: po.user.deleted_at
           } : undefined
         }))
       }))

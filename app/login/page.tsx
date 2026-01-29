@@ -35,8 +35,10 @@ export default function LoginPage() {
   const { loginWithName, isLoading, user } = useAuth();
   const { users, loading: usersLoading } = useUsersPrisma();
   const router = useRouter();
+  const loginUsers = users.filter(
+    (user: any) => user.role !== "subcontratista",
+  );
 
-  // Si ya hay sesión, evitar mostrar el login y limpiar el back stack
   useEffect(() => {
     if (user) {
       router.replace("/dashboard");
@@ -103,13 +105,13 @@ export default function LoginPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map(
+                  {loginUsers.map(
                     (user: any) =>
                       user.id && (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name}
                         </SelectItem>
-                      )
+                      ),
                   )}
                 </SelectContent>
               </Select>

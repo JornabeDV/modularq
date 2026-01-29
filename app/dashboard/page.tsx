@@ -27,6 +27,7 @@ import {
   Target,
   Timer,
   Building2,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -50,32 +51,47 @@ export default function DashboardPage() {
   const isMobile = useIsMobile();
 
   const activeProjects = projects.filter((p) => p.status === "active");
-  const totalOperarios = operarios.length;
+
+    const totalSubcontractors = operarios.filter(
+      (o: any) => o.role === "subcontratista" && !o.deletedAt,
+    ).length;
+
+    const totalOperarios = operarios.filter(
+      (o: any) => o.role === "operario" && !o.deletedAt,
+    ).length;
+
   const activeTasks = projects.reduce(
     (sum, project) =>
       sum +
       project.projectTasks.filter((pt) => pt.status === "in_progress").length,
-    0
+    0,
   );
 
   const getProjectMetrics = (project: any) => {
     const activeTasks = project.projectTasks.filter(
-      (pt: any) => pt.status !== "cancelled"
+      (pt: any) => pt.status !== "cancelled",
     );
     const totalTasks = activeTasks.length;
     const completedTasks = activeTasks.filter(
-      (pt: any) => pt.status === "completed"
+      (pt: any) => pt.status === "completed",
     ).length;
     const inProgressTasks = activeTasks.filter(
-      (pt: any) => pt.status === "in_progress"
+      (pt: any) => pt.status === "in_progress",
     ).length;
     const pendingTasks = activeTasks.filter(
-      (pt: any) => pt.status === "pending"
+      (pt: any) => pt.status === "pending",
     ).length;
     const cancelledTasks = project.projectTasks.filter(
-      (pt: any) => pt.status === "cancelled"
+      (pt: any) => pt.status === "cancelled",
     ).length;
-    const totalOperarios = project.projectOperarios.length;
+    
+    const totalSubcontractors = project.projectOperarios.filter(
+      (pt: any) => pt.user.role === "subcontratista" && !pt.user.deletedAt,
+    ).length;
+
+    const totalOperarios = project.projectOperarios.filter(
+      (pt: any) => pt.user.role === "operario" && !pt.user.deletedAt,
+    ).length;
 
     const estimatedHours = activeTasks.reduce((sum: number, pt: any) => {
       let taskEstimated = pt.estimatedHours || 0;
@@ -114,6 +130,7 @@ export default function DashboardPage() {
       pendingTasks,
       cancelledTasks,
       totalOperarios,
+      totalSubcontractors,
       estimatedHours: Math.round(estimatedHours * 10) / 10,
       completedEstimatedHours: Math.round(completedEstimatedHours * 10) / 10,
     };
@@ -136,7 +153,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
             <Card className="py-3 sm:py-3 flex justify-between flex-col">
               <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -157,12 +174,25 @@ export default function DashboardPage() {
             <Card className="py-3 sm:py-3 flex justify-between flex-col">
               <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Operarios</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Wrench className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalOperarios}</div>
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   operarios registrados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="py-3 sm:py-3 flex justify-between flex-col">
+              <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Subcontratistas</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalSubcontractors}</div>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  subcontratistas registrados
                 </p>
               </CardContent>
             </Card>
@@ -225,7 +255,11 @@ export default function DashboardPage() {
                         Crea, edita y gestiona todo el personal del sistema
                       </p>
                       <Link href="/admin/users">
-                        <Button size="sm" className="w-full cursor-pointer">
+                        <Button
+                          size="sm"
+                          className="w-full cursor-pointer"
+                          variant="outline"
+                        >
                           <Users className="h-3 w-3 mr-1" />
                           Gestionar personal
                         </Button>
@@ -384,7 +418,7 @@ export default function DashboardPage() {
                                   ? Math.round(
                                       (metrics.completedTasks /
                                         metrics.totalTasks) *
-                                        100
+                                        100,
                                     )
                                   : 0;
                               const progressColor =
@@ -487,9 +521,9 @@ export default function DashboardPage() {
                                       Math.round(
                                         (metrics.completedEstimatedHours /
                                           metrics.estimatedHours) *
-                                          100
+                                          100,
                                       ),
-                                      100
+                                      100,
                                     )
                                   : 0;
                               const progressColor =
@@ -624,6 +658,15 @@ export default function DashboardPage() {
                               </span>
                               <span className="font-semibold">
                                 {metrics.totalOperarios}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-orange-500" />
+                              <span className="text-muted-foreground truncate">
+                                Subcontratistas
+                              </span>
+                              <span className="font-semibold">
+                                {metrics.totalSubcontractors}
                               </span>
                             </div>
                           </div>

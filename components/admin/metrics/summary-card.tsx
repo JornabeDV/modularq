@@ -117,11 +117,17 @@ export function SummaryCard({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-8 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-8 border-t">
           <div className="flex items-center gap-2 text-sm sm:text-base">
             <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="truncate">
               {metrics.totalOperarios} operarios asignados
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm sm:text-base">
+            <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="truncate">
+              {metrics.totalSubcontractors} subcontratistas asignados
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm sm:text-base">

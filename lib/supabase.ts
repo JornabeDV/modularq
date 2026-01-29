@@ -21,7 +21,7 @@ export interface Database {
           id: string
           email: string
           name: string
-          role: 'admin' | 'supervisor' | 'operario'
+          role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
           total_hours: number
           efficiency: number
           deleted_at: string | null
@@ -32,7 +32,7 @@ export interface Database {
           id?: string
           email: string
           name: string
-          role: 'admin' | 'supervisor' | 'operario'
+          role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
           total_hours?: number
           efficiency?: number
           deleted_at?: string | null
@@ -43,7 +43,7 @@ export interface Database {
           id?: string
           email?: string
           name?: string
-          role?: 'admin' | 'supervisor' | 'operario'
+          role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
           total_hours?: number
           efficiency?: number
           deleted_at?: string | null

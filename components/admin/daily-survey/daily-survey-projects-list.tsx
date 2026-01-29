@@ -13,7 +13,12 @@ import { Button } from "@/components/ui/button";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ClipboardList, ArrowRight, Calendar, Users } from "lucide-react";
-import { formatProjectDate, getProgressColor } from "@/lib/utils/project-utils";
+import {
+  formatProjectDate,
+  getProgressColor,
+  getProjectStats,
+  getProjectWorkersCount,
+} from "@/lib/utils/project-utils";
 import {
   RadialBarChart,
   RadialBar,
@@ -29,29 +34,6 @@ export function DailySurveyProjectsList() {
   const isMobile = useIsMobile();
 
   const activeProjects = projects.filter((p) => p.status === "active");
-
-  const getProjectStats = (project: any) => {
-    const activeTasks = project.projectTasks?.filter(
-      (pt: any) => pt.status !== "cancelled"
-    ) || [];
-    const totalTasks = activeTasks.length;
-    const completedTasks =
-      activeTasks.filter((pt: any) => pt.status === "completed").length || 0;
-    const inProgressTasks =
-      activeTasks.filter((pt: any) => pt.status === "in_progress").length || 0;
-    const pendingTasks =
-      activeTasks.filter((pt: any) => pt.status === "pending").length || 0;
-    const progressPercentage =
-      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-    return {
-      totalTasks,
-      completedTasks,
-      inProgressTasks,
-      pendingTasks,
-      progressPercentage,
-    };
-  };
 
   if (loading) {
     return (
@@ -91,11 +73,13 @@ export function DailySurveyProjectsList() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         {activeProjects.map((project) => {
           const stats = getProjectStats(project);
+          const { operariosCount, subcontractorsCount } =
+            getProjectWorkersCount(project);
 
           return (
             <Card
               key={project.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer gap-0 py-0"
+              className="hover:shadow-lg sm:py-0 transition-shadow cursor-pointer gap-0 py-0"
               onClick={() => router.push(`/admin/daily-survey/${project.id}`)}
             >
               <CardHeader className="p-3 sm:p-4 pb-2">
@@ -122,7 +106,7 @@ export function DailySurveyProjectsList() {
                 <div className="flex items-center gap-3">
                   {(() => {
                     const progressColor = getProgressColor(
-                      stats.progressPercentage
+                      stats.progressPercentage,
                     );
                     const radialData = [
                       {
@@ -231,27 +215,39 @@ export function DailySurveyProjectsList() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs sm:text-sm text-muted-foreground">
+                <div className="grid grid-cols-2 items-center gap-3 text-xs sm:text-sm text-muted-foreground">
                   {project.startDate && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">
-                        Inicio proyecto: {formatProjectDate(project.startDate)}
-                      </span>
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <span>Inicio proyecto:</span>
+                      </div>
+
+                      <span>{formatProjectDate(project.startDate)}</span>
                     </div>
                   )}
-                  {project.projectOperarios &&
-                    project.projectOperarios.length > 0 && (
+                  <div>
+                    {operariosCount > 0 && (
                       <div className="flex items-center gap-1">
                         <Users className="h-3 w-3 flex-shrink-0" />
                         <span>
-                          {project.projectOperarios.length} operario
-                          {project.projectOperarios.length !== 1 ? "s" : ""}
+                          {operariosCount} operario
+                          {operariosCount !== 1 ? "s" : ""}
                         </span>
                       </div>
                     )}
-                </div>
 
+                    {subcontractorsCount > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3 flex-shrink-0" />
+                        <span>
+                          {subcontractorsCount} subcontratista
+                          {subcontractorsCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <Button
                   size="sm"
                   className="w-full cursor-pointer text-xs sm:text-sm h-7 sm:h-8"

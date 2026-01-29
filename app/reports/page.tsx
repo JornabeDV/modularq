@@ -15,6 +15,7 @@ import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { CheckCircle, FolderKanban, Calendar } from "lucide-react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
+import { getProjectWorkersCount } from "@/lib/utils/project-utils";
 
 export default function ReportsPage() {
   return (
@@ -27,7 +28,9 @@ export default function ReportsPage() {
 function ReportsContent() {
   const { projects, loading: projectsLoading } = useProjectsPrisma();
 
-  const completedProjects = projects.filter((p) => p.status === "completed" || p.status === "delivered");
+  const completedProjects = projects.filter(
+    (p) => p.status === "completed" || p.status === "delivered",
+  );
 
   return (
     <MainLayout>
@@ -81,6 +84,8 @@ function ReportsContent() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {completedProjects.map((project) => {
+                  const { operariosCount, subcontractorsCount } =
+                    getProjectWorkersCount(project);
                   const totalTasks = project.projectTasks.length;
 
                   return (
@@ -96,10 +101,16 @@ function ReportsContent() {
                             </CardDescription>
                           </div>
                           <Badge
-                            variant={project.status === 'completed' ? 'default' : 'secondary'}
+                            variant={
+                              project.status === "completed"
+                                ? "default"
+                                : "secondary"
+                            }
                             className="text-xs"
                           >
-                            {project.status === 'completed' ? 'Completado' : 'Entregado'}
+                            {project.status === "completed"
+                              ? "Completado"
+                              : "Entregado"}
                           </Badge>
                         </div>
                       </CardHeader>
@@ -124,7 +135,7 @@ function ReportsContent() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4 text-center">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                           <div>
                             <div className="text-lg font-semibold">
                               {totalTasks}
@@ -133,14 +144,27 @@ function ReportsContent() {
                               Tareas
                             </div>
                           </div>
-                          <div>
-                            <div className="text-lg font-semibold">
-                              {project.projectOperarios.length}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Operarios
-                            </div>
-                          </div>
+                            {operariosCount > 0 && (
+                              <div>
+                                <div className="text-lg font-semibold">
+                                  {operariosCount}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Operario{operariosCount !== 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            )}
+                            {subcontractorsCount > 0 && (
+                              <div>
+                                <div className="text-lg font-semibold">
+                                  {subcontractorsCount}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Subcontratista
+                                  {subcontractorsCount !== 1 ? "s" : ""}
+                                </div>
+                              </div>
+                            )}
                           <div>
                             <div className="text-lg font-semibold">100%</div>
                             <div className="text-xs text-muted-foreground">

@@ -21,8 +21,6 @@ export function getStatusInfo(status: string) {
 export function formatProjectDate(dateString?: string): string {
   if (!dateString) return "Sin fecha";
 
-  // Si la fecha viene en formato ISO (YYYY-MM-DD), la parseamos directamente
-  // para evitar problemas de zona horaria
   if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
     const [year, month, day] = dateString.split("-");
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -33,12 +31,11 @@ export function formatProjectDate(dateString?: string): string {
     });
   }
 
-  // Para fechas con timestamp o formato ISO completo, usar el método normal
   return new Date(dateString).toLocaleDateString("es-ES", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "UTC", // Forzar UTC para evitar cambios de zona horaria
+    timeZone: "UTC",
   });
 }
 
@@ -71,3 +68,43 @@ export function getProgressColor(percentage: number): string {
   if (percentage >= 25) return "hsl(45, 93%, 47%)"; // yellow-500
   return "hsl(217, 91%, 60%)"; // blue-500
 }
+
+export function getProjectStats (project: any) {
+  const activeTasks =
+    project.projectTasks?.filter((pt: any) => pt.status !== "cancelled") ||
+    [];
+  const totalTasks = activeTasks.length;
+  const completedTasks =
+    activeTasks.filter((pt: any) => pt.status === "completed").length || 0;
+  const inProgressTasks =
+    activeTasks.filter((pt: any) => pt.status === "in_progress").length || 0;
+  const pendingTasks =
+    activeTasks.filter((pt: any) => pt.status === "pending").length || 0;
+  const progressPercentage =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  return {
+    totalTasks,
+    completedTasks,
+    inProgressTasks,
+    pendingTasks,
+    progressPercentage,
+  };
+};
+
+export function getProjectWorkersCount(project: any) {
+  const operarios =
+    project.projectOperarios?.filter(
+      (po: any) => po.user?.role === "operario" && !po.user.deletedAt,
+    ) ?? [];
+
+  const subcontratistas =
+    project.projectOperarios?.filter(
+      (po: any) => po.user?.role === "subcontratista" && !po.user.deletedAt,
+    ) ?? [];
+
+  return {
+    operariosCount: operarios.length,
+    subcontractorsCount: subcontratistas.length,
+  };
+};

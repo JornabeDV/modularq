@@ -13,6 +13,7 @@ enum UserRole {
   admin
   supervisor
   operario
+  subcontratista
 }
 
 enum ProjectStatus {

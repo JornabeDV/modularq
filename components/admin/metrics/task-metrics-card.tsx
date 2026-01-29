@@ -91,7 +91,13 @@ export function TaskMetricsCard({ project, projectId }: Props) {
 
                   <div className="flex items-center gap-1 min-w-0 sm:col-span-2">
                     <Users className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    <span className="text-muted-foreground">Operario:</span>
+                    <span className="text-muted-foreground">
+                      {projectTask.assignedUser
+                        ? projectTask.assignedUser.role === "subcontratista"
+                          ? "Subcontratista:"
+                          : "Operario:"
+                        : "Operario:"}
+                    </span>
                     {projectTask.assignedUser ? (
                       <Badge variant="secondary" className="text-xs truncate">
                         {projectTask.assignedUser.name}

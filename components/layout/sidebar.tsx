@@ -24,7 +24,11 @@ const navigation = [
 
 const adminNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Relevamiento Diario", href: "/admin/daily-survey", icon: ClipboardList },
+  {
+    name: "Relevamiento Diario",
+    href: "/admin/daily-survey",
+    icon: ClipboardList,
+  },
   { name: "Gestión del Personal", href: "/admin/users", icon: Shield },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
@@ -39,7 +43,6 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r">
-      {/* Header - Solo en desktop */}
       <div className="hidden lg:flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
         <Image
           src="/assets/logo.png"
@@ -50,7 +53,6 @@ export function Sidebar() {
         />
       </div>
 
-      {/* User Info */}
       <div className="p-4 border-b">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -75,10 +77,8 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {/* Solo operarios ven "Proyectos Activos" */}
           {userProfile?.role === "operario" &&
             navigation.map((item) => {
               const isActive = pathname === item.href;
@@ -90,7 +90,7 @@ export function Sidebar() {
                       "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
                       isActive
                         ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -100,13 +100,11 @@ export function Sidebar() {
               );
             })}
 
-          {/* Admin and Supervisor Navigation */}
           {(userProfile?.role === "admin" ||
             userProfile?.role === "supervisor") && (
             <>
               {adminNavigation
                 .filter((item) => {
-                  // Solo mostrar "Gestión del Personal" para admin
                   if (
                     item.name === "Gestión del Personal" &&
                     userProfile?.role !== "admin"
@@ -125,7 +123,7 @@ export function Sidebar() {
                           "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
                           isActive
                             ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
                         )}
                       >
                         <item.icon className="h-4 w-4" />
@@ -139,7 +137,6 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Logout */}
       <div className="p-4 border-t">
         <Button
           variant="ghost"

@@ -20,13 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  User,
-  Users,
-  Crown,
-  Save,
-  X as XIcon,
-} from "lucide-react";
+import { User, Users, Crown, Save, X as XIcon } from "lucide-react";
 import { useTaskCollaborators } from "@/hooks/use-task-collaborators";
 import { useAuth } from "@/lib/auth-context";
 import type { ProjectTask, TaskCollaborator } from "@/lib/types";
@@ -36,6 +30,7 @@ interface DailySurveyTaskCardProps {
   task: ProjectTask;
   taskNumber: number;
   projectOperarios: any[];
+  projectSubcontractors: any[];
   onStatusChange: (taskId: string, newStatus: string) => void;
   onAssignOperario: (taskId: string, operarioId: string) => void;
   onCollaboratorsChange?: () => void;
@@ -45,6 +40,7 @@ export function DailySurveyTaskCard({
   task,
   taskNumber,
   projectOperarios,
+  projectSubcontractors,
   onStatusChange,
   onAssignOperario,
   onCollaboratorsChange,
@@ -55,10 +51,10 @@ export function DailySurveyTaskCard({
   const [isLoading, setIsLoading] = useState(false);
 
   const [pendingAdditions, setPendingAdditions] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [pendingRemovals, setPendingRemovals] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const { user } = useAuth();
@@ -85,19 +81,20 @@ export function DailySurveyTaskCard({
 
   const availableOperarios = projectOperarios.filter(
     (operario) =>
+      operario.user?.role === "operario" &&
       operario.user_id !== task.assignedTo &&
-      !collaborators.some((c) => c.userId === operario.user_id)
+      !collaborators.some((c) => c.userId === operario.user_id),
   );
 
   const currentCollaborators = collaborators.filter(
-    (c) => !pendingRemovals.has(c.id)
+    (c) => !pendingRemovals.has(c.id),
   );
   const availableForAddition = availableOperarios.filter(
-    (operario) => !pendingAdditions.has(operario.user_id)
+    (operario) => !pendingAdditions.has(operario.user_id),
   );
 
   const pendingAdditionOperarios = availableOperarios.filter((operario) =>
-    pendingAdditions.has(operario.user_id)
+    pendingAdditions.has(operario.user_id),
   );
 
   const hasPendingChanges =
@@ -105,7 +102,7 @@ export function DailySurveyTaskCard({
 
   const handleToggleCollaborator = (
     operarioId: string,
-    isCurrentlyCollaborator: boolean
+    isCurrentlyCollaborator: boolean,
   ) => {
     if (isCurrentlyCollaborator) {
       const collaborator = collaborators.find((c) => c.userId === operarioId);
@@ -199,6 +196,18 @@ export function DailySurveyTaskCard({
     setIsChangingStatus(false);
   };
 
+  const operariosOnly = projectOperarios.filter(
+    (po) => po.user?.role === "operario",
+  );
+
+  const subcontractorsOnly = projectSubcontractors.filter(
+    (po) => po.user?.role === "subcontratista",
+  );
+
+  const isOperarioAssigned = task.assignedUser?.role === "operario";
+
+  const hasSubcontractor = projectSubcontractors.length > 0;
+  
   return (
     <Card className="hover:shadow-md transition-shadow py-0 sm:py-4">
       <CardContent className="p-2.5 sm:p-4">
@@ -216,7 +225,7 @@ export function DailySurveyTaskCard({
                 <Badge
                   variant="outline"
                   className={`flex-shrink-0 text-[10px] sm:text-xs ${getStatusColor(
-                    task.status
+                    task.status,
                   )}`}
                 >
                   <span className="flex items-center gap-0.5 sm:gap-1">
@@ -236,50 +245,101 @@ export function DailySurveyTaskCard({
             </div>
           </div>
 
-          <div className="sm:grid max-sm:flex sm:grid-cols-2 gap-2 sm:gap-3">
-            {projectOperarios.length > 0 && (
-              <div className="min-w-0">
-                <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
-                  Operario
-                </label>
-                {task.status === "completed" ? (
-                  <div className="h-[36px] w-fit px-3 py-2 text-xs sm:text-sm border border-input rounded-md bg-muted flex items-center gap-2">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 text-muted-foreground" />
-                    <span className="truncate min-w-0">
-                      {task.assignedUser?.name || "Sin asignar"}
-                    </span>
-                  </div>
-                ) : (
-                  <Select
-                    value={task.assignedTo || "none"}
-                    onValueChange={(value) => onAssignOperario(task.id, value)}
-                  >
-                    <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm truncate">
-                      <SelectValue placeholder="Seleccionar operario..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">Sin asignar</span>
-                      </SelectItem>
-                      {projectOperarios.map((operario) => (
-                        <SelectItem
-                          key={operario.user_id}
-                          value={operario.user_id}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                            <span className="text-xs sm:text-sm truncate min-w-0">
-                              {operario.user?.name || "Operario"}
-                            </span>
-                          </div>
+          <div className="sm:grid max-sm:flex sm:grid-cols-3 gap-2 sm:gap-3">
+            {operariosOnly.length > 0 &&
+              (!task.assignedUser?.role ||
+                task.assignedUser?.role === "operario") && (
+                <div className="min-w-0">
+                  <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
+                    Operario
+                  </label>
+                  {task.status === "completed" ? (
+                    <div className="h-[36px] w-fit px-3 py-2 text-xs sm:text-sm border border-input rounded-md bg-muted flex items-center gap-2">
+                      <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 text-muted-foreground" />
+                      <span className="truncate min-w-0">
+                        {task.assignedUser?.name || "Sin asignar"}
+                      </span>
+                    </div>
+                  ) : (
+                    <Select
+                      value={task.assignedTo || "none"}
+                      onValueChange={(value) =>
+                        onAssignOperario(task.id, value)
+                      }
+                    >
+                      <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm truncate">
+                        <SelectValue placeholder="Seleccionar operario..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <span className="text-muted-foreground">
+                            Sin asignar
+                          </span>
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            )}
+                        {operariosOnly.map((operario) => (
+                          <SelectItem
+                            key={operario.user_id}
+                            value={operario.user_id}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              <span className="text-xs sm:text-sm truncate min-w-0">
+                                {operario.user?.name || "Operario"}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
 
+            {hasSubcontractor &&
+              (!task.assignedUser?.role ||
+                task.assignedUser?.role === "subcontratista") && (
+                <div className="min-w-0">
+                  <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
+                    Subcontratista
+                  </label>
+                  {task.status === "completed" ? (
+                    <div className="h-[36px] w-fit px-3 py-2 text-xs sm:text-sm border border-input rounded-md bg-muted flex items-center gap-2">
+                      <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 text-muted-foreground" />
+                      <span className="truncate min-w-0">
+                        {task.assignedUser?.name || "Sin asignar"}
+                      </span>
+                    </div>
+                  ) : (
+                    <Select
+                      value={task.assignedTo || "none"}
+                      onValueChange={(value) =>
+                        onAssignOperario(task.id, value)
+                      }
+                    >
+                      <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm truncate">
+                        <SelectValue placeholder="Seleccionar subcontratista..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <span className="text-muted-foreground">
+                            Sin asignar
+                          </span>
+                        </SelectItem>
+                        {subcontractorsOnly.map((sub) => (
+                          <SelectItem key={sub.user_id} value={sub.user_id}>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              <span className="text-xs sm:text-sm truncate min-w-0">
+                                {sub.user?.name || "Subcontratista"}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
             <div>
               <label className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 block">
                 Estado
@@ -332,7 +392,7 @@ export function DailySurveyTaskCard({
             </div>
           </div>
 
-          {hasOperario && (
+          {isOperarioAssigned && (
             <div className="space-y-2 pt-3 border-t">
               <div className="flex items-center justify-between">
                 <label className="text-xs sm:text-sm font-medium">
@@ -400,7 +460,7 @@ export function DailySurveyTaskCard({
                           <div className="space-y-3">
                             {currentCollaborators.map((collaborator) => {
                               const willBeRemoved = pendingRemovals.has(
-                                collaborator.id
+                                collaborator.id,
                               );
                               return (
                                 <div
@@ -412,7 +472,7 @@ export function DailySurveyTaskCard({
                                     onCheckedChange={() =>
                                       handleToggleCollaborator(
                                         collaborator.userId!,
-                                        true
+                                        true,
                                       )
                                     }
                                     disabled={isLoading}
@@ -467,7 +527,7 @@ export function DailySurveyTaskCard({
                                   onCheckedChange={() =>
                                     handleToggleCollaborator(
                                       operario.user_id,
-                                      false
+                                      false,
                                     )
                                   }
                                   disabled={isLoading}
@@ -503,7 +563,7 @@ export function DailySurveyTaskCard({
                           <div className="space-y-3">
                             {availableForAddition.map((operario) => {
                               const willBeAdded = pendingAdditions.has(
-                                operario.user_id
+                                operario.user_id,
                               );
                               return (
                                 <div
@@ -519,7 +579,7 @@ export function DailySurveyTaskCard({
                                     onCheckedChange={() =>
                                       handleToggleCollaborator(
                                         operario.user_id,
-                                        false
+                                        false,
                                       )
                                     }
                                     disabled={isLoading}
@@ -567,16 +627,16 @@ export function DailySurveyTaskCard({
                           {isLoading
                             ? "Guardando..."
                             : hasPendingChanges
-                            ? `Guardar (${
-                                pendingAdditions.size > 0
-                                  ? `+${pendingAdditions.size}`
-                                  : ""
-                              }${
-                                pendingRemovals.size > 0
-                                  ? `-${pendingRemovals.size}`
-                                  : ""
-                              })`
-                            : "Guardar Cambios"}
+                              ? `Guardar (${
+                                  pendingAdditions.size > 0
+                                    ? `+${pendingAdditions.size}`
+                                    : ""
+                                }${
+                                  pendingRemovals.size > 0
+                                    ? `-${pendingRemovals.size}`
+                                    : ""
+                                })`
+                              : "Guardar Cambios"}
                         </Button>
                       </div>
                     </div>

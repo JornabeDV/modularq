@@ -47,16 +47,16 @@ export function DailySurveyProjectTasks({
   const activeTasks = projectTasks.filter((pt) => pt.status !== "cancelled");
   const totalTasks = activeTasks.length;
   const completedTasks = activeTasks.filter(
-    (pt) => pt.status === "completed"
+    (pt) => pt.status === "completed",
   ).length;
   const inProgressTasks = activeTasks.filter(
-    (pt) => pt.status === "in_progress"
+    (pt) => pt.status === "in_progress",
   ).length;
   const pendingTasks = activeTasks.filter(
-    (pt) => pt.status === "pending"
+    (pt) => pt.status === "pending",
   ).length;
   const cancelledTasks = projectTasks.filter(
-    (pt) => pt.status === "cancelled"
+    (pt) => pt.status === "cancelled",
   ).length;
   const validTasks = totalTasks - cancelledTasks;
   const progressPercentage =
@@ -133,6 +133,16 @@ export function DailySurveyProjectTasks({
     const currentTask = projectTasks.find((t) => t.id === taskId);
     const isDesasignando = operarioId === "none";
 
+    const userIdToResolve = isDesasignando
+      ? currentTask?.assignedTo
+      : operarioId;
+
+    const selectedUser = projectOperarios.find(
+      (operario) => operario.user_id === userIdToResolve,
+    );
+
+    const selectedRole = selectedUser?.user?.role;
+
     const updateData: any = {
       assignedTo: isDesasignando ? null : operarioId,
     };
@@ -158,14 +168,24 @@ export function DailySurveyProjectTasks({
     if (result.success) {
       toast({
         title: isDesasignando
-          ? "✓ Operario desasignado"
-          : "✓ Operario asignado",
+          ? selectedRole === "subcontratista"
+            ? "✓ Subcontratista desasignado"
+            : "✓ Operario desasignado"
+          : selectedRole === "subcontratista"
+            ? "✓ Subcontratista asignado"
+            : "✓ Operario asignado",
+
         description: isDesasignando
-          ? currentTask?.status === "in_progress" ||
-            currentTask?.status === "completed"
-            ? "El operario ha sido desasignado y el estado se cambió a 'Pendiente'"
-            : "El operario ha sido desasignado de la tarea"
-          : "El operario ha sido asignado a la tarea",
+          ? selectedRole === "subcontratista"
+            ? "El subcontratista ha sido desasignado de la tarea"
+            : currentTask?.status === "in_progress" ||
+                currentTask?.status === "completed"
+              ? "El operario ha sido desasignado y el estado se cambió a 'Pendiente'"
+              : "El operario ha sido desasignado de la tarea"
+          : selectedRole === "subcontratista"
+            ? "El subcontratista ha sido asignado a la tarea"
+            : "El operario ha sido asignado a la tarea",
+
         variant: "default",
       });
     } else {
@@ -393,6 +413,9 @@ export function DailySurveyProjectTasks({
                 task={task}
                 taskNumber={index + 1}
                 projectOperarios={projectOperarios || []}
+                projectSubcontractors={(projectOperarios || []).filter(
+                  (operario) => operario.user?.role === "subcontratista",
+                )}
                 onStatusChange={handleStatusChange}
                 onAssignOperario={handleAssignOperario}
                 onCollaboratorsChange={handleCollaboratorsChange}

@@ -15,6 +15,7 @@ import { ProjectForm } from "./project-form";
 import { TaskForm } from "./task-form";
 import { ProjectTaskManager } from "./project-task-manager";
 import { ProjectOperariosManager } from "./project-operarios-manager";
+import { ProjectSubcontractorManager } from "./project-subcontractor-manager";
 import { FileUpload } from "@/components/projects/file-upload";
 import { useProjectFiles } from "@/hooks/use-project-files";
 import { useAuth } from "@/lib/auth-context";
@@ -67,12 +68,14 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     handleAssignTask,
     handleUnassignTask,
     handleReorderTasks,
-  } = projectDetailResult as typeof projectDetailResult & { projects: Project[] };
+  } = projectDetailResult as typeof projectDetailResult & {
+    projects: Project[];
+  };
 
   const { files: projectFiles } = useProjectFiles(
     projectId,
     user?.id || "",
-    userProfile?.role === "admin" || userProfile?.role === "supervisor"
+    userProfile?.role === "admin" || userProfile?.role === "supervisor",
   );
 
   const [showActivateButton, setShowActivateButton] = useState(false);
@@ -83,11 +86,11 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       const allCompleted = checklistItems.every(
         (item) =>
           currentChecklist.find((c) => c.checklist_item === item)
-            ?.is_completed === true
+            ?.is_completed === true,
       );
       setShowActivateButton(allCompleted);
     },
-    [checklist, checklistItems]
+    [checklist, checklistItems],
   );
 
   const handleCreateTaskAndClose = useCallback(
@@ -98,7 +101,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       }
       return result;
     },
-    [handleCreateTask]
+    [handleCreateTask],
   );
 
   useEffect(() => {
@@ -207,6 +210,10 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       )}
 
       <ProjectOperariosManager projectId={project.id} isReadOnly={isReadOnly} />
+      <ProjectSubcontractorManager
+        projectId={project.id}
+        isReadOnly={isReadOnly}
+      />
 
       {showFiles && (
         <Card>
