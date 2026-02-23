@@ -24,7 +24,6 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
   const [elapsedTime, setElapsedTime] = useState(0)
   const [currentTask, setCurrentTask] = useState<any>(null)
   const [totalHoursWorked, setTotalHoursWorked] = useState(0)
-  const [lastSentProgress, setLastSentProgress] = useState<number | null>(null)
   const [isNearLimit, setIsNearLimit] = useState(false)
   const [currentTimeEntryId, setCurrentTimeEntryId] = useState<string | null>(null)
   
@@ -296,7 +295,7 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     fetchTotalHours()
   }, [currentTask?.task_id, operarioId, projectId]) // Asegurar que se ejecute cuando cambian estos valores
 
-  // Efecto separado para actualizar progreso cuando cambien las horas trabajadas
+  // Efecto para actualizar horas totales trabajadas
   useEffect(() => {
     // Calcular tiempo total incluyendo la sesión activa actual
     const activeSessionHours = isTracking && elapsedTime > 0 ? elapsedTime / (1000 * 60 * 60) : 0
@@ -305,22 +304,15 @@ export function TimeTracker({ operarioId, taskId, projectId, onTimeEntryCreate, 
     // Siempre enviar tiempo total actualizado, incluso si no hay tiempo estimado
     onTotalHoursUpdate?.(totalHoursWithActive)
     
-    // Usar estimatedHours del projectTask (tiempo total del proyecto)
-    // Priorizar estimated_hours del project_task (ya multiplicado por moduleCount)
-    const estimatedHours = currentTask?.estimated_hours || currentTask?.estimatedHours || currentTask?.task?.estimated_hours || 0
-    if (estimatedHours > 0) {
-      // Calcular progreso incluyendo la sesión activa
-      const progress = Math.min((totalHoursWithActive / estimatedHours) * 100, 100)
-      const roundedProgress = Math.round(progress)
-      
-      // Solo actualizar si el progreso ha cambiado significativamente y no es el mismo que ya enviamos
+    // El progreso se basa solo en el estado de la tarea, no en horas trabajadas
+    // Solo actualizar si la tarea está completada y el progreso no es 100%
+    if (currentTask?.status === 'completed') {
       const currentProgress = currentTask?.progress_percentage || currentTask?.progressPercentage || 0
-      if (roundedProgress !== lastSentProgress && Math.abs(roundedProgress - currentProgress) > 1) {
-        setLastSentProgress(roundedProgress)
-        onProgressUpdate?.(roundedProgress)
+      if (currentProgress !== 100) {
+        onProgressUpdate?.(100)
       }
     }
-  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.estimated_hours, currentTask?.estimatedHours, currentTask?.task?.estimated_hours, currentTask?.progress_percentage, currentTask?.progressPercentage, lastSentProgress, onProgressUpdate, onTotalHoursUpdate])
+  }, [totalHoursWorked, elapsedTime, isTracking, currentTask?.status, currentTask?.progress_percentage, currentTask?.progressPercentage, onProgressUpdate, onTotalHoursUpdate])
 
   // Refrescar horas trabajadas cuando se crea una nueva entrada
   useEffect(() => {

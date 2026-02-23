@@ -9,7 +9,8 @@ export const TASK_CATEGORIES = [
   'Zinguerías',
   'Instalaciones',
   'Acabados',
-  'Finalización'
+  'Finalización',
+  'Mobiliario'
 ] as const
 
 export type TaskCategory = typeof TASK_CATEGORIES[number]
@@ -27,7 +28,6 @@ export type TaskPriority = typeof TASK_PRIORITIES[number]['value']
 // Estados de tareas
 export const TASK_STATUSES = [
   { value: 'pending', label: 'Pendiente', color: 'secondary' },
-  { value: 'assigned', label: 'Asignada', color: 'outline' },
   { value: 'in_progress', label: 'En Progreso', color: 'default' },
   { value: 'completed', label: 'Completada', color: 'success' },
   { value: 'cancelled', label: 'Cancelada', color: 'destructive' }

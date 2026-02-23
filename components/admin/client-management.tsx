@@ -1,84 +1,154 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogTrigger } from '@/components/ui/dialog'
-import { Plus } from 'lucide-react'
-import { ClientStats } from './client-stats'
-import { ClientTable } from './client-table'
-import { ClientForm } from './client-form'
-import { useClientsPrisma, type CreateClientData } from '@/hooks/use-clients-prisma'
-import { useProjectsPrisma } from '@/hooks/use-projects-prisma'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { ClientStats } from "./client-stats";
+import { ClientTable } from "./client-table";
+import { ClientForm } from "./client-form";
+import { ClientViewDialog } from "./client-view-dialog";
+import {
+  useClientsPrisma,
+  type CreateClientData,
+} from "@/hooks/use-clients-prisma";
+import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 
-import { useAuth } from '@/lib/auth-context'
+import { useAuth } from "@/lib/auth-context";
 
 export function ClientManagement() {
-  const { userProfile } = useAuth()
-  
-  // Los supervisores solo pueden ver, no editar
-  const isReadOnly = userProfile?.role === 'supervisor'
-  
-  const { clients, loading, error, createClient, updateClient, deleteClient } = useClientsPrisma()
-  const { projects } = useProjectsPrisma()
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [editingClient, setEditingClient] = useState<any>(null)
-  
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const { userProfile } = useAuth();
+
+  const isReadOnly = userProfile?.role === "supervisor";
+
+  const { clients, loading, error, createClient, updateClient, deleteClient } =
+    useClientsPrisma();
+  const { projects } = useProjectsPrisma();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<any>(null);
+  const [viewingClient, setViewingClient] = useState<any>(null);
+
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleCreateClient = async (clientData: CreateClientData) => {
-    const result = await createClient(clientData)
+    setCreateError(null);
+    const result = await createClient(clientData);
     if (result.success) {
-      setIsCreateDialogOpen(false)
+      toast.success("Cliente creado exitosamente");
+      setIsCreateDialogOpen(false);
+      setCreateError(null);
+    } else {
+      setCreateError(result.error || "Error al crear cliente");
     }
-  }
+  };
+
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const handleUpdateClient = async (clientId: string, clientData: any) => {
-    if (isUpdating) return
-    
-    setIsUpdating(true)
-    
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    setUpdateError(null);
+
     try {
-      const updateData: any = {}
-      if (clientData.cuit !== undefined) updateData.cuit = clientData.cuit
-      if (clientData.company_name !== undefined) updateData.company_name = clientData.company_name
-      if (clientData.representative !== undefined) updateData.representative = clientData.representative
-      if (clientData.email !== undefined) updateData.email = clientData.email
-      if (clientData.phone !== undefined) updateData.phone = clientData.phone
-      
-      const result = await updateClient(clientId, updateData)
+      const updateData: any = {};
+      if (clientData.cuit !== undefined) updateData.cuit = clientData.cuit;
+      if (clientData.company_name !== undefined)
+        updateData.company_name = clientData.company_name;
+      if (clientData.representative !== undefined)
+        updateData.representative = clientData.representative;
+      if (clientData.email !== undefined) updateData.email = clientData.email;
+      if (clientData.phone !== undefined) updateData.phone = clientData.phone;
+      if (clientData.contacts !== undefined)
+        updateData.contacts = clientData.contacts;
+
+      const result = await updateClient(clientId, updateData);
       if (result.success) {
-        setEditingClient(null)
+        toast.success("Cliente actualizado exitosamente");
+        setEditingClient(null);
+        setUpdateError(null);
+      } else {
+        setUpdateError(result.error || "Error al actualizar cliente");
       }
     } catch (error) {
-      console.error('Error updating client:', error)
+      console.error("Error updating client:", error);
+      setUpdateError("Error al actualizar cliente");
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   const handleDeleteClient = async (clientId: string) => {
-    await deleteClient(clientId)
-  }
+    await deleteClient(clientId);
+  };
 
   const handleEditClient = (client: any) => {
-    setEditingClient(client)
-  }
+    setEditingClient(client);
+  };
 
-  // Filtrar clientes
-  const filteredClients = clients?.filter(client => {
-    const matchesSearch = searchTerm === '' || 
-      client.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.representative.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.cuit.includes(searchTerm) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    return matchesSearch
-  }) || []
+  const handleViewClient = (client: any) => {
+    setViewingClient(client);
+  };
 
-  // Calcular estadísticas
-  const totalClients = clients?.length || 0
-  const totalProjects = projects?.filter(p => p.clientId).length || 0
+  const filteredClients =
+    clients?.filter((client) => {
+      if (searchTerm === "") return true;
+
+      const searchLower = searchTerm.toLowerCase();
+
+      if (client.companyName.toLowerCase().includes(searchLower)) return true;
+
+      if (client.cuit.includes(searchTerm)) return true;
+
+      if (client.representative?.toLowerCase().includes(searchLower))
+        return true;
+      if (client.email?.toLowerCase().includes(searchLower)) return true;
+      if (client.phone?.includes(searchTerm)) return true;
+
+      if (client.contacts && client.contacts.length > 0) {
+        const matchesInContacts = client.contacts.some(
+          (contact) =>
+            contact.name.toLowerCase().includes(searchLower) ||
+            contact.email.toLowerCase().includes(searchLower) ||
+            contact.phone.includes(searchTerm) ||
+            contact.role.toLowerCase().includes(searchLower)
+        );
+        if (matchesInContacts) return true;
+      }
+
+      return false;
+    }) || [];
+
+  const totalItems = filteredClients.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage, searchTerm]);
+
+  const totalClients = clients?.length || 0;
+  const totalProjects = projects?.filter((p) => p.clientId).length || 0;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return (
@@ -88,7 +158,7 @@ export function ClientManagement() {
           <p className="mt-2 text-muted-foreground">Cargando clientes...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -99,12 +169,11 @@ export function ClientManagement() {
           <p className="text-muted-foreground mt-2">{error}</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold">Gestión de Clientes</h2>
@@ -112,56 +181,69 @@ export function ClientManagement() {
             Administra la información de tus clientes y empresas
           </p>
         </div>
-        
+
         {!isReadOnly && (
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button type="button" className="w-full sm:w-auto cursor-pointer">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Cliente
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          <Button
+            type="button"
+            className="w-full sm:w-auto cursor-pointer"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </Button>
         )}
       </div>
 
-      {/* Stats Cards */}
-      <ClientStats 
-        totalClients={totalClients}
-        totalProjects={totalProjects}
-      />
+      <ClientStats totalClients={totalClients} totalProjects={totalProjects} />
 
-      {/* Clients Table */}
       <ClientTable
-        clients={filteredClients}
+        clients={paginatedClients}
+        totalItems={totalItems}
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         onEditClient={handleEditClient}
+        onViewClient={handleViewClient}
         onDeleteClient={handleDeleteClient}
         isReadOnly={isReadOnly}
       />
 
-      {/* Create Client Dialog */}
       <ClientForm
-        isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
+        isOpen={isCreateDialogOpen || !!createError}
+        onClose={() => {
+          setIsCreateDialogOpen(false);
+          setCreateError(null);
+        }}
         onSubmit={handleCreateClient}
         isEditing={false}
+        error={createError}
       />
 
-      {/* Edit Client Dialog */}
       <ClientForm
-        isOpen={!!editingClient}
+        isOpen={!!editingClient || !!updateError}
         onClose={() => {
           if (!isUpdating) {
-            setEditingClient(null)
+            setEditingClient(null);
+            setUpdateError(null);
           }
         }}
-        onSubmit={(data) => editingClient && handleUpdateClient(editingClient.id, data)}
+        onSubmit={(data) =>
+          editingClient && handleUpdateClient(editingClient.id, data)
+        }
         isEditing={true}
         initialData={editingClient}
         isLoading={isUpdating}
+        error={updateError}
+      />
+
+      <ClientViewDialog
+        isOpen={!!viewingClient}
+        onClose={() => setViewingClient(null)}
+        client={viewingClient}
       />
     </div>
-  )
+  );
 }

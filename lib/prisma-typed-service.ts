@@ -1,15 +1,24 @@
 import { supabase } from './supabase'
 import type { User, Project, Task } from './generated/prisma/index'
 
-// Servicio que usa Supabase pero con tipos de Prisma
+export type UserTask = {
+  id: string
+  status: 'completed' | 'in_progress' | 'pending' | 'assigned'
+}
+
 export class PrismaTypedService {
-  // Usuarios con tipos de Prisma
-  static async getAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase
+  static async getAllUsers(includeDeleted = false): Promise<User[]> {
+    let query = supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false })
-    
+
+    if (!includeDeleted) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data, error } = await query
+
     if (error) throw error
     return data as User[]
   }
@@ -28,7 +37,7 @@ export class PrismaTypedService {
   static async createUser(userData: {
     email: string
     name: string
-    role: 'admin' | 'supervisor' | 'operario'
+    role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
     password?: string
   }): Promise<User> {
     const { data, error } = await supabase
@@ -51,7 +60,7 @@ export class PrismaTypedService {
   static async updateUser(id: string, userData: {
     email?: string
     name?: string
-    role?: 'admin' | 'supervisor' | 'operario'
+    role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
     password?: string
     total_hours?: number
     efficiency?: number
@@ -61,7 +70,6 @@ export class PrismaTypedService {
     if (userData.email !== undefined) updateData.email = userData.email
     if (userData.name !== undefined) updateData.name = userData.name
     if (userData.role !== undefined) updateData.role = userData.role
-    // Solo actualizar password si está definido y no está vacío
     if (userData.password !== undefined && userData.password.trim() !== '') {
       updateData.password = userData.password
     }
@@ -82,13 +90,22 @@ export class PrismaTypedService {
   static async deleteUser(id: string): Promise<void> {
     const { error } = await supabase
       .from('users')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
-    
+      .is('deleted_at', null)
+
     if (error) throw error
   }
 
-  // Proyectos con tipos de Prisma
+  static async restoreUser(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .update({ deleted_at: null })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
   static async getAllProjects(): Promise<any[]> {
     const { data, error } = await supabase
       .from('projects')
@@ -114,7 +131,10 @@ export class PrismaTypedService {
           progress_percentage,
           notes,
           assigned_at,
-          assigned_by,
+          started_by,
+          started_at,
+          completed_by,
+          completed_at,
           created_at,
           updated_at,
           task:task_id (
@@ -132,6 +152,35 @@ export class PrismaTypedService {
             id,
             name,
             role
+          ),
+          started_by_user:started_by (
+            id,
+            name,
+            role
+          ),
+          completed_by_user:completed_by (
+            id,
+            name,
+            role
+          ),
+          collaborators:task_collaborators (
+            id,
+            project_task_id,
+            user_id,
+            added_by,
+            added_at,
+            created_at,
+            updated_at,
+            user:user_id (
+              id,
+              name,
+              role
+            ),
+            added_by_user:added_by (
+              id,
+              name,
+              role
+            )
           )
         ),
         project_operarios (
@@ -139,11 +188,11 @@ export class PrismaTypedService {
           project_id,
           user_id,
           assigned_at,
-          assigned_by,
           user:user_id (
             id,
             name,
-            role
+            role,
+            deleted_at
           )
         )
       `)
@@ -168,30 +217,30 @@ export class PrismaTypedService {
   static async createProject(projectData: {
     name: string
     description?: string
-    status: 'planning' | 'active' | 'paused' | 'completed'
+    status: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+    condition?: 'alquiler' | 'venta'
     start_date: Date
     end_date?: Date
     client_id?: string
     created_by?: string
-    // Especificaciones técnicas
     modulation?: string
     height?: number
     width?: number
     depth?: number
     module_count?: number
-  }): Promise<Project> {
+  }): Promise<any> {
     const { data, error } = await supabase
       .from('projects')
       .insert({
         name: projectData.name,
         description: projectData.description,
         status: projectData.status,
+        condition: projectData.condition || 'venta',
         start_date: projectData.start_date.toISOString(),
         end_date: projectData.end_date?.toISOString(),
         client_id: projectData.client_id,
         created_by: projectData.created_by,
         progress: 0,
-        // Especificaciones técnicas
         modulation: projectData.modulation || 'standard',
         height: projectData.height || 2.0,
         width: projectData.width || 1.5,
@@ -202,36 +251,36 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
-    return data as Project
+    return data as any
   }
 
   static async updateProject(id: string, projectData: {
     name?: string
     description?: string
-    status?: 'planning' | 'active' | 'paused' | 'completed'
+    status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+    condition?: 'alquiler' | 'venta'
     start_date?: Date
     end_date?: Date
     client_id?: string
     progress?: number
     project_order?: number
-    // Especificaciones técnicas
     modulation?: string
     height?: number
     width?: number
     depth?: number
     module_count?: number
-  }): Promise<Project> {
+  }): Promise<any> {
     const updateData: any = {}
     
     if (projectData.name !== undefined) updateData.name = projectData.name
     if (projectData.description !== undefined) updateData.description = projectData.description
     if (projectData.status !== undefined) updateData.status = projectData.status
+    if (projectData.condition !== undefined) updateData.condition = projectData.condition
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date.toISOString()
     if (projectData.end_date !== undefined) updateData.end_date = projectData.end_date.toISOString()
     if (projectData.client_id !== undefined) updateData.client_id = projectData.client_id
     if (projectData.progress !== undefined) updateData.progress = projectData.progress
     if (projectData.project_order !== undefined) updateData.project_order = projectData.project_order
-    // Especificaciones técnicas
     if (projectData.modulation !== undefined) updateData.modulation = projectData.modulation
     if (projectData.height !== undefined) updateData.height = projectData.height
     if (projectData.width !== undefined) updateData.width = projectData.width
@@ -246,7 +295,7 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
-    return data as Project
+    return data as any
   }
 
   static async deleteProject(id: string): Promise<void> {
@@ -258,12 +307,11 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
-  // Tareas con tipos de Prisma
   static async getAllTasks(): Promise<Task[]> {
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('task_order', { ascending: true })
     
     if (error) throw error
     return data as Task[]
@@ -291,7 +339,6 @@ export class PrismaTypedService {
     type: 'standard' | 'custom'
     created_by?: string
   }): Promise<Task> {
-    // Obtener el siguiente orden
     const { data: maxOrderData } = await supabase
       .from('tasks')
       .select('task_order')
@@ -336,15 +383,13 @@ export class PrismaTypedService {
     if (taskData.type !== undefined) updateData.type = taskData.type
     if (taskData.task_order !== undefined) updateData.task_order = taskData.task_order
 
-    const { data, error } = await supabase
-      .from('tasks')
+    const { error } = await supabase
+      .from("tasks")
       .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
+      .eq("id", id)
     
     if (error) throw error
-    return data as Task
+    return { id, ...updateData } as Task
   }
 
   static async getTaskById(id: string): Promise<Task | null> {
@@ -368,7 +413,6 @@ export class PrismaTypedService {
   }
 
   static async reorderTasks(taskOrders: { id: string; task_order: number }[]): Promise<void> {
-    // Actualizar cada tarea con su nuevo orden
     const updatePromises = taskOrders.map(({ id, task_order }) =>
       supabase
         .from('tasks')
@@ -378,14 +422,12 @@ export class PrismaTypedService {
     
     const results = await Promise.all(updatePromises)
     
-    // Verificar si alguna actualización falló
     const hasErrors = results.some(result => result.error)
     if (hasErrors) {
       throw new Error('Error al actualizar el orden de las tareas')
     }
   }
 
-  // Project Operarios
   static async getProjectOperarios(projectId?: string): Promise<any[]> {
     let query = supabase
       .from('project_operarios')
@@ -395,7 +437,8 @@ export class PrismaTypedService {
           id,
           name,
           email,
-          role
+          role,
+          deleted_at
         )
       `)
 
@@ -412,14 +455,12 @@ export class PrismaTypedService {
   static async assignOperarioToProject(assignmentData: {
     project_id: string
     user_id: string
-    assigned_by?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('project_operarios')
       .insert({
         project_id: assignmentData.project_id,
-        user_id: assignmentData.user_id,
-        assigned_by: assignmentData.assigned_by
+        user_id: assignmentData.user_id
       })
       .select(`
         *,
@@ -445,7 +486,6 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
-  // Project Tasks
   static async getProjectTasks(projectId?: string): Promise<any[]> {
     let query = supabase
       .from('project_tasks')
@@ -463,6 +503,16 @@ export class PrismaTypedService {
           updated_at
         ),
         assigned_user:assigned_to (
+          id,
+          name,
+          role
+        ),
+        started_by_user:started_by (
+          id,
+          name,
+          role
+        ),
+        completed_by_user:completed_by (
           id,
           name,
           role
@@ -502,15 +552,15 @@ export class PrismaTypedService {
   static async createProjectTask(projectTaskData: {
     project_id: string
     task_id: string
-    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
-    estimated_hours?: number  // Tiempo estimado total para este proyecto
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+    estimated_hours?: number
     actual_hours?: number
     assigned_to?: string
     start_date?: string
     end_date?: string
     progress_percentage?: number
     notes?: string
-    assigned_by?: string
+    task_order?: number
   }): Promise<any> {
     const insertData: any = {
       project_id: projectTaskData.project_id,
@@ -522,10 +572,9 @@ export class PrismaTypedService {
       end_date: projectTaskData.end_date,
       progress_percentage: projectTaskData.progress_percentage || 0,
       notes: projectTaskData.notes,
-      assigned_by: projectTaskData.assigned_by
+      ...(projectTaskData.task_order !== undefined && { task_order: projectTaskData.task_order })
     }
     
-    // Solo incluir estimated_hours si se proporciona
     if (projectTaskData.estimated_hours !== undefined) {
       insertData.estimated_hours = projectTaskData.estimated_hours
     }
@@ -541,37 +590,50 @@ export class PrismaTypedService {
   }
 
   static async updateProjectTask(id: string, projectTaskData: {
-    status?: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled'
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled'
     estimated_hours?: number
     actual_hours?: number
-    assigned_to?: string
-    start_date?: string
-    end_date?: string
+    assigned_to?: string | null
+    start_date?: string | null
+    end_date?: string | null
     progress_percentage?: number
     notes?: string
     task_order?: number
+    started_by?: string
+    started_at?: string
+    completed_by?: string
+    completed_at?: string
   }): Promise<any> {
     const updateData: any = {}
     
     if (projectTaskData.status !== undefined) updateData.status = projectTaskData.status
     if (projectTaskData.estimated_hours !== undefined) updateData.estimated_hours = projectTaskData.estimated_hours
     if (projectTaskData.actual_hours !== undefined) updateData.actual_hours = projectTaskData.actual_hours
-    if (projectTaskData.assigned_to !== undefined) updateData.assigned_to = projectTaskData.assigned_to
-    if (projectTaskData.start_date !== undefined) updateData.start_date = projectTaskData.start_date
-    if (projectTaskData.end_date !== undefined) updateData.end_date = projectTaskData.end_date
+    
+    if (projectTaskData.assigned_to !== undefined) {
+      updateData.assigned_to = projectTaskData.assigned_to === null ? null : projectTaskData.assigned_to
+    }
+    if (projectTaskData.start_date !== undefined) {
+      updateData.start_date = projectTaskData.start_date === null ? null : projectTaskData.start_date
+    }
+    if (projectTaskData.end_date !== undefined) {
+      updateData.end_date = projectTaskData.end_date === null ? null : projectTaskData.end_date
+    }
     if (projectTaskData.progress_percentage !== undefined) updateData.progress_percentage = projectTaskData.progress_percentage
     if (projectTaskData.notes !== undefined) updateData.notes = projectTaskData.notes
     if (projectTaskData.task_order !== undefined) updateData.task_order = projectTaskData.task_order
+    if (projectTaskData.started_by !== undefined) updateData.started_by = projectTaskData.started_by
+    if (projectTaskData.started_at !== undefined) updateData.started_at = projectTaskData.started_at
+    if (projectTaskData.completed_by !== undefined) updateData.completed_by = projectTaskData.completed_by
+    if (projectTaskData.completed_at !== undefined) updateData.completed_at = projectTaskData.completed_at
 
-    const { data, error } = await supabase
-      .from('project_tasks')
+    const { error } = await supabase
+      .from("project_tasks")
       .update(updateData)
-      .eq('id', id)
-      .select()
-      .single()
-    
+      .eq("id", id)
+
     if (error) throw error
-    return data
+    return { id, ...updateData }
   }
 
   static async deleteProjectTask(id: string): Promise<void> {
@@ -599,7 +661,6 @@ export class PrismaTypedService {
     }
   }
 
-  // User Projects
   static async getUserProjects(userId: string): Promise<any[]> {
     const { data, error } = await supabase
       .from('projects')
@@ -620,7 +681,6 @@ export class PrismaTypedService {
           progress_percentage,
           notes,
           assigned_at,
-          assigned_by,
           created_at,
           updated_at,
           task:task_id (
@@ -648,7 +708,6 @@ export class PrismaTypedService {
     return data || []
   }
 
-  // Obtener estadísticas de operario
   static async getOperarioStats(operarioId: string): Promise<{
     total: number
     completed: number
@@ -675,7 +734,6 @@ export class PrismaTypedService {
     }
   }
 
-  // Clientes con tipos de Prisma
   static async getAllClients(): Promise<any[]> {
     const { data, error } = await supabase
       .from('clients')
@@ -684,6 +742,28 @@ export class PrismaTypedService {
     
     if (error) throw error
     return data || []
+  }
+
+  static async getAllClientContacts(): Promise<Record<string, any[]>> {
+    const { data, error } = await supabase
+      .from('client_contacts')
+      .select('*')
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+    
+    if (error) throw error
+    
+    const contactsByClient: Record<string, any[]> = {}
+    if (data) {
+      for (const contact of data) {
+        if (!contactsByClient[contact.client_id]) {
+          contactsByClient[contact.client_id] = []
+        }
+        contactsByClient[contact.client_id].push(contact)
+      }
+    }
+    
+    return contactsByClient
   }
 
   static async getClientById(id: string): Promise<any | null> {
@@ -700,9 +780,9 @@ export class PrismaTypedService {
   static async createClient(clientData: {
     cuit: string
     company_name: string
-    representative: string
-    email: string
-    phone: string
+    representative?: string
+    email?: string
+    phone?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('clients')
@@ -736,7 +816,6 @@ export class PrismaTypedService {
   }
 
   static async deleteClient(id: string): Promise<void> {
-    // Primero verificar si hay proyectos asociados
     const { data: projects, error: checkError } = await supabase
       .from('projects')
       .select('id, name')
@@ -748,7 +827,8 @@ export class PrismaTypedService {
       throw new Error(`No se puede eliminar el cliente porque tiene ${projects.length} proyecto(s) asociado(s). Primero debe desasociar o eliminar los proyectos.`)
     }
     
-    // Si no hay proyectos asociados, proceder con la eliminación
+    await this.deleteAllClientContacts(id)
+    
     const { error } = await supabase
       .from('clients')
       .delete()
@@ -770,7 +850,6 @@ export class PrismaTypedService {
 
   // Obtener el siguiente código disponible para una categoría
   static async getNextMaterialCode(category: string): Promise<string> {
-    // Mapeo de categorías a prefijos
     const categoryPrefixes: Record<string, string> = {
       estructura: 'EST',
       paneles: 'PAN',
@@ -783,7 +862,6 @@ export class PrismaTypedService {
 
     const prefix = categoryPrefixes[category] || 'MAT'
     
-    // Buscar el último código de esta categoría
     const { data, error } = await supabase
       .from('materials')
       .select('code')
@@ -796,7 +874,6 @@ export class PrismaTypedService {
     let nextNumber = 1
     
     if (data && data.length > 0) {
-      // Extraer el número del último código (ej: "EST-042" -> 42)
       const lastCode = data[0].code
       const match = lastCode.match(/-(\d+)$/)
       if (match) {
@@ -804,7 +881,6 @@ export class PrismaTypedService {
       }
     }
     
-    // Formatear con ceros a la izquierda (001, 002, etc.)
     return `${prefix}-${String(nextNumber).padStart(3, '0')}`
   }
 
@@ -870,7 +946,6 @@ export class PrismaTypedService {
   }
 
   static async deleteMaterial(id: string): Promise<void> {
-    // Primero verificar si hay proyectos asociados
     const { data: projectMaterials, error: checkError } = await supabase
       .from('project_materials')
       .select('id')
@@ -882,7 +957,6 @@ export class PrismaTypedService {
       throw new Error(`No se puede eliminar el material porque está asignado a ${projectMaterials.length} proyecto(s). Primero debe desasociar el material de los proyectos.`)
     }
     
-    // Si no hay proyectos asociados, proceder con la eliminación
     const { error } = await supabase
       .from('materials')
       .delete()
@@ -924,7 +998,6 @@ export class PrismaTypedService {
     notes?: string
     assigned_by?: string
   }): Promise<any> {
-    // Primero verificar que hay stock suficiente
     const material = await this.getMaterialById(materialData.material_id)
     if (!material) {
       throw new Error('Material no encontrado')
@@ -935,8 +1008,6 @@ export class PrismaTypedService {
       throw new Error(`Stock insuficiente. Disponible: ${currentStock} ${material.unit}, Requerido: ${materialData.quantity} ${material.unit}`)
     }
     
-    // Usar transacción para asegurar consistencia
-    // 1. Descontar stock del material
     const newStock = currentStock - materialData.quantity
     const { error: updateStockError } = await supabase
       .from('materials')
@@ -950,7 +1021,6 @@ export class PrismaTypedService {
       throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
     }
     
-    // 2. Crear la relación proyecto-material
     const { data, error } = await supabase
       .from('project_materials')
       .insert({
@@ -968,7 +1038,6 @@ export class PrismaTypedService {
       .single()
     
     if (error) {
-      // Si falla la inserción, revertir el descuento de stock
       await supabase
         .from('materials')
         .update({ 
@@ -987,9 +1056,7 @@ export class PrismaTypedService {
     unit_price?: number
     notes?: string
   }): Promise<any> {
-    // Si se está actualizando la cantidad, ajustar el stock
     if (materialData.quantity !== undefined) {
-      // Obtener la información actual
       const { data: currentData, error: fetchError } = await supabase
         .from('project_materials')
         .select(`
@@ -1012,7 +1079,6 @@ export class PrismaTypedService {
         const difference = newQuantity - currentQuantity
         const currentStock = material.stock_quantity ?? 0
         
-        // Si se está aumentando la cantidad, verificar stock y descontar
         if (difference > 0) {
           if (currentStock < difference) {
             throw new Error(`Stock insuficiente. Disponible: ${currentStock}, Requerido adicional: ${difference}`)
@@ -1031,7 +1097,6 @@ export class PrismaTypedService {
             throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
           }
         }
-        // Si se está disminuyendo la cantidad, devolver stock
         else if (difference < 0) {
           const newStock = currentStock + Math.abs(difference)
           const { error: updateStockError } = await supabase
@@ -1049,7 +1114,6 @@ export class PrismaTypedService {
       }
     }
     
-    // Actualizar la relación proyecto-material
     const { data, error } = await supabase
       .from('project_materials')
       .update(materialData)
@@ -1065,7 +1129,6 @@ export class PrismaTypedService {
   }
 
   static async removeMaterialFromProject(id: string): Promise<void> {
-    // Primero obtener la información del material asignado para devolver el stock
     const { data: projectMaterial, error: fetchError } = await supabase
       .from('project_materials')
       .select(`
@@ -1081,7 +1144,6 @@ export class PrismaTypedService {
     if (fetchError) throw fetchError
     if (!projectMaterial) throw new Error('Material del proyecto no encontrado')
     
-    // Devolver el stock al material
     const material = projectMaterial.material
     if (material) {
       const currentStock = material.stock_quantity ?? 0
@@ -1101,7 +1163,6 @@ export class PrismaTypedService {
       }
     }
     
-    // Eliminar la relación proyecto-material
     const { error } = await supabase
       .from('project_materials')
       .delete()
@@ -1109,9 +1170,217 @@ export class PrismaTypedService {
     
     if (error) throw error
   }
+
+  // Client Contacts
+  static async getClientContacts(clientId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('client_contacts')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async getClientContactById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('client_contacts')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data
+  }
+
+  static async createClientContact(clientId: string, contactData: {
+    name: string
+    email: string
+    phone: string
+    role: string
+    isPrimary?: boolean
+  }): Promise<any> {
+    if (contactData.isPrimary) {
+      await supabase
+        .from('client_contacts')
+        .update({ is_primary: false })
+        .eq('client_id', clientId)
+        .eq('is_primary', true)
+    }
+    
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+    
+    const contactId = generateId()
+    
+    const { data, error } = await supabase
+      .from('client_contacts')
+      .insert({
+        id: contactId,
+        client_id: clientId,
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone,
+        role: contactData.role,
+        is_primary: contactData.isPrimary || false
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateClientContact(id: string, contactData: {
+    name?: string
+    email?: string
+    phone?: string
+    role?: string
+    isPrimary?: boolean
+  }): Promise<any> {
+    if (contactData.isPrimary !== undefined && contactData.isPrimary) {
+      const { data: currentContact } = await supabase
+        .from('client_contacts')
+        .select('client_id')
+        .eq('id', id)
+        .single()
+      
+      if (currentContact) {
+        await supabase
+          .from('client_contacts')
+          .update({ is_primary: false })
+          .eq('client_id', currentContact.client_id)
+          .eq('is_primary', true)
+          .neq('id', id)
+      }
+    }
+    
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+    
+    if (contactData.name !== undefined) updateData.name = contactData.name
+    if (contactData.email !== undefined) updateData.email = contactData.email
+    if (contactData.phone !== undefined) updateData.phone = contactData.phone
+    if (contactData.role !== undefined) updateData.role = contactData.role
+    if (contactData.isPrimary !== undefined) updateData.is_primary = contactData.isPrimary
+    
+    const { data, error } = await supabase
+      .from('client_contacts')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteClientContact(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('client_contacts')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  static async deleteAllClientContacts(clientId: string): Promise<void> {
+    const { error } = await supabase
+      .from('client_contacts')
+      .delete()
+      .eq('client_id', clientId)
+
+    if (error) throw error
+  }
+
+  // Project Planning Checklist
+  static async getProjectPlanningChecklist(projectId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('project_planning_checklist')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async updateProjectPlanningChecklistItem(
+    projectId: string,
+    checklistItem: string,
+    updates: {
+      is_completed?: boolean;
+      notes?: string;
+      completed_by?: string;
+      completed_at?: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: existing, error: selectError } = await supabase
+        .from('project_planning_checklist')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('checklist_item', checklistItem)
+        .limit(1)
+
+      if (selectError) throw selectError
+
+      if (existing && existing.length > 0) {
+        const { error } = await supabase
+          .from('project_planning_checklist')
+          .update({
+            is_completed: updates.is_completed,
+            notes: updates.notes,
+            completed_by: updates.completed_by,
+            completed_at: updates.completed_at,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing[0].id)
+
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('project_planning_checklist')
+          .insert({
+            project_id: projectId,
+            checklist_item: checklistItem,
+            is_completed: updates.is_completed || false,
+            notes: updates.notes,
+            completed_by: updates.completed_by,
+            completed_at: updates.completed_at
+          })
+
+        if (error) throw error
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating planning checklist item:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
+  }
+
+  static async getTasksByUser(userId: string): Promise<UserTask[]> {
+    const { data, error } = await supabase
+      .from('project_tasks')
+      .select('id, status')
+      .eq('assigned_to', userId)
+
+    if (error) throw error
+
+    return data ?? []
+  }
 }
 
-// Exportar tipos de Prisma para uso en la aplicación
 export type {
   User,
   Project,

@@ -13,6 +13,7 @@ enum UserRole {
   admin
   supervisor
   operario
+  subcontratista
 }
 
 enum ProjectStatus {
@@ -20,6 +21,7 @@ enum ProjectStatus {
   active
   paused
   completed
+  delivered
 }
 
 enum ProjectPriority {
@@ -29,9 +31,13 @@ enum ProjectPriority {
   critical
 }
 
+enum ProjectCondition {
+  alquiler
+  venta
+}
+
 enum TaskStatus {
   pending
-  assigned
   in_progress
   completed
   cancelled
@@ -82,6 +88,16 @@ enum UnitType {
   litro
 }
 
+enum PlanningChecklistItem {
+  requirements        // Requerimientos del cliente
+  general_plan        // Plano general y de estructura
+  electrical_plan     // Plano de instalación eléctrica y listado materiales
+  sanitary_plan       // Plano de instalación sanitaria y listado de materiales
+  materials           // Materiales necesarios para dar inicio
+  carpentry_plans     // Planos de carpintería
+}
+
+// Models
 model User {
   id          String   @id @default(cuid())
   email       String   @unique
@@ -90,19 +106,22 @@ model User {
   role        UserRole
   total_hours Float    @default(0)
   efficiency  Float    @default(0)
+  deleted_at  DateTime?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  supervised_projects           Project[] @relation("ProjectSupervisor")
-  assigned_tasks                Task[]    @relation("TaskAssignee")
-  time_entries                  TimeEntry[]
-  audit_logs                    AuditLog[]
-  assigned_projects             ProjectOperario[]
-  reports_generated             Report[]
-  assigned_project_tasks        ProjectTask[] @relation("ProjectTaskAssignee")
-  assigned_by_project_tasks     ProjectTask[] @relation("ProjectTaskAssignedBy")
-  assigned_by_project_operarios ProjectOperario[] @relation("ProjectOperarioAssignedBy")
+  supervised_projects Project[] @relation("ProjectSupervisor")
+  assigned_tasks      Task[]    @relation("TaskAssignee")
+  time_entries        TimeEntry[]
+  audit_logs          AuditLog[]
+  assigned_projects    ProjectOperario[]
+  reports_generated    Report[]
+  assigned_project_tasks ProjectTask[] @relation("ProjectTaskAssignee")
   assigned_by_project_materials ProjectMaterial[] @relation("ProjectMaterialAssignedBy")
+
+  started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")
+  completed_project_tasks ProjectTask[] @relation("ProjectTaskCompletedBy")
+  completed_planning_items ProjectPlanningChecklist[]
 
   @@map("users")
 }
@@ -113,14 +132,13 @@ model Project {
   description   String?
   status        ProjectStatus
   priority      ProjectPriority
+  condition     ProjectCondition @default(venta)
   start_date    DateTime
   end_date      DateTime?
   progress      Float           @default(0)
   project_order Int?
   supervisor_id String?
   client_id     String?
-  
-  // Especificaciones técnicas
   modulation    String          @default("standard")
   height        Float           @default(2.0)
   width         Float           @default(1.5)
@@ -130,12 +148,13 @@ model Project {
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
 
-  supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id], onDelete: SetNull)
+  supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id])
   client         Client?          @relation(fields: [client_id], references: [id])
   time_entries   TimeEntry[]
   project_operarios ProjectOperario[]
   project_materials ProjectMaterial[]
   project_tasks  ProjectTask[]
+  planning_checklist ProjectPlanningChecklist[]
 
   @@map("projects")
 }
@@ -152,7 +171,7 @@ model Task {
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
 
-  assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id], onDelete: SetNull)
+  assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
   time_entries TimeEntry[]
   project_tasks ProjectTask[]
 
@@ -216,11 +235,9 @@ model ProjectOperario {
   project_id  String
   user_id     String
   assigned_at DateTime @default(now())
-  assigned_by String?
 
-  project          Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  user             User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  assigned_by_user User?   @relation("ProjectOperarioAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [id])
 
   @@unique([project_id, user_id])
   @@map("project_operarios")
@@ -230,13 +247,14 @@ model Client {
   id           String   @id @default(cuid())
   cuit         String   @unique
   company_name String
-  representative String
-  email        String
-  phone        String
+  representative String?
+  email        String?
+  phone        String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
   projects     Project[]
+  contacts     ClientContact[]
 
   @@map("clients")
 }
@@ -279,26 +297,67 @@ model ProjectMaterial {
 }
 
 model ProjectTask {
-  id                String    @id @default(cuid())
+  id                String     @id @default(cuid())
   project_id        String
   task_id           String
   status            TaskStatus @default(pending)
-  estimated_hours   Float?
-  actual_hours      Float     @default(0)
+  estimated_hours   Float      @default(0)
+  actual_hours      Float      @default(0)
   assigned_to       String?
-  assigned_by       String?
   start_date        DateTime?
   end_date          DateTime?
   progress_percentage Float    @default(0)
   notes             String?
-  task_order        Int?
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
+  assigned_at       DateTime?
+  task_order        Int        @default(0)
+  // Campos de tracking de estado
+  started_by        String?
+  started_at        DateTime?
+  completed_by      String?
+  completed_at      DateTime?
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
 
-  project          Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
-  task             Task     @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  assigned_user    User?    @relation("ProjectTaskAssignee", fields: [assigned_to], references: [id], onDelete: SetNull)
-  assigned_by_user User?    @relation("ProjectTaskAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
+  // Relations
+  project           Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  task              Task       @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  assigned_user     User?      @relation("ProjectTaskAssignee", fields: [assigned_to], references: [id])
+  started_by_user   User?      @relation("ProjectTaskStartedBy", fields: [started_by], references: [id])
+  completed_by_user User?      @relation("ProjectTaskCompletedBy", fields: [completed_by], references: [id])
 
   @@map("project_tasks")
+}
+
+model ClientContact {
+  id         String   @id @default(cuid())
+  client_id  String
+  name       String
+  email      String
+  phone      String
+  role       String
+  is_primary Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  @@map("client_contacts")
+}
+
+model ProjectPlanningChecklist {
+  id             String                @id @default(cuid())
+  project_id     String
+  checklist_item PlanningChecklistItem
+  is_completed   Boolean               @default(false)
+  notes          String?
+  completed_at   DateTime?
+  completed_by   String?
+  created_at     DateTime              @default(now())
+  updated_at     DateTime              @updatedAt
+
+  project       Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  completed_by_user User? @relation(fields: [completed_by], references: [id])
+
+  @@unique([project_id, checklist_item])
+  @@map("project_planning_checklist")
 }

@@ -6,14 +6,14 @@ import type { User } from '@/lib/prisma-typed-service'
 
 export interface CreateUserData {
   name: string
-  role: 'admin' | 'supervisor' | 'operario'
+  role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
   password?: string
 }
 
 export interface UpdateUserData {
   email?: string
   name?: string
-  role?: 'admin' | 'supervisor' | 'operario'
+  role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
   password?: string
   total_hours?: number
   efficiency?: number
@@ -122,21 +122,20 @@ export function useUsersPrisma() {
     }
   }
 
-  // Eliminar usuario
   const deleteUser = async (userId: string, currentUserId?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
-      
+
       // Verificar si el usuario está intentando eliminarse a sí mismo
       if (currentUserId && userId === currentUserId) {
         throw new Error('No puedes eliminarte a ti mismo')
       }
-      
+
       await PrismaTypedService.deleteUser(userId)
 
       // Actualizar estado local
       await fetchUsers()
-      
+
       return { success: true }
     } catch (err) {
       console.error('Error deleting user:', err)
@@ -146,19 +145,52 @@ export function useUsersPrisma() {
     }
   }
 
-  // Cargar usuarios al montar el componente
+  const restoreUser = async (userId: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null)
+
+      await PrismaTypedService.restoreUser(userId)
+
+      await fetchUsers()
+
+      return { success: true }
+    } catch (err) {
+      console.error('Error restoring user:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Error al restaurar usuario'
+      setError(errorMessage)
+      return { success: false, error: errorMessage }
+    }
+  }
+
   useEffect(() => {
     fetchUsers()
   }, [])
+
+  const fetchAllUsers = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const data = await PrismaTypedService.getAllUsers(true)
+      setUsers(data)
+    } catch (err) {
+      console.error('Error fetching all users:', err)
+      setError(err instanceof Error ? err.message : 'Error al cargar usuarios')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return {
     users,
     loading,
     error,
     fetchUsers,
+    fetchAllUsers,
     createUser,
     updateUser,
     deleteUser,
+    restoreUser,
     getUserById
   }
 }

@@ -45,19 +45,25 @@ export function useTaskSelfAssignment() {
     }
   }
 
-  // Iniciar trabajo en una tarea asignada
-  const startTask = async (projectTaskId: string) => {
+  const startTask = async (projectTaskId: string, userId?: string) => {
     try {
       setLoading(true)
       setError(null)
 
+      const updateData: any = {
+        status: 'in_progress',
+        start_date: new Date().toISOString().split('T')[0],
+        updated_at: new Date().toISOString()
+      }
+
+      if (userId) {
+        updateData.started_by = userId
+        updateData.started_at = new Date().toISOString()
+      }
+
       const { error } = await supabase
         .from('project_tasks')
-        .update({
-          status: 'in_progress',
-          start_date: new Date().toISOString().split('T')[0],
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', projectTaskId)
 
       if (error) {
@@ -111,8 +117,7 @@ export function useTaskSelfAssignment() {
     }
   }
 
-  // Marcar tarea como completada
-  const completeTask = async (projectTaskId: string, actualHours: number, notes?: string) => {
+  const completeTask = async (projectTaskId: string, actualHours: number, notes?: string, userId?: string) => {
     try {
       setLoading(true)
       setError(null)
@@ -159,16 +164,23 @@ export function useTaskSelfAssignment() {
         }
       }
 
+      const updateData: any = {
+        status: 'completed',
+        actual_hours: actualHours,
+        notes: notes,
+        end_date: new Date().toISOString().split('T')[0],
+        progress_percentage: 100,
+        updated_at: new Date().toISOString()
+      }
+
+      if (userId) {
+        updateData.completed_by = userId
+        updateData.completed_at = new Date().toISOString()
+      }
+
       const { error } = await supabase
         .from('project_tasks')
-        .update({
-          status: 'completed',
-          actual_hours: actualHours,
-          notes: notes,
-          end_date: new Date().toISOString().split('T')[0],
-          progress_percentage: 100,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', projectTaskId)
 
       if (error) {
@@ -208,18 +220,17 @@ export function useTaskSelfAssignment() {
 
       const projectId = taskData.project_id
 
-      // Obtener todas las tareas del proyecto
       const { data: tasks, error } = await supabase
         .from('project_tasks')
         .select('status')
         .eq('project_id', projectId)
+        .neq('status', 'cancelled')
 
       if (error) {
         console.error('Error checking project tasks:', error)
         return
       }
 
-      // Verificar si todas las tareas están completadas
       const allTasksCompleted = tasks && tasks.length > 0 && tasks.every((task: any) => task.status === 'completed')
 
       if (allTasksCompleted) {
@@ -228,14 +239,13 @@ export function useTaskSelfAssignment() {
           .from('projects')
           .update({
             status: 'completed',
-            end_date: new Date().toISOString().split('T')[0],
+            end_date: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('id', projectId)
 
         if (updateError) {
           console.error('Error updating project status:', updateError)
-        } else {
         }
       }
     } catch (err) {

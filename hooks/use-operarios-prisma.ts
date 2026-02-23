@@ -19,20 +19,21 @@ export function useOperariosPrisma() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Cargar operarios (usuarios con role='operario')
   const fetchOperarios = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       
       const allUsers = await PrismaTypedService.getAllUsers()
-      
-      // Filtrar solo operarios y transformar datos
+
       const operariosData = allUsers
-        .filter(user => user.role === 'operario')
+        .filter(
+          (user) => user.role === "operario" || user.role === "subcontratista" &&
+          user.deleted_at === null,
+        )
         .map(user => ({
           ...user,
-          currentTasks: [] // Se puede implementar lógica para obtener tareas actuales
+          currentTasks: []
         }))
 
       setOperarios(operariosData)
@@ -44,7 +45,6 @@ export function useOperariosPrisma() {
     }
   }, [])
 
-  // Obtener estadísticas de un operario específico
   const getOperarioStats = async (operarioId: string): Promise<OperarioStats> => {
     try {
       return await PrismaTypedService.getOperarioStats(operarioId)
@@ -59,11 +59,13 @@ export function useOperariosPrisma() {
     }
   }
 
-  // Obtener operario por ID
   const getOperarioById = async (operarioId: string): Promise<Operario | null> => {
     try {
       const user = await PrismaTypedService.getUserById(operarioId)
-      if (!user || user.role !== 'operario') {
+      if (
+        !user ||
+        (user.role !== "operario" && user.role !== "subcontratista")
+      ) {
         return null
       }
       
@@ -77,7 +79,6 @@ export function useOperariosPrisma() {
     }
   }
 
-  // Crear nuevo operario
   const createOperario = async (operarioData: {
     name: string
     email?: string
@@ -86,12 +87,11 @@ export function useOperariosPrisma() {
     try {
       setError(null)
       
-      // Generar email automáticamente si no se proporciona
       const generateEmail = (name: string) => {
         const cleanName = name.toLowerCase()
-          .replace(/[^a-z\s]/g, '') // Solo letras y espacios
-          .replace(/\s+/g, '.') // Espacios a puntos
-          .substring(0, 15) // Máximo 15 caracteres
+          .replace(/[^a-z\s]/g, '')
+          .replace(/\s+/g, '.')
+          .substring(0, 15)
         
         return `${cleanName}@modularq.local`
       }
@@ -110,7 +110,6 @@ export function useOperariosPrisma() {
         currentTasks: []
       }
 
-      // Actualizar estado local
       await fetchOperarios()
       
       return { success: true, operario }
@@ -122,7 +121,6 @@ export function useOperariosPrisma() {
     }
   }
 
-  // Actualizar operario
   const updateOperario = async (operarioId: string, updates: {
     name?: string
     email?: string
@@ -140,7 +138,6 @@ export function useOperariosPrisma() {
         currentTasks: []
       }
 
-      // Actualizar estado local
       await fetchOperarios()
       
       return { success: true, operario }
@@ -152,14 +149,12 @@ export function useOperariosPrisma() {
     }
   }
 
-  // Eliminar operario
   const deleteOperario = async (operarioId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null)
       
       await PrismaTypedService.deleteUser(operarioId)
 
-      // Actualizar estado local
       await fetchOperarios()
       
       return { success: true }
@@ -171,7 +166,6 @@ export function useOperariosPrisma() {
     }
   }
 
-  // Cargar operarios al montar el componente
   useEffect(() => {
     fetchOperarios()
   }, [fetchOperarios])
