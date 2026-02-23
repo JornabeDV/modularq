@@ -911,7 +911,8 @@ export class PrismaTypedService {
       .insert({
         ...materialData,
         stock_quantity: materialData.stock_quantity ?? 0,
-        min_stock: materialData.min_stock ?? 0
+        min_stock: materialData.min_stock ?? 0,
+        updated_at: new Date().toISOString()
       })
       .select()
       .single()
