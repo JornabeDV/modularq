@@ -13,7 +13,8 @@ import {
   Building2,
   BarChart3,
   ClipboardList,
-  Package
+  Package,
+  Calculator,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -35,6 +36,7 @@ const adminNavigation = [
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
+  { name: "Presupuestos", href: "/admin/budgets", icon: Calculator },
   { name: "Reportes", href: "/reports", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
@@ -48,7 +50,7 @@ export function Sidebar() {
       <div className="hidden lg:flex h-24 items-center justify-center gap-2 px-6 border-b w-full">
         <Image
           src="/assets/logo.png"
-          alt="MODULARQ Logo"
+          alt="ModulArq Logo"
           width={150}
           height={150}
           className="object-contain"

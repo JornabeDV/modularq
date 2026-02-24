@@ -97,6 +97,13 @@ enum PlanningChecklistItem {
   carpentry_plans     // Planos de carpintería
 }
 
+enum BudgetStatus {
+  draft
+  sent
+  approved
+  rejected
+}
+
 // Models
 model User {
   id          String   @id @default(cuid())
@@ -144,6 +151,9 @@ model Project {
   width         Float           @default(1.5)
   depth         Float           @default(0.8)
   module_count  Int             @default(1)
+  
+  // Relación con presupuesto (cuando se crea desde un presupuesto aprobado)
+  budget        Budget?
   
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
@@ -360,4 +370,196 @@ model ProjectPlanningChecklist {
 
   @@unique([project_id, checklist_item])
   @@map("project_planning_checklist")
+}
+
+// ==================== MÓDULO DE PRESUPUESTOS ====================
+
+// Plantillas de ítems estándar para presupuestos
+model BudgetItemTemplate {
+  id          String   @id @default(cuid())
+  code        String   // Ej: "1.1", "2.1"
+  category    String   // Ej: "ESTRUCTURA METÁLICA", "PISO"
+  description String
+  unit        String   // kg, m2, un, etc.
+  is_standard Boolean  @default(true)  // Aparece por defecto
+  order       Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Análisis template (copiado al crear ítems)
+  template_labors     Json?  // [{labor_concept_id, quantity_hours}]
+  template_materials  Json?  // [{material_id, quantity}]
+  template_equipments Json?  // [{name, quantity_hours, hourly_cost}]
+
+  @@map("budget_item_templates")
+}
+
+// Conceptos de mano de obra (precios referenciales)
+model LaborConcept {
+  id           String   @id @default(cuid())
+  code         String   @unique  // oficial-esp, oficial, ayudante
+  name         String   // "Oficial especializado"
+  category     String   // oficial_especializado, oficial, medio_oficial, ayudante
+  hourly_rate  Float    // $/hora
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("labor_concepts")
+}
+
+// Presupuestos
+model Budget {
+  id          String       @id @default(cuid())
+  budget_code String       @unique  // PRES-2026-001
+  
+  // Datos del cliente/proyecto
+  client_id   String?
+  client_name String
+  location    String
+  description String?      // Descripción del módulo
+
+  status      BudgetStatus @default(draft)
+  
+  // Fechas
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  sent_at     DateTime?
+  approved_at DateTime?
+  rejected_at DateTime?
+  
+  // Referencia al proyecto creado (cuando se aprueba)
+  project_id  String?      @unique
+  project     Project?     @relation(fields: [project_id], references: [id])
+
+  // Porcentajes
+  financial_expenses_pct Float @default(0)
+  general_expenses_pct   Float @default(17)
+  benefit_pct            Float @default(40)
+  iva_pct                Float @default(10.5)
+  gross_income_pct       Float @default(0)
+
+  // Totales calculados
+  subtotal_direct_costs  Float // Suma de items
+  subtotal_with_expenses Float // + gastos generales
+  subtotal_with_benefit  Float // + beneficio
+  calculated_price       Float // + impuestos
+  final_price            Float // Precio final (editable)
+  
+  // Cotización del dólar al momento de aprobar (para referencia histórica)
+  exchange_rate          Float?   // Cotización USD/ARS (BNA venta)
+  exchange_rate_date     DateTime? // Fecha de la cotización
+
+  // Condiciones comerciales editables
+  validity_days     Int?     // Días de validez de la oferta
+  payment_terms     String?  // Condiciones de pago
+  delivery_terms    String?  // Términos de entrega
+  delivery_location String?  // Lugar de entrega
+  notes             String?  // Notas adicionales
+  
+  // Descripción comercial del módulo (array de secciones)
+  module_description Json?   // [{ "section": "Estructura", "description": "..." }, ...]
+
+  // Ítems del presupuesto
+  items BudgetItem[]
+
+  @@map("budgets")
+}
+
+// Ítems de un presupuesto
+model BudgetItem {
+  id          String   @id @default(cuid())
+  budget_id   String
+  template_id String?  // Si viene de template
+
+  // Datos del ítem
+  code        String   // "1.1", "CUSTOM-1"
+  category    String   // Rubro
+  description String
+  unit        String
+  is_custom   Boolean  @default(false)
+  order       Int      @default(0)
+
+  // Cómputos (ingresado manualmente)
+  quantity    Float
+
+  // Costos calculados
+  unit_cost_labor     Float // Mano de obra unitaria
+  unit_cost_materials Float // Materiales unitario
+  unit_cost_equipment Float // Equipos unitario
+  unit_cost_total     Float // Total unitario
+  total_cost          Float // quantity × unit_cost_total
+
+  budget Budget @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+  
+  // Análisis de precios específico de este ítem
+  price_analysis BudgetItemPriceAnalysis?
+
+  @@map("budget_items")
+}
+
+// Análisis de precios por ítem
+model BudgetItemPriceAnalysis {
+  id            String     @id @default(cuid())
+  budget_item_id String    @unique
+  budget_item   BudgetItem @relation(fields: [budget_item_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Desgloses
+  labors     BudgetItemLabor[]
+  materials  BudgetItemMaterial[]
+  equipments BudgetItemEquipment[]
+
+  @@map("budget_item_price_analyses")
+}
+
+// Desglose de mano de obra en análisis
+model BudgetItemLabor {
+  id          String   @id @default(cuid())
+  analysis_id String
+  
+  labor_concept_id String
+  quantity_hours   Float // Horas necesarias
+  
+  // Calculado
+  hourly_rate Float // Copia del concepto al momento
+  total_cost  Float // quantity_hours × hourly_rate
+
+  analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
+  @@map("budget_item_labors")
+}
+
+// Desglose de materiales en análisis
+model BudgetItemMaterial {
+  id          String   @id @default(cuid())
+  analysis_id String
+  
+  material_id String?
+  material_name String? // Si no está en catálogo
+  quantity    Float
+  
+  // Calculado
+  unit_price Float? // De materials o manual
+  total_cost Float // quantity × unit_price
+
+  analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
+  @@map("budget_item_materials")
+}
+
+// Desglose de equipos en análisis
+model BudgetItemEquipment {
+  id          String   @id @default(cuid())
+  analysis_id String
+  
+  name            String
+  quantity_hours  Float
+  hourly_cost     Float
+  total_cost      Float // quantity_hours × hourly_cost
+
+  analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
+  @@map("budget_item_equipments")
 }

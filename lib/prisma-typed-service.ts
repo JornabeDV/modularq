@@ -1,6 +1,11 @@
 import { supabase } from './supabase'
 import type { User, Project, Task } from './generated/prisma/index'
 
+export interface ModuleDescriptionSection {
+  section: string
+  description: string
+}
+
 export type UserTask = {
   id: string
   status: 'completed' | 'in_progress' | 'pending' | 'assigned'
@@ -1380,6 +1385,1072 @@ export class PrismaTypedService {
 
     return data ?? []
   }
+
+  // =====================================================
+  // MÓDULO DE PRESUPUESTOS
+  // =====================================================
+
+  // --- Labor Concepts (Conceptos de Mano de Obra) ---
+
+  static async getAllLaborConcepts(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('labor_concepts')
+      .select('*')
+      .order('category', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async getLaborConceptById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('labor_concepts')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data
+  }
+
+  static async createLaborConcept(conceptData: {
+    code: string
+    name: string
+    category: string
+    hourly_rate: number
+  }): Promise<any> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    const { data, error } = await supabase
+      .from('labor_concepts')
+      .insert({
+        id: generateId(),
+        ...conceptData,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateLaborConcept(id: string, conceptData: {
+    code?: string
+    name?: string
+    category?: string
+    hourly_rate?: number
+  }): Promise<any> {
+    const { data, error } = await supabase
+      .from('labor_concepts')
+      .update({
+        ...conceptData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteLaborConcept(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('labor_concepts')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  // --- Budget Item Templates ---
+
+  static async getAllBudgetItemTemplates(includeNonStandard = false): Promise<any[]> {
+    let query = supabase
+      .from('budget_item_templates')
+      .select('*')
+      .order('order', { ascending: true })
+    
+    if (!includeNonStandard) {
+      query = query.eq('is_standard', true)
+    }
+
+    const { data, error } = await query
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async getBudgetItemTemplateById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('budget_item_templates')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data
+  }
+
+  static async createBudgetItemTemplate(templateData: {
+    code: string
+    category: string
+    description: string
+    unit: string
+    is_standard?: boolean
+    order?: number
+    template_labors?: any[]
+    template_materials?: any[]
+    template_equipments?: any[]
+  }): Promise<any> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    const { data, error } = await supabase
+      .from('budget_item_templates')
+      .insert({
+        id: generateId(),
+        code: templateData.code,
+        category: templateData.category,
+        description: templateData.description,
+        unit: templateData.unit,
+        is_standard: templateData.is_standard ?? true,
+        order: templateData.order ?? 0,
+        template_labors: templateData.template_labors,
+        template_materials: templateData.template_materials,
+        template_equipments: templateData.template_equipments,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateBudgetItemTemplate(id: string, templateData: {
+    code?: string
+    category?: string
+    description?: string
+    unit?: string
+    is_standard?: boolean
+    order?: number
+    template_labors?: any[]
+    template_materials?: any[]
+    template_equipments?: any[]
+  }): Promise<any> {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (templateData.code !== undefined) updateData.code = templateData.code
+    if (templateData.category !== undefined) updateData.category = templateData.category
+    if (templateData.description !== undefined) updateData.description = templateData.description
+    if (templateData.unit !== undefined) updateData.unit = templateData.unit
+    if (templateData.is_standard !== undefined) updateData.is_standard = templateData.is_standard
+    if (templateData.order !== undefined) updateData.order = templateData.order
+    if (templateData.template_labors !== undefined) updateData.template_labors = templateData.template_labors
+    if (templateData.template_materials !== undefined) updateData.template_materials = templateData.template_materials
+    if (templateData.template_equipments !== undefined) updateData.template_equipments = templateData.template_equipments
+
+    const { data, error } = await supabase
+      .from('budget_item_templates')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteBudgetItemTemplate(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('budget_item_templates')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  // --- Budgets (Presupuestos) ---
+
+  static async getAllBudgets(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('budgets')
+      .select(`
+        *,
+        items:budget_items(*)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
+  static async getBudgetById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('budgets')
+      .select(`
+        *,
+        items:budget_items(
+          *,
+          price_analysis:budget_item_price_analyses(
+            *,
+            labors:budget_item_labors(*),
+            materials:budget_item_materials(*),
+            equipments:budget_item_equipments(*)
+          )
+        )
+      `)
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    
+    // Ordenar ítems por código
+    if (data?.items) {
+      data.items.sort((a: any, b: any) => {
+        // Función para comparar códigos como "1.1", "1.2", "2.1", "10.1"
+        const parseCode = (code: string) => {
+          const parts = code.split('.')
+          return parts.map(p => parseInt(p) || 0)
+        }
+        
+        const aParts = parseCode(a.code)
+        const bParts = parseCode(b.code)
+        
+        for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+          const aVal = aParts[i] || 0
+          const bVal = bParts[i] || 0
+          if (aVal !== bVal) return aVal - bVal
+        }
+        return 0
+      })
+    }
+    
+    return data
+  }
+
+  static async createBudget(budgetData: {
+    client_name: string
+    location: string
+    description?: string
+    client_id?: string
+    general_expenses_pct?: number
+    benefit_pct?: number
+    iva_pct?: number
+  }): Promise<any> {
+    // Generar ID único
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    // Generar código único (PRES-YYYY-NNN)
+    const year = new Date().getFullYear()
+    const { data: countData } = await supabase
+      .from('budgets')
+      .select('id')
+      .gte('created_at', `${year}-01-01`)
+      .lte('created_at', `${year}-12-31`)
+    
+    const count = countData?.length || 0
+    const budgetCode = `PRES-${year}-${String(count + 1).padStart(3, '0')}`
+
+    const budgetId = generateId()
+
+    // Crear presupuesto
+    const { data: budget, error } = await supabase
+      .from('budgets')
+      .insert({
+        id: budgetId,
+        budget_code: budgetCode,
+        client_name: budgetData.client_name,
+        location: budgetData.location,
+        description: budgetData.description,
+        client_id: budgetData.client_id,
+        status: 'draft',
+        general_expenses_pct: budgetData.general_expenses_pct ?? 17,
+        benefit_pct: budgetData.benefit_pct ?? 40,
+        iva_pct: budgetData.iva_pct ?? 10.5,
+        subtotal_direct_costs: 0,
+        subtotal_with_expenses: 0,
+        subtotal_with_benefit: 0,
+        calculated_price: 0,
+        final_price: 0,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+
+    // Cargar ítems estándar desde templates
+    const { data: templates } = await supabase
+      .from('budget_item_templates')
+      .select('*')
+      .eq('is_standard', true)
+      .order('order', { ascending: true })
+
+    if (templates && templates.length > 0) {
+      const budgetItems = templates.map((template: any, index: number) => ({
+        id: generateId(),
+        budget_id: budget.id,
+        template_id: template.id,
+        code: template.code,
+        category: template.category,
+        description: template.description,
+        unit: template.unit,
+        is_custom: false,
+        order: index,
+        quantity: 0,
+        unit_cost_labor: 0,
+        unit_cost_materials: 0,
+        unit_cost_equipment: 0,
+        unit_cost_total: 0,
+        total_cost: 0
+      }))
+
+      const { error: itemsError } = await supabase
+        .from('budget_items')
+        .insert(budgetItems)
+
+      if (itemsError) throw itemsError
+
+      // Crear análisis de precios para cada ítem basado en el template
+      for (let i = 0; i < templates.length; i++) {
+        const template = templates[i]
+        const budgetItem = budgetItems[i]
+
+        // Crear análisis vacío
+        const { data: analysis } = await supabase
+          .from('budget_item_price_analyses')
+          .insert({ 
+            id: generateId(),
+            budget_item_id: budgetItem.id,
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (analysis) {
+          // Copiar labors del template si existen
+          if (template.template_labors && template.template_labors.length > 0) {
+            const labors = await Promise.all(
+              template.template_labors.map(async (labor: any) => {
+                const { data: concept } = await supabase
+                  .from('labor_concepts')
+                  .select('hourly_rate')
+                  .eq('id', labor.labor_concept_id)
+                  .single()
+                
+                return {
+                  id: generateId(),
+                  analysis_id: analysis.id,
+                  labor_concept_id: labor.labor_concept_id,
+                  quantity_hours: labor.quantity_hours,
+                  hourly_rate: concept?.hourly_rate || 0,
+                  total_cost: (labor.quantity_hours || 0) * (concept?.hourly_rate || 0)
+                }
+              })
+            )
+
+            await supabase.from('budget_item_labors').insert(labors)
+          }
+
+          // Copiar materiales del template si existen
+          if (template.template_materials && template.template_materials.length > 0) {
+            const materials = await Promise.all(
+              template.template_materials.map(async (material: any) => {
+                const { data: mat } = await supabase
+                  .from('materials')
+                  .select('unit_price, name')
+                  .eq('id', material.material_id)
+                  .single()
+                
+                return {
+                  id: generateId(),
+                  analysis_id: analysis.id,
+                  material_id: material.material_id,
+                  material_name: mat?.name,
+                  quantity: material.quantity,
+                  unit_price: mat?.unit_price || 0,
+                  total_cost: (material.quantity || 0) * (mat?.unit_price || 0)
+                }
+              })
+            )
+
+            await supabase.from('budget_item_materials').insert(materials)
+          }
+
+          // Copiar equipos del template si existen
+          if (template.template_equipments && template.template_equipments.length > 0) {
+            const equipments = template.template_equipments.map((equipment: any) => ({
+              id: generateId(),
+              analysis_id: analysis.id,
+              name: equipment.name,
+              quantity_hours: equipment.quantity_hours,
+              hourly_cost: equipment.hourly_cost,
+              total_cost: (equipment.quantity_hours || 0) * (equipment.hourly_cost || 0)
+            }))
+
+            await supabase.from('budget_item_equipments').insert(equipments)
+          }
+        }
+      }
+    }
+
+    return this.getBudgetById(budget.id)
+  }
+
+  static async updateBudget(id: string, budgetData: {
+    client_name?: string
+    location?: string
+    description?: string
+    client_id?: string
+    status?: 'draft' | 'sent' | 'approved' | 'rejected'
+    general_expenses_pct?: number
+    benefit_pct?: number
+    iva_pct?: number
+    gross_income_pct?: number
+    final_price?: number
+    sent_at?: string
+    approved_at?: string
+    rejected_at?: string
+    validity_days?: number
+    payment_terms?: string
+    delivery_terms?: string
+    delivery_location?: string
+    notes?: string
+    module_description?: ModuleDescriptionSection[]
+  }): Promise<any> {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (budgetData.client_name !== undefined) updateData.client_name = budgetData.client_name
+    if (budgetData.location !== undefined) updateData.location = budgetData.location
+    if (budgetData.description !== undefined) updateData.description = budgetData.description
+    if (budgetData.client_id !== undefined) updateData.client_id = budgetData.client_id
+    if (budgetData.status !== undefined) updateData.status = budgetData.status
+    if (budgetData.general_expenses_pct !== undefined) updateData.general_expenses_pct = budgetData.general_expenses_pct
+    if (budgetData.benefit_pct !== undefined) updateData.benefit_pct = budgetData.benefit_pct
+    if (budgetData.iva_pct !== undefined) updateData.iva_pct = budgetData.iva_pct
+    if (budgetData.gross_income_pct !== undefined) updateData.gross_income_pct = budgetData.gross_income_pct
+    if (budgetData.final_price !== undefined) updateData.final_price = budgetData.final_price
+    if (budgetData.sent_at !== undefined) updateData.sent_at = budgetData.sent_at
+    if (budgetData.approved_at !== undefined) updateData.approved_at = budgetData.approved_at
+    if (budgetData.rejected_at !== undefined) updateData.rejected_at = budgetData.rejected_at
+    if (budgetData.validity_days !== undefined) updateData.validity_days = budgetData.validity_days
+    if (budgetData.payment_terms !== undefined) updateData.payment_terms = budgetData.payment_terms
+    if (budgetData.delivery_terms !== undefined) updateData.delivery_terms = budgetData.delivery_terms
+    if (budgetData.delivery_location !== undefined) updateData.delivery_location = budgetData.delivery_location
+    if (budgetData.notes !== undefined) updateData.notes = budgetData.notes
+    if (budgetData.module_description !== undefined) updateData.module_description = budgetData.module_description
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteBudget(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('budgets')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+
+  static async recalculateBudget(budgetId: string): Promise<any> {
+    
+    // Obtener todos los ítems del presupuesto
+    const { data: items, error: itemsError } = await supabase
+      .from('budget_items')
+      .select('*')
+      .eq('budget_id', budgetId)
+
+    if (itemsError) throw itemsError
+    if (!items || items.length === 0) return
+
+    // Obtener todos los análisis de una vez
+    const itemIds = items.map((i: any) => i.id)
+    const { data: analyses } = await supabase
+      .from('budget_item_price_analyses')
+      .select('*')
+      .in('budget_item_id', itemIds)
+
+    const analysisIds = (analyses || []).map((a: any) => a.id)
+    
+    // Obtener todos los labors, materials y equipments de una vez
+    const [{ data: allLabors }, { data: allMaterials }, { data: allEquipments }] = await Promise.all([
+      analysisIds.length > 0 ? supabase.from('budget_item_labors').select('*').in('analysis_id', analysisIds) : { data: [] },
+      analysisIds.length > 0 ? supabase.from('budget_item_materials').select('*').in('analysis_id', analysisIds) : { data: [] },
+      analysisIds.length > 0 ? supabase.from('budget_item_equipments').select('*').in('analysis_id', analysisIds) : { data: [] }
+    ])
+
+    // Crear mapas para acceso rápido
+    const analysisByItemId = new Map((analyses || []).map((a: any) => [a.budget_item_id, a]))
+    const laborsByAnalysisId = new Map()
+    const materialsByAnalysisId = new Map()
+    const equipmentsByAnalysisId = new Map()
+
+    ;(allLabors || []).forEach((l: any) => {
+      if (!laborsByAnalysisId.has(l.analysis_id)) laborsByAnalysisId.set(l.analysis_id, [])
+      laborsByAnalysisId.get(l.analysis_id).push(l)
+    })
+    ;(allMaterials || []).forEach((m: any) => {
+      if (!materialsByAnalysisId.has(m.analysis_id)) materialsByAnalysisId.set(m.analysis_id, [])
+      materialsByAnalysisId.get(m.analysis_id).push(m)
+    })
+    ;(allEquipments || []).forEach((e: any) => {
+      if (!equipmentsByAnalysisId.has(e.analysis_id)) equipmentsByAnalysisId.set(e.analysis_id, [])
+      equipmentsByAnalysisId.get(e.analysis_id).push(e)
+    })
+
+    // Procesar cada ítem
+    const updates = items.map((item: any) => {
+      const analysis = analysisByItemId.get(item.id)
+      let unitCostLabor = 0
+      let unitCostMaterials = 0
+      let unitCostEquipment = 0
+
+      if (analysis) {
+        const analysisId = (analysis as any).id
+        const labors = laborsByAnalysisId.get(analysisId) || []
+        const materials = materialsByAnalysisId.get(analysisId) || []
+        const equipments = equipmentsByAnalysisId.get(analysisId) || []
+
+        unitCostLabor = labors.reduce((sum: number, l: any) => sum + (l.total_cost || 0), 0)
+        unitCostMaterials = materials.reduce((sum: number, m: any) => sum + (m.total_cost || 0), 0)
+        unitCostEquipment = equipments.reduce((sum: number, e: any) => sum + (e.total_cost || 0), 0)
+      }
+
+      const unitCostTotal = unitCostLabor + unitCostMaterials + unitCostEquipment
+      const totalCost = (item.quantity || 0) * unitCostTotal
+
+      return {
+        id: item.id,
+        unit_cost_labor: unitCostLabor,
+        unit_cost_materials: unitCostMaterials,
+        unit_cost_equipment: unitCostEquipment,
+        unit_cost_total: unitCostTotal,
+        total_cost: totalCost
+      }
+    })
+
+    // Actualizar todos los items (en batches de 10)
+    for (let i = 0; i < updates.length; i += 10) {
+      const batch = updates.slice(i, i + 10)
+      await Promise.all(batch.map((update: any) => 
+        supabase.from('budget_items').update({
+          unit_cost_labor: update.unit_cost_labor,
+          unit_cost_materials: update.unit_cost_materials,
+          unit_cost_equipment: update.unit_cost_equipment,
+          unit_cost_total: update.unit_cost_total,
+          total_cost: update.total_cost
+        }).eq('id', update.id)
+      ))
+    }
+
+    // Calcular totales
+    const subtotalDirectCosts = updates.reduce((sum: number, u: any) => sum + u.total_cost, 0)
+
+    // Obtener porcentajes del presupuesto
+    const { data: budget } = await supabase
+      .from('budgets')
+      .select('*')
+      .eq('id', budgetId)
+      .single()
+
+    if (!budget) throw new Error('Presupuesto no encontrado')
+
+    const generalExpensesPct = budget.general_expenses_pct || 0
+    const benefitPct = budget.benefit_pct || 0
+    const ivaPct = budget.iva_pct || 0
+    const grossIncomePct = budget.gross_income_pct || 0
+
+    const generalExpenses = subtotalDirectCosts * (generalExpensesPct / 100)
+    const subtotalWithExpenses = subtotalDirectCosts + generalExpenses
+    const benefit = subtotalWithExpenses * (benefitPct / 100)
+    const subtotalWithBenefit = subtotalWithExpenses + benefit
+    const iva = subtotalWithBenefit * (ivaPct / 100)
+    const grossIncome = subtotalWithBenefit * (grossIncomePct / 100)
+    const calculatedPrice = subtotalWithBenefit + iva + grossIncome
+
+    const { error: updateError } = await supabase
+      .from('budgets')
+      .update({
+        subtotal_direct_costs: subtotalDirectCosts,
+        subtotal_with_expenses: subtotalWithExpenses,
+        subtotal_with_benefit: subtotalWithBenefit,
+        calculated_price: calculatedPrice,
+        final_price: calculatedPrice, // Sincronizado automáticamente
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', budgetId)
+
+    if (updateError) throw new Error('Error actualizando presupuesto: ' + updateError.message)
+  }
+
+  static async approveBudget(budgetId: string, projectData?: {
+    start_date?: Date
+    priority?: 'low' | 'medium' | 'high' | 'critical'
+  }): Promise<{ success: boolean; budget?: any; project?: any; error?: string }> {
+    try {
+      // Obtener presupuesto
+      const budget = await this.getBudgetById(budgetId)
+      if (!budget) {
+        return { success: false, error: 'Presupuesto no encontrado' }
+      }
+
+      if (budget.status === 'approved') {
+        return { success: false, error: 'El presupuesto ya está aprobado' }
+      }
+
+      // Crear proyecto
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          name: `Proyecto ${budget.budget_code} - ${budget.client_name}`,
+          description: budget.description,
+          status: 'planning',
+          priority: projectData?.priority || 'medium',
+          condition: 'venta',
+          start_date: (projectData?.start_date || new Date()).toISOString(),
+          client_id: budget.client_id,
+          height: 2.0,
+          width: 1.5,
+          depth: 0.8,
+          module_count: 1
+        })
+        .select()
+        .single()
+
+      if (projectError) throw projectError
+
+      // Obtener cotización actual del dólar
+      let exchangeRate: number | null = null
+      try {
+        const response = await fetch('https://monedapi.ar/api/usd/bna')
+        if (response.ok) {
+          const rateData = await response.json()
+          exchangeRate = rateData.venta
+        }
+      } catch (e) {
+        console.log('No se pudo obtener cotización del dólar')
+      }
+
+      // Actualizar presupuesto
+      const updateData: any = {
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        project_id: project.id,
+        updated_at: new Date().toISOString()
+      }
+      
+      // Guardar cotización si se obtuvo
+      if (exchangeRate) {
+        updateData.exchange_rate = exchangeRate
+        updateData.exchange_rate_date = new Date().toISOString()
+      }
+
+      const { data: updatedBudget, error: updateError } = await supabase
+        .from('budgets')
+        .update(updateData)
+        .eq('id', budgetId)
+        .select()
+        .single()
+
+      if (updateError) throw updateError
+
+      return {
+        success: true,
+        budget: updatedBudget,
+        project
+      }
+    } catch (error) {
+      console.error('Error approving budget:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
+      }
+    }
+  }
+
+  // --- Budget Items ---
+
+  static async addBudgetItem(budgetId: string, itemData: {
+    code: string
+    category: string
+    description: string
+    unit: string
+    quantity?: number
+    is_custom?: boolean
+  }): Promise<any> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    // Obtener el máximo orden actual
+    const { data: maxOrderData } = await supabase
+      .from('budget_items')
+      .select('order')
+      .eq('budget_id', budgetId)
+      .order('order', { ascending: false })
+      .limit(1)
+      .single()
+
+    const nextOrder = (maxOrderData?.order || 0) + 1
+    const itemId = generateId()
+
+    // Crear ítem
+    const { data: item, error } = await supabase
+      .from('budget_items')
+      .insert({
+        id: itemId,
+        budget_id: budgetId,
+        code: itemData.code,
+        category: itemData.category,
+        description: itemData.description,
+        unit: itemData.unit,
+        quantity: itemData.quantity || 0,
+        is_custom: itemData.is_custom ?? true,
+        order: nextOrder,
+        unit_cost_labor: 0,
+        unit_cost_materials: 0,
+        unit_cost_equipment: 0,
+        unit_cost_total: 0,
+        total_cost: 0
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    // Crear análisis de precios vacío
+    await supabase
+      .from('budget_item_price_analyses')
+      .insert({ 
+        id: generateId(),
+        budget_item_id: item.id,
+        updated_at: new Date().toISOString()
+      })
+
+    return item
+  }
+
+  static async updateBudgetItem(id: string, itemData: {
+    quantity?: number
+    description?: string
+    code?: string
+    category?: string
+    unit?: string
+    order?: number
+  }): Promise<any> {
+    const updateData: any = {}
+
+    if (itemData.quantity !== undefined) updateData.quantity = itemData.quantity
+    if (itemData.description !== undefined) updateData.description = itemData.description
+    if (itemData.code !== undefined) updateData.code = itemData.code
+    if (itemData.category !== undefined) updateData.category = itemData.category
+    if (itemData.unit !== undefined) updateData.unit = itemData.unit
+    if (itemData.order !== undefined) updateData.order = itemData.order
+
+    const { data, error } = await supabase
+      .from('budget_items')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteBudgetItem(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('budget_items')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // --- Price Analysis ---
+
+  static async updatePriceAnalysis(itemId: string, analysisData: {
+    labors?: Array<{
+      labor_concept_id: string
+      quantity_hours: number
+      hourly_rate?: number
+    }>
+    materials?: Array<{
+      material_id?: string
+      material_name?: string
+      quantity: number
+      unit_price?: number
+    }>
+    equipments?: Array<{
+      name: string
+      quantity_hours: number
+      hourly_cost: number
+    }>
+  }): Promise<any> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    // Obtener o crear análisis
+    const { data: existingAnalysis } = await supabase
+      .from('budget_item_price_analyses')
+      .select('id')
+      .eq('budget_item_id', itemId)
+      .single()
+
+    let analysisId = existingAnalysis?.id
+
+    if (!analysisId) {
+      const newId = generateId()
+      const { data: newAnalysis, error: createError } = await supabase
+        .from('budget_item_price_analyses')
+        .insert({ 
+          id: newId,
+          budget_item_id: itemId,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      
+      if (createError) throw new Error('Error creando análisis: ' + createError.message)
+      analysisId = newAnalysis?.id
+    }
+
+    if (!analysisId) throw new Error('No se pudo crear/obtener el análisis')
+
+    // Actualizar labors (en paralelo con otros deletes)
+    const laborPromise = analysisData.labors ? (async () => {
+      await supabase.from('budget_item_labors').delete().eq('analysis_id', analysisId)
+      if (analysisData.labors!.length > 0) {
+        const labors = await Promise.all(
+          analysisData.labors!.map(async (labor) => {
+            // Usar el hourly_rate enviado, o buscarlo en la BD si no viene
+            let hourlyRate = labor.hourly_rate
+            if (hourlyRate === undefined || hourlyRate === null) {
+              const { data: concept } = await supabase
+                .from('labor_concepts')
+                .select('hourly_rate')
+                .eq('id', labor.labor_concept_id)
+                .single()
+              hourlyRate = concept?.hourly_rate || 0
+            }
+            return {
+              id: generateId(),
+              analysis_id: analysisId,
+              labor_concept_id: labor.labor_concept_id,
+              quantity_hours: labor.quantity_hours,
+              hourly_rate: hourlyRate,
+              total_cost: labor.quantity_hours * (hourlyRate || 0)
+            }
+          })
+        )
+        await supabase.from('budget_item_labors').insert(labors)
+      }
+    })() : Promise.resolve()
+
+    // Actualizar materiales (en paralelo)
+    const materialPromise = analysisData.materials ? (async () => {
+      await supabase.from('budget_item_materials').delete().eq('analysis_id', analysisId)
+      if (analysisData.materials!.length > 0) {
+        const materials = await Promise.all(
+          analysisData.materials!.map(async (material) => {
+            let unitPrice = material.unit_price
+            let materialName = material.material_name
+            if (material.material_id && !unitPrice) {
+              const { data: mat } = await supabase
+                .from('materials')
+                .select('unit_price, name')
+                .eq('id', material.material_id)
+                .single()
+              unitPrice = mat?.unit_price || 0
+              materialName = mat?.name || materialName
+            }
+            return {
+              id: generateId(),
+              analysis_id: analysisId,
+              material_id: material.material_id,
+              material_name: materialName,
+              quantity: material.quantity,
+              unit_price: unitPrice,
+              total_cost: material.quantity * (unitPrice || 0)
+            }
+          })
+        )
+        await supabase.from('budget_item_materials').insert(materials)
+      }
+    })() : Promise.resolve()
+
+    // Actualizar equipos (en paralelo)
+    const equipmentPromise = analysisData.equipments ? (async () => {
+      await supabase.from('budget_item_equipments').delete().eq('analysis_id', analysisId)
+      if (analysisData.equipments!.length > 0) {
+        const equipments = analysisData.equipments!.map(equipment => ({
+          id: generateId(),
+          analysis_id: analysisId,
+          name: equipment.name,
+          quantity_hours: equipment.quantity_hours,
+          hourly_cost: equipment.hourly_cost,
+          total_cost: equipment.quantity_hours * equipment.hourly_cost
+        }))
+        await supabase.from('budget_item_equipments').insert(equipments)
+      }
+    })() : Promise.resolve()
+
+    // Esperar todas las actualizaciones en paralelo
+    await Promise.all([laborPromise, materialPromise, equipmentPromise])
+
+    // Recalcular SOLO el ítem modificado (optimizado)
+    return await this.recalculateSingleItem(itemId)
+  }
+
+  // Método optimizado para recalcular solo un ítem y actualizar totales del presupuesto
+  static async recalculateSingleItem(itemId: string): Promise<any> {
+    // Obtener el ítem y su presupuesto
+    const { data: item, error: itemError } = await supabase
+      .from('budget_items')
+      .select('*, budget:budget_id(*)')
+      .eq('id', itemId)
+      .single()
+    
+    if (itemError || !item) throw new Error('Ítem no encontrado')
+    
+    const budgetId = item.budget_id
+    const budget = item.budget
+    
+    // Obtener el análisis del ítem
+    const { data: analysis } = await supabase
+      .from('budget_item_price_analyses')
+      .select('id')
+      .eq('budget_item_id', itemId)
+      .single()
+    
+    let unitCostLabor = 0
+    let unitCostMaterials = 0
+    let unitCostEquipment = 0
+
+    if (analysis) {
+      // Obtener labors, materials y equipments en paralelo
+      const [{ data: labors }, { data: materials }, { data: equipments }] = await Promise.all([
+        supabase.from('budget_item_labors').select('*').eq('analysis_id', analysis.id),
+        supabase.from('budget_item_materials').select('*').eq('analysis_id', analysis.id),
+        supabase.from('budget_item_equipments').select('*').eq('analysis_id', analysis.id)
+      ])
+
+      unitCostLabor = (labors || []).reduce((sum: number, l: any) => sum + (l.total_cost || 0), 0)
+      unitCostMaterials = (materials || []).reduce((sum: number, m: any) => sum + (m.total_cost || 0), 0)
+      unitCostEquipment = (equipments || []).reduce((sum: number, e: any) => sum + (e.total_cost || 0), 0)
+    }
+
+    const unitCostTotal = unitCostLabor + unitCostMaterials + unitCostEquipment
+    const totalCost = (item.quantity || 0) * unitCostTotal
+    
+    // Actualizar ítem y obtener todos los items en paralelo
+    const [, { data: allItems }] = await Promise.all([
+      supabase
+        .from('budget_items')
+        .update({
+          unit_cost_labor: unitCostLabor,
+          unit_cost_materials: unitCostMaterials,
+          unit_cost_equipment: unitCostEquipment,
+          unit_cost_total: unitCostTotal,
+          total_cost: totalCost
+        })
+        .eq('id', itemId),
+      supabase
+        .from('budget_items')
+        .select('total_cost')
+        .eq('budget_id', budgetId)
+    ])
+
+    const subtotalDirectCosts = (allItems || []).reduce(
+      (sum: number, i: any) => sum + (i.total_cost || 0), 0
+    )
+
+    // Recalcular totales del presupuesto
+    const generalExpensesPct = budget.general_expenses_pct || 0
+    const benefitPct = budget.benefit_pct || 0
+    const ivaPct = budget.iva_pct || 0
+    const grossIncomePct = budget.gross_income_pct || 0
+
+    const generalExpenses = subtotalDirectCosts * (generalExpensesPct / 100)
+    const subtotalWithExpenses = subtotalDirectCosts + generalExpenses
+    const benefit = subtotalWithExpenses * (benefitPct / 100)
+    const subtotalWithBenefit = subtotalWithExpenses + benefit
+    const iva = subtotalWithBenefit * (ivaPct / 100)
+    const grossIncome = subtotalWithBenefit * (grossIncomePct / 100)
+    const calculatedPrice = subtotalWithBenefit + iva + grossIncome
+
+    // Actualizar presupuesto
+    await supabase
+      .from('budgets')
+      .update({
+        subtotal_direct_costs: subtotalDirectCosts,
+        subtotal_with_expenses: subtotalWithExpenses,
+        subtotal_with_benefit: subtotalWithBenefit,
+        calculated_price: calculatedPrice,
+        final_price: calculatedPrice,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', budgetId)
+
+    return this.getBudgetById(budgetId)
+  }
+
+  // Método batch para actualizar múltiples items de presupuesto de una vez
+  static async updateBudgetItemsBatch(
+    budgetId: string, 
+    updates: { itemId: string; quantity: number }[]
+  ): Promise<any> {
+    if (updates.length === 0) return this.getBudgetById(budgetId)
+
+    // 1. Actualizar todas las cantidades en paralelo
+    await Promise.all(
+      updates.map(({ itemId, quantity }) =>
+        supabase
+          .from('budget_items')
+          .update({ quantity })
+          .eq('id', itemId)
+      )
+    )
+
+    // 2. Recalcular cada item modificado
+    await Promise.all(
+      updates.map(({ itemId }) => this.recalculateSingleItem(itemId))
+    )
+
+    // 3. Retornar el presupuesto actualizado
+    return this.getBudgetById(budgetId)
+  }
 }
 
 export type {
@@ -1398,3 +2469,6 @@ export type {
   EntityType,
   ReportType
 } from './generated/prisma/index'
+
+// Re-exportar tipos del módulo de presupuestos
+export * from './types/budget'
