@@ -1,23 +1,35 @@
-"use client"
+"use client";
 
-import React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { MaterialFilters } from '@/components/admin/material-filters'
-import { MaterialRow } from '@/components/admin/material-row'
-import type { Material } from '@/hooks/use-materials-prisma'
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { MaterialFilters } from "@/components/admin/material-filters";
+import { MaterialRow } from "@/components/admin/material-row";
+import type { Material } from "@/hooks/use-materials-prisma";
 
 interface MaterialTableProps {
-  materials: Material[]
-  searchTerm: string
-  onSearchChange: (value: string) => void
-  categoryFilter?: string
-  onCategoryFilterChange?: (value: string) => void
-  lowStockOnly?: boolean
-  onLowStockOnlyChange?: (value: boolean) => void
-  onEditMaterial: (material: Material) => void
-  onDeleteMaterial: (materialId: string) => void
-  isReadOnly?: boolean
+  materials: Material[];
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  categoryFilter?: string;
+  onCategoryFilterChange?: (value: string) => void;
+  lowStockOnly?: boolean;
+  onLowStockOnlyChange?: (value: boolean) => void;
+  onEditMaterial: (material: Material) => void;
+  onDeleteMaterial: (materialId: string) => void;
+  isReadOnly?: boolean;
 }
 
 export function MaterialTable({
@@ -30,7 +42,7 @@ export function MaterialTable({
   onLowStockOnlyChange,
   onEditMaterial,
   onDeleteMaterial,
-  isReadOnly = false
+  isReadOnly = false,
 }: MaterialTableProps) {
   return (
     <Card>
@@ -61,16 +73,21 @@ export function MaterialTable({
                 <TableHead>Stock</TableHead>
                 <TableHead>Precio Unit.</TableHead>
                 <TableHead>Proveedor</TableHead>
-                {!isReadOnly && <TableHead className="text-right">Acciones</TableHead>}
+                {!isReadOnly && (
+                  <TableHead className="text-center">Acciones</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {materials.length === 0 ? (
                 <TableRow>
-                  <td colSpan={isReadOnly ? 6 : 7} className="text-center py-8 text-muted-foreground">
-                    {searchTerm || categoryFilter !== 'all' || lowStockOnly
-                      ? 'No se encontraron materiales con ese criterio de búsqueda'
-                      : 'No hay materiales registrados'}
+                  <td
+                    colSpan={isReadOnly ? 6 : 7}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    {searchTerm || categoryFilter !== "all" || lowStockOnly
+                      ? "No se encontraron materiales con ese criterio de búsqueda"
+                      : "No hay materiales registrados"}
                   </td>
                 </TableRow>
               ) : (
@@ -89,5 +106,5 @@ export function MaterialTable({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

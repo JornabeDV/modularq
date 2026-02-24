@@ -19,31 +19,32 @@ export function PendingChangesBanner({
   if (count === 0) return null;
 
   return (
-    <div className="border rounded-lg p-4 flex items-center justify-between">
+    <div className="border rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 sm:justify-between">
       <div className="flex items-center gap-3">
-        <div className="bg-muted p-2 rounded-full">
+        <div className="bg-muted p-2 rounded-full shrink-0">
           <Pencil className="w-4 h-4 text-muted-foreground" />
         </div>
-        <div>
-          <p className="font-medium">
+        <div className="min-w-0">
+          <p className="font-medium text-sm sm:text-base">
             {count} cambio{count > 1 ? "s" : ""} sin guardar
           </p>
-          <p className="text-sm text-muted-foreground">
-            Edita las cantidades y luego guarda todos los cambios juntos
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Edita las cantidades y luego guarda
           </p>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 justify-end">
         <Button variant="ghost" size="sm" onClick={onDiscard} disabled={saving}>
           Descartar
         </Button>
         <Button size="sm" onClick={onSave} disabled={saving}>
           {saving ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-4 h-4 mr-1 sm:mr-2 animate-spin" />
           ) : (
-            <CheckCircle className="w-4 h-4 mr-2" />
+            <CheckCircle className="w-4 h-4 mr-1 sm:mr-2" />
           )}
-          Guardar cambios
+          <span className="hidden sm:inline">Guardar cambios</span>
+          <span className="sm:hidden">Guardar</span>
         </Button>
       </div>
     </div>

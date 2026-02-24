@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, GripVertical, Save, X, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  Save,
+  X,
+  Loader2,
+  Edit2,
+} from "lucide-react";
 import { ModuleDescriptionSection } from "@/lib/types/budget";
 
 interface ModuleDescriptionEditorProps {
@@ -71,13 +79,14 @@ export function ModuleDescriptionEditor({
   if (!isEditing) {
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 sm:px-6">
           <CardTitle className="text-base">Descripción del Módulo</CardTitle>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsEditing(true)}
           >
+            <Edit2 className="w-4 h-4 mr-1" />
             {sections.length > 0 ? "Editar" : "Agregar"}
           </Button>
         </CardHeader>
@@ -110,17 +119,23 @@ export function ModuleDescriptionEditor({
         <CardTitle className="text-base">
           Editar Descripción del Módulo
         </CardTitle>
-        <div className="flex gap-2">
+        <div className="flex max-sm:flex-col gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handleCancel}
             disabled={isSaving}
+            className="cursor-pointer"
           >
             <X className="w-4 h-4 mr-1" />
             Cancelar
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="cursor-pointer"
+          >
             {isSaving ? (
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
             ) : (
@@ -144,7 +159,7 @@ export function ModuleDescriptionEditor({
           >
             <div className="flex flex-col gap-1 pt-1">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => moveSection(index, "up")}
@@ -153,7 +168,7 @@ export function ModuleDescriptionEditor({
                 <GripVertical className="w-4 h-4 rotate-90" />
               </Button>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => moveSection(index, "down")}
@@ -190,9 +205,9 @@ export function ModuleDescriptionEditor({
             </div>
 
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="h-8 w-8 text-destructive"
+              className="h-8 w-8 cursor-pointer"
               onClick={() => handleRemoveSection(index)}
             >
               <Trash2 className="w-4 h-4" />

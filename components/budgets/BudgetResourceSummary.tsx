@@ -35,167 +35,187 @@ export function BudgetResourceSummary({
     <div className="space-y-4">
       {/* Mano de Obra */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Users className="w-5 h-5" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             Total Mano de Obra
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 pt-0 sm:pt-0">
           {!hasLabors ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4 px-4">
               No hay mano de obra cargada en los ítems
             </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50">
-                <tr>
-                  <th className="text-left p-2 font-medium">Concepto</th>
-                  <th className="text-right p-2 font-medium">Horas</th>
-                  <th className="text-right p-2 font-medium">Costo Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(resources.labors).map((labor, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="p-2">{labor.name}</td>
-                    <td className="p-2 text-right">
-                      {labor.totalHours?.toLocaleString("es-AR", {
-                        maximumFractionDigits: 2,
-                      })}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[300px]">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Concepto</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Horas</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Costo Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(resources.labors).map((labor, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="p-2">
+                        <span className="text-xs sm:text-sm">{labor.name}</span>
+                      </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">
+                          {labor.totalHours?.toLocaleString("es-AR", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </td>
+                      <td className="p-2 text-right font-medium whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">{formatCurrency(labor.totalCost)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-muted/50 font-medium">
+                    <td className="p-2 text-xs sm:text-sm" colSpan={2}>
+                      Total Mano de Obra:
                     </td>
-                    <td className="p-2 text-right font-medium">
-                      {formatCurrency(labor.totalCost)}
+                    <td className="p-2 text-right text-xs sm:text-sm">
+                      {formatCurrency(
+                        Object.values(resources.labors).reduce(
+                          (sum, l) => sum + l.totalCost,
+                          0,
+                        ),
+                      )}
                     </td>
                   </tr>
-                ))}
-                <tr className="bg-muted/50 font-medium">
-                  <td className="p-2" colSpan={2}>
-                    Total Mano de Obra:
-                  </td>
-                  <td className="p-2 text-right">
-                    {formatCurrency(
-                      Object.values(resources.labors).reduce(
-                        (sum, l) => sum + l.totalCost,
-                        0,
-                      ),
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Materiales */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Package className="w-5 h-5" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
             Total Materiales
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 pt-0 sm:pt-0">
           {!hasMaterials ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4 px-4">
               No hay materiales cargados en los ítems
             </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50">
-                <tr>
-                  <th className="text-left p-2 font-medium">Material</th>
-                  <th className="text-right p-2 font-medium">Cantidad</th>
-                  <th className="text-right p-2 font-medium">Unidad</th>
-                  <th className="text-right p-2 font-medium">Costo Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(resources.materials).map((mat, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="p-2">{mat.name}</td>
-                    <td className="p-2 text-right">
-                      {mat.totalQuantity?.toLocaleString("es-AR", {
-                        maximumFractionDigits: 3,
-                      })}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[350px]">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Material</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Cantidad</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Unidad</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Costo Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(resources.materials).map((mat, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="p-2">
+                        <span className="text-xs sm:text-sm">{mat.name}</span>
+                      </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">
+                          {mat.totalQuantity?.toLocaleString("es-AR", {
+                            maximumFractionDigits: 3,
+                          })}
+                        </span>
+                      </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">{mat.unit}</span>
+                      </td>
+                      <td className="p-2 text-right font-medium whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">{formatCurrency(mat.totalCost)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-muted/50 font-medium">
+                    <td className="p-2 text-xs sm:text-sm" colSpan={3}>
+                      Total Materiales:
                     </td>
-                    <td className="p-2 text-right">{mat.unit}</td>
-                    <td className="p-2 text-right font-medium">
-                      {formatCurrency(mat.totalCost)}
+                    <td className="p-2 text-right text-xs sm:text-sm">
+                      {formatCurrency(
+                        Object.values(resources.materials).reduce(
+                          (sum, m) => sum + m.totalCost,
+                          0,
+                        ),
+                      )}
                     </td>
                   </tr>
-                ))}
-                <tr className="bg-muted/50 font-medium">
-                  <td className="p-2" colSpan={3}>
-                    Total Materiales:
-                  </td>
-                  <td className="p-2 text-right">
-                    {formatCurrency(
-                      Object.values(resources.materials).reduce(
-                        (sum, m) => sum + m.totalCost,
-                        0,
-                      ),
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Equipos */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Wrench className="w-5 h-5" />
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Wrench className="w-4 h-4 sm:w-5 sm:h-5" />
             Total Equipos
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6 pt-0 sm:pt-0">
           {!hasEquipments ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-4 px-4">
               No hay equipos cargados en los ítems
             </p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/50">
-                <tr>
-                  <th className="text-left p-2 font-medium">Equipo</th>
-                  <th className="text-right p-2 font-medium">Horas</th>
-                  <th className="text-right p-2 font-medium">Costo Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(resources.equipments).map((eq, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="p-2">{eq.name}</td>
-                    <td className="p-2 text-right">
-                      {eq.totalHours?.toLocaleString("es-AR", {
-                        maximumFractionDigits: 2,
-                      })}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[300px]">
+                <thead className="border-b bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 font-medium">Equipo</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Horas</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">Costo Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(resources.equipments).map((eq, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="p-2">
+                        <span className="text-xs sm:text-sm">{eq.name}</span>
+                      </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">
+                          {eq.totalHours?.toLocaleString("es-AR", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </td>
+                      <td className="p-2 text-right font-medium whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">{formatCurrency(eq.totalCost)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-muted/50 font-medium">
+                    <td className="p-2 text-xs sm:text-sm" colSpan={2}>
+                      Total Equipos:
                     </td>
-                    <td className="p-2 text-right font-medium">
-                      {formatCurrency(eq.totalCost)}
+                    <td className="p-2 text-right text-xs sm:text-sm">
+                      {formatCurrency(
+                        Object.values(resources.equipments).reduce(
+                          (sum, e) => sum + e.totalCost,
+                          0,
+                        ),
+                      )}
                     </td>
                   </tr>
-                ))}
-                <tr className="bg-muted/50 font-medium">
-                  <td className="p-2" colSpan={2}>
-                    Total Equipos:
-                  </td>
-                  <td className="p-2 text-right">
-                    {formatCurrency(
-                      Object.values(resources.equipments).reduce(
-                        (sum, e) => sum + e.totalCost,
-                        0,
-                      ),
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

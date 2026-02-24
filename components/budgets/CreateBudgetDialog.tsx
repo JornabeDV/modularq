@@ -95,11 +95,9 @@ export function CreateBudgetDialog({
               className="flex-1"
               onClick={onClose}
             >
-              <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
             <Button type="submit" className="flex-1">
-              <Plus className="w-4 h-4 mr-2" />
               Crear Presupuesto
             </Button>
           </div>

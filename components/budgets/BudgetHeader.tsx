@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle, FileText, Loader2, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  FileText,
+  Loader2,
+  Plus,
+  Zap,
+} from "lucide-react";
 import { Budget } from "@/lib/prisma-typed-service";
 import { BUDGET_STATUS_LABELS, BUDGET_STATUS_COLORS } from "@/lib/constants";
 
@@ -25,9 +32,9 @@ export function BudgetHeader({
   onApprove,
 }: BudgetHeaderProps) {
   return (
-    <div className="flex items-start justify-between">
+    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
       <div className="space-y-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/admin/budgets">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -41,28 +48,34 @@ export function BudgetHeader({
             {BUDGET_STATUS_LABELS[budget.status]}
           </Badge>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
           {budget.client_name}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm lg:text-base">
           {budget.location} • {budget.description || "Sin descripción"}
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {isEditable && (
           <>
-            <Button variant="outline" onClick={onAddItem}>
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar Ítem
-            </Button>
             <Button
               variant="outline"
+              onClick={onAddItem}
+              size="sm"
+              className="lg:size-default cursor-pointer"
+            >
+              <Plus className="w-4 h-4 mr-1 lg:mr-2" />
+              <span className="hidden sm:inline">Agregar</span> Ítem
+            </Button>
+            <Button
               onClick={onApprove}
               disabled={saving || pendingChangesCount > 0}
+              size="sm"
+              className="lg:size-default cursor-pointer"
             >
               {saving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-1 lg:mr-2 animate-spin" />
               ) : (
                 <CheckCircle className="w-4 h-4 mr-2" />
               )}
@@ -72,9 +85,9 @@ export function BudgetHeader({
         )}
         {budget.project_id && (
           <Link href={`/admin/projects/${budget.project_id}`}>
-            <Button variant="outline">
-              <FileText className="w-4 h-4 mr-2" />
-              Ver Proyecto
+            <Button variant="outline" size="sm" className="lg:size-default">
+              <FileText className="w-4 h-4 mr-1 lg:mr-2" />
+              <span className="hidden sm:inline">Ver</span> Proyecto
             </Button>
           </Link>
         )}

@@ -19,7 +19,11 @@ import {
   Factory,
 } from "lucide-react";
 import Image from "next/image";
-import { Budget, PrismaTypedService, ModuleDescriptionSection } from "@/lib/prisma-typed-service";
+import {
+  Budget,
+  PrismaTypedService,
+  ModuleDescriptionSection,
+} from "@/lib/prisma-typed-service";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPDFDownload } from "./BudgetPDFDownload";
 import { ModuleDescriptionEditor } from "./ModuleDescriptionEditor";
@@ -105,7 +109,7 @@ export function BudgetClientView({
     <div className="space-y-6">
       {/* Encabezado con Logo */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent>
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div className="flex items-center gap-4">
               <div className="bg-muted p-3 rounded-lg">
@@ -125,7 +129,7 @@ export function BudgetClientView({
               </div>
             </div>
             <div className="text-left md:text-right">
-              <h1 className="text-3xl font-bold">PRESUPUESTO</h1>
+              <h1 className="text-xl sm:text-3xl font-bold">PRESUPUESTO</h1>
               <p className="text-muted-foreground font-mono">
                 {budget.budget_code}
               </p>
@@ -158,7 +162,7 @@ export function BudgetClientView({
           <CardTitle className="text-base">Datos del Cliente</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             <div>
               <p className="text-sm text-muted-foreground">Cliente</p>
               <p className="text-lg font-medium">{budget.client_name}</p>
@@ -184,23 +188,29 @@ export function BudgetClientView({
       )}
 
       {/* Descripción del módulo - Vista (solo lectura) */}
-      {!onSaveModuleDescription && budget.module_description && budget.module_description.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Detalle del Módulo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {budget.module_description.map((section, index) => (
-                <div key={index} className="flex gap-3">
-                  <span className="font-medium text-sm min-w-[120px]">{section.section}:</span>
-                  <span className="text-sm text-muted-foreground">{section.description}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {!onSaveModuleDescription &&
+        budget.module_description &&
+        budget.module_description.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Detalle del Módulo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {budget.module_description.map((section, index) => (
+                  <div key={index} className="flex gap-3">
+                    <span className="font-medium text-sm min-w-[120px]">
+                      {section.section}:
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {section.description}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Total del presupuesto */}
       <Card>
@@ -255,6 +265,7 @@ export function BudgetClientView({
             size="sm"
             onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
             disabled={isSaving}
+            className="cursor-pointer"
           >
             {isEditing ? (
               <>
@@ -431,7 +442,10 @@ export function BudgetClientView({
         <p className="text-sm text-muted-foreground">
           Cotización al {new Date().toLocaleDateString("es-AR")}
         </p>
-        <BudgetPDFDownload budget={budget} currentExchangeRate={currentExchangeRate} />
+        <BudgetPDFDownload
+          budget={budget}
+          currentExchangeRate={currentExchangeRate}
+        />
       </div>
     </div>
   );

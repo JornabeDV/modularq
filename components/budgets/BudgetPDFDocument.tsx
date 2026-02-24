@@ -14,15 +14,15 @@ import { LOGO_BASE64 } from "@/lib/logo-base64";
 // Estilos del PDF
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 30,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-    paddingBottom: 15,
+    marginBottom: 12,
+    paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: "#e5e7eb",
   },
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   contactInfo: {
     flexDirection: "row",
     gap: 20,
-    marginBottom: 20,
+    marginBottom: 12,
     fontSize: 9,
     color: "#4b5563",
   },
@@ -72,13 +72,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: "bold",
     color: "#374151",
-    marginBottom: 8,
+    marginBottom: 5,
     textTransform: "uppercase",
   },
   clientInfo: {
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   totalsBox: {
     backgroundColor: "#f9fafb",
-    padding: 15,
+    padding: 10,
     borderRadius: 4,
     width: "100%",
   },
@@ -127,12 +127,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: "#1f2937",
-    marginTop: 8,
-    marginHorizontal: -15,
-    marginBottom: -15,
+    marginTop: 6,
+    marginHorizontal: -10,
+    marginBottom: -10,
     borderBottomLeftRadius: 4,
     borderBottomRightRadius: 4,
   },
@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   amountInWords: {
-    marginTop: 15,
-    padding: 12,
+    marginTop: 10,
+    padding: 8,
     backgroundColor: "#f9fafb",
     borderLeftWidth: 3,
     borderLeftColor: "#d1d5db",
@@ -172,14 +172,14 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
   },
   moduleSection: {
-    marginBottom: 15,
-    padding: 12,
+    marginBottom: 10,
+    padding: 8,
     backgroundColor: "#f9fafb",
     borderRadius: 4,
   },
   moduleItem: {
     flexDirection: "row",
-    marginBottom: 6,
+    marginBottom: 3,
   },
   moduleItemLabel: {
     fontSize: 9,
@@ -193,13 +193,11 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#4b5563",
   },
-  conditionsSection: {
-    marginTop: 20,
-  },
+
   conditionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 15,
+    gap: 10,
   },
   conditionItem: {
     width: "48%",
@@ -218,13 +216,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   bankSection: {
-    marginTop: 20,
+    marginTop: 12,
   },
   bankGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    padding: 10,
+    gap: 8,
+    padding: 8,
     backgroundColor: "#f9fafb",
     borderRadius: 4,
   },
@@ -245,16 +243,16 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: "absolute",
-    bottom: 30,
-    left: 40,
-    right: 40,
+    bottom: 25,
+    left: 30,
+    right: 30,
     flexDirection: "row",
     justifyContent: "space-between",
     fontSize: 8,
     color: "#9ca3af",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
-    paddingTop: 10,
+    paddingTop: 8,
   },
   pageNumber: {
     fontSize: 8,
@@ -345,9 +343,6 @@ export function BudgetPDFDocument({
             <View style={styles.clientBlock}>
               <Text style={styles.label}>Cliente</Text>
               <Text style={styles.value}>{budget.client_name}</Text>
-              <Text style={{ fontSize: 9, color: "#4b5563" }}>
-                {budget.location}
-              </Text>
             </View>
             <View style={styles.clientBlock}>
               <Text style={styles.label}>Proyecto</Text>
@@ -421,7 +416,7 @@ export function BudgetPDFDocument({
         </View>
 
         {/* Condiciones comerciales */}
-        <View style={styles.conditionsSection}>
+        <View>
           <Text style={styles.sectionTitle}>Condiciones Comerciales</Text>
           <View style={styles.conditionsGrid}>
             <View style={styles.conditionItem}>

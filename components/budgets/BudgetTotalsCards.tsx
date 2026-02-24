@@ -31,7 +31,7 @@ export function BudgetTotalsCards({
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <Card>
-        <CardContent className="p-4">
+        <CardContent>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             Costos Directos
             {totals.hasChanges && (
@@ -40,17 +40,17 @@ export function BudgetTotalsCards({
               </span>
             )}
           </p>
-          <p className="text-xl font-bold">
+          <p className="text-base sm:text-xl font-bold">
             {formatCurrency(totals.subtotal_direct_costs)}
           </p>
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="p-4">
+        <CardContent>
           <p className="text-sm text-muted-foreground">
             Gastos Generales ({generalExpensesPct}%)
           </p>
-          <p className="text-xl font-bold">
+          <p className="text-base sm:text-xl font-bold">
             {formatCurrency(
               totals.subtotal_direct_costs * (generalExpensesPct / 100),
             )}
@@ -58,11 +58,11 @@ export function BudgetTotalsCards({
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="p-4">
+        <CardContent>
           <p className="text-sm text-muted-foreground">
             Beneficio ({benefitPct}%)
           </p>
-          <p className="text-xl font-bold">
+          <p className="text-base sm:text-xl font-bold">
             {formatCurrency(
               totals.subtotal_with_benefit - totals.subtotal_with_expenses,
             )}
@@ -70,9 +70,9 @@ export function BudgetTotalsCards({
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="p-4">
+        <CardContent>
           <p className="text-sm text-muted-foreground">Precio Final</p>
-          <p className="text-2xl font-bold text-green-600">
+          <p className="text-base sm:text-2xl font-bold text-green-600">
             {formatCurrency(totals.final_price)}
           </p>
         </CardContent>

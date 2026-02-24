@@ -247,11 +247,11 @@ export function PriceAnalysisDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Calculator className="w-5 h-5" />
-              Análisis de Precios - {item.code}
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Calculator className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="truncate">Análisis de Precios - {item.code}</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -269,7 +269,7 @@ export function PriceAnalysisDialog({
 
             {/* MANO DE OBRA */}
             <Card>
-              <CardHeader className="py-3">
+              <CardHeader className="py-3 px-3 sm:px-6">
                 <CardTitle className="text-sm flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
@@ -286,14 +286,15 @@ export function PriceAnalysisDialog({
                   </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="py-2">
+              <CardContent className="py-2 px-3 sm:px-6">
                 {analysisData.labors.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     No hay conceptos de mano de obra
                   </p>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-1">
+                  <div className="space-y-3">
+                    {/* Headers - Hidden on mobile */}
+                    <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-1">
                       <div className="col-span-4">Concepto</div>
                       <div className="col-span-2">Cantidad (hs)</div>
                       <div className="col-span-2">Tarifa ($/h)</div>
@@ -303,9 +304,10 @@ export function PriceAnalysisDialog({
                     {analysisData.labors.map((labor, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-12 gap-2 items-center"
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start sm:items-center p-2 sm:p-0 bg-muted/30 sm:bg-transparent rounded-lg sm:rounded-none"
                       >
-                        <div className="col-span-4">
+                        <div className="sm:col-span-4">
+                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">Concepto:</span>
                           <Select
                             value={labor.labor_concept_id}
                             onValueChange={(value) => {
@@ -322,7 +324,7 @@ export function PriceAnalysisDialog({
                               }
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="text-xs sm:text-sm h-8 sm:h-10">
                               <SelectValue placeholder="Seleccionar concepto" />
                             </SelectTrigger>
                             <SelectContent>
@@ -335,46 +337,57 @@ export function PriceAnalysisDialog({
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            step="0.001"
-                            value={labor.quantity_hours}
-                            onChange={(e) =>
-                              updateLabor(
-                                index,
-                                "quantity_hours",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            placeholder="Horas"
-                          />
+                        <div className="grid grid-cols-2 sm:grid-cols-12 gap-2 sm:col-span-7">
+                          <div className="sm:col-span-4">
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Horas:</span>
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={labor.quantity_hours}
+                              onChange={(e) =>
+                                updateLabor(
+                                  index,
+                                  "quantity_hours",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              placeholder="Horas"
+                              className="text-xs sm:text-sm h-8 sm:h-10"
+                            />
+                          </div>
+                          <div className="sm:col-span-4">
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Tarifa ($/h):</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={labor.hourly_rate || ""}
+                              onChange={(e) =>
+                                updateLabor(
+                                  index,
+                                  "hourly_rate",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              placeholder="$/h"
+                              className="text-xs sm:text-sm h-8 sm:h-10"
+                            />
+                          </div>
+                          <div className="col-span-2 hidden sm:block text-right text-sm text-muted-foreground self-center">
+                            {formatCurrency(
+                              labor.quantity_hours * (labor.hourly_rate || 0),
+                            )}
+                          </div>
+                          <div className="sm:hidden text-xs text-muted-foreground">
+                            Total: {formatCurrency(
+                              labor.quantity_hours * (labor.hourly_rate || 0),
+                            )}
+                          </div>
                         </div>
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={labor.hourly_rate || ""}
-                            onChange={(e) =>
-                              updateLabor(
-                                index,
-                                "hourly_rate",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            placeholder="$/h"
-                          />
-                        </div>
-                        <div className="col-span-3 text-right text-sm text-muted-foreground">
-                          {formatCurrency(
-                            labor.quantity_hours * (labor.hourly_rate || 0),
-                          )}
-                        </div>
-                        <div className="col-span-1">
+                        <div className="sm:col-span-1 flex justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-500"
+                            className="text-red-500 h-8 w-8 p-0"
                             onClick={() => removeLabor(index)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -389,36 +402,38 @@ export function PriceAnalysisDialog({
 
             {/* MATERIALES */}
             <Card>
-              <CardHeader className="py-3">
+              <CardHeader className="py-3 px-3 sm:px-6">
                 <CardTitle className="text-sm flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Package className="w-4 h-4" />
                     MATERIALES
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       onClick={addMaterial}
+                      className="px-2 sm:px-3"
                     >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Agregar
+                      <Plus className="w-4 h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Agregar</span>
                     </Button>
                     <Button
                       type="button"
                       size="sm"
                       variant="ghost"
                       onClick={() => setShowMaterialForm(true)}
-                      className="text-blue-600 hover:text-blue-700"
+                      className="text-blue-600 hover:text-blue-700 px-2 sm:px-3"
                     >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Nuevo Material
+                      <Plus className="w-4 h-4 sm:mr-1" />
+                      <span className="hidden sm:inline">Nuevo</span>
+                      <span className="sm:hidden">Nuevo</span>
                     </Button>
                   </div>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="py-2">
+              <CardContent className="py-2 px-3 sm:px-6">
                 {analysisData.materials.length === 0 ? (
                   <div className="text-sm text-muted-foreground text-center py-4 space-y-2">
                     <p>No hay materiales</p>
@@ -427,8 +442,9 @@ export function PriceAnalysisDialog({
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-1">
+                  <div className="space-y-3">
+                    {/* Headers - Hidden on mobile */}
+                    <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-1">
                       <div className="col-span-5">Concepto</div>
                       <div className="col-span-2">Cantidad</div>
                       <div className="col-span-4 text-right">Precio Unit.</div>
@@ -437,9 +453,10 @@ export function PriceAnalysisDialog({
                     {analysisData.materials.map((material, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-12 gap-2 items-center"
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start sm:items-center p-2 sm:p-0 bg-muted/30 sm:bg-transparent rounded-lg sm:rounded-none"
                       >
-                        <div className="col-span-5">
+                        <div className="sm:col-span-5">
+                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">Material:</span>
                           <Select
                             value={material.material_id || ""}
                             onValueChange={(value) => {
@@ -455,7 +472,7 @@ export function PriceAnalysisDialog({
                               );
                             }}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="text-xs sm:text-sm h-8 sm:h-10">
                               <SelectValue placeholder="Seleccionar material" />
                             </SelectTrigger>
                             <SelectContent>
@@ -469,29 +486,34 @@ export function PriceAnalysisDialog({
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            step="0.001"
-                            value={material.quantity}
-                            onChange={(e) =>
-                              updateMaterial(
-                                index,
-                                "quantity",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            placeholder="Cantidad"
-                          />
+                        <div className="grid grid-cols-2 sm:grid-cols-12 gap-2 sm:col-span-6">
+                          <div className="sm:col-span-4">
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Cantidad:</span>
+                            <Input
+                              type="number"
+                              step="0.001"
+                              value={material.quantity}
+                              onChange={(e) =>
+                                updateMaterial(
+                                  index,
+                                  "quantity",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              placeholder="Cantidad"
+                              className="text-xs sm:text-sm h-8 sm:h-10"
+                            />
+                          </div>
+                          <div className="sm:col-span-8 text-right text-sm text-muted-foreground self-center">
+                            <span className="sm:hidden text-xs">Precio: </span>
+                            {formatCurrency(material.unit_price || 0)}
+                          </div>
                         </div>
-                        <div className="col-span-4 text-right text-sm text-muted-foreground">
-                          {formatCurrency(material.unit_price || 0)}
-                        </div>
-                        <div className="col-span-1">
+                        <div className="sm:col-span-1 flex justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-500"
+                            className="text-red-500 h-8 w-8 p-0"
                             onClick={() => removeMaterial(index)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -506,7 +528,7 @@ export function PriceAnalysisDialog({
 
             {/* EQUIPOS */}
             <Card>
-              <CardHeader className="py-3">
+              <CardHeader className="py-3 px-3 sm:px-6">
                 <CardTitle className="text-sm flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Wrench className="w-4 h-4" />
@@ -523,14 +545,15 @@ export function PriceAnalysisDialog({
                   </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="py-2">
+              <CardContent className="py-2 px-3 sm:px-6">
                 {analysisData.equipments.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     No hay equipos
                   </p>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-1">
+                  <div className="space-y-3">
+                    {/* Headers - Hidden on mobile */}
+                    <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-1">
                       <div className="col-span-4">Concepto</div>
                       <div className="col-span-3">Cantidad</div>
                       <div className="col-span-2">Precio</div>
@@ -540,56 +563,65 @@ export function PriceAnalysisDialog({
                     {analysisData.equipments.map((equipment, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-12 gap-2 items-center"
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start sm:items-center p-2 sm:p-0 bg-muted/30 sm:bg-transparent rounded-lg sm:rounded-none"
                       >
-                        <div className="col-span-4">
+                        <div className="sm:col-span-4">
+                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">Nombre:</span>
                           <Input
                             value={equipment.name}
                             onChange={(e) =>
                               updateEquipment(index, "name", e.target.value)
                             }
                             placeholder="Nombre del equipo"
+                            className="text-xs sm:text-sm h-8 sm:h-10"
                           />
                         </div>
-                        <div className="col-span-3">
-                          <Input
-                            type="number"
-                            step="0.5"
-                            value={equipment.quantity_hours}
-                            onChange={(e) =>
-                              updateEquipment(
-                                index,
-                                "quantity_hours",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            placeholder="Horas"
-                          />
+                        <div className="grid grid-cols-2 sm:grid-cols-12 gap-2 sm:col-span-7">
+                          <div className="sm:col-span-5">
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Horas:</span>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              value={equipment.quantity_hours}
+                              onChange={(e) =>
+                                updateEquipment(
+                                  index,
+                                  "quantity_hours",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              placeholder="Horas"
+                              className="text-xs sm:text-sm h-8 sm:h-10"
+                            />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">$/hora:</span>
+                            <Input
+                              type="number"
+                              value={equipment.hourly_cost}
+                              onChange={(e) =>
+                                updateEquipment(
+                                  index,
+                                  "hourly_cost",
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
+                              placeholder="$/hora"
+                              className="text-xs sm:text-sm h-8 sm:h-10"
+                            />
+                          </div>
+                          <div className="sm:col-span-4 text-right text-sm text-muted-foreground self-center">
+                            <span className="sm:hidden text-xs">Total: </span>
+                            {formatCurrency(
+                              equipment.quantity_hours * equipment.hourly_cost,
+                            )}
+                          </div>
                         </div>
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            value={equipment.hourly_cost}
-                            onChange={(e) =>
-                              updateEquipment(
-                                index,
-                                "hourly_cost",
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            placeholder="$/hora"
-                          />
-                        </div>
-                        <div className="col-span-2 text-right text-sm text-muted-foreground">
-                          {formatCurrency(
-                            equipment.quantity_hours * equipment.hourly_cost,
-                          )}
-                        </div>
-                        <div className="col-span-1">
+                        <div className="sm:col-span-1 flex justify-end">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-red-500"
+                            className="text-red-500 h-8 w-8 p-0"
                             onClick={() => removeEquipment(index)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -604,7 +636,7 @@ export function PriceAnalysisDialog({
 
             {/* TOTALES */}
             <Card className="bg-muted">
-              <CardContent className="py-4">
+              <CardContent className="py-4 px-3 sm:px-6">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Mano de Obra (A):</span>
@@ -624,9 +656,9 @@ export function PriceAnalysisDialog({
                       {formatCurrency(totals.equipmentTotal)}
                     </span>
                   </div>
-                  <div className="border-t pt-2 flex justify-between text-lg font-bold">
-                    <span>COSTO UNITARIO (A+B+C):</span>
-                    <span className="text-green-600">
+                  <div className="border-t pt-2 flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                    <span className="text-sm sm:text-lg font-bold">COSTO UNITARIO (A+B+C):</span>
+                    <span className="text-lg sm:text-xl font-bold text-green-600">
                       {formatCurrency(totals.total)}
                     </span>
                   </div>
@@ -635,7 +667,7 @@ export function PriceAnalysisDialog({
             </Card>
 
             {/* BOTONES */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -659,7 +691,7 @@ export function PriceAnalysisDialog({
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Guardar Análisis
+                    Guardar
                   </>
                 )}
               </Button>

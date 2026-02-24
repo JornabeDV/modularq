@@ -73,7 +73,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
       const [rate, concepts, mats] = await Promise.all([
         getExchangeRate(),
         PrismaTypedService.getAllLaborConcepts(),
-        PrismaTypedService.getAllMaterials()
+        PrismaTypedService.getAllMaterials(),
       ]);
       setExchangeRate(rate);
       setLaborConcepts(concepts);
@@ -172,8 +172,8 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
     budget?.items?.forEach((item: BudgetItem) => {
       const quantity = item.quantity || 0;
       // El price_analysis puede venir como objeto o array desde Supabase
-      const analysis = Array.isArray(item.price_analysis) 
-        ? item.price_analysis[0] 
+      const analysis = Array.isArray(item.price_analysis)
+        ? item.price_analysis[0]
         : item.price_analysis;
 
       if (analysis) {
@@ -264,7 +264,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
     });
   };
 
-  const handleSaveModuleDescription = async (sections: ModuleDescriptionSection[]) => {
+  const handleSaveModuleDescription = async (
+    sections: ModuleDescriptionSection[],
+  ) => {
     setSavingModuleDesc(true);
     try {
       await PrismaTypedService.updateBudget(params.id, {
@@ -435,7 +437,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
 
   return (
     <MainLayout>
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         {/* Header */}
         <BudgetHeader
           budget={budget}
@@ -456,10 +458,25 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
 
         {/* Tabs principales */}
         <Tabs defaultValue="computo" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="computo">Cómputo y Presupuesto</TabsTrigger>
-            <TabsTrigger value="recursos">Resumen de Recursos</TabsTrigger>
-            <TabsTrigger value="cliente">Presupuesto Cliente</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger
+              value="computo"
+              className="cursor-pointer text-sm py-2 h-auto"
+            >
+              <span className="hidden sm:inline">Cómputo y </span>Presupuesto
+            </TabsTrigger>
+            <TabsTrigger
+              value="recursos"
+              className="cursor-pointer text-sm py-2 h-auto"
+            >
+              <span className="hidden sm:inline">Resumen de </span>Recursos
+            </TabsTrigger>
+            <TabsTrigger
+              value="cliente"
+              className="cursor-pointer text-sm py-2 h-auto"
+            >
+              <span className="hidden sm:inline">Presupuesto </span>Cliente
+            </TabsTrigger>
           </TabsList>
 
           {/* Tab 1: Cómputo y Presupuesto */}
@@ -491,7 +508,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
 
             {/* Desglose de Precio Final */}
             <Card>
-              <CardHeader>
+              <CardHeader className="max-sm:px-3">
                 <CardTitle className="flex items-center gap-2">
                   Resumen de Precios
                   {calculatedTotals.hasChanges && (
@@ -517,7 +534,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                   </p>
                 ) : null}
               </CardHeader>
-              <CardContent>
+              <CardContent className="max-sm:px-3">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="border-b bg-muted/50">
@@ -556,7 +573,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                         return (
                           <>
                             <tr className="border-b">
-                              <td className="p-2">Subtotal (1)</td>
+                              <td className="p-2 whitespace-nowrap">
+                                Subtotal (1)
+                              </td>
                               <td className="p-2 text-right">
                                 {formatCurrency(subtotalDirect)}
                               </td>
@@ -567,7 +586,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                               )}
                             </tr>
                             <tr className="border-b">
-                              <td className="p-2">
+                              <td className="p-2 whitespace-nowrap">
                                 Gastos Generales ({budget.general_expenses_pct}
                                 %)
                               </td>
@@ -581,7 +600,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                               )}
                             </tr>
                             <tr className="border-b font-medium">
-                              <td className="p-2">Subtotal (2)</td>
+                              <td className="p-2 whitespace-nowrap">
+                                Subtotal (2)
+                              </td>
                               <td className="p-2 text-right">
                                 {formatCurrency(subtotalExp)}
                               </td>
@@ -592,7 +613,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                               )}
                             </tr>
                             <tr className="border-b">
-                              <td className="p-2">
+                              <td className="p-2 whitespace-nowrap">
                                 Beneficio ({budget.benefit_pct}%)
                               </td>
                               <td className="p-2 text-right">
@@ -605,7 +626,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                               )}
                             </tr>
                             <tr className="border-b font-medium">
-                              <td className="p-2">Subtotal (3)</td>
+                              <td className="p-2 whitespace-nowrap">
+                                Subtotal (3)
+                              </td>
                               <td className="p-2 text-right">
                                 {formatCurrency(subtotalBenefit)}
                               </td>
@@ -616,7 +639,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                               )}
                             </tr>
                             <tr className="border-b">
-                              <td className="p-2">IVA ({budget.iva_pct}%)</td>
+                              <td className="p-2 whitespace-nowrap">
+                                IVA ({budget.iva_pct}%)
+                              </td>
                               <td className="p-2 text-right">
                                 {formatCurrency(iva)}
                               </td>
@@ -662,7 +687,6 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                 </div>
               </CardContent>
             </Card>
-
           </TabsContent>
 
           {/* Tab 2: Resumen de Recursos */}
@@ -672,8 +696,8 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
 
           {/* Tab 3: Presupuesto Cliente */}
           <TabsContent value="cliente">
-            <BudgetClientView 
-              budget={budget} 
+            <BudgetClientView
+              budget={budget}
               currentExchangeRate={exchangeRate?.venta}
               onSaveModuleDescription={handleSaveModuleDescription}
               savingModuleDesc={savingModuleDesc}
