@@ -1,4 +1,4 @@
-// Configuración de alertas para ModularQ
+// Configuración de alertas para ModulArq
 // Define las reglas de monitoreo y notificaciones
 
 const alertConfig = {

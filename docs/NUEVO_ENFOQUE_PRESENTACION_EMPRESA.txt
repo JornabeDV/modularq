@@ -1,5 +1,5 @@
 ================================================================================
-  MODULARQ - NUEVO ENFOQUE: SISTEMA DE SUPERVISIÓN Y RELEVAMIENTO DIARIO
+  ModulArq - NUEVO ENFOQUE: SISTEMA DE SUPERVISIÓN Y RELEVAMIENTO DIARIO
 ================================================================================
 PRESENTACIÓN PARA LA EMPRESA
 Fecha: 2025
@@ -7,7 +7,7 @@ Versión: 2.0
 ================================================================================
   RESUMEN
 ================================================================================
-Modularq evoluciona hacia un enfoque simple y práctico enfocado en facilitar la organización desde la supervisión mediante un proceso de relevamiento diario.
+ModulArq evoluciona hacia un enfoque simple y práctico enfocado en facilitar la organización desde la supervisión mediante un proceso de relevamiento diario.
 OBJETIVO PRINCIPAL:
 Facilitar la organización de la empresa desde la supervisión, proporcionando herramientas simples para que los supervisores puedan organizar, planificar y registrar el avance del trabajo diario.
 ================================================================================
@@ -147,7 +147,7 @@ REPORTES DISPONIBLES:
 ================================================================================
   9. CONCLUSIÓN
 ================================================================================
-El nuevo enfoque de Modularq se centra en la SUPERVISIÓN Y ORGANIZACIÓN mediante un proceso de RELEVAMIENTO DIARIO simple y eficiente.
+El nuevo enfoque de ModulArq se centra en la SUPERVISIÓN Y ORGANIZACIÓN mediante un proceso de RELEVAMIENTO DIARIO simple y eficiente.
 BENEFICIOS PRINCIPALES:
 ✓ Simplicidad y facilidad de uso
 ✓ Control total desde la supervisión

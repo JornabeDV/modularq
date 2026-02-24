@@ -1,4 +1,4 @@
-// Health check endpoint para ModularQ
+// Health check endpoint para ModulArq
 // Verifica el estado de la aplicación y sus dependencias
 
 const { createClient } = require('@supabase/supabase-js')

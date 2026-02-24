@@ -1,7 +1,7 @@
-# 💼 Valor de Corto Plazo - Modularq para Dirección
+# 💼 Valor de Corto Plazo - ModulArq para Dirección
 
 > **Documento para presentación a dueños y dirección ejecutiva**  
-> Enfoque en beneficios inmediatos, tangibles y medibles del sistema Modularq
+> Enfoque en beneficios inmediatos, tangibles y medibles del sistema ModulArq
 
 ---
 
@@ -74,7 +74,7 @@ En el enfoque anterior, el sistema dependía de que **los operarios cargaran man
 
 ### **La Solución: Relevamiento Diario por Supervisión** ✅
 
-El nuevo enfoque de **Modularq** elimina completamente esta dependencia problemática:
+El nuevo enfoque de **ModulArq** elimina completamente esta dependencia problemática:
 
 #### **1. Control desde la Supervisión** ✅
 
@@ -554,7 +554,7 @@ En el nuevo enfoque, **no medimos tiempos exactos** mediante cronómetros como e
 
 ### **3. Mostrar la Solución (3 minutos)**
 
-> "Modularq le da **visibilidad total** de todos sus proyectos en tiempo real. Su supervisor puede ver todo desde su celular, actualizar estados en campo, y usted puede acceder a esa información cuando la necesite, sin depender de reportes manuales."
+> "ModulArq le da **visibilidad total** de todos sus proyectos en tiempo real. Su supervisor puede ver todo desde su celular, actualizar estados en campo, y usted puede acceder a esa información cuando la necesite, sin depender de reportes manuales."
 
 **Demostración:**
 - Mostrar dashboard con proyectos activos
@@ -584,7 +584,7 @@ En el nuevo enfoque, **no medimos tiempos exactos** mediante cronómetros como e
 
 ### **6. Cerrar con la Propuesta de Valor (1 minuto)**
 
-> "Modularq no es solo un software, es una **herramienta de control y organización** que le permite:
+> "ModulArq no es solo un software, es una **herramienta de control y organización** que le permite:
 > - Tener **control total** de su operación
 > - Tomar **decisiones informadas** en tiempo real
 > - **Optimizar recursos** y reducir costos
@@ -666,9 +666,9 @@ En el nuevo enfoque, **no medimos tiempos exactos** mediante cronómetros como e
 
 ## 💡 Mensaje Final para el Dueño
 
-> **"Modularq le da el control que necesita para hacer crecer su negocio de manera ordenada y eficiente. No es un gasto, es una inversión que se paga sola con el ahorro de tiempo y la mejora en la organización. Y lo mejor: puede empezar a ver resultados desde el primer día."**
+> **"ModulArq le da el control que necesita para hacer crecer su negocio de manera ordenada y eficiente. No es un gasto, es una inversión que se paga sola con el ahorro de tiempo y la mejora en la organización. Y lo mejor: puede empezar a ver resultados desde el primer día."**
 
 ---
 
-**Modularq** - Control, Organización y Resultados desde el Día 1
+**ModulArq** - Control, Organización y Resultados desde el Día 1
 

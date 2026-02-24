@@ -67,7 +67,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="flex items-center justify-center flex-1 py-2">
             <Image
               src="/assets/logo.png"
-              alt="MODULARQ Logo"
+              alt="ModulArq Logo"
               width={120}
               height={40}
               className="object-contain"

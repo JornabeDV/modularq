@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pre-commit hook para ModularQ
+# Pre-commit hook para ModulArq
 # Este script se ejecuta automáticamente antes de cada commit
 
 echo "🔍 Running pre-commit validations..."

@@ -76,7 +76,7 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Image
               src="/assets/logo.png"
-              alt="MODULARQ Logo"
+              alt="ModulArq Logo"
               width={250}
               height={250}
               className="object-contain"

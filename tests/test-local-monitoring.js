@@ -245,7 +245,7 @@ function showCronJobBehavior() {
 
 // Función principal
 async function runLocalTest() {
-  log('🚀 ModularQ Local Monitoring Test', 'bold');
+  log('🚀 ModulArq Local Monitoring Test', 'bold');
   log('==================================', 'bold');
   
   // 1. Crear datos de prueba

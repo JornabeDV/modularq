@@ -226,7 +226,7 @@ function showRealDataTesting() {
   log('\n🗄️ Cómo Testear con Datos Reales:', 'blue');
   
   log('\n1️⃣ Crear Tarea de Prueba:', 'cyan');
-  log('   - Ir a tu aplicación ModularQ', 'white');
+  log('   - Ir a tu aplicación ModulArq', 'white');
   log('   - Crear una tarea con tiempo estimado (ej: 1 hora)', 'white');
   log('   - Iniciar sesión de tiempo', 'white');
   log('   - Dejar corriendo por más de 1.2 horas', 'white');
@@ -261,14 +261,14 @@ function showTestingCommands() {
   log('   npm run monitor:once     # Una vez', 'white');
   
   log('\n📱 Test en Producción:', 'cyan');
-  log('   curl -X POST https://modularq.vercel.app/api/check-limit-exceeded \\', 'white');
+  log('   curl -X POST https://ModulArq.vercel.app/api/check-limit-exceeded \\', 'white');
   log('     -H "Content-Type: application/json" \\', 'white');
   log('     -d "{}"', 'white');
 }
 
 // Función principal
 async function runTestingDemo() {
-  log('🧪 ModularQ - Testing del Sistema de Corte Automático', 'bold');
+  log('🧪 ModulArq - Testing del Sistema de Corte Automático', 'bold');
   log('====================================================', 'bold');
   
   // 1. Mostrar escenarios

@@ -8,7 +8,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "MODULARQ",
+  title: "ModulArq",
   description: "Sistema de gestión de proyectos y operarios para construcción modular",
   generator: "Next.js",
   manifest: "/manifest.json",
@@ -22,20 +22,20 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "MODULARQ",
+    title: "ModulArq",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "MODULARQ",
-    title: "MODULARQ",
+    siteName: "ModulArq",
+    title: "ModulArq",
     description: "Sistema de gestión de proyectos y operarios para construcción modular",
   },
   twitter: {
     card: "summary",
-    title: "MODULARQ",
+    title: "ModulArq",
     description: "Sistema de gestión de proyectos y operarios para construcción modular",
   },
   icons: {
@@ -53,10 +53,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <head>
-        <meta name="application-name" content="MODULARQ" />
+        <meta name="application-name" content="ModulArq" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="MODULARQ" />
+        <meta name="apple-mobile-web-app-title" content="ModulArq" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/icons/browserconfig.xml" />
@@ -73,14 +73,14 @@ export default function RootLayout({
         
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:url" content="https://modularq.app" />
-        <meta name="twitter:title" content="MODULARQ" />
+        <meta name="twitter:title" content="ModulArq" />
         <meta name="twitter:description" content="Sistema de gestión de proyectos y operarios para construcción modular" />
         <meta name="twitter:image" content="/icons/icon-192x192.png" />
         <meta name="twitter:creator" content="@modularq" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="MODULARQ - Gestión de Operarios" />
+        <meta property="og:title" content="ModulArq - Gestión de Operarios" />
         <meta property="og:description" content="Sistema de gestión de proyectos y operarios para construcción modular" />
-        <meta property="og:site_name" content="MODULARQ" />
+        <meta property="og:site_name" content="ModulArq" />
         <meta property="og:url" content="https://modularq.app" />
         <meta property="og:image" content="/icons/icon-192x192.png" />
       </head>

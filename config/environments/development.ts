@@ -1,6 +1,6 @@
 export const developmentConfig = {
   app: {
-    name: 'ModularQ - Development',
+    name: 'ModulArq - Development',
     version: '1.0.0',
     environment: 'development' as const,
     debug: true,

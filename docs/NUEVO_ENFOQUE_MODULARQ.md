@@ -1,11 +1,11 @@
-# 🏭 Modularq - Sistema de Supervisión de Proyectos (Nuevo Enfoque)
+# 🏭 ModulArq - Sistema de Supervisión de Proyectos (Nuevo Enfoque)
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.13-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
 
-> **Modularq** es un sistema web para la **supervisión diaria y organización** de proyectos industriales. Diseñado para que los supervisores puedan **organizar, planificar y registrar** el avance del trabajo mediante un proceso de **relevamiento diario** en campo y carga de información en el sistema.
+> **ModulArq** es un sistema web para la **supervisión diaria y organización** de proyectos industriales. Diseñado para que los supervisores puedan **organizar, planificar y registrar** el avance del trabajo mediante un proceso de **relevamiento diario** en campo y carga de información en el sistema.
 
 ---
 
@@ -739,7 +739,7 @@ El sistema utiliza los tiempos estimados de las tareas para generar proyecciones
 
 ## 📚 Conclusión
 
-El nuevo enfoque de **Modularq** se centra en la **supervisión y organización** mediante un proceso de **relevamiento diario** simple y eficiente. El sistema está diseñado para ser fácil de usar, facilitar la organización del trabajo y consolidar su uso en la empresa.
+El nuevo enfoque de **ModulArq** se centra en la **supervisión y organización** mediante un proceso de **relevamiento diario** simple y eficiente. El sistema está diseñado para ser fácil de usar, facilitar la organización del trabajo y consolidar su uso en la empresa.
 
 Las métricas y funcionalidades avanzadas están preservadas en la infraestructura, listas para ser reactivadas cuando sea necesario, pero por el momento se ocultan para simplificar el uso inicial.
 
@@ -747,4 +747,4 @@ El sistema mantiene toda su potencia técnica y funcional, pero se presenta de m
 
 ---
 
-**Modularq** - Simplificando la supervisión y organización de proyectos industriales.
+**ModulArq** - Simplificando la supervisión y organización de proyectos industriales.

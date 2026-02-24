@@ -1,4 +1,4 @@
-# 📊 Reportes e Información Disponible Ahora - Modularq
+# 📊 Reportes e Información Disponible Ahora - ModulArq
 
 > **Documento para dueños y dirección**  
 > Información valiosa y reportes que puede obtener **inmediatamente** con el nuevo enfoque de relevamiento diario
@@ -361,7 +361,7 @@
 
 ## 🎯 Conclusión
 
-Con el nuevo enfoque de **relevamiento diario**, el sistema Modularq le proporciona **información valiosa e inmediata** sobre:
+Con el nuevo enfoque de **relevamiento diario**, el sistema ModulArq le proporciona **información valiosa e inmediata** sobre:
 
 - ✅ **Estado actual** de todos los proyectos y tareas
 - ✅ **Distribución de trabajo** por operario

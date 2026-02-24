@@ -1,5 +1,5 @@
 ================================================================================
-  MODULARQ - MÓDULOS FUTUROS PARA EXPANSIÓN DEL SISTEMA
+  ModulArq - MÓDULOS FUTUROS PARA EXPANSIÓN DEL SISTEMA
 ================================================================================
 DOCUMENTO DE PLANIFICACIÓN
 Fecha: 2026
@@ -7,7 +7,7 @@ Fecha: 2026
   INTRODUCCIÓN
 ================================================================================
 Este documento describe los módulos futuros que pueden implementarse para
-agregar valor al sistema Modularq. Los módulos están pensados de forma simple
+agregar valor al sistema ModulArq. Los módulos están pensados de forma simple
 y práctica, priorizando funcionalidades que aporten valor inmediato.
 
 ================================================================================
