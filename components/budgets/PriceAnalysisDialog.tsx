@@ -432,7 +432,7 @@ export function PriceAnalysisDialog({
                       className="px-2 sm:px-3 cursor-pointer"
                     >
                       <Plus className="w-4 h-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Agregar</span>
+                      <span>Agregar</span>
                     </Button>
                     <Button
                       type="button"

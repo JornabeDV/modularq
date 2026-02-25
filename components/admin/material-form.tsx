@@ -155,7 +155,7 @@ export function MaterialForm({ isOpen, onClose, onSubmit, isEditing, initialData
         onClose()
       }
     }}>
-      <DialogContent className="w-auto max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] overflow-y-auto md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Material' : 'Crear Nuevo Material'}
@@ -325,8 +325,8 @@ export function MaterialForm({ isOpen, onClose, onSubmit, isEditing, initialData
             />
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="cursor-pointer">
+          <div className="flex max-sm:flex-col max-sm:gap-2 justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading} className="cursor-pointer max-sm:w-full">
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading} className="cursor-pointer">

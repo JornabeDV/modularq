@@ -256,7 +256,6 @@ export function BudgetClientView({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Importe del Presupuesto</CardTitle>
           <Button
-            variant="outline"
             size="sm"
             onClick={() =>
               isEditingPrice
@@ -427,10 +426,10 @@ export function BudgetClientView({
             <FileText className="w-4 h-4" />
             Condiciones Comerciales
           </CardTitle>
-          <div className="flex gap-2">
+          <div className="flex max-sm:flex-col gap-2">
             {(isEditing || isEditingPrice) && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => {
                   setIsEditing(false);
@@ -450,7 +449,6 @@ export function BudgetClientView({
               </Button>
             )}
             <Button
-              variant="outline"
               size="sm"
               onClick={() =>
                 isEditing || isEditingPrice ? handleSave() : setIsEditing(true)
