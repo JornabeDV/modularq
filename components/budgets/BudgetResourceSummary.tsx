@@ -48,12 +48,15 @@ export function BudgetResourceSummary({
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[300px]">
+              <table className="w-full text-sm min-w-[400px]">
                 <thead className="border-b bg-muted/50">
                   <tr>
                     <th className="text-left p-2 font-medium">Concepto</th>
                     <th className="text-right p-2 font-medium whitespace-nowrap">
                       Horas
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Costo/Hora
                     </th>
                     <th className="text-right p-2 font-medium whitespace-nowrap">
                       Costo Total
@@ -63,14 +66,29 @@ export function BudgetResourceSummary({
                 <tbody>
                   {Object.values(resources.labors).map((labor, idx) => (
                     <tr key={idx} className="border-b">
-                      <td className="p-2">
-                        <span className="text-xs sm:text-sm">{labor.name}</span>
+                      <td className="p-2 max-w-[150px] sm:max-w-none">
+                        <span
+                          className="text-xs sm:text-sm truncate block"
+                          title={labor.name}
+                        >
+                          {labor.name}
+                        </span>
                       </td>
                       <td className="p-2 text-right whitespace-nowrap">
                         <span className="text-xs sm:text-sm">
                           {labor.totalHours?.toLocaleString("es-AR", {
                             maximumFractionDigits: 2,
                           })}
+                        </span>
+                      </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">
+                          {formatCurrency(
+                            labor.hourlyCost ||
+                              (labor.totalHours
+                                ? labor.totalCost / labor.totalHours
+                                : 0),
+                          )}
                         </span>
                       </td>
                       <td className="p-2 text-right font-medium whitespace-nowrap">
@@ -81,7 +99,7 @@ export function BudgetResourceSummary({
                     </tr>
                   ))}
                   <tr className="bg-muted/50 font-medium">
-                    <td className="p-2 text-xs sm:text-sm" colSpan={2}>
+                    <td className="p-2 text-xs sm:text-sm" colSpan={3}>
                       Total Mano de Obra:
                     </td>
                     <td className="p-2 text-right text-xs sm:text-sm">
@@ -126,6 +144,9 @@ export function BudgetResourceSummary({
                       Unidad
                     </th>
                     <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Costo Unit.
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
                       Costo Total
                     </th>
                   </tr>
@@ -133,8 +154,13 @@ export function BudgetResourceSummary({
                 <tbody>
                   {Object.values(resources.materials).map((mat, idx) => (
                     <tr key={idx} className="border-b">
-                      <td className="p-2">
-                        <span className="text-xs sm:text-sm">{mat.name}</span>
+                      <td className="p-2 max-w-[150px] sm:max-w-none">
+                        <span
+                          className="text-xs sm:text-sm truncate block"
+                          title={mat.name}
+                        >
+                          {mat.name}
+                        </span>
                       </td>
                       <td className="p-2 text-right whitespace-nowrap">
                         <span className="text-xs sm:text-sm">
@@ -146,6 +172,16 @@ export function BudgetResourceSummary({
                       <td className="p-2 text-right whitespace-nowrap">
                         <span className="text-xs sm:text-sm">{mat.unit}</span>
                       </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">
+                          {formatCurrency(
+                            mat.unitPrice ||
+                              (mat.totalQuantity
+                                ? mat.totalCost / mat.totalQuantity
+                                : 0),
+                          )}
+                        </span>
+                      </td>
                       <td className="p-2 text-right font-medium whitespace-nowrap">
                         <span className="text-xs sm:text-sm">
                           {formatCurrency(mat.totalCost)}
@@ -154,7 +190,7 @@ export function BudgetResourceSummary({
                     </tr>
                   ))}
                   <tr className="bg-muted/50 font-medium">
-                    <td className="p-2 text-xs sm:text-sm" colSpan={3}>
+                    <td className="p-2 text-xs sm:text-sm" colSpan={4}>
                       Total Materiales:
                     </td>
                     <td className="p-2 text-right text-xs sm:text-sm">
@@ -193,7 +229,10 @@ export function BudgetResourceSummary({
                   <tr>
                     <th className="text-left p-2 font-medium">Equipo</th>
                     <th className="text-right p-2 font-medium whitespace-nowrap">
-                      Horas
+                      Cantidad
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Costo Unit.
                     </th>
                     <th className="text-right p-2 font-medium whitespace-nowrap">
                       Costo Total
@@ -203,14 +242,33 @@ export function BudgetResourceSummary({
                 <tbody>
                   {Object.values(resources.equipments).map((eq, idx) => (
                     <tr key={idx} className="border-b">
-                      <td className="p-2">
-                        <span className="text-xs sm:text-sm">{eq.name}</span>
+                      <td className="p-2 max-w-[150px] sm:max-w-none">
+                        <span
+                          className="text-xs sm:text-sm truncate block"
+                          title={eq.name}
+                        >
+                          {eq.name}
+                        </span>
                       </td>
                       <td className="p-2 text-right whitespace-nowrap">
                         <span className="text-xs sm:text-sm">
-                          {eq.totalHours?.toLocaleString("es-AR", {
+                          {eq.totalQuantity?.toLocaleString("es-AR", {
                             maximumFractionDigits: 2,
-                          })}
+                          }) ||
+                            eq.totalHours?.toLocaleString("es-AR", {
+                              maximumFractionDigits: 2,
+                            })}
+                        </span>
+                      </td>
+                      <td className="p-2 text-right whitespace-nowrap">
+                        <span className="text-xs sm:text-sm">
+                          {formatCurrency(
+                            eq.hourlyCost ||
+                              (eq.totalQuantity || eq.totalHours
+                                ? eq.totalCost /
+                                  (eq.totalQuantity || eq.totalHours || 1)
+                                : 0),
+                          )}
                         </span>
                       </td>
                       <td className="p-2 text-right font-medium whitespace-nowrap">
@@ -221,7 +279,7 @@ export function BudgetResourceSummary({
                     </tr>
                   ))}
                   <tr className="bg-muted/50 font-medium">
-                    <td className="p-2 text-xs sm:text-sm" colSpan={2}>
+                    <td className="p-2 text-xs sm:text-sm" colSpan={3}>
                       Total Equipos:
                     </td>
                     <td className="p-2 text-right text-xs sm:text-sm">

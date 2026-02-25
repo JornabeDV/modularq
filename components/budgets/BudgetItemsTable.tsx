@@ -9,7 +9,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Calculator, Edit, Trash2 } from "lucide-react";
+import { Calculator, Edit, Trash2, Plus } from "lucide-react";
 import { BudgetItem } from "@/lib/prisma-typed-service";
 import { formatCurrency } from "./BudgetTotalsCards";
 
@@ -22,6 +22,7 @@ interface BudgetItemsTableProps {
   onQuantityBlur: (itemId: string) => void;
   onEditItem: (item: BudgetItem) => void;
   onDeleteItem: (item: BudgetItem) => void;
+  onAddItem?: () => void;
 }
 
 export function BudgetItemsTable({
@@ -33,6 +34,7 @@ export function BudgetItemsTable({
   onQuantityBlur,
   onEditItem,
   onDeleteItem,
+  onAddItem,
 }: BudgetItemsTableProps) {
   // Agrupar items por categoría manteniendo el orden
   const grouped = items?.reduce(
@@ -54,11 +56,22 @@ export function BudgetItemsTable({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <Calculator className="w-4 h-4 sm:w-5 sm:h-5" />
           Cómputo y Presupuesto
         </CardTitle>
+        {isEditable && onAddItem && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAddItem}
+            className="cursor-pointer"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">Agregar</span> Ítem
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="p-0 sm:p-6 pt-0 sm:pt-0">
         <div className="overflow-x-auto">

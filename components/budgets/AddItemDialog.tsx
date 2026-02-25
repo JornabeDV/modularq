@@ -65,12 +65,12 @@ export function AddItemDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>Agregar Ítem al Presupuesto</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="code">Código *</Label>
               <Input
@@ -83,7 +83,7 @@ export function AddItemDialog({
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 w-full">
               <Label htmlFor="unit">Unidad de Medida *</Label>
               <Select
                 value={formData.unit}
@@ -91,7 +91,7 @@ export function AddItemDialog({
                   setFormData({ ...formData, unit: value })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar unidad" />
                 </SelectTrigger>
                 <SelectContent>
@@ -152,18 +152,16 @@ export function AddItemDialog({
             />
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex max-sm:flex-col justify-end space-x-2 mt-4 max-sm:gap-2">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
               onClick={onClose}
+              className="max-sm:w-full cursor-pointer"
             >
-              <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button type="submit" className="cursor-pointer">
               Agregar
             </Button>
           </div>

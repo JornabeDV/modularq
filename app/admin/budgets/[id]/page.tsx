@@ -511,7 +511,6 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
           isEditable={isEditable}
           saving={saving || isApproving}
           pendingChangesCount={pendingChanges.size}
-          onAddItem={() => setShowAddItemDialog(true)}
           onApprove={handleApprove}
           onDelete={() => setShowDeleteDialog(true)}
         />
@@ -564,6 +563,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
               onQuantityBlur={handleQuantityBlur}
               onEditItem={openPriceAnalysis}
               onDeleteItem={handleDeleteItem}
+              onAddItem={() => setShowAddItemDialog(true)}
             />
 
             {/* Banner de cambios pendientes */}

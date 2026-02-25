@@ -8,7 +8,6 @@ import {
   CheckCircle,
   FileText,
   Loader2,
-  Plus,
   Trash2,
 } from "lucide-react";
 import { Budget } from "@/lib/prisma-typed-service";
@@ -19,7 +18,6 @@ interface BudgetHeaderProps {
   isEditable: boolean;
   saving: boolean;
   pendingChangesCount: number;
-  onAddItem: () => void;
   onApprove: () => void;
   onDelete?: () => void;
 }
@@ -29,7 +27,6 @@ export function BudgetHeader({
   isEditable,
   saving,
   pendingChangesCount,
-  onAddItem,
   onApprove,
   onDelete,
 }: BudgetHeaderProps) {
@@ -61,15 +58,6 @@ export function BudgetHeader({
       <div className="flex flex-wrap gap-2">
         {isEditable && (
           <>
-            <Button
-              variant="outline"
-              onClick={onAddItem}
-              size="sm"
-              className="lg:size-default cursor-pointer"
-            >
-              <Plus className="w-4 h-4 mr-1 lg:mr-2" />
-              <span className="hidden sm:inline">Agregar</span> Ítem
-            </Button>
             <Button
               onClick={onApprove}
               disabled={saving || pendingChangesCount > 0}

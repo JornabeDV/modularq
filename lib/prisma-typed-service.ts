@@ -1640,6 +1640,30 @@ export class PrismaTypedService {
     return data
   }
 
+  // Descripción estándar del módulo
+  static readonly DEFAULT_MODULE_DESCRIPTION = [
+    {
+      section: "Estructura",
+      description: "Construído con caño estructural tubular de 80 x 80 x 2,5mm pintados con Casa Blanca 3 en 1 antióxido. Muros y techo de panel térmico de 50 mm de espesor PIR, revestidos con chapa prepintada blanca. Piso multilaminado de 18 mm de espesor con revestimiento de piso de PVC heterogéneo, con zócalo de PVC."
+    },
+    {
+      section: "Cerramientos",
+      description: "Una puerta de acceso. Dos ventanas de aluminio modena 90 de 1,00x1,00m."
+    },
+    {
+      section: "Electricidad",
+      description: "Instalación eléctrica reglamentaria. Tablero general con llaves térmicas independientes por sector. Las instalaciones se realizaran con caño de PVC rígidos pesados."
+    },
+    {
+      section: "Luminaria",
+      description: "Luces led de 18w."
+    },
+    {
+      section: "Equipamiento",
+      description: "Aire acondicionado split frío calor de 3000 frigorías con jaula exterior para soporte de unidad exterior."
+    }
+  ];
+
   static async createBudget(budgetData: {
     client_name: string
     location: string
@@ -1669,7 +1693,7 @@ export class PrismaTypedService {
 
     const budgetId = generateId()
 
-    // Crear presupuesto
+    // Crear presupuesto con descripción estándar del módulo
     const { data: budget, error } = await supabase
       .from('budgets')
       .insert({
@@ -1688,6 +1712,7 @@ export class PrismaTypedService {
         subtotal_with_benefit: 0,
         calculated_price: 0,
         final_price: 0,
+        module_description: this.DEFAULT_MODULE_DESCRIPTION,
         updated_at: new Date().toISOString()
       })
       .select()
