@@ -21,7 +21,7 @@ interface BudgetItemsTableProps {
   onQuantityChange: (itemId: string, value: string) => void;
   onQuantityBlur: (itemId: string) => void;
   onEditItem: (item: BudgetItem) => void;
-  onDeleteItem: (itemId: string) => void;
+  onDeleteItem: (item: BudgetItem) => void;
 }
 
 export function BudgetItemsTable({
@@ -65,14 +65,31 @@ export function BudgetItemsTable({
           <table className="w-full text-sm min-w-[550px]">
             <thead>
               <tr className="border-b">
-                <th className="text-left px-2 h-10 font-medium whitespace-nowrap w-[80px] sm:w-auto">Código</th>
-                <th className="text-left px-2 h-10 font-medium min-w-[120px] sm:min-w-[200px]">Descripción</th>
-                <th className="text-center px-2 h-10 font-medium whitespace-nowrap w-[60px] sm:w-auto">Unidad</th>
-                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[70px] sm:w-auto">Cantidad</th>
-                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[100px]">Costo Unitario</th>
-                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[90px] sm:w-auto">Costo Total</th>
+                <th className="text-left px-2 h-10 font-medium whitespace-nowrap w-[80px] sm:w-auto">
+                  Código
+                </th>
+                <th className="text-left px-2 h-10 font-medium min-w-[120px] sm:min-w-[200px]">
+                  Descripción
+                </th>
+                <th className="text-center px-2 h-10 font-medium whitespace-nowrap w-[60px] sm:w-auto">
+                  Unidad
+                </th>
+                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[70px] sm:w-auto">
+                  Cantidad
+                </th>
+                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[100px]">
+                  Costo Unitario
+                </th>
+                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[90px] sm:w-auto">
+                  Costo Total
+                </th>
+                <th className="text-right px-2 h-10 font-medium whitespace-nowrap w-[70px] sm:w-auto">
+                  %
+                </th>
                 {isEditable && (
-                  <th className="px-2 w-[70px] sm:w-[80px] text-center whitespace-nowrap">Acciones</th>
+                  <th className="px-2 w-[70px] sm:w-[80px] text-center whitespace-nowrap">
+                    Acciones
+                  </th>
                 )}
               </tr>
             </thead>
@@ -81,7 +98,11 @@ export function BudgetItemsTable({
                 <>
                   {/* Fila de subtítulo del rubro */}
                   <tr key={`cat-${category}`} className="bg-muted/80 border-b">
-                    <td colSpan={isEditable ? 7 : 6} className="p-2 px-2 sm:px-3" style={{ minWidth: '550px' }}>
+                    <td
+                      colSpan={isEditable ? 8 : 7}
+                      className="p-2 px-2 sm:px-3"
+                      style={{ minWidth: "550px" }}
+                    >
                       <span className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">
                         {category}
                       </span>
@@ -110,15 +131,22 @@ export function BudgetItemsTable({
                                 title="Cambio sin guardar"
                               />
                             )}
-                            <span className="text-xs sm:text-sm">{item.code}</span>
+                            <span className="text-xs sm:text-sm">
+                              {item.code}
+                            </span>
                           </div>
                         </td>
                         <td className="px-2 max-w-[140px] sm:max-w-none">
-                          <span className="truncate block text-xs sm:text-sm" title={item.description}>
+                          <span
+                            className="truncate block text-xs sm:text-sm"
+                            title={item.description}
+                          >
                             {item.description}
                           </span>
                         </td>
-                        <td className="px-2 text-center whitespace-nowrap text-xs sm:text-sm">{item.unit}</td>
+                        <td className="px-2 text-center whitespace-nowrap text-xs sm:text-sm">
+                          {item.unit}
+                        </td>
                         <td
                           className="px-2 w-16 sm:w-20 text-right whitespace-nowrap"
                           onClick={(e) => e.stopPropagation()}
@@ -167,6 +195,22 @@ export function BudgetItemsTable({
                             </span>
                           )}
                         </td>
+                        <td className="p-2 text-right whitespace-nowrap text-xs sm:text-sm text-muted-foreground">
+                          {(() => {
+                            const totalDirect =
+                              items?.reduce((sum: number, it: BudgetItem) => {
+                                const qty = pendingChanges.has(it.id)
+                                  ? parseFloat(editingQuantities[it.id]) || 0
+                                  : it.quantity;
+                                return sum + qty * it.unit_cost_total;
+                              }, 0) || 0;
+                            const percentage =
+                              totalDirect > 0
+                                ? (totalCost / totalDirect) * 100
+                                : 0;
+                            return percentage.toFixed(2) + "%";
+                          })()}
+                        </td>
                         {isEditable && (
                           <td className="p-2">
                             <TooltipProvider>
@@ -196,7 +240,7 @@ export function BudgetItemsTable({
                                       size="sm"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        onDeleteItem(item.id);
+                                        onDeleteItem(item);
                                       }}
                                       className="cursor-pointer h-7 w-7 sm:h-8 sm:w-8 p-0"
                                     >
@@ -231,6 +275,9 @@ export function BudgetItemsTable({
                       return sum + qty * item.unit_cost_total;
                     }, 0) || 0,
                   )}
+                </td>
+                <td className="p-2 text-right font-semibold whitespace-nowrap text-xs sm:text-sm">
+                  100%
                 </td>
                 {isEditable && <td></td>}
               </tr>

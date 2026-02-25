@@ -2,13 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -20,13 +16,21 @@ import {
 import { DataPagination } from "@/components/ui/data-pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, ArrowUpDown, DollarSign } from "lucide-react";
+import { Plus, Edit, ArrowUpDown, Trash2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   PrismaTypedService,
@@ -67,10 +71,16 @@ type SortOrder = "asc" | "desc";
 
 export default function BudgetsPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isCreatingBudget, setIsCreatingBudget] = useState(false);
+
+  // Eliminación
+  const [budgetToDelete, setBudgetToDelete] = useState<Budget | null>(null);
+  const [isDeletingBudget, setIsDeletingBudget] = useState(false);
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -105,17 +115,50 @@ export default function BudgetsPage() {
     }
   };
 
+  const handleDeleteBudget = async () => {
+    if (!budgetToDelete) return;
+
+    setIsDeletingBudget(true);
+    try {
+      await PrismaTypedService.deleteBudget(budgetToDelete.id);
+      setBudgets(budgets.filter((b) => b.id !== budgetToDelete.id));
+      toast({
+        title: "Presupuesto eliminado",
+        description: `El presupuesto ${budgetToDelete.budget_code} ha sido eliminado.`,
+      });
+      setBudgetToDelete(null);
+    } catch (error) {
+      console.error("Error deleting budget:", error);
+      toast({
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el presupuesto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingBudget(false);
+    }
+  };
+
   const handleCreateBudget = async (data: {
     client_name: string;
     location: string;
     description: string;
   }) => {
+    // Cerrar el modal inmediatamente y mostrar overlay de carga
+    setShowCreateDialog(false);
+    setIsCreatingBudget(true);
+
     try {
       const budget = await PrismaTypedService.createBudget(data);
-      router.push(`/admin/budgets/${budget.id}`);
+      router.push(`/admin/budgets/${budget.id}?new=true`);
     } catch (error) {
       console.error("Error creating budget:", error);
-      alert("Error al crear el presupuesto");
+      toast({
+        title: "Error al crear el presupuesto",
+        description: "Por favor intenta nuevamente",
+        variant: "destructive",
+      });
+      setIsCreatingBudget(false);
     }
   };
 
@@ -344,9 +387,13 @@ export default function BudgetsPage() {
                       <TableRow
                         key={budget.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() =>
-                          router.push(`/admin/budgets/${budget.id}`)
-                        }
+                        onClick={(e) => {
+                          // Solo navegar si el clic no fue en un botón
+                          const target = e.target as HTMLElement;
+                          if (!target.closest("button")) {
+                            router.push(`/admin/budgets/${budget.id}`);
+                          }
+                        }}
                       >
                         <TableCell className="font-mono text-sm">
                           {budget.budget_code}
@@ -381,26 +428,51 @@ export default function BudgetsPage() {
                           {formatDate(budget.created_at)}
                         </TableCell>
                         <TableCell className="text-right">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    router.push(`/admin/budgets/${budget.id}`);
-                                  }}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Ver Presupuesto</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <div className="flex items-center justify-end gap-2">
+                            <TooltipProvider delayDuration={100}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(
+                                        `/admin/budgets/${budget.id}`,
+                                      );
+                                    }}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver Presupuesto</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider delayDuration={100}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setBudgetToDelete(budget);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Eliminar Presupuesto</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -431,6 +503,59 @@ export default function BudgetsPage() {
         onClose={() => setShowCreateDialog(false)}
         onSubmit={handleCreateBudget}
       />
+
+      {/* Overlay de carga fullscreen */}
+      {isCreatingBudget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Creando presupuesto...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación */}
+      <Dialog
+        open={!!budgetToDelete}
+        onOpenChange={() => setBudgetToDelete(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Eliminar presupuesto?</DialogTitle>
+            <DialogDescription>
+              Estás a punto de eliminar el presupuesto{" "}
+              <strong>{budgetToDelete?.budget_code}</strong> de{" "}
+              <strong>{budgetToDelete?.client_name}</strong>.
+              <br />
+              <br />
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="cursor-pointer"
+              onClick={() => setBudgetToDelete(null)}
+              disabled={isDeletingBudget}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="cursor-pointer"
+              onClick={handleDeleteBudget}
+              disabled={isDeletingBudget}
+            >
+              {isDeletingBudget ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

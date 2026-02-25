@@ -84,6 +84,7 @@ export function ModuleDescriptionEditor({
           <Button
             variant="outline"
             size="sm"
+            className="cursor-pointer"
             onClick={() => setIsEditing(true)}
           >
             <Edit2 className="w-4 h-4 mr-1" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   PrismaTypedService,
   BudgetItem,
@@ -16,6 +16,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Trash2 } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useBudget } from "@/hooks/useBudget";
 import { CreateMaterialData } from "@/hooks/use-materials-prisma";
@@ -38,6 +48,8 @@ interface BudgetDetailPageProps {
 
 export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNewlyCreated = searchParams.get("new") === "true";
   const { toast } = useToast();
 
   // Hook principal del presupuesto
@@ -58,6 +70,14 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+
+  // Estados para eliminación
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Estados para eliminación de ítem
+  const [itemToDelete, setItemToDelete] = useState<BudgetItem | null>(null);
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
 
   // Estados para análisis de precios
   const [showPriceAnalysisDialog, setShowPriceAnalysisDialog] = useState(false);
@@ -306,6 +326,27 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
     }
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await PrismaTypedService.deleteBudget(params.id);
+      toast({
+        title: "Presupuesto eliminado",
+        description: "El presupuesto ha sido eliminado exitosamente.",
+      });
+      router.push("/admin/budgets");
+    } catch (error) {
+      console.error("Error deleting budget:", error);
+      toast({
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el presupuesto.",
+        variant: "destructive",
+      });
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   const handleAddItem = async (itemData: {
     code: string;
     category: string;
@@ -330,15 +371,31 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    if (!confirm("¿Estás seguro de eliminar este ítem?")) return;
+  const handleDeleteItem = (item: BudgetItem) => {
+    setItemToDelete(item);
+  };
 
+  const handleConfirmDeleteItem = async () => {
+    if (!itemToDelete) return;
+
+    setIsDeletingItem(true);
     try {
-      await PrismaTypedService.deleteBudgetItem(itemId);
+      await PrismaTypedService.deleteBudgetItem(itemToDelete.id);
+      toast({
+        title: "Ítem eliminado",
+        description: "El ítem ha sido eliminado del presupuesto.",
+      });
       await loadBudget();
+      setItemToDelete(null);
     } catch (error) {
       console.error("Error deleting item:", error);
-      alert("Error al eliminar el ítem");
+      toast({
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el ítem.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingItem(false);
     }
   };
 
@@ -415,6 +472,16 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
   };
 
   if (loading) {
+    // Si viene de crear un nuevo presupuesto, no mostrar loading
+    // para evitar el efecto de "doble spinner"
+    if (isNewlyCreated) {
+      return (
+        <MainLayout>
+          <div className="min-h-screen" />
+        </MainLayout>
+      );
+    }
+
     return (
       <MainLayout>
         <div className="flex items-center justify-center py-8">
@@ -446,6 +513,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
           pendingChangesCount={pendingChanges.size}
           onAddItem={() => setShowAddItemDialog(true)}
           onApprove={handleApprove}
+          onDelete={() => setShowDeleteDialog(true)}
         />
 
         {/* Banner de cambios pendientes */}
@@ -725,6 +793,85 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
           onSave={handleSavePriceAnalysis}
           onCreateMaterial={handleCreateMaterial}
         />
+
+        {/* Modal de confirmación de eliminación */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>¿Eliminar presupuesto?</DialogTitle>
+              <DialogDescription>
+                Estás a punto de eliminar el presupuesto{" "}
+                <strong>{budget.budget_code}</strong> de{" "}
+                <strong>{budget.client_name}</strong>.
+                <br />
+                <br />
+                Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Eliminar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de confirmación de eliminación de ítem */}
+        <Dialog
+          open={!!itemToDelete}
+          onOpenChange={() => setItemToDelete(null)}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>¿Eliminar ítem?</DialogTitle>
+              <DialogDescription>
+                Estás a punto de eliminar el ítem{" "}
+                <strong>{itemToDelete?.code}</strong> -{" "}
+                <strong>{itemToDelete?.description}</strong>.
+                <br />
+                <br />
+                Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setItemToDelete(null)}
+                disabled={isDeletingItem}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmDeleteItem}
+                disabled={isDeletingItem}
+              >
+                {isDeletingItem ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                Eliminar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

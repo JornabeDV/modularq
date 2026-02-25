@@ -17,6 +17,7 @@ import {
   CreditCard,
   Building,
   Factory,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -67,25 +68,61 @@ export function BudgetClientView({
     notes: budget.notes || "",
   });
 
+  // Precio calculado original y precio ajustado
+  const exchangeRateToUse = budget.exchange_rate || currentExchangeRate || 1;
+  const calculatedPriceUSD = budget.calculated_price / exchangeRateToUse;
+  const finalPriceUSD = budget.final_price / exchangeRateToUse;
+  // Usar final_price si existe y es diferente de 0, sino usar calculated_price
+  const initialPriceUSD =
+    finalPriceUSD > 0 ? finalPriceUSD : calculatedPriceUSD;
+  const [adjustedPriceUSD, setAdjustedPriceUSD] = useState(initialPriceUSD);
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+
+  // Estado para el input de precio (string mientras se edita)
+  const [priceInputValue, setPriceInputValue] = useState(
+    initialPriceUSD.toFixed(2),
+  );
+
+  // Calcular porcentaje de variación
+  const variationPercentage =
+    calculatedPriceUSD > 0
+      ? ((adjustedPriceUSD - calculatedPriceUSD) / calculatedPriceUSD) * 100
+      : 0;
+  const isDiscount = variationPercentage < 0;
+  const isIncrease = variationPercentage > 0;
+
   const handleSave = async () => {
     setIsSaving(true);
+    const newFinalPrice = adjustedPriceUSD * exchangeRateToUse;
+    console.log("Guardando presupuesto:", {
+      budgetId: budget.id,
+      adjustedPriceUSD,
+      exchangeRateToUse,
+      newFinalPrice,
+    });
     try {
-      await PrismaTypedService.updateBudget(budget.id, {
+      const result = await PrismaTypedService.updateBudget(budget.id, {
         validity_days: budgetData.validityDays,
         payment_terms: budgetData.paymentTerms,
         delivery_terms: budgetData.deliveryTerms,
         delivery_location: budgetData.deliveryLocation,
         notes: budgetData.notes,
+        final_price: newFinalPrice,
       });
+      console.log("Resultado de updateBudget:", result);
       setIsEditing(false);
+      setIsEditingPrice(false);
       toast({
         title: "Condiciones guardadas",
-        description: "Las condiciones comerciales han sido actualizadas.",
+        description:
+          "Las condiciones comerciales y el precio han sido actualizados.",
       });
     } catch (error) {
+      console.error("Error guardando:", error);
       toast({
         title: "Error",
-        description: "No se pudieron guardar las condiciones.",
+        description:
+          "No se pudieron guardar las condiciones. Ver consola para detalles.",
         variant: "destructive",
       });
     } finally {
@@ -94,8 +131,7 @@ export function BudgetClientView({
   };
 
   // Usar el tipo de cambio guardado en el presupuesto (si está aprobado) o el actual
-  const exchangeRateToUse = budget.exchange_rate || currentExchangeRate || 1;
-  const totalUSD = budget.final_price / exchangeRateToUse;
+  const totalUSD = adjustedPriceUSD;
   const ivaAmount = totalUSD * 0.105;
 
   // Convertir número a palabras (simplificado)
@@ -104,6 +140,9 @@ export function BudgetClientView({
     const decimal = Math.round((num - entero) * 100);
     return `Dólares ${entero.toLocaleString("es-AR")} con ${decimal.toString().padStart(2, "0")}/100`;
   };
+
+  // Precio total con IVA en palabras
+  const totalPriceWithIVA = totalUSD + ivaAmount;
 
   return (
     <div className="space-y-6">
@@ -214,21 +253,138 @@ export function BudgetClientView({
 
       {/* Total del presupuesto */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Importe del Presupuesto</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              isEditingPrice
+                ? handleSave()
+                : (setIsEditingPrice(true),
+                  setPriceInputValue(
+                    adjustedPriceUSD.toLocaleString("es-AR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }),
+                  ))
+            }
+            disabled={isSaving}
+            className="cursor-pointer"
+          >
+            {isEditingPrice ? (
+              <>
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 mr-1" />
+                )}{" "}
+                Guardar
+              </>
+            ) : (
+              <>
+                <Edit2 className="w-4 h-4 mr-1" /> Ajustar Precio
+              </>
+            )}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between items-center text-sm">
               <span>Subtotal:</span>
-              <span className="font-mono">
-                USD{" "}
-                {totalUSD.toLocaleString("es-AR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
+              {isEditingPrice ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs">USD</span>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={priceInputValue}
+                    onChange={(e) => {
+                      let rawValue = e.target.value;
+
+                      // Si no hay coma y el último carácter es punto, convertir a coma (iniciar decimales)
+                      if (!rawValue.includes(",") && rawValue.endsWith(".")) {
+                        rawValue = rawValue.slice(0, -1) + ",";
+                      }
+
+                      // Permitir números, puntos (miles) y una sola coma (decimal)
+                      if (!/^[\d.,]*$/.test(rawValue)) return;
+
+                      // Separar parte entera de decimal
+                      const parts = rawValue.split(",");
+                      if (parts.length > 2) return; // Solo una coma permitida
+
+                      // Limitar decimales a 2
+                      if (parts[1] && parts[1].length > 2) {
+                        parts[1] = parts[1].slice(0, 2);
+                      }
+
+                      // Formatear parte entera: quitar puntos existentes y agregar nuevos cada 3 dígitos
+                      let integerPart = parts[0].replace(/\./g, "");
+                      integerPart = integerPart.replace(
+                        /\B(?=(\d{3})+(?!\d))/g,
+                        ".",
+                      );
+
+                      // Reconstruir valor
+                      const formattedValue =
+                        parts.length > 1
+                          ? `${integerPart},${parts[1] || ""}`
+                          : integerPart;
+
+                      setPriceInputValue(formattedValue);
+                    }}
+                    onBlur={() => {
+                      // Al perder foco, asegurar 2 decimales
+                      let value = priceInputValue;
+                      if (!value.includes(",")) {
+                        value = value + ",00";
+                      } else {
+                        const parts = value.split(",");
+                        while (parts[1].length < 2) parts[1] += "0";
+                        value = parts.join(",");
+                      }
+
+                      const cleanValue = value
+                        .replace(/\./g, "")
+                        .replace(",", ".");
+                      const numValue = parseFloat(cleanValue) || 0;
+                      setAdjustedPriceUSD(numValue);
+                      setPriceInputValue(value);
+                    }}
+                    onFocus={(e) => {
+                      e.target.select();
+                    }}
+                    className="w-40 text-right font-mono"
+                    placeholder="0,00"
+                  />
+                </div>
+              ) : (
+                <span className="font-mono">
+                  USD{" "}
+                  {totalUSD.toLocaleString("es-AR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              )}
             </div>
+
+            {/* Mostrar porcentaje de variación - Solo en UI, NO en PDF */}
+            {variationPercentage !== 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {isDiscount ? "Descuento aplicado:" : "Recargo aplicado:"}
+                </span>
+                <span
+                  className={`font-medium ${isDiscount ? "text-green-600" : "text-amber-600"}`}
+                >
+                  {isDiscount ? "-" : "+"}
+                  {Math.abs(variationPercentage).toFixed(2)}%
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-between text-sm">
               <span>IVA 10,5%:</span>
               <span className="font-mono">
@@ -250,6 +406,17 @@ export function BudgetClientView({
               </span>
             </div>
           </div>
+
+          {/* Info del precio calculado original */}
+          {isEditingPrice && (
+            <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+              Precio calculado original: USD{" "}
+              {calculatedPriceUSD.toLocaleString("es-AR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -260,31 +427,56 @@ export function BudgetClientView({
             <FileText className="w-4 h-4" />
             Condiciones Comerciales
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-            disabled={isSaving}
-            className="cursor-pointer"
-          >
-            {isEditing ? (
-              <>
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4 mr-1" />
-                )}{" "}
-                Guardar
-              </>
-            ) : (
-              <>
-                <Edit2 className="w-4 h-4 mr-1" /> Editar
-              </>
+          <div className="flex gap-2">
+            {(isEditing || isEditingPrice) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditing(false);
+                  setIsEditingPrice(false);
+                  setAdjustedPriceUSD(initialPriceUSD);
+                  setPriceInputValue(
+                    initialPriceUSD.toLocaleString("es-AR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }),
+                  );
+                }}
+                disabled={isSaving}
+                className="cursor-pointer"
+              >
+                <X className="w-4 h-4 mr-1" /> Cancelar
+              </Button>
             )}
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                isEditing || isEditingPrice ? handleSave() : setIsEditing(true)
+              }
+              disabled={isSaving}
+              className="cursor-pointer"
+            >
+              {isEditing || isEditingPrice ? (
+                <>
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 mr-1" />
+                  )}{" "}
+                  Guardar
+                </>
+              ) : (
+                <>
+                  <Edit2 className="w-4 h-4 mr-1" /> Editar
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          {isEditing ? (
+          {isEditing || isEditingPrice ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">

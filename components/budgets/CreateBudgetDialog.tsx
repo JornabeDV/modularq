@@ -29,7 +29,7 @@ export function CreateBudgetDialog({
 }: CreateBudgetDialogProps) {
   const [formData, setFormData] = useState({
     client_name: "",
-    location: "",
+    location: "San Juan",
     description: "",
   });
 
@@ -40,7 +40,7 @@ export function CreateBudgetDialog({
       location: formData.location,
       description: formData.description || "",
     });
-    setFormData({ client_name: "", location: "", description: "" });
+    setFormData({ client_name: "", location: "San Juan", description: "" });
   };
 
   return (
@@ -64,20 +64,7 @@ export function CreateBudgetDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Ubicación *</Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
-              placeholder="Ej: San Juan"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción del Módulo</Label>
+            <Label htmlFor="description">Descripción Breve del Proyecto</Label>
             <Input
               id="description"
               value={formData.description}

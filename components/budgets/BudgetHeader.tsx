@@ -9,7 +9,7 @@ import {
   FileText,
   Loader2,
   Plus,
-  Zap,
+  Trash2,
 } from "lucide-react";
 import { Budget } from "@/lib/prisma-typed-service";
 import { BUDGET_STATUS_LABELS, BUDGET_STATUS_COLORS } from "@/lib/constants";
@@ -21,6 +21,7 @@ interface BudgetHeaderProps {
   pendingChangesCount: number;
   onAddItem: () => void;
   onApprove: () => void;
+  onDelete?: () => void;
 }
 
 export function BudgetHeader({
@@ -30,13 +31,14 @@ export function BudgetHeader({
   pendingChangesCount,
   onAddItem,
   onApprove,
+  onDelete,
 }: BudgetHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/admin/budgets">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="cursor-pointer">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
@@ -81,6 +83,18 @@ export function BudgetHeader({
               )}
               Aprobar
             </Button>
+            {onDelete && (
+              <Button
+                variant="destructive"
+                onClick={onDelete}
+                disabled={saving}
+                size="sm"
+                className="lg:size-default cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4 mr-1 lg:mr-2" />
+                Eliminar
+              </Button>
+            )}
           </>
         )}
         {budget.project_id && (

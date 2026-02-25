@@ -1713,7 +1713,7 @@ export class PrismaTypedService {
         unit: template.unit,
         is_custom: false,
         order: index,
-        quantity: 0,
+        quantity: template.default_quantity || 0,
         unit_cost_labor: 0,
         unit_cost_materials: 0,
         unit_cost_equipment: 0,

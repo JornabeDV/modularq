@@ -35,7 +35,7 @@ export function BudgetResourceSummary({
     <div className="space-y-4">
       {/* Mano de Obra */}
       <Card>
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Users className="w-4 h-4 sm:w-5 sm:h-5" />
             Total Mano de Obra
@@ -52,8 +52,12 @@ export function BudgetResourceSummary({
                 <thead className="border-b bg-muted/50">
                   <tr>
                     <th className="text-left p-2 font-medium">Concepto</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Horas</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Costo Total</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Horas
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Costo Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -70,7 +74,9 @@ export function BudgetResourceSummary({
                         </span>
                       </td>
                       <td className="p-2 text-right font-medium whitespace-nowrap">
-                        <span className="text-xs sm:text-sm">{formatCurrency(labor.totalCost)}</span>
+                        <span className="text-xs sm:text-sm">
+                          {formatCurrency(labor.totalCost)}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -96,7 +102,7 @@ export function BudgetResourceSummary({
 
       {/* Materiales */}
       <Card>
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Package className="w-4 h-4 sm:w-5 sm:h-5" />
             Total Materiales
@@ -113,9 +119,15 @@ export function BudgetResourceSummary({
                 <thead className="border-b bg-muted/50">
                   <tr>
                     <th className="text-left p-2 font-medium">Material</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Cantidad</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Unidad</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Costo Total</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Cantidad
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Unidad
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Costo Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,7 +147,9 @@ export function BudgetResourceSummary({
                         <span className="text-xs sm:text-sm">{mat.unit}</span>
                       </td>
                       <td className="p-2 text-right font-medium whitespace-nowrap">
-                        <span className="text-xs sm:text-sm">{formatCurrency(mat.totalCost)}</span>
+                        <span className="text-xs sm:text-sm">
+                          {formatCurrency(mat.totalCost)}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -161,7 +175,7 @@ export function BudgetResourceSummary({
 
       {/* Equipos */}
       <Card>
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader className="px-4 sm:px-6">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Wrench className="w-4 h-4 sm:w-5 sm:h-5" />
             Total Equipos
@@ -178,8 +192,12 @@ export function BudgetResourceSummary({
                 <thead className="border-b bg-muted/50">
                   <tr>
                     <th className="text-left p-2 font-medium">Equipo</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Horas</th>
-                    <th className="text-right p-2 font-medium whitespace-nowrap">Costo Total</th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Horas
+                    </th>
+                    <th className="text-right p-2 font-medium whitespace-nowrap">
+                      Costo Total
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,7 +214,9 @@ export function BudgetResourceSummary({
                         </span>
                       </td>
                       <td className="p-2 text-right font-medium whitespace-nowrap">
-                        <span className="text-xs sm:text-sm">{formatCurrency(eq.totalCost)}</span>
+                        <span className="text-xs sm:text-sm">
+                          {formatCurrency(eq.totalCost)}
+                        </span>
                       </td>
                     </tr>
                   ))}
