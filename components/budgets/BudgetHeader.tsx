@@ -58,6 +58,9 @@ export function BudgetHeader({
       <div className="flex flex-wrap gap-2">
         {isEditable && (
           <>
+            <Badge variant="outline" className="text-sm px-3 py-1 flex items-center gap-1 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-none">
+              Dólar BNA: <span className="font-bold">$1.425</span>
+            </Badge>
             <Button
               onClick={onApprove}
               disabled={saving || pendingChangesCount > 0}
@@ -65,9 +68,9 @@ export function BudgetHeader({
               className="lg:size-default cursor-pointer"
             >
               {saving ? (
-                <Loader2 className="w-4 h-4 mr-1 lg:mr-2 animate-spin" />
+                <Loader2 className="max-sm:hidden w-4 h-4 mr-1 lg:mr-2 animate-spin" />
               ) : (
-                <CheckCircle className="w-4 h-4 mr-2" />
+                <CheckCircle className="max-sm:hidden w-4 h-4 mr-2" />
               )}
               Aprobar
             </Button>
@@ -79,7 +82,7 @@ export function BudgetHeader({
                 size="sm"
                 className="lg:size-default cursor-pointer"
               >
-                <Trash2 className="w-4 h-4 mr-1 lg:mr-2" />
+                <Trash2 className="max-sm:hidden w-4 h-4 mr-1 lg:mr-2" />
                 Eliminar
               </Button>
             )}

@@ -270,16 +270,9 @@ export default function BudgetsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            {exchangeRate && (
-              <div className="flex items-center gap-2 px-2 sm:px-4 py-2 bg-blue-50 dark:bg-blue-950 rounded-lg shrink-0">
-                <div className="flex gap-2 items-center h-full">
-                  <p className="text-xs text-blue-600 font-medium">Dólar BNA</p>
-                  <p className="text-sm font-bold text-blue-700 dark:text-blue-300">
-                    {formatExchangeRate(exchangeRate)}
-                  </p>
-                </div>
-              </div>
-            )}
+            <Badge variant="outline" className="text-sm px-3 py-1 h-9 flex items-center gap-1 border-none bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              Dólar BNA: <span className="font-bold">$1.425</span>
+            </Badge>
             <Button
               onClick={() => setShowCreateDialog(true)}
               className="cursor-pointer shrink-0"
