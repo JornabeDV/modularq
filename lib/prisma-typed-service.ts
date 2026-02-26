@@ -2035,10 +2035,7 @@ export class PrismaTypedService {
     if (updateError) throw new Error('Error actualizando presupuesto: ' + updateError.message)
   }
 
-  static async approveBudget(budgetId: string, projectData?: {
-    start_date?: Date
-    priority?: 'low' | 'medium' | 'high' | 'critical'
-  }): Promise<{ success: boolean; budget?: any; project?: any; error?: string }> {
+  static async approveBudget(budgetId: string): Promise<{ success: boolean; budget?: any; error?: string }> {
     try {
       // Obtener presupuesto
       const budget = await this.getBudgetById(budgetId)
@@ -2050,56 +2047,14 @@ export class PrismaTypedService {
         return { success: false, error: 'El presupuesto ya está aprobado' }
       }
 
-      // Crear proyecto
-      const { data: project, error: projectError } = await supabase
-        .from('projects')
-        .insert({
-          name: `Proyecto ${budget.budget_code} - ${budget.client_name}`,
-          description: budget.description,
-          status: 'planning',
-          priority: projectData?.priority || 'medium',
-          condition: 'venta',
-          start_date: (projectData?.start_date || new Date()).toISOString(),
-          client_id: budget.client_id,
-          height: 2.0,
-          width: 1.5,
-          depth: 0.8,
-          module_count: 1
-        })
-        .select()
-        .single()
-
-      if (projectError) throw projectError
-
-      // Obtener cotización actual del dólar
-      let exchangeRate: number | null = null
-      try {
-        const response = await fetch('https://monedapi.ar/api/usd/bna')
-        if (response.ok) {
-          const rateData = await response.json()
-          exchangeRate = rateData.venta
-        }
-      } catch (e) {
-        console.log('No se pudo obtener cotización del dólar')
-      }
-
-      // Actualizar presupuesto
-      const updateData: any = {
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        project_id: project.id,
-        updated_at: new Date().toISOString()
-      }
-      
-      // Guardar cotización si se obtuvo
-      if (exchangeRate) {
-        updateData.exchange_rate = exchangeRate
-        updateData.exchange_rate_date = new Date().toISOString()
-      }
-
+      // Actualizar presupuesto a aprobado
       const { data: updatedBudget, error: updateError } = await supabase
         .from('budgets')
-        .update(updateData)
+        .update({
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         .eq('id', budgetId)
         .select()
         .single()
@@ -2108,8 +2063,7 @@ export class PrismaTypedService {
 
       return {
         success: true,
-        budget: updatedBudget,
-        project
+        budget: updatedBudget
       }
     } catch (error) {
       console.error('Error approving budget:', error)

@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, CheckCircle } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useBudget } from "@/hooks/useBudget";
 import { CreateMaterialData } from "@/hooks/use-materials-prisma";
@@ -80,6 +80,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
   // Estados para eliminación de ítem
   const [itemToDelete, setItemToDelete] = useState<BudgetItem | null>(null);
   const [isDeletingItem, setIsDeletingItem] = useState(false);
+
+  // Estado para modal de confirmación de aprobación
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
 
   // Estados para análisis de precios
   const [showPriceAnalysisDialog, setShowPriceAnalysisDialog] = useState(false);
@@ -311,18 +314,35 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
     }
   };
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
+    setShowApproveDialog(true);
+  };
+
+  const confirmApprove = async () => {
+    setShowApproveDialog(false);
     setIsApproving(true);
     try {
       const result = await PrismaTypedService.approveBudget(params.id);
       if (result.success) {
-        router.push("/admin/budgets");
+        await loadBudget();
+        toast({
+          title: "Presupuesto aprobado",
+          description: "El presupuesto ha sido aprobado exitosamente.",
+        });
       } else {
-        alert(result.error);
+        toast({
+          title: "Error",
+          description: result.error || "No se pudo aprobar el presupuesto",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error approving budget:", error);
-      alert("Error al aprobar el presupuesto");
+      toast({
+        title: "Error",
+        description: "Error al aprobar el presupuesto",
+        variant: "destructive",
+      });
     } finally {
       setIsApproving(false);
     }
@@ -874,6 +894,46 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                   <Trash2 className="h-4 w-4 mr-2" />
                 )}
                 Eliminar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de confirmación de aprobación */}
+        <Dialog
+          open={showApproveDialog}
+          onOpenChange={setShowApproveDialog}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>¿Aprobar presupuesto?</DialogTitle>
+              <DialogDescription>
+                Estás a punto de aprobar el presupuesto{" "}
+                <strong>{budget.budget_code}</strong> de{" "}
+                <strong>{budget.client_name}</strong>.
+                <br />
+                <br />
+                Una vez aprobado, el presupuesto ya no podrá ser editado.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowApproveDialog(false)}
+                disabled={isApproving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={confirmApprove}
+                disabled={isApproving}
+              >
+                {isApproving ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                Aprobar
               </Button>
             </DialogFooter>
           </DialogContent>
