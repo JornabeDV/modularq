@@ -38,6 +38,22 @@ interface TaskDetailsProps {
   onComplete?: () => void;
 }
 
+function getStartedDate(task: TaskDetailsProps["task"]): Date | null {
+  if (task.startDate) return new Date(task.startDate);
+
+  if (
+    task.status === "completed" &&
+    task.endDate &&
+    task.task?.estimatedHours &&
+    task.task.estimatedHours > 0
+  ) {
+    const end = new Date(task.endDate);
+    return new Date(end.getTime() - task.task.estimatedHours * 60 * 60 * 1000);
+  }
+
+  return null;
+}
+
 export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
   const formatHours = (hours: number) => {
     if (hours < 0.0001) {
@@ -51,6 +67,9 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
   };
 
   const isCompleted = task.status === "completed";
+  const startedAt = getStartedDate(task);
+  const endedAt = task.endDate ? new Date(task.endDate) : null;
+  const isEstimatedStart = !task.startDate && startedAt;
 
   return (
     <Card>
@@ -69,19 +88,28 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-
         <div className="grid grid-cols-2 gap-6">
           <div>
             <Label className="text-base font-semibold text-muted-foreground">
               Fecha de Inicio
             </Label>
-            <p className="text-lg">{formatDate(task.startDate)}</p>
+            <p className="text-lg">
+              {startedAt ? formatDate(startedAt) : "Sin fecha"}
+              {isEstimatedStart && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  (estimada)
+                </span>
+              )}
+            </p>
           </div>
+
           <div>
             <Label className="text-base font-semibold text-muted-foreground">
               Fecha de Fin
             </Label>
-            <p className="text-lg">{formatDate(task.endDate)}</p>
+            <p className="text-lg">
+              {endedAt ? formatDate(endedAt) : "Sin fecha"}
+            </p>
           </div>
         </div>
 

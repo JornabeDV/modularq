@@ -24,6 +24,28 @@ import {
   User,
 } from "lucide-react";
 
+function getDisplayStartDate(projectTask: any) {
+  if (!projectTask) return null;
+
+  if (projectTask.startedAt) {
+    return new Date(projectTask.startedAt);
+  }
+
+  if (
+    projectTask.status === "completed" &&
+    projectTask.completedAt &&
+    projectTask.task?.estimatedHours &&
+    projectTask.task.estimatedHours > 0
+  ) {
+    const end = new Date(projectTask.completedAt);
+    return new Date(
+      end.getTime() - projectTask.task.estimatedHours * 60 * 60 * 1000,
+    );
+  }
+
+  return null;
+}
+
 export default function TaskMetricsPage() {
   const params = useParams();
   const router = useRouter();
@@ -60,6 +82,13 @@ export default function TaskMetricsPage() {
       minute: "2-digit",
     });
   };
+
+  const displayStartedAt = projectTask
+    ? getDisplayStartDate(projectTask)
+    : null;
+
+  const isEstimatedStart =
+    !!projectTask && !projectTask.startedAt && !!displayStartedAt;
 
   if (!loading && (!project || !projectTask || !task)) {
     return (
@@ -175,9 +204,10 @@ export default function TaskMetricsPage() {
                     <span className="truncate">Fecha de Inicio</span>
                   </div>
                   {(() => {
-                    const startedAt =
-                      taskState?.startedAt || projectTask.startedAt;
+                    const startedAt = taskState?.startedAt || displayStartedAt;
+
                     const formattedDate = formatDateTime(startedAt);
+
                     const startedByUser =
                       taskState?.startedByUser || projectTask.startedByUser;
 
@@ -186,12 +216,18 @@ export default function TaskMetricsPage() {
                         <>
                           <p className="font-medium text-sm sm:text-base">
                             {formattedDate}
+                            {isEstimatedStart && !startedByUser && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                (estimada)
+                              </span>
+                            )}
                           </p>
+
                           {startedByUser && (
                             <p className="text-xs sm:text-sm text-muted-foreground">
                               Iniciada por:{" "}
                               <span className="font-semibold text-foreground">
-                                {startedByUser?.name}
+                                {startedByUser.name}
                               </span>
                             </p>
                           )}

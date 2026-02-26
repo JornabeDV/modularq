@@ -155,11 +155,7 @@ export function TaskForm({
       }}
     >
       <DialogContent
-        className="
-          h-[100dvh] w-[100dvw] max-w-none rounded-none
-          md:h-auto md:w-full md:max-w-2xl md:rounded-lg
-        "
-      >
+        className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle className="max-sm:mt-12">
             {isEditing

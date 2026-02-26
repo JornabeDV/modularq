@@ -1,6 +1,6 @@
 {
-  "name": "MODULARQ",
-  "short_name": "MODULARQ",
+  "name": "ModulArq",
+  "short_name": "ModulArq",
   "description": "Sistema de gestión de proyectos y operarios para construcción modular",
   "start_url": "/",
   "display": "standalone",
@@ -10,7 +10,7 @@
   "scope": "/",
   "lang": "es",
   "categories": ["productivity", "business"],
-  "id": "modularq-app",
+  "id": "ModulArq-app",
   "dir": "ltr",
   "icons": [
     {

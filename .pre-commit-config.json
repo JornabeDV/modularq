@@ -1,7 +1,7 @@
 {
   "name": "modularq-pre-commit",
   "version": "1.0.0",
-  "description": "Pre-commit hooks for ModularQ project",
+  "description": "Pre-commit hooks for ModulArq project",
   "scripts": {
     "pre-commit": "lint-staged",
     "prepare": "husky install"

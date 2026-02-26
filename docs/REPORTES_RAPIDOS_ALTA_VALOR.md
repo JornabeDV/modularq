@@ -346,6 +346,6 @@ Con estos reportes, el dueño podrá:
 
 ---
 
-**Modularq** - Reportes que Demuestran Valor Inmediato
+**ModulArq** - Reportes que Demuestran Valor Inmediato
 
 

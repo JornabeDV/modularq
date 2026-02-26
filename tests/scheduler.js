@@ -188,7 +188,7 @@ async function main() {
   const command = args[0];
   const interval = parseInt(args[1]) || 5;
   
-  log('🚀 ModularQ Task Monitoring Scheduler', 'bold');
+  log('🚀 ModulArq Task Monitoring Scheduler', 'bold');
   log('=====================================', 'bold');
   
   switch (command) {

@@ -1,14 +1,14 @@
 # 📈 Valor a Largo Plazo - Análisis, Predicciones y Métricas
 
 > **Documento estratégico sobre información valiosa, predicciones y métricas**  
-> Basado en el enfoque de relevamiento diario de Modularq  
+> Basado en el enfoque de relevamiento diario de ModulArq  
 > Para obtener mejores resultados a largo plazo
 
 ---
 
 ## 🎯 Introducción
 
-A partir del **relevamiento diario** y la recopilación sistemática de datos sobre proyectos, tareas, operarios y clientes, el sistema Modularq genera una **base de datos histórica valiosa** que permite realizar análisis profundos, predicciones precisas y tomar decisiones estratégicas informadas.
+A partir del **relevamiento diario** y la recopilación sistemática de datos sobre proyectos, tareas, operarios y clientes, el sistema ModulArq genera una **base de datos histórica valiosa** que permite realizar análisis profundos, predicciones precisas y tomar decisiones estratégicas informadas.
 
 Este documento detalla qué información valiosa podemos obtener, qué podemos predecir, y qué métricas podemos brindar a los jefes y a la empresa para mejorar resultados a largo plazo.
 
@@ -870,7 +870,7 @@ Este documento detalla qué información valiosa podemos obtener, qué podemos p
 
 ## 🚀 Conclusión
 
-El sistema Modularq, mediante el **relevamiento diario** y la recopilación sistemática de datos, genera una **base de información valiosa** que permite:
+El sistema ModulArq, mediante el **relevamiento diario** y la recopilación sistemática de datos, genera una **base de información valiosa** que permite:
 
 1. **Análisis profundos** de productividad, eficiencia y rentabilidad
 2. **Predicciones precisas** de finalización, recursos y costos
@@ -886,10 +886,10 @@ A medida que el sistema acumula más datos históricos, las métricas y predicci
 - **Mejorar continuamente** procesos y resultados
 - **Crecer de manera sostenible** y escalable
 
-**Modularq** - Transformando datos en decisiones estratégicas para el crecimiento a largo plazo.
+**ModulArq** - Transformando datos en decisiones estratégicas para el crecimiento a largo plazo.
 
 ---
 
-**Modularq** - Análisis, Predicciones y Métricas para el Crecimiento Sostenible
+**ModulArq** - Análisis, Predicciones y Métricas para el Crecimiento Sostenible
 
 

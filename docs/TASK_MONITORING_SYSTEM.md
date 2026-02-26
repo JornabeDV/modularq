@@ -1,4 +1,4 @@
-# Sistema de Monitoreo Automático de Tareas - ModularQ
+# Sistema de Monitoreo Automático de Tareas - ModulArq
 
 ## Problema Identificado
 
@@ -73,10 +73,10 @@ El sistema funciona con la siguiente lógica:
 ### 1. Prueba Manual
 ```bash
 # Ejecutar verificación manual del sistema
-curl -X POST https://modularq.vercel.app/api/check-limit-exceeded
+curl -X POST https://ModulArq.vercel.app/api/check-limit-exceeded
 
 # Verificar información del endpoint
-curl -X GET https://modularq.vercel.app/api/check-limit-exceeded
+curl -X GET https://ModulArq.vercel.app/api/check-limit-exceeded
 ```
 
 ### 2. Scripts de Prueba

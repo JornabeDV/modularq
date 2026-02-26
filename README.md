@@ -1,11 +1,11 @@
-# 🏭 Modularq - Sistema de Gestión de Operarios Industriales
+# 🏭 ModulArq - Sistema de Gestión de Operarios Industriales
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.13-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
 
-> **Modularq** es una aplicación web moderna para la gestión integral de operarios industriales, proyectos y tareas. Diseñada para optimizar la productividad y el seguimiento en entornos de producción.
+> **ModulArq** es una aplicación web moderna para la gestión integral de operarios industriales, proyectos y tareas. Diseñada para optimizar la productividad y el seguimiento en entornos de producción.
 
 ## 📋 Tabla de Contenidos
 

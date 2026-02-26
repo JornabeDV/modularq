@@ -1,4 +1,4 @@
-# Pre-commit hook para ModularQ (PowerShell)
+# Pre-commit hook para ModulArq (PowerShell)
 # Este script se ejecuta automáticamente antes de cada commit
 
 Write-Host "🔍 Running pre-commit validations..." -ForegroundColor Cyan

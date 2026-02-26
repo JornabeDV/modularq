@@ -193,7 +193,7 @@ function showDescriptionBenefits() {
 
 // Función principal
 async function runDescriptionDemo() {
-  log('📝 ModularQ - Descripción del Corte Automático', 'bold');
+  log('📝 ModulArq - Descripción del Corte Automático', 'bold');
   log('==============================================', 'bold');
   
   // 1. Mostrar ejemplos de descripciones

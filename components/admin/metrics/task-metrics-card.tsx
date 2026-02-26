@@ -19,6 +19,24 @@ type Props = {
   projectId: string;
 };
 
+function getStartedAt(projectTask: any, estimatedHours: number) {
+  if (projectTask.startedAt) return projectTask.startedAt;
+
+  if (
+    projectTask.status === "completed" &&
+    projectTask.completedAt &&
+    estimatedHours > 0
+  ) {
+    const completedDate = new Date(projectTask.completedAt);
+    const inferredStart = new Date(
+      completedDate.getTime() - estimatedHours * 60 * 60 * 1000,
+    );
+    return inferredStart;
+  }
+
+  return null;
+}
+
 export function TaskMetricsCard({ project, projectId }: Props) {
   const orderedTasks = [...project.projectTasks].sort((a: any, b: any) => {
     const statusOrder: Record<string, number> = {
@@ -48,6 +66,8 @@ export function TaskMetricsCard({ project, projectId }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {orderedTasks.map((projectTask: any, index: number) => {
             const task = projectTask.task;
+            const startedAt = getStartedAt(projectTask, task.estimatedHours);
+
             let estimatedHours = projectTask.estimatedHours || 0;
             if (
               estimatedHours === 0 &&
@@ -116,9 +136,7 @@ export function TaskMetricsCard({ project, projectId }: Props) {
                     <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                     <span className="text-muted-foreground">Inicio:</span>
                     <span className="text-xs font-semibold truncate">
-                      {projectTask.startedAt
-                        ? formatDate(projectTask.startedAt)
-                        : "Sin fecha"}
+                      {startedAt ? formatDate(startedAt) : "Sin fecha"}
                     </span>
                   </div>
 

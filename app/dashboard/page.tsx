@@ -52,13 +52,13 @@ export default function DashboardPage() {
 
   const activeProjects = projects.filter((p) => p.status === "active");
 
-    const totalSubcontractors = operarios.filter(
-      (o: any) => o.role === "subcontratista" && !o.deletedAt,
-    ).length;
+  const totalSubcontractors = operarios.filter(
+    (o: any) => o.role === "subcontratista" && !o.deletedAt,
+  ).length;
 
-    const totalOperarios = operarios.filter(
-      (o: any) => o.role === "operario" && !o.deletedAt,
-    ).length;
+  const totalOperarios = operarios.filter(
+    (o: any) => o.role === "operario" && !o.deletedAt,
+  ).length;
 
   const activeTasks = projects.reduce(
     (sum, project) =>
@@ -84,7 +84,7 @@ export default function DashboardPage() {
     const cancelledTasks = project.projectTasks.filter(
       (pt: any) => pt.status === "cancelled",
     ).length;
-    
+
     const totalSubcontractors = project.projectOperarios.filter(
       (pt: any) => pt.user.role === "subcontratista" && !pt.user.deletedAt,
     ).length;
@@ -186,7 +186,9 @@ export default function DashboardPage() {
 
             <Card className="py-3 sm:py-3 flex justify-between flex-col">
               <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Subcontratistas</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Subcontratistas
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -376,7 +378,7 @@ export default function DashboardPage() {
                         key={project.id}
                         className="hover:shadow-md transition-shadow relative flex flex-col justify-between "
                       >
-                        <CardHeader className="px-3 sm:px-6 pb-3">
+                        <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
                               <CardTitle className="text-xl">

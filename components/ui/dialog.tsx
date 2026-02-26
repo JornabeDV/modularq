@@ -6,13 +6,13 @@ import { XIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-const Dialog = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>
->(({ ...props }, ref) => (
-  <DialogPrimitive.Root ref={ref} data-slot="dialog" {...props} />
-))
-Dialog.displayName = DialogPrimitive.Root.displayName
+const Dialog = ({
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>) => (
+  <DialogPrimitive.Root data-slot="dialog" {...props} />
+)
+
+Dialog.displayName = "Dialog"
 
 const DialogTrigger = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Trigger>,
@@ -22,13 +22,13 @@ const DialogTrigger = React.forwardRef<
 ))
 DialogTrigger.displayName = DialogPrimitive.Trigger.displayName
 
-const DialogPortal = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Portal>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Portal>
->(({ ...props }, ref) => (
-  <DialogPrimitive.Portal ref={ref} data-slot="dialog-portal" {...props} />
-))
-DialogPortal.displayName = DialogPrimitive.Portal.displayName
+const DialogPortal = ({
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Portal>) => (
+  <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+)
+
+DialogPortal.displayName = "DialogPortal"
 
 const DialogClose = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Close>,
@@ -75,7 +75,7 @@ const DialogContent = React.forwardRef<
       {showCloseButton && (
         <DialogPrimitive.Close
           data-slot="dialog-close"
-          className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          className="cursor-pointer ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
         >
           <XIcon />
           <span className="sr-only">Close</span>

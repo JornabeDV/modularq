@@ -1,8 +1,8 @@
-# Documentación Funcional - Sistema ModularQ
+# Documentación Funcional - Sistema ModulArq
 
 ## Descripción General
 
-**ModularQ** es un sistema web de gestión de operarios industriales diseñado para optimizar la productividad y el control de tareas en entornos de manufactura. El sistema centraliza la administración de proyectos, asignación de tareas, seguimiento de tiempo y análisis de rendimiento, proporcionando una plataforma integral para la gestión del personal operativo.
+**ModulArq** es un sistema web de gestión de operarios industriales diseñado para optimizar la productividad y el control de tareas en entornos de manufactura. El sistema centraliza la administración de proyectos, asignación de tareas, seguimiento de tiempo y análisis de rendimiento, proporcionando una plataforma integral para la gestión del personal operativo.
 
 El sistema resuelve los problemas comunes en la gestión de operarios industriales como la falta de visibilidad del progreso de tareas, la dificultad para rastrear el tiempo trabajado, la asignación ineficiente de recursos y la ausencia de métricas de productividad en tiempo real.
 
@@ -316,6 +316,6 @@ El sistema está diseñado con una arquitectura modular que permite:
 
 ## Conclusión
 
-El Sistema ModularQ proporciona una solución integral para la gestión de operarios industriales, combinando funcionalidades avanzadas de gestión de proyectos, seguimiento de tiempo preciso, análisis de productividad y colaboración en equipo. Su diseño modular y escalable permite adaptarse a las necesidades específicas de cada empresa mientras mantiene la simplicidad de uso para los operarios y la potencia analítica para los administradores.
+El Sistema ModulArq proporciona una solución integral para la gestión de operarios industriales, combinando funcionalidades avanzadas de gestión de proyectos, seguimiento de tiempo preciso, análisis de productividad y colaboración en equipo. Su diseño modular y escalable permite adaptarse a las necesidades específicas de cada empresa mientras mantiene la simplicidad de uso para los operarios y la potencia analítica para los administradores.
 
 El sistema está diseñado para crecer con la empresa, proporcionando las herramientas necesarias para optimizar la productividad, mejorar la visibilidad del trabajo y tomar decisiones informadas basadas en datos reales de rendimiento.

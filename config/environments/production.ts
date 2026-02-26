@@ -1,6 +1,6 @@
 export const productionConfig = {
   app: {
-    name: 'ModularQ',
+    name: 'ModulArq',
     version: '1.0.0',
     environment: 'production' as const,
     debug: false,
