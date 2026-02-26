@@ -717,11 +717,11 @@ export function PriceAnalysisDialog({
             </Card>
 
             {/* BOTONES */}
-            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1 cursor-pointer"
+                className="cursor-pointer"
                 onClick={onClose}
               >
                 <X className="w-4 h-4 mr-2" />
@@ -729,7 +729,7 @@ export function PriceAnalysisDialog({
               </Button>
               <Button
                 type="button"
-                className="flex-1 cursor-pointer"
+                className="cursor-pointer"
                 onClick={() => item && onSave(item.id, analysisData, itemName)}
                 disabled={isSaving}
               >

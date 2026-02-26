@@ -541,7 +541,6 @@ export default function BudgetsPage() {
               Cancelar
             </Button>
             <Button
-              variant="destructive"
               className="cursor-pointer"
               onClick={handleDeleteBudget}
               disabled={isDeletingBudget}

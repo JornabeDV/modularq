@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { User, Project, Task } from './generated/prisma/index'
+import type { BudgetAttachment } from './types/budget'
 
 export interface ModuleDescriptionSection {
   section: string
@@ -2475,6 +2476,97 @@ export class PrismaTypedService {
 
     // 3. Retornar el presupuesto actualizado
     return this.getBudgetById(budgetId)
+  }
+
+  // =====================================================
+  // MÓDULO DE ARCHIVOS ADJUNTOS DE PRESUPUESTOS
+  // =====================================================
+
+  // --- Budget Attachments ---
+
+  static async getBudgetAttachments(budgetId: string): Promise<BudgetAttachment[]> {
+    const { data, error } = await supabase
+      .from('budget_attachments')
+      .select('*')
+      .eq('budget_id', budgetId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return (data || []) as BudgetAttachment[]
+  }
+
+  static async getBudgetAttachmentById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('budget_attachments')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) return null
+    return data
+  }
+
+  static async createBudgetAttachment(attachmentData: {
+    budget_id: string
+    filename: string
+    original_name: string
+    mime_type: string
+    file_type: 'image' | 'pdf'
+    document_type?: 'project_image' | 'technical_plan'
+    size: number
+    url: string
+    public_id: string
+    thumbnail_url?: string
+    description?: string
+    uploaded_by?: string
+  }): Promise<any> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    const { data, error } = await supabase
+      .from('budget_attachments')
+      .insert({
+        id: generateId(),
+        ...attachmentData,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async updateBudgetAttachment(id: string, attachmentData: {
+    description?: string
+  }): Promise<any> {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (attachmentData.description !== undefined) updateData.description = attachmentData.description
+
+    const { data, error } = await supabase
+      .from('budget_attachments')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
+  static async deleteBudgetAttachment(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('budget_attachments')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
   }
 }
 

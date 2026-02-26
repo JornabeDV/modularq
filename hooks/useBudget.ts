@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { PrismaTypedService, Budget, BudgetItem } from '@/lib/prisma-typed-service'
+import { PrismaTypedService, Budget, BudgetItem, BudgetAttachment } from '@/lib/prisma-typed-service'
 
 export function useBudget(budgetId: string) {
   const [budget, setBudget] = useState<Budget | null>(null)
+  const [attachments, setAttachments] = useState<BudgetAttachment[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingAttachments, setLoadingAttachments] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingQuantities, setEditingQuantities] = useState<Record<string, string>>({})
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set())
@@ -33,6 +35,26 @@ export function useBudget(budgetId: string) {
       setLoading(false)
     }
   }, [budgetId])
+
+  // Cargar archivos adjuntos
+  const loadAttachments = useCallback(async () => {
+    if (!budgetId) return
+    
+    setLoadingAttachments(true)
+    try {
+      const data = await PrismaTypedService.getBudgetAttachments(budgetId)
+      setAttachments(data)
+    } catch (error) {
+      console.error('Error loading attachments:', error)
+    } finally {
+      setLoadingAttachments(false)
+    }
+  }, [budgetId])
+
+  useEffect(() => {
+    loadBudget()
+    loadAttachments()
+  }, [loadBudget, loadAttachments])
 
   useEffect(() => {
     loadBudget()
@@ -93,14 +115,18 @@ export function useBudget(budgetId: string) {
 
   return {
     budget,
+    attachments,
     loading,
+    loadingAttachments,
     saving,
     editingQuantities,
     pendingChanges,
     loadBudget,
+    loadAttachments,
     handleQuantityChange,
     handleQuantityBlur,
     saveAllChanges,
-    discardChanges
+    discardChanges,
+    setAttachments
   }
 }

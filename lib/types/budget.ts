@@ -47,6 +47,28 @@ export interface TemplateEquipment {
   hourly_cost: number
 }
 
+// Tipos de documentos
+export type DocumentType = 'project_image' | 'technical_plan'
+
+// Archivo adjunto de presupuesto
+export interface BudgetAttachment {
+  id: string
+  budget_id: string
+  filename: string
+  original_name: string
+  mime_type: string
+  file_type: 'image' | 'pdf'
+  document_type: DocumentType
+  size: number
+  url: string
+  public_id: string
+  thumbnail_url?: string
+  description?: string
+  uploaded_by?: string
+  created_at: string
+  updated_at: string
+}
+
 // Presupuesto
 export interface Budget {
   id: string
@@ -93,6 +115,7 @@ export interface Budget {
   
   // Relaciones
   items: BudgetItem[]
+  attachments?: BudgetAttachment[]
 }
 
 // Ítem de presupuesto

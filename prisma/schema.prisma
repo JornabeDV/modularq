@@ -462,6 +462,9 @@ model Budget {
   // Ítems del presupuesto
   items BudgetItem[]
 
+  // Archivos adjuntos
+  attachments BudgetAttachment[]
+
   @@map("budgets")
 }
 
@@ -562,4 +565,42 @@ model BudgetItemEquipment {
   analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
 
   @@map("budget_item_equipments")
+}
+
+// Tipos de documentos para archivos adjuntos
+enum DocumentType {
+  project_image    // Imágenes de proyectos (muestran en grid)
+  technical_plan   // Planos técnicos (muestran en hoja completa)
+}
+
+// Archivos adjuntos de presupuestos (imágenes y PDFs)
+model BudgetAttachment {
+  id          String   @id @default(cuid())
+  budget_id   String
+  
+  // Información del archivo
+  filename    String   // Nombre original del archivo
+  original_name String // Nombre original con extensión
+  mime_type   String   // image/jpeg, application/pdf, etc.
+  file_type   String   // "image" | "pdf"
+  document_type DocumentType @default(project_image) // Tipo de documento
+  size        Int      // Tamaño en bytes
+  
+  // URLs de Cloudinary
+  url         String   // URL completa del archivo
+  public_id   String   // ID público de Cloudinary para eliminar
+  thumbnail_url String? // URL de thumbnail (solo para imágenes)
+  
+  // Metadatos
+  description String?  // Descripción opcional del archivo
+  uploaded_by String?  // ID del usuario que subió el archivo
+  
+  // Timestamps
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relaciones
+  budget      Budget   @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+
+  @@map("budget_attachments")
 }

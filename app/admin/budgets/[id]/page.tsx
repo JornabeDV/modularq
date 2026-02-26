@@ -55,6 +55,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
   // Hook principal del presupuesto
   const {
     budget,
+    attachments,
     loading,
     saving,
     editingQuantities,
@@ -64,6 +65,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
     handleQuantityBlur,
     saveAllChanges,
     discardChanges,
+    setAttachments,
   } = useBudget(params.id);
 
   // Estados locales
@@ -769,6 +771,9 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
               currentExchangeRate={exchangeRate?.venta}
               onSaveModuleDescription={handleSaveModuleDescription}
               savingModuleDesc={savingModuleDesc}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              isEditable={isEditable}
             />
           </TabsContent>
         </Tabs>
@@ -810,6 +815,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
             </DialogHeader>
             <DialogFooter className="gap-2">
               <Button
+                className="cursor-pointer"
                 variant="outline"
                 onClick={() => setShowDeleteDialog(false)}
                 disabled={isDeleting}
@@ -817,7 +823,7 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                 Cancelar
               </Button>
               <Button
-                variant="destructive"
+                className="cursor-pointer"
                 onClick={handleDelete}
                 disabled={isDeleting}
               >

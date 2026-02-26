@@ -22,18 +22,23 @@ import {
 import Image from "next/image";
 import {
   Budget,
+  BudgetAttachment,
   PrismaTypedService,
   ModuleDescriptionSection,
 } from "@/lib/prisma-typed-service";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetPDFDownload } from "./BudgetPDFDownload";
 import { ModuleDescriptionEditor } from "./ModuleDescriptionEditor";
+import { BudgetAttachments } from "./BudgetAttachments";
 
 interface BudgetClientViewProps {
   budget: Budget;
   currentExchangeRate?: number;
   onSaveModuleDescription?: (sections: ModuleDescriptionSection[]) => void;
   savingModuleDesc?: boolean;
+  attachments?: BudgetAttachment[];
+  onAttachmentsChange?: (attachments: BudgetAttachment[]) => void;
+  isEditable?: boolean;
 }
 
 // Datos de la empresa ModulArq
@@ -54,6 +59,9 @@ export function BudgetClientView({
   currentExchangeRate,
   onSaveModuleDescription,
   savingModuleDesc = false,
+  attachments = [],
+  onAttachmentsChange,
+  isEditable = true,
 }: BudgetClientViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -540,50 +548,61 @@ export function BudgetClientView({
             </div>
           ) : (
             <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    1- VALIDEZ DE LA OFERTA:
-                  </span>
-                  <p className="mt-1">
-                    {budgetData.validityDays} días desde la fecha de emisión
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Columna izquierda */}
+                <div className="space-y-4">
+                  <div>
+                    <span className="font-medium text-muted-foreground">
+                      1- VALIDEZ DE LA OFERTA:
+                    </span>
+                    <p className="mt-1">
+                      {budgetData.validityDays} días desde la fecha de emisión
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className="font-medium text-muted-foreground">
+                      2- MONEDA:
+                    </span>
+                    <p className="mt-1">
+                      Dólar oficial BNA vendedor al día del efectivo pago
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className="font-medium text-muted-foreground">
+                      3- CONDICIONES DE PAGO:
+                    </span>
+                    <p className="mt-1">{budgetData.paymentTerms}</p>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    2- MONEDA:
-                  </span>
-                  <p className="mt-1">
-                    Dólar oficial BNA vendedor al día del efectivo pago
-                  </p>
+
+                {/* Columna derecha */}
+                <div className="space-y-4">
+                  <div>
+                    <span className="font-medium text-muted-foreground">
+                      4- FECHA DE ENTREGA:
+                    </span>
+                    <p className="mt-1">{budgetData.deliveryTerms}</p>
+                  </div>
+
+                  <div>
+                    <span className="font-medium text-muted-foreground">
+                      5- LUGAR DE ENTREGA:
+                    </span>
+                    <p className="mt-1">{budgetData.deliveryLocation}</p>
+                  </div>
+
+                  {budgetData.notes && (
+                    <div>
+                      <span className="font-medium text-muted-foreground">
+                        6- NOTAS:
+                      </span>
+                      <p className="mt-1">{budgetData.notes}</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div>
-                <span className="font-medium text-muted-foreground">
-                  3- CONDICIONES DE PAGO:
-                </span>
-                <p className="mt-1">{budgetData.paymentTerms}</p>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">
-                  4- FECHA DE ENTREGA:
-                </span>
-                <p className="mt-1">{budgetData.deliveryTerms}</p>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">
-                  5- LUGAR DE ENTREGA:
-                </span>
-                <p className="mt-1">{budgetData.deliveryLocation}</p>
-              </div>
-              {budgetData.notes && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    6- NOTAS:
-                  </span>
-                  <p className="mt-1">{budgetData.notes}</p>
-                </div>
-              )}
             </div>
           )}
         </CardContent>
@@ -627,6 +646,14 @@ export function BudgetClientView({
         </CardContent>
       </Card>
 
+      {/* Archivos Adjuntos */}
+      <BudgetAttachments
+        budgetId={budget.id}
+        attachments={attachments}
+        onAttachmentsChange={onAttachmentsChange || (() => {})}
+        isEditable={isEditable && budget.status === "draft"}
+      />
+
       {/* Footer */}
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
@@ -635,6 +662,7 @@ export function BudgetClientView({
         <BudgetPDFDownload
           budget={budget}
           currentExchangeRate={currentExchangeRate}
+          attachments={attachments}
         />
       </div>
     </div>

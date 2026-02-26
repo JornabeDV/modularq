@@ -113,6 +113,9 @@ dependencies:
   class-variance-authority:
     specifier: ^0.7.1
     version: 0.7.1
+  cloudinary:
+    specifier: ^2.9.0
+    version: 2.9.0
   clsx:
     specifier: ^2.1.1
     version: 2.1.1
@@ -149,6 +152,9 @@ dependencies:
   nodemailer:
     specifier: ^7.0.9
     version: 7.0.9
+  pdf-lib:
+    specifier: ^1.17.1
+    version: 1.17.1
   pg:
     specifier: ^8.16.3
     version: 8.16.3
@@ -2085,6 +2091,18 @@ packages:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  /@pdf-lib/standard-fonts@1.0.0:
+    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
+    dependencies:
+      pako: 1.0.11
+    dev: false
+
+  /@pdf-lib/upng@1.0.1:
+    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
+    dependencies:
+      pako: 1.0.11
+    dev: false
 
   /@prisma/client@6.17.1(prisma@6.17.1)(typescript@5.9.3):
     resolution: {integrity: sha512-zL58jbLzYamjnNnmNA51IOZdbk5ci03KviXCuB0Tydc9btH2kDWsi1pQm2VecviRTM7jGia0OPPkgpGnT3nKvw==}
@@ -5077,6 +5095,13 @@ packages:
     engines: {node: '>=0.8'}
     dev: false
 
+  /cloudinary@2.9.0:
+    resolution: {integrity: sha512-F3iKMOy4y0zy0bi5JBp94SC7HY7i/ImfTPSUV07iJmRzH1Iz8WavFfOlJTR1zvYM/xKGoiGZ3my/zy64In0IQQ==}
+    engines: {node: '>=9'}
+    dependencies:
+      lodash: 4.17.21
+    dev: false
+
   /clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
@@ -7053,6 +7078,15 @@ packages:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
     dev: false
 
+  /pdf-lib@1.17.1:
+    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
+    dependencies:
+      '@pdf-lib/standard-fonts': 1.0.0
+      '@pdf-lib/upng': 1.0.1
+      pako: 1.0.11
+      tslib: 1.14.1
+    dev: false
+
   /perfect-debounce@1.0.0:
     resolution: {integrity: sha512-xCy9V055GLEqoFaHoC1SoLIaLmWctgCUaBaWxDZ7/Zx4CTyX7cJQLJOok/orfjZAh9kEYpjJa4d0KcJmCbctZA==}
     dev: false
@@ -8038,6 +8072,10 @@ packages:
     dependencies:
       typescript: 5.9.3
     dev: true
+
+  /tslib@1.14.1:
+    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
+    dev: false
 
   /tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
