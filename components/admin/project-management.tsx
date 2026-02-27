@@ -12,6 +12,7 @@ import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
 import { useOperariosPrisma } from "@/hooks/use-operarios-prisma";
 import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import type { Project } from "@/lib/types";
 
 type ProjectStatus =
@@ -24,6 +25,7 @@ type ProjectStatus =
 export function ProjectManagement() {
   const router = useRouter();
   const { user, userProfile } = useAuth();
+  const { toast } = useToast();
 
   const isReadOnly = userProfile?.role === "supervisor";
 
@@ -87,6 +89,10 @@ export function ProjectManagement() {
       }
 
       setIsCreateDialogOpen(false);
+      toast({
+        title: "Proyecto creado",
+        description: `"${projectData.name}" se ha creado exitosamente`,
+      });
       router.push(`/admin/projects/${project.id}`);
     }
 
@@ -128,7 +134,19 @@ export function ProjectManagement() {
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    await deleteProject(projectId);
+    const result = await deleteProject(projectId);
+    if (result.success) {
+      toast({
+        title: "Proyecto eliminado",
+        description: "El proyecto se ha eliminado exitosamente",
+      });
+    } else {
+      toast({
+        title: "Error al eliminar proyecto",
+        description: result.error || "No se pudo eliminar el proyecto",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleStatusChange = async (projectId: string, newStatus: string) => {

@@ -61,7 +61,7 @@ export function DeleteClientButton({
         </Tooltip>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Se eliminará permanentemente el
               cliente "{clientName}" y todos sus datos asociados.

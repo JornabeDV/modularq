@@ -103,8 +103,11 @@ export function useMaterialsPrisma() {
         updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
       }
 
-      // Actualizar estado local
-      await fetchMaterials()
+      // Agregar material al estado local inmediatamente sin recargar
+      setMaterials(prev => [...prev, formattedMaterial])
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchMaterials(true).catch(console.error)
       
       return { success: true, material: formattedMaterial }
     } catch (err) {
@@ -122,8 +125,8 @@ export function useMaterialsPrisma() {
       
       await PrismaTypedService.updateMaterial(materialId, materialData)
 
-      // Actualizar estado local
-      await fetchMaterials()
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchMaterials(true).catch(console.error)
       
       return { success: true }
     } catch (err) {

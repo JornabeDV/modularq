@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
 import { ClientStats } from "./client-stats";
 import { ClientTable } from "./client-table";
 import { ClientForm } from "./client-form";
@@ -14,11 +12,12 @@ import {
   type CreateClientData,
 } from "@/hooks/use-clients-prisma";
 import { useProjectsPrisma } from "@/hooks/use-projects-prisma";
-
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 export function ClientManagement() {
   const { userProfile } = useAuth();
+  const { toast } = useToast();
 
   const isReadOnly = userProfile?.role === "supervisor";
 
@@ -40,10 +39,18 @@ export function ClientManagement() {
     setCreateError(null);
     const result = await createClient(clientData);
     if (result.success) {
-      toast.success("Cliente creado exitosamente");
+      toast({
+        title: "Cliente creado",
+        description: `El cliente ${clientData.company_name} se ha creado correctamente`,
+      });
       setIsCreateDialogOpen(false);
       setCreateError(null);
     } else {
+      toast({
+        title: "Error al crear cliente",
+        description: result.error || "No se pudo crear el cliente",
+        variant: "destructive",
+      });
       setCreateError(result.error || "Error al crear cliente");
     }
   };
@@ -70,10 +77,18 @@ export function ClientManagement() {
 
       const result = await updateClient(clientId, updateData);
       if (result.success) {
-        toast.success("Cliente actualizado exitosamente");
+        toast({
+          title: "Cliente actualizado",
+          description: `El cliente se ha actualizado correctamente`,
+        });
         setEditingClient(null);
         setUpdateError(null);
       } else {
+        toast({
+          title: "Error al actualizar cliente",
+          description: result.error || "No se pudo actualizar el cliente",
+          variant: "destructive",
+        });
         setUpdateError(result.error || "Error al actualizar cliente");
       }
     } catch (error) {
@@ -85,7 +100,19 @@ export function ClientManagement() {
   };
 
   const handleDeleteClient = async (clientId: string) => {
-    await deleteClient(clientId);
+    const result = await deleteClient(clientId);
+    if (result.success) {
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente se ha eliminado exitosamente",
+      });
+    } else {
+      toast({
+        title: "Error al eliminar cliente",
+        description: result.error || "No se pudo eliminar el cliente",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditClient = (client: any) => {
@@ -117,7 +144,7 @@ export function ClientManagement() {
             contact.name.toLowerCase().includes(searchLower) ||
             contact.email.toLowerCase().includes(searchLower) ||
             contact.phone.includes(searchTerm) ||
-            contact.role.toLowerCase().includes(searchLower)
+            contact.role.toLowerCase().includes(searchLower),
         );
         if (matchesInContacts) return true;
       }

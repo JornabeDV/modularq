@@ -28,9 +28,9 @@ export function useTasksPrisma() {
   const [error, setError] = useState<string | null>(null)
 
   // Cargar tareas
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       
       const fetchedTasks = await PrismaTypedService.getAllTasks()
@@ -65,8 +65,18 @@ export function useTasksPrisma() {
         created_by: taskData.createdBy
       })
 
-      // Actualizar estado local
-      await fetchTasks()
+      // Crear objeto de tarea para el estado local
+      const newTask: Task = {
+        ...task,
+        estimatedHours: parseFloat(String(task.estimated_hours)) || 0,
+        taskOrder: task.task_order || 0
+      }
+      
+      // Agregar tarea al estado local inmediatamente sin recargar
+      setTasks(prev => [...prev, newTask])
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchTasks(true).catch(console.error)
       
       return { success: true, taskId: task.id }
     } catch (err) {
@@ -90,8 +100,8 @@ export function useTasksPrisma() {
         type: taskData.type
       })
 
-      // Actualizar estado local
-      await fetchTasks()
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchTasks(true).catch(console.error)
       
       return { success: true }
     } catch (err) {
@@ -109,8 +119,11 @@ export function useTasksPrisma() {
       
       await PrismaTypedService.deleteTask(taskId)
 
-      // Actualizar estado local
-      await fetchTasks()
+      // Actualizar estado local directamente sin recargar toda la lista
+      setTasks(prev => prev.filter(t => t.id !== taskId))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchTasks(true).catch(console.error)
       
       return { success: true }
     } catch (err) {
