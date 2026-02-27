@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,11 +35,15 @@ interface ProjectDetailProps {
 
 export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNewlyCreated = searchParams.get("new") === "true";
   const { user, userProfile } = useAuth();
   const isReadOnly = userProfile?.role === "supervisor";
 
   const checklistHook = useProjectPlanningChecklist(projectId, user?.id || "");
   const { checklist, checklistItems } = checklistHook;
+
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const projectDetailResult = useProjectDetail({
     projectId,
@@ -138,7 +142,24 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     await handleUpdateTask(taskId, projectTaskData, baseTaskData);
   };
 
-  if (projectsLoading) {
+  // Manejar estado de carga inicial para evitar flash de "no encontrado"
+  useEffect(() => {
+    if (!projectsLoading && initialLoading) {
+      // Dar un pequeño delay para asegurar que el proyecto se haya encontrado
+      const timer = setTimeout(() => {
+        setInitialLoading(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [projectsLoading, initialLoading]);
+
+  if (projectsLoading || initialLoading) {
+    // Si viene de crear un nuevo proyecto, no mostrar loading
+    // para evitar el efecto de "doble spinner"
+    if (isNewlyCreated) {
+      return <div className="min-h-screen" />;
+    }
+
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -149,7 +170,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     );
   }
 
-  if (projectsError || (!projectsLoading && projects.length > 0 && !project)) {
+  if (projectsError || (!projectsLoading && !initialLoading && projects.length > 0 && !project)) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
