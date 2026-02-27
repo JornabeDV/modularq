@@ -44,6 +44,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
   const { checklist, checklistItems } = checklistHook;
 
   const [initialLoading, setInitialLoading] = useState(true);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
 
   const projectDetailResult = useProjectDetail({
     projectId,
@@ -170,7 +171,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
     );
   }
 
-  if (projectsError || (!projectsLoading && !initialLoading && projects.length > 0 && !project)) {
+  // No mostrar error si estamos eliminando el proyecto
+  if (!isDeletingProject && (projectsError || (!projectsLoading && !initialLoading && projects.length > 0 && !project))) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -209,7 +211,15 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         onEditClick={() => setIsEditDialogOpen(!isEditDialogOpen)}
         onActivateClick={handleActivateClick}
         onDeactivateClick={handleDeactivateClick}
-        onDelete={handleDeleteProject}
+        onDelete={async () => {
+          setIsDeletingProject(true);
+          try {
+            await handleDeleteProject();
+            router.push("/admin/projects?deleted=true");
+          } catch (error) {
+            setIsDeletingProject(false);
+          }
+        }}
       />
 
       <ProjectInfoCards
@@ -312,6 +322,16 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
             onConfirm={confirmDeactivate}
           />
         </>
+      )}
+
+      {/* Overlay de carga fullscreen al eliminar */}
+      {isDeletingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Eliminando proyecto...</p>
+          </div>
+        </div>
       )}
     </div>
   );

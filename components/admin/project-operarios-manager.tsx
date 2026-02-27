@@ -23,6 +23,7 @@ import { Plus, Users, X } from "lucide-react";
 import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma";
 import { useUsersPrisma } from "@/hooks/use-users-prisma";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectOperariosManagerProps {
   projectId: string;
@@ -34,6 +35,7 @@ export function ProjectOperariosManager({
   isReadOnly = false,
 }: ProjectOperariosManagerProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const {
     projectOperarios,
     loading,
@@ -73,8 +75,17 @@ export function ProjectOperariosManager({
       }
       setSelectedUserIds([]);
       setIsDialogOpen(false);
+      toast({
+        title: "Operarios asignados",
+        description: `${selectedUserIds.length} operario(s) asignado(s) al proyecto`,
+      });
     } catch (error) {
       console.error("Error assigning operarios:", error);
+      toast({
+        title: "Error al asignar",
+        description: "No se pudieron asignar los operarios",
+        variant: "destructive",
+      });
     } finally {
       setIsAssigning(false);
     }
@@ -222,7 +233,7 @@ export function ProjectOperariosManager({
           </div>
         ) : (
           <div className="space-y-3">
-            {projectOperarios?.map((projectOperario) => (
+            {projectOperarios?.filter(po => po.user?.role === 'operario').map((projectOperario) => (
               <div
                 key={projectOperario.id}
                 className="flex items-center justify-between p-3 border rounded-lg"
