@@ -57,9 +57,9 @@ export function useClientsPrisma() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchClients = async () => {
+  const fetchClients = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       
       const [data, contactsByClient] = await Promise.all([
@@ -138,11 +138,14 @@ export function useClientsPrisma() {
         updatedAt: typeof client.updated_at === 'string' ? client.updated_at : client.updated_at.toISOString()
       }
 
-      await fetchClients()
+      // Agregar cliente al estado local inmediatamente sin recargar
+      setClients(prev => [...prev, formattedClient])
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchClients(true).catch(console.error)
       
       return { success: true, client: formattedClient }
     } catch (err: any) {
-      console.error('Error creating client:', err)
       let errorMessage = 'Error al crear cliente'
       
       if (err && typeof err === 'object') {
@@ -187,7 +190,8 @@ export function useClientsPrisma() {
         }
       }
 
-      await fetchClients()
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchClients(true).catch(console.error)
       
       return { success: true, client: undefined }
     } catch (err: any) {
@@ -224,7 +228,11 @@ export function useClientsPrisma() {
       
       await PrismaTypedService.deleteClient(clientId)
 
-      await fetchClients()
+      // Actualizar estado local directamente sin recargar toda la lista
+      setClients(prev => prev.filter(c => c.id !== clientId))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchClients(true).catch(console.error)
       
       return { success: true }
     } catch (err) {

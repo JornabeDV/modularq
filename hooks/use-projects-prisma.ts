@@ -44,9 +44,9 @@ export function useProjectsPrisma() {
   const [error, setError] = useState<string | null>(null)
 
   // Cargar proyectos
-  const fetchProjects = async () => {
+  const fetchProjects = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       
       const data = await PrismaTypedService.getAllProjects()
@@ -238,8 +238,11 @@ export function useProjectsPrisma() {
         projectOperarios: [] // Se llenará cuando se haga fetchProjects
       }
 
-      // Actualizar estado local
-      await fetchProjects()
+      // Agregar proyecto al estado local inmediatamente sin recargar
+      setProjects(prev => [...prev, formattedProject])
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchProjects(true).catch(console.error)
       
       return { success: true, project: formattedProject } // Devolver el proyecto creado
     } catch (err) {
@@ -273,8 +276,8 @@ export function useProjectsPrisma() {
       })
 
 
-      // Actualizar estado local
-      await fetchProjects()
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchProjects(true).catch(console.error)
       
       return { success: true, project: undefined } // El proyecto se obtiene del fetchProjects
     } catch (err) {
@@ -292,8 +295,11 @@ export function useProjectsPrisma() {
       
       await PrismaTypedService.deleteProject(projectId)
 
-      // Actualizar estado local
-      await fetchProjects()
+      // Actualizar estado local directamente sin recargar toda la lista
+      setProjects(prev => prev.filter(p => p.id !== projectId))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchProjects(true).catch(console.error)
       
       return { success: true }
     } catch (err) {

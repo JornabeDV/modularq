@@ -15,7 +15,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { GripVertical, CheckCircle, User, Edit } from "lucide-react";
+import { GripVertical, User, Edit } from "lucide-react";
 import type { ProjectTask } from "@/lib/types";
 
 interface DraggableTaskCardProps {
@@ -55,7 +55,9 @@ export function DraggableTaskCard({
     !isReadOnly && !hasAssignedUser && projectAllowsUnassignedActions;
   const canDeleteTask =
     !isReadOnly &&
-    (hasAssignedUser ? projectStatus !== "active" : projectAllowsUnassignedActions);
+    (hasAssignedUser
+      ? projectStatus !== "active"
+      : projectAllowsUnassignedActions);
   const deleteButtonLabel = hasAssignedUser ? "Quitar" : "Eliminar";
   const taskStatus = projectTask.status || "pending";
   const statusLabelMap: Record<ProjectTask["status"], string> = {
@@ -74,17 +76,6 @@ export function DraggableTaskCard({
     cancelled: "destructive",
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (
-      target.closest("button") ||
-      target.closest("[data-drag-handle]") ||
-      target.closest('[role="button"]')
-    ) {
-      return;
-    }
-    onEdit(projectTask);
-  };
   const handleEditClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     onEdit(projectTask);
