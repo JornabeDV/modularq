@@ -913,7 +913,6 @@ export default function BudgetDetailPage({ params }: BudgetDetailPageProps) {
                 <strong>{budget.client_name}</strong>.
                 <br />
                 <br />
-                Una vez aprobado, el presupuesto ya no podrá ser editado.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">

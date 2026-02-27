@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTrigger } from '@/components/ui/dialog'
 import { Plus } from 'lucide-react'
+import { DataPagination } from '@/components/ui/data-pagination'
 import { MaterialStats } from './material-stats'
 import { MaterialTable } from './material-table'
 import { MaterialForm } from './material-form'
@@ -26,6 +27,10 @@ export function StockManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [lowStockOnly, setLowStockOnly] = useState(false)
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
 
   const handleCreateMaterial = async (materialData: CreateMaterialData) => {
     const result = await createMaterial(materialData)
@@ -121,6 +126,30 @@ export function StockManagement() {
     return matchesSearch && matchesCategory && matchesLowStock
   }) || []
 
+  // Paginación
+  const totalItems = filteredMaterials.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const paginatedMaterials = filteredMaterials.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  // Resetear página cuando cambian filtros
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(1)
+  }
+
+  const handleCategoryFilterChange = (value: string) => {
+    setCategoryFilter(value)
+    setCurrentPage(1)
+  }
+
+  const handleLowStockOnlyChange = (value: boolean) => {
+    setLowStockOnly(value)
+    setCurrentPage(1)
+  }
+
   // Calcular estadísticas
   const totalMaterials = materials?.length || 0
   const lowStockMaterials = materials?.filter(m => m.stockQuantity <= m.minStock) || []
@@ -188,17 +217,32 @@ export function StockManagement() {
 
       {/* Materials Table */}
       <MaterialTable
-        materials={filteredMaterials}
+        materials={paginatedMaterials}
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={handleSearchChange}
         categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
+        onCategoryFilterChange={handleCategoryFilterChange}
         lowStockOnly={lowStockOnly}
-        onLowStockOnlyChange={setLowStockOnly}
+        onLowStockOnlyChange={handleLowStockOnlyChange}
         onEditMaterial={handleEditMaterial}
         onDeleteMaterial={handleDeleteMaterial}
         isReadOnly={isReadOnly}
       />
+
+      {/* Paginación */}
+      {totalItems > 0 && (
+        <div className="pt-4 border-t">
+          <DataPagination
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+            itemsPerPageOptions={[5, 10, 20, 50]}
+            itemsText="materiales"
+          />
+        </div>
+      )}
 
       {/* Create Material Dialog */}
       <MaterialForm
@@ -206,6 +250,7 @@ export function StockManagement() {
         onClose={() => setIsCreateDialogOpen(false)}
         onSubmit={handleCreateMaterial}
         isEditing={false}
+        existingMaterials={materials || []}
       />
 
       {/* Edit Material Dialog */}
@@ -220,6 +265,7 @@ export function StockManagement() {
         isEditing={true}
         initialData={editingMaterial}
         isLoading={isUpdating}
+        existingMaterials={materials || []}
       />
     </div>
   )
