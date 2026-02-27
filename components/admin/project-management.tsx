@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
@@ -34,6 +34,8 @@ type SortOrder = "asc" | "desc";
 
 export function ProjectManagement() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justDeleted = searchParams.get("deleted") === "true";
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
 
@@ -288,6 +290,12 @@ export function ProjectManagement() {
   };
 
   if (loading) {
+    // Si venimos de eliminar un proyecto, no mostrar loading
+    // para evitar el efecto de "doble spinner"
+    if (justDeleted) {
+      return <div className="min-h-screen" />;
+    }
+
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">

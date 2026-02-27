@@ -23,6 +23,7 @@ import { Plus, Users, X } from "lucide-react";
 import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma";
 import { useUsersPrisma } from "@/hooks/use-users-prisma";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectSubcontractorManagerProps {
   projectId: string;
@@ -34,6 +35,7 @@ export function ProjectSubcontractorManager({
   isReadOnly = false,
 }: ProjectSubcontractorManagerProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const {
     projectOperarios,
     loading,
@@ -73,8 +75,17 @@ export function ProjectSubcontractorManager({
       }
       setSelectedUserIds([]);
       setIsDialogOpen(false);
+      toast({
+        title: "Subcontratistas asignados",
+        description: `${selectedUserIds.length} subcontratista(s) asignado(s) al proyecto`,
+      });
     } catch (error) {
       console.error("Error assigning subcontractors:", error);
+      toast({
+        title: "Error al asignar",
+        description: "No se pudieron asignar los subcontratistas",
+        variant: "destructive",
+      });
     } finally {
       setIsAssigning(false);
     }
