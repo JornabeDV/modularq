@@ -48,9 +48,9 @@ export function useMaterialsPrisma() {
   const [error, setError] = useState<string | null>(null)
 
   // Cargar materiales
-  const fetchMaterials = async () => {
+  const fetchMaterials = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       
       const data = await PrismaTypedService.getAllMaterials()
@@ -141,8 +141,11 @@ export function useMaterialsPrisma() {
       
       await PrismaTypedService.deleteMaterial(materialId)
 
-      // Actualizar estado local
-      await fetchMaterials()
+      // Actualizar estado local directamente sin recargar toda la lista
+      setMaterials(prev => prev.filter(m => m.id !== materialId))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchMaterials(true).catch(console.error)
       
       return { success: true }
     } catch (err) {
