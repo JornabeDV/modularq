@@ -134,7 +134,7 @@ export function ProjectMaterialRow({ projectMaterial, onEdit, onDelete, isReadOn
                 onDelete(projectMaterial.id)
                 setShowDeleteDialog(false)
               }}
-              className="cursor-pointer bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="cursor-pointer"
             >
               Eliminar
             </AlertDialogAction>
