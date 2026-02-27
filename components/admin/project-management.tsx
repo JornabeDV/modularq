@@ -22,6 +22,16 @@ type ProjectStatus =
   | "completed"
   | "delivered";
 
+type SortField =
+  | "name"
+  | "clientName"
+  | "status"
+  | "condition"
+  | "startDate"
+  | "endDate"
+  | "progress";
+type SortOrder = "asc" | "desc";
+
 export function ProjectManagement() {
   const router = useRouter();
   const { user, userProfile } = useAuth();
@@ -47,56 +57,77 @@ export function ProjectManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
+  // Loading state para creación
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+
+  // Ordenamiento
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+
   const handleCreateProject = async (projectData: any) => {
     if (!user?.id) return { success: false, error: "Usuario no encontrado" };
 
-    const result = await createProject({
-      name: projectData.name,
-      description: projectData.description,
-      status: projectData.status,
-      condition: projectData.condition || "venta",
-      start_date: projectData.startDate
-        ? new Date(projectData.startDate)
-        : new Date(),
-      end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
-      client_id: projectData.clientId || undefined,
-      created_by: user.id,
-      modulation: projectData.modulation,
-      height: projectData.height,
-      width: projectData.width,
-      depth: projectData.depth,
-      module_count: projectData.moduleCount,
-    });
+    // Cerrar modal inmediatamente y mostrar loading fullscreen
+    setIsCreateDialogOpen(false);
+    setIsCreatingProject(true);
 
-    if (result.success && result.project) {
-      const project = result.project;
+    try {
+      const result = await createProject({
+        name: projectData.name,
+        description: projectData.description,
+        status: projectData.status,
+        condition: projectData.condition || "venta",
+        start_date: projectData.startDate
+          ? new Date(projectData.startDate)
+          : new Date(),
+        end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
+        client_id: projectData.clientId || undefined,
+        created_by: user.id,
+        modulation: projectData.modulation,
+        height: projectData.height,
+        width: projectData.width,
+        depth: projectData.depth,
+        module_count: projectData.moduleCount,
+      });
 
-      if (operarios && operarios.length > 0) {
-        try {
-          const assignPromises = operarios.map((operario) =>
-            assignOperarioToProject({
-              projectId: project.id,
-              userId: operario.id,
-            }),
-          );
-          await Promise.all(assignPromises);
-          console.log(
-            `Asignados ${operarios.length} operarios al proyecto ${project.name}`,
-          );
-        } catch (error) {
-          console.error("Error asignando operarios automáticamente:", error);
+      if (result.success && result.project) {
+        const project = result.project;
+
+        if (operarios && operarios.length > 0) {
+          try {
+            const assignPromises = operarios.map((operario) =>
+              assignOperarioToProject({
+                projectId: project.id,
+                userId: operario.id,
+              }),
+            );
+            await Promise.all(assignPromises);
+          } catch (error) {
+            console.error("Error asignando operarios:", error);
+          }
         }
+
+        router.push(`/admin/projects/${project.id}?new=true`);
+      } else {
+        // Error: quitar loading y mostrar error
+        setIsCreatingProject(false);
+        toast({
+          title: "Error al crear proyecto",
+          description: result.error || "No se pudo crear el proyecto",
+          variant: "destructive",
+        });
       }
 
-      setIsCreateDialogOpen(false);
+      return result;
+    } catch (error) {
+      setIsCreatingProject(false);
       toast({
-        title: "Proyecto creado",
-        description: `"${projectData.name}" se ha creado exitosamente`,
+        title: "Error al crear proyecto",
+        description: "Ocurrió un error inesperado",
+        variant: "destructive",
       });
-      router.push(`/admin/projects/${project.id}`);
+      return { success: false, error: "Error inesperado" };
     }
-
-    return result;
   };
 
   const handleUpdateProject = async (projectId: string, projectData: any) => {
@@ -165,6 +196,16 @@ export function ProjectManagement() {
     await reorderProjects(projectOrders);
   };
 
+  // Manejar ordenamiento
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
   const filteredProjects =
     projects?.filter((project) => {
       const matchesSearch =
@@ -179,11 +220,48 @@ export function ProjectManagement() {
       return matchesSearch && matchesStatus;
     }) || [];
 
-  const totalItems = filteredProjects.length;
+  // Ordenar proyectos
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    let comparison = 0;
+    switch (sortField) {
+      case "name":
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case "status":
+        comparison = a.status.localeCompare(b.status);
+        break;
+      case "condition":
+        comparison = (a.condition || "").localeCompare(b.condition || "");
+        break;
+      case "startDate":
+        comparison =
+          new Date(a.startDate || 0).getTime() -
+          new Date(b.startDate || 0).getTime();
+        break;
+      case "endDate":
+        comparison =
+          new Date(a.endDate || 0).getTime() -
+          new Date(b.endDate || 0).getTime();
+        break;
+      case "progress":
+        comparison = (a.progress || 0) - (b.progress || 0);
+        break;
+      case "clientName":
+        const aClient = a.client?.companyName || "";
+        const bClient = b.client?.companyName || "";
+        comparison = aClient.localeCompare(bClient);
+        break;
+      default:
+        comparison = 0;
+    }
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+
+  const totalItems = sortedProjects.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedProjects = filteredProjects.slice(startIndex, endIndex);
+  const paginatedProjects = sortedProjects.slice(startIndex, endIndex);
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -281,6 +359,9 @@ export function ProjectManagement() {
         onStatusChange={!isReadOnly ? handleStatusChange : undefined}
         onReorderProjects={handleReorderProjects}
         isReadOnly={isReadOnly}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        onSort={handleSort}
       />
 
       <ProjectForm
@@ -301,6 +382,16 @@ export function ProjectManagement() {
         isEditing={true}
         initialData={editingProject}
       />
+
+      {/* Overlay de carga fullscreen */}
+      {isCreatingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Creando proyecto...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

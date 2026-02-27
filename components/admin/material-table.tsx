@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ArrowUpDown } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -19,6 +20,14 @@ import { MaterialFilters } from "@/components/admin/material-filters";
 import { MaterialRow } from "@/components/admin/material-row";
 import type { Material } from "@/hooks/use-materials-prisma";
 
+type SortField =
+  | "code"
+  | "name"
+  | "category"
+  | "stockQuantity"
+  | "unitPrice"
+  | "supplier";
+
 interface MaterialTableProps {
   materials: Material[];
   searchTerm: string;
@@ -30,6 +39,9 @@ interface MaterialTableProps {
   onEditMaterial: (material: Material) => void;
   onDeleteMaterial: (materialId: string) => void;
   isReadOnly?: boolean;
+  sortField?: SortField;
+  sortOrder?: "asc" | "desc";
+  onSort?: (field: SortField) => void;
 }
 
 export function MaterialTable({
@@ -43,6 +55,9 @@ export function MaterialTable({
   onEditMaterial,
   onDeleteMaterial,
   isReadOnly = false,
+  sortField,
+  sortOrder,
+  onSort,
 }: MaterialTableProps) {
   return (
     <Card>
@@ -67,12 +82,60 @@ export function MaterialTable({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-background">
-                <TableHead>Código</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Precio Unit.</TableHead>
-                <TableHead>Proveedor</TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[120px]"
+                  onClick={() => onSort?.("code")}
+                >
+                  <div className="flex items-center gap-1">
+                    Código
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[200px]"
+                  onClick={() => onSort?.("name")}
+                >
+                  <div className="flex items-center gap-1">
+                    Nombre
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[120px]"
+                  onClick={() => onSort?.("category")}
+                >
+                  <div className="flex items-center gap-1">
+                    Categoría
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[100px]"
+                  onClick={() => onSort?.("stockQuantity")}
+                >
+                  <div className="flex items-center gap-1">
+                    Stock
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[120px]"
+                  onClick={() => onSort?.("unitPrice")}
+                >
+                  <div className="flex items-center gap-1">
+                    Precio Unit.
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[150px]"
+                  onClick={() => onSort?.("supplier")}
+                >
+                  <div className="flex items-center gap-1">
+                    Proveedor
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
                 {!isReadOnly && (
                   <TableHead className="text-center">Acciones</TableHead>
                 )}

@@ -32,6 +32,23 @@ function ReportsContent() {
     (p) => p.status === "completed" || p.status === "delivered",
   );
 
+  if (projectsLoading) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">
+                Cargando proyectos...
+              </p>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -55,16 +72,7 @@ function ReportsContent() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {projectsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-2 text-muted-foreground">
-                    Cargando proyectos...
-                  </p>
-                </div>
-              </div>
-            ) : completedProjects.length === 0 ? (
+            {completedProjects.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
@@ -144,27 +152,27 @@ function ReportsContent() {
                               Tareas
                             </div>
                           </div>
-                            {operariosCount > 0 && (
-                              <div>
-                                <div className="text-lg font-semibold">
-                                  {operariosCount}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Operario{operariosCount !== 1 ? "s" : ""}
-                                </div>
+                          {operariosCount > 0 && (
+                            <div>
+                              <div className="text-lg font-semibold">
+                                {operariosCount}
                               </div>
-                            )}
-                            {subcontractorsCount > 0 && (
-                              <div>
-                                <div className="text-lg font-semibold">
-                                  {subcontractorsCount}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  Subcontratista
-                                  {subcontractorsCount !== 1 ? "s" : ""}
-                                </div>
+                              <div className="text-xs text-muted-foreground">
+                                Operario{operariosCount !== 1 ? "s" : ""}
                               </div>
-                            )}
+                            </div>
+                          )}
+                          {subcontractorsCount > 0 && (
+                            <div>
+                              <div className="text-lg font-semibold">
+                                {subcontractorsCount}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Subcontratista
+                                {subcontractorsCount !== 1 ? "s" : ""}
+                              </div>
+                            </div>
+                          )}
                           <div>
                             <div className="text-lg font-semibold">100%</div>
                             <div className="text-xs text-muted-foreground">

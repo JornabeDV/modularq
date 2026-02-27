@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { ArrowUpDown } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,6 +14,8 @@ import { DataPagination } from "@/components/ui/data-pagination";
 import { DraggableTaskRow } from "./draggable-task-row";
 import { TaskFilters } from "./task-filters";
 import type { Task } from "@/lib/types";
+
+type SortField = "title" | "category" | "type" | "estimatedHours" | "taskOrder";
 
 interface TaskTableProps {
   tasks: Task[];
@@ -35,6 +34,9 @@ interface TaskTableProps {
   onDeleteTask: (taskId: string) => void;
   onReorderTasks?: (taskOrders: { id: string; taskOrder: number }[]) => void;
   isReadOnly?: boolean;
+  sortField?: SortField;
+  sortOrder?: "asc" | "desc";
+  onSort?: (field: SortField) => void;
 }
 
 export function TaskTable({
@@ -54,6 +56,9 @@ export function TaskTable({
   onDeleteTask,
   onReorderTasks,
   isReadOnly = false,
+  sortField,
+  sortOrder,
+  onSort,
 }: TaskTableProps) {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
@@ -147,12 +152,41 @@ export function TaskTable({
             <TableHeader>
               <TableRow className="hover:bg-background">
                 <TableHead className="text-center min-w-[60px]">#</TableHead>
-                <TableHead className="min-w-[200px]">Tarea</TableHead>
-                <TableHead className="text-center min-w-[120px]">
-                  Categoría
+                <TableHead
+                  className="cursor-pointer min-w-[200px]"
+                  onClick={() => onSort?.("title")}
+                >
+                  <div className="flex items-center gap-1">
+                    Tarea
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </TableHead>
-                <TableHead className="text-center min-w-[100px]">
-                  Tipo
+                <TableHead
+                  className="cursor-pointer text-center min-w-[120px]"
+                  onClick={() => onSort?.("category")}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Categoría
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer text-center min-w-[100px]"
+                  onClick={() => onSort?.("type")}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Tipo
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer text-center min-w-[100px]"
+                  onClick={() => onSort?.("estimatedHours")}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    Horas
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
                 </TableHead>
                 {!isReadOnly && (
                   <TableHead className="text-center min-w-[120px]">

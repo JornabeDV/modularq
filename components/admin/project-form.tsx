@@ -144,6 +144,18 @@ export function ProjectForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Para creación, cerrar inmediatamente y dejar que el parent maneje el loading
+    if (!isEditing) {
+      const submitData = {
+        ...formData,
+        clientId: formData.clientId === "none" ? undefined : formData.clientId,
+      };
+      onSubmit(submitData);
+      return;
+    }
+
+    // Para edición, mantener el comportamiento actual con loading en el botón
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -422,7 +434,8 @@ export function ProjectForm({
             </div>
           </div>
 
-          {submitError && (
+          {/* Solo mostrar errores en modo edición, en creación el parent maneja los errores */}
+          {isEditing && submitError && (
             <div className="bg-destructive/10 border border-destructive/20 rounded p-3">
               <p className="text-destructive text-sm">{submitError}</p>
             </div>
@@ -433,21 +446,21 @@ export function ProjectForm({
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={isEditing && isSubmitting}
               className="cursor-pointer"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isEditing && isSubmitting}
               className="cursor-pointer"
             >
-              {isSubmitting
-                ? "Guardando..."
-                : isEditing
-                  ? "Actualizar Proyecto"
-                  : "Crear Proyecto"}
+              {isEditing
+                ? isSubmitting
+                  ? "Guardando..."
+                  : "Actualizar Proyecto"
+                : "Crear Proyecto"}
             </Button>
           </div>
         </form>

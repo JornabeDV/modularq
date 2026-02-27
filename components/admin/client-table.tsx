@@ -1,11 +1,8 @@
 "use client";
 
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { ArrowUpDown } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,6 +14,8 @@ import { DataPagination } from "@/components/ui/data-pagination";
 import { ClientFilters } from "@/components/admin/client-filters";
 import { ClientRow } from "@/components/admin/client-row";
 import type { Client } from "@/hooks/use-clients-prisma";
+
+type SortField = "cuit" | "companyName" | "representative" | "email" | "phone";
 
 interface ClientTableProps {
   clients: Client[];
@@ -31,6 +30,9 @@ interface ClientTableProps {
   onViewClient: (client: Client) => void;
   onDeleteClient: (clientId: string) => void;
   isReadOnly?: boolean;
+  sortField?: SortField;
+  sortOrder?: "asc" | "desc";
+  onSort?: (field: SortField) => void;
 }
 
 export function ClientTable({
@@ -46,6 +48,9 @@ export function ClientTable({
   onViewClient,
   onDeleteClient,
   isReadOnly = false,
+  sortField,
+  sortOrder,
+  onSort,
 }: ClientTableProps) {
   return (
     <Card>
@@ -60,11 +65,51 @@ export function ClientTable({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-background">
-                <TableHead>CUIT</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead>Representante</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Teléfono</TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[120px]"
+                  onClick={() => onSort?.("cuit")}
+                >
+                  <div className="flex items-center gap-1">
+                    CUIT
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[200px]"
+                  onClick={() => onSort?.("companyName")}
+                >
+                  <div className="flex items-center gap-1">
+                    Empresa
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[150px]"
+                  onClick={() => onSort?.("representative")}
+                >
+                  <div className="flex items-center gap-1">
+                    Representante
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[200px]"
+                  onClick={() => onSort?.("email")}
+                >
+                  <div className="flex items-center gap-1">
+                    Email
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[120px]"
+                  onClick={() => onSort?.("phone")}
+                >
+                  <div className="flex items-center gap-1">
+                    Teléfono
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
                 {!isReadOnly && (
                   <TableHead className="text-right">Acciones</TableHead>
                 )}
