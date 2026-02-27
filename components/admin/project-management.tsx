@@ -22,6 +22,16 @@ type ProjectStatus =
   | "completed"
   | "delivered";
 
+type SortField =
+  | "name"
+  | "clientName"
+  | "status"
+  | "condition"
+  | "startDate"
+  | "endDate"
+  | "progress";
+type SortOrder = "asc" | "desc";
+
 export function ProjectManagement() {
   const router = useRouter();
   const { user, userProfile } = useAuth();
@@ -46,6 +56,10 @@ export function ProjectManagement() {
   const [statusFilter, setStatusFilter] = useState("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  // Ordenamiento
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const handleCreateProject = async (projectData: any) => {
     if (!user?.id) return { success: false, error: "Usuario no encontrado" };
@@ -165,6 +179,16 @@ export function ProjectManagement() {
     await reorderProjects(projectOrders);
   };
 
+  // Manejar ordenamiento
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
   const filteredProjects =
     projects?.filter((project) => {
       const matchesSearch =
@@ -179,11 +203,48 @@ export function ProjectManagement() {
       return matchesSearch && matchesStatus;
     }) || [];
 
-  const totalItems = filteredProjects.length;
+  // Ordenar proyectos
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    let comparison = 0;
+    switch (sortField) {
+      case "name":
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case "status":
+        comparison = a.status.localeCompare(b.status);
+        break;
+      case "condition":
+        comparison = (a.condition || "").localeCompare(b.condition || "");
+        break;
+      case "startDate":
+        comparison =
+          new Date(a.startDate || 0).getTime() -
+          new Date(b.startDate || 0).getTime();
+        break;
+      case "endDate":
+        comparison =
+          new Date(a.endDate || 0).getTime() -
+          new Date(b.endDate || 0).getTime();
+        break;
+      case "progress":
+        comparison = (a.progress || 0) - (b.progress || 0);
+        break;
+      case "clientName":
+        const aClient = a.client?.companyName || "";
+        const bClient = b.client?.companyName || "";
+        comparison = aClient.localeCompare(bClient);
+        break;
+      default:
+        comparison = 0;
+    }
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+
+  const totalItems = sortedProjects.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedProjects = filteredProjects.slice(startIndex, endIndex);
+  const paginatedProjects = sortedProjects.slice(startIndex, endIndex);
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -281,6 +342,9 @@ export function ProjectManagement() {
         onStatusChange={!isReadOnly ? handleStatusChange : undefined}
         onReorderProjects={handleReorderProjects}
         isReadOnly={isReadOnly}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        onSort={handleSort}
       />
 
       <ProjectForm

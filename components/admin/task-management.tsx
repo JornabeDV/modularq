@@ -11,6 +11,9 @@ import { useTasksPrisma, type CreateTaskData } from "@/hooks/use-tasks-prisma";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
+type SortField = "title" | "category" | "type" | "estimatedHours" | "taskOrder";
+type SortOrder = "asc" | "desc";
+
 export function TaskManagement() {
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
@@ -35,6 +38,10 @@ export function TaskManagement() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  // Ordenamiento
+  const [sortField, setSortField] = useState<SortField>("taskOrder");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const handleCreateTask = async (taskData: any) => {
     if (!user?.id) return;
@@ -132,6 +139,16 @@ export function TaskManagement() {
     await reorderTasks(taskOrders);
   };
 
+  // Manejar ordenamiento
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
   const filteredTasks =
     tasks?.filter((task) => {
       const matchesSearch =
@@ -147,11 +164,36 @@ export function TaskManagement() {
       return matchesSearch && matchesCategory && matchesType;
     }) || [];
 
-  const totalItems = filteredTasks.length;
+  // Ordenar tareas
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    let comparison = 0;
+    switch (sortField) {
+      case "title":
+        comparison = a.title.localeCompare(b.title);
+        break;
+      case "category":
+        comparison = (a.category || "").localeCompare(b.category || "");
+        break;
+      case "type":
+        comparison = a.type.localeCompare(b.type);
+        break;
+      case "estimatedHours":
+        comparison = (a.estimatedHours || 0) - (b.estimatedHours || 0);
+        break;
+      case "taskOrder":
+        comparison = (a.taskOrder || 0) - (b.taskOrder || 0);
+        break;
+      default:
+        comparison = 0;
+    }
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+
+  const totalItems = sortedTasks.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+  const paginatedTasks = sortedTasks.slice(startIndex, endIndex);
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -243,6 +285,9 @@ export function TaskManagement() {
         onDeleteTask={handleDeleteTask}
         onReorderTasks={handleReorderTasks}
         isReadOnly={isReadOnly}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        onSort={handleSort}
       />
 
       <TaskForm

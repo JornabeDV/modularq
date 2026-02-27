@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+
+type SortField = "cuit" | "companyName" | "representative" | "email" | "phone";
+type SortOrder = "asc" | "desc";
 import { ClientStats } from "./client-stats";
 import { ClientTable } from "./client-table";
 import { ClientForm } from "./client-form";
@@ -32,6 +35,10 @@ export function ClientManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Ordenamiento
+  const [sortField, setSortField] = useState<SortField>("companyName");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -123,6 +130,16 @@ export function ClientManagement() {
     setViewingClient(client);
   };
 
+  // Manejar ordenamiento
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
   const filteredClients =
     clients?.filter((client) => {
       if (searchTerm === "") return true;
@@ -152,17 +169,49 @@ export function ClientManagement() {
       return false;
     }) || [];
 
-  const totalItems = filteredClients.length;
+  // Ordenar clientes
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    let comparison = 0;
+    switch (sortField) {
+      case "cuit":
+        comparison = a.cuit.localeCompare(b.cuit);
+        break;
+      case "companyName":
+        comparison = a.companyName.localeCompare(b.companyName);
+        break;
+      case "representative":
+        comparison = (a.representative || "").localeCompare(
+          b.representative || "",
+        );
+        break;
+      case "email":
+        comparison = (a.email || "").localeCompare(b.email || "");
+        break;
+      case "phone":
+        comparison = (a.phone || "").localeCompare(b.phone || "");
+        break;
+      default:
+        comparison = 0;
+    }
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+
+  const totalItems = sortedClients.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedClients = filteredClients.slice(startIndex, endIndex);
+  const paginatedClients = sortedClients.slice(startIndex, endIndex);
 
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
   }, [totalPages, currentPage, searchTerm]);
+
+  // Resetear página cuando cambia el ordenamiento
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortField, sortOrder]);
 
   const totalClients = clients?.length || 0;
   const totalProjects = projects?.filter((p) => p.clientId).length || 0;
@@ -236,6 +285,9 @@ export function ClientManagement() {
         onViewClient={handleViewClient}
         onDeleteClient={handleDeleteClient}
         isReadOnly={isReadOnly}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        onSort={handleSort}
       />
 
       <ClientForm
