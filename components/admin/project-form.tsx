@@ -35,16 +35,30 @@ interface ProjectFormData {
   progress?: number;
   // Especificaciones técnicas
   modulation: string;
-  height: number;
-  width: number;
-  depth: number;
+  height: string;
+  width: string;
+  depth: string;
+  moduleCount: number;
+}
+
+interface ProjectSubmitData {
+  name: string;
+  description: string;
+  clientId?: string;
+  height?: number;
+  width?: number;
+  depth?: number;
+  status: "planning" | "active" | "paused" | "completed" | "delivered";
+  priority?: "low" | "medium" | "high";
+  startDate?: string;
+  estimatedEndDate?: string;
   moduleCount: number;
 }
 
 interface ProjectFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ProjectFormData) => Promise<any>; // Ahora retorna Promise
+  onSubmit: (data: ProjectSubmitData) => Promise<any>; // Ahora retorna Promise
   isEditing: boolean;
   initialData?: Project | null;
   checklistComplete?: boolean;
@@ -86,9 +100,9 @@ export function ProjectForm({
     endDate: "",
     clientId: "none",
     modulation: "standard",
-    height: 2.0,
-    width: 1.5,
-    depth: 0.8,
+    height: "2.00",
+    width: "1.50",
+    depth: "0.80",
     moduleCount: 1,
   });
 
@@ -103,9 +117,9 @@ export function ProjectForm({
         endDate: initialData.endDate || "",
         clientId: initialData.clientId || "none",
         modulation: initialData.modulation || "standard",
-        height: initialData.height || 2.0,
-        width: initialData.width || 1.5,
-        depth: initialData.depth || 0.8,
+        height: initialData.height?.toString() || "2.00",
+        width: initialData.width?.toString() || "1.50",
+        depth: initialData.depth?.toString() || "0.80",
         moduleCount: initialData.moduleCount || 1,
       });
     } else {
@@ -118,9 +132,9 @@ export function ProjectForm({
         endDate: "",
         clientId: "none",
         modulation: "standard",
-        height: 2.0,
-        width: 1.5,
-        depth: 0.8,
+        height: "2.00",
+        width: "1.50",
+        depth: "0.80",
         moduleCount: 1,
       });
     }
@@ -132,15 +146,21 @@ export function ProjectForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
+  const parseDecimal = (value: string): number | undefined => {
+    if (value === "") return undefined;
+    return parseFloat(value);
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Para creación, cerrar inmediatamente y dejar que el parent maneje el loading
     if (!isEditing) {
-      const submitData = {
+      const submitData: ProjectSubmitData = {
         ...formData,
         clientId: formData.clientId === "none" ? undefined : formData.clientId,
+        height: parseDecimal(formData.height),
+        width: parseDecimal(formData.width),
+        depth: parseDecimal(formData.depth),
       };
       onSubmit(submitData);
       return;
@@ -151,9 +171,12 @@ export function ProjectForm({
     setSubmitError(null);
 
     try {
-      const submitData = {
+      const submitData: ProjectSubmitData = {
         ...formData,
         clientId: formData.clientId === "none" ? undefined : formData.clientId,
+        height: parseDecimal(formData.height),
+        width: parseDecimal(formData.width),
+        depth: parseDecimal(formData.depth),
       };
 
       const result = await onSubmit(submitData);
@@ -164,6 +187,8 @@ export function ProjectForm({
         return;
       }
 
+      // Reset submitting state before closing
+      setIsSubmitting(false);
       onClose();
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -172,9 +197,22 @@ export function ProjectForm({
     }
   };
 
+  const handleDecimalChange = (field: string, value: string) => {
+    if (value === "") {
+      handleInputChange(field, "");
+      return;
+    }
+
+    const regex = /^\d*(\.\d{0,2})?$/;
+
+    if (regex.test(value)) {
+      handleInputChange(field, value);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-auto max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-y-auto rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Proyecto" : "Crear Nuevo Proyecto"}
@@ -353,15 +391,12 @@ export function ProjectForm({
                   <Input
                     id="height"
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
                     placeholder="2.0"
                     value={formData.height}
                     onChange={(e) =>
-                      handleInputChange(
-                        "height",
-                        parseFloat(e.target.value) || 0
-                      )
+                      handleDecimalChange("height", e.target.value)
                     }
                   />
                 </div>
@@ -375,15 +410,12 @@ export function ProjectForm({
                   <Input
                     id="width"
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
-                    placeholder="1.5"
+                    placeholder="1.50"
                     value={formData.width}
                     onChange={(e) =>
-                      handleInputChange(
-                        "width",
-                        parseFloat(e.target.value) || 0
-                      )
+                      handleDecimalChange("width", e.target.value)
                     }
                   />
                 </div>
@@ -397,15 +429,12 @@ export function ProjectForm({
                   <Input
                     id="depth"
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
-                    placeholder="0.8"
+                    placeholder="0.80"
                     value={formData.depth}
                     onChange={(e) =>
-                      handleInputChange(
-                        "depth",
-                        parseFloat(e.target.value) || 0
-                      )
+                      handleDecimalChange("depth", e.target.value)
                     }
                   />
                 </div>
@@ -423,7 +452,7 @@ export function ProjectForm({
                 onChange={(e) =>
                   handleInputChange(
                     "moduleCount",
-                    parseInt(e.target.value) || 1
+                    parseInt(e.target.value) || 1,
                   )
                 }
               />
@@ -437,13 +466,13 @@ export function ProjectForm({
             </div>
           )}
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 max-sm:flex-col max-sm:gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isEditing && isSubmitting}
-              className="cursor-pointer"
+              className="cursor-pointer max-sm:w-full"
             >
               Cancelar
             </Button>
