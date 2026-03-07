@@ -75,7 +75,7 @@ export function useProjectDetail({
         );
 
         if (!checklistComplete) {
-          console.error("❌ No se puede activar proyecto desde edición: checklist incompleto");
+          console.error("No se puede activar proyecto desde edición: checklist incompleto");
 
           // Mostrar toast de error
           toast({
@@ -94,8 +94,23 @@ export function useProjectDetail({
       const mappedData = mapProjectFormData(projectData);
       const result = await updateProject(project.id, mappedData);
 
+      if (result.success) {
+        toast({
+          title: "Proyecto actualizado",
+          description: "Los cambios se han guardado exitosamente",
+        });
+      } else {
+        console.error("Error actualizando proyecto:", result.error);
+
+        toast({
+          title: "Error al actualizar proyecto",
+          description: result.error || "No se pudieron guardar los cambios",
+          variant: "destructive",
+        });
+      }
+
       if (!result.success) {
-        console.error("❌ Error actualizando proyecto:", result.error);
+        console.error("Error actualizando proyecto:", result.error);
       }
 
       return result;

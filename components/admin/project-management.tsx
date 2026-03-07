@@ -23,6 +23,7 @@ type ProjectStatus =
   | "delivered";
 
 type SortField =
+  | "projectOrder"
   | "name"
   | "clientName"
   | "status"
@@ -62,8 +63,8 @@ export function ProjectManagement() {
   // Loading state para creación
   const [isCreatingProject, setIsCreatingProject] = useState(false);
 
-  // Ordenamiento
-  const [sortField, setSortField] = useState<SortField>("name");
+  // Ordenamiento - por defecto por projectOrder para respetar el orden manual
+  const [sortField, setSortField] = useState<SortField>("projectOrder");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   const handleCreateProject = async (projectData: any) => {
@@ -162,8 +163,20 @@ export function ProjectManagement() {
 
     const result = await updateProject(projectId, updateData);
     if (result.success) {
+      toast({
+        title: "Proyecto actualizado",
+        description: "Los cambios se han guardado exitosamente",
+      });
       setEditingProject(null);
+
+    } else {
+      toast({
+        title: "Error al actualizar proyecto",
+        description: result.error || "No se pudieron guardar los cambios",
+        variant: "destructive",
+      });
     }
+    
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -226,6 +239,9 @@ export function ProjectManagement() {
   const sortedProjects = [...filteredProjects].sort((a, b) => {
     let comparison = 0;
     switch (sortField) {
+      case "projectOrder":
+        comparison = (a.projectOrder || 0) - (b.projectOrder || 0);
+        break;
       case "name":
         comparison = a.name.localeCompare(b.name);
         break;

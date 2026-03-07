@@ -22,6 +22,7 @@ import { ProjectFilters } from "./project-filters";
 import type { Project } from "@/lib/types";
 
 type SortField =
+  | "projectOrder"
   | "name"
   | "clientName"
   | "status"
@@ -128,9 +129,10 @@ export function ProjectTable({
     newProjects.splice(targetIndex, 0, draggedProject);
 
     // Actualizar el orden de los proyectos
+    // Calcular el orden considerando la paginación (offset)
     const projectOrders = newProjects.map((project, index) => ({
       id: project.id,
-      projectOrder: index + 1,
+      projectOrder: (currentPage - 1) * itemsPerPage + index + 1,
     }));
 
     // Actualización optimista: mostrar el nuevo orden inmediatamente
@@ -168,7 +170,15 @@ export function ProjectTable({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-background">
-                <TableHead className="text-center min-w-[60px]">#</TableHead>
+                <TableHead
+                  className="text-center min-w-[60px] cursor-pointer"
+                  onClick={() => onSort?.("projectOrder")}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    #
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
                 <TableHead
                   className="cursor-pointer min-w-[200px]"
                   onClick={() => onSort?.("name")}
