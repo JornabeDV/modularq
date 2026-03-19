@@ -44,8 +44,9 @@ import {
   ExchangeRate,
 } from "@/lib/exchange-rate";
 import { MainLayout } from "@/components/layout/main-layout";
-import { CreateBudgetDialog } from "@/components/budgets";
+import { CreateBudgetDialog, ModuleTemplatesTab } from "@/components/budgets";
 import { BUDGET_STATUS_LABELS, BUDGET_STATUS_COLORS } from "@/lib/constants";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -143,6 +144,7 @@ export default function BudgetsPage() {
     client_name: string;
     location: string;
     description: string;
+    module_template_id?: string;
   }) => {
     // Cerrar el modal inmediatamente y mostrar overlay de carga
     setShowCreateDialog(false);
@@ -270,7 +272,10 @@ export default function BudgetsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Badge variant="outline" className="text-sm px-3 py-1 h-9 flex items-center gap-1 border-none bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+            <Badge
+              variant="outline"
+              className="text-sm px-3 py-1 h-9 flex items-center gap-1 border-none bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+            >
               Dólar BNA: <span className="font-bold">$1.425</span>
             </Badge>
             <Button
@@ -283,212 +288,235 @@ export default function BudgetsPage() {
           </div>
         </div>
 
-        {/* Tabla de Presupuestos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Presupuestos</CardTitle>
-            <div className="mt-4 flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder="Buscar por cliente, código o ubicación..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-              />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="draft">Borrador</SelectItem>
-                  <SelectItem value="sent">Enviado</SelectItem>
-                  <SelectItem value="approved">Aprobado</SelectItem>
-                  <SelectItem value="rejected">Rechazado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-background">
-                    <TableHead
-                      className="cursor-pointer min-w-[120px]"
-                      onClick={() => handleSort("budget_code")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Código
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer min-w-[200px]"
-                      onClick={() => handleSort("client_name")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Cliente
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer min-w-[120px]"
-                      onClick={() => handleSort("status")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Estado
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer text-right min-w-[150px]"
-                      onClick={() => handleSort("final_price")}
-                    >
-                      <div className="flex items-center justify-end gap-1">
-                        Monto
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer min-w-[100px]"
-                      onClick={() => handleSort("created_at")}
-                    >
-                      <div className="flex items-center gap-1">
-                        Fecha
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-right min-w-[100px]">
-                      Acciones
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedBudgets.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        {searchTerm || statusFilter !== "all"
-                          ? "No se encontraron presupuestos con ese criterio de búsqueda"
-                          : "No hay presupuestos registrados"}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedBudgets.map((budget) => (
-                      <TableRow
-                        key={budget.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={(e) => {
-                          // Solo navegar si el clic no fue en un botón
-                          const target = e.target as HTMLElement;
-                          if (!target.closest("button")) {
-                            router.push(`/admin/budgets/${budget.id}`);
-                          }
-                        }}
-                      >
-                        <TableCell className="font-mono text-sm">
-                          {budget.budget_code}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {budget.client_name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {budget.location}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[budget.status]}>
-                            {statusLabels[budget.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="font-medium">
-                            {formatCurrency(budget.final_price)}
-                          </div>
-                          {exchangeRate && (
-                            <div className="text-xs text-green-600">
-                              {formatUSD(
-                                budget.final_price,
-                                exchangeRate.venta,
-                              )}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(budget.created_at)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <TooltipProvider delayDuration={100}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      router.push(
-                                        `/admin/budgets/${budget.id}`,
-                                      );
-                                    }}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Ver Presupuesto</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                            <TooltipProvider delayDuration={100}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="cursor-pointer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      e.preventDefault();
-                                      setBudgetToDelete(budget);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Eliminar Presupuesto</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+        <Tabs defaultValue="budgets" className="w-full">
+          <TabsList className="h-auto">
+            <TabsTrigger
+              value="budgets"
+              className="cursor-pointer text-sm py-2 h-auto"
+            >
+              Presupuestos
+            </TabsTrigger>
+            <TabsTrigger
+              value="modules"
+              className="cursor-pointer text-sm py-2 h-auto"
+            >
+              Módulos estándar
+            </TabsTrigger>
+          </TabsList>
 
-            {totalItems > 0 && (
-              <div className="pt-4 border-t mt-4">
-                <DataPagination
-                  totalItems={totalItems}
-                  itemsPerPage={itemsPerPage}
-                  currentPage={currentPage}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                  itemsPerPageOptions={[5, 10, 20, 50]}
-                  itemsText="presupuestos"
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <TabsContent value="modules" className="mt-4">
+            <ModuleTemplatesTab />
+          </TabsContent>
+
+          <TabsContent value="budgets" className="mt-4">
+            {/* Tabla de Presupuestos */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de Presupuestos</CardTitle>
+                <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                  <Input
+                    placeholder="Buscar por cliente, código o ubicación..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="draft">Borrador</SelectItem>
+                      <SelectItem value="sent">Enviado</SelectItem>
+                      <SelectItem value="approved">Aprobado</SelectItem>
+                      <SelectItem value="rejected">Rechazado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-background">
+                        <TableHead
+                          className="cursor-pointer min-w-[120px]"
+                          onClick={() => handleSort("budget_code")}
+                        >
+                          <div className="flex items-center gap-1">
+                            Código
+                            <ArrowUpDown className="w-3 h-3" />
+                          </div>
+                        </TableHead>
+                        <TableHead
+                          className="cursor-pointer min-w-[200px]"
+                          onClick={() => handleSort("client_name")}
+                        >
+                          <div className="flex items-center gap-1">
+                            Cliente
+                            <ArrowUpDown className="w-3 h-3" />
+                          </div>
+                        </TableHead>
+                        <TableHead
+                          className="cursor-pointer min-w-[120px]"
+                          onClick={() => handleSort("status")}
+                        >
+                          <div className="flex items-center gap-1">
+                            Estado
+                            <ArrowUpDown className="w-3 h-3" />
+                          </div>
+                        </TableHead>
+                        <TableHead
+                          className="cursor-pointer text-right min-w-[150px]"
+                          onClick={() => handleSort("final_price")}
+                        >
+                          <div className="flex items-center justify-end gap-1">
+                            Monto
+                            <ArrowUpDown className="w-3 h-3" />
+                          </div>
+                        </TableHead>
+                        <TableHead
+                          className="cursor-pointer min-w-[100px]"
+                          onClick={() => handleSort("created_at")}
+                        >
+                          <div className="flex items-center gap-1">
+                            Fecha
+                            <ArrowUpDown className="w-3 h-3" />
+                          </div>
+                        </TableHead>
+                        <TableHead className="text-right min-w-[100px]">
+                          Acciones
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedBudgets.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={6}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            {searchTerm || statusFilter !== "all"
+                              ? "No se encontraron presupuestos con ese criterio de búsqueda"
+                              : "No hay presupuestos registrados"}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedBudgets.map((budget) => (
+                          <TableRow
+                            key={budget.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={(e) => {
+                              // Solo navegar si el clic no fue en un botón
+                              const target = e.target as HTMLElement;
+                              if (!target.closest("button")) {
+                                router.push(`/admin/budgets/${budget.id}`);
+                              }
+                            }}
+                          >
+                            <TableCell className="font-mono text-sm">
+                              {budget.budget_code}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {budget.client_name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {budget.location}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={statusColors[budget.status]}>
+                                {statusLabels[budget.status]}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="font-medium">
+                                {formatCurrency(budget.final_price)}
+                              </div>
+                              {exchangeRate && (
+                                <div className="text-xs text-green-600">
+                                  {formatUSD(
+                                    budget.final_price,
+                                    exchangeRate.venta,
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDate(budget.created_at)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          router.push(
+                                            `/admin/budgets/${budget.id}`,
+                                          );
+                                        }}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Ver Presupuesto</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          setBudgetToDelete(budget);
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Eliminar Presupuesto</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {totalItems > 0 && (
+                  <div className="pt-4 border-t mt-4">
+                    <DataPagination
+                      totalItems={totalItems}
+                      itemsPerPage={itemsPerPage}
+                      currentPage={currentPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={setItemsPerPage}
+                      itemsPerPageOptions={[5, 10, 20, 50]}
+                      itemsText="presupuestos"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <CreateBudgetDialog

@@ -1471,18 +1471,20 @@ export class PrismaTypedService {
 
   // --- Budget Item Templates ---
 
-  static async getAllBudgetItemTemplates(includeNonStandard = false): Promise<any[]> {
+  static async getAllBudgetItemTemplates(includeNonStandard = false, moduleTemplateId?: string): Promise<any[]> {
     let query = supabase
       .from('budget_item_templates')
       .select('*')
       .order('order', { ascending: true })
-    
-    if (!includeNonStandard) {
+
+    if (moduleTemplateId) {
+      query = query.eq('module_template_id', moduleTemplateId)
+    } else if (!includeNonStandard) {
       query = query.eq('is_standard', true)
     }
 
     const { data, error } = await query
-    
+
     if (error) throw error
     return data || []
   }
@@ -1505,6 +1507,8 @@ export class PrismaTypedService {
     unit: string
     is_standard?: boolean
     order?: number
+    module_template_id?: string
+    default_quantity?: number
     template_labors?: any[]
     template_materials?: any[]
     template_equipments?: any[]
@@ -1523,8 +1527,10 @@ export class PrismaTypedService {
         category: templateData.category,
         description: templateData.description,
         unit: templateData.unit,
-        is_standard: templateData.is_standard ?? true,
+        is_standard: templateData.is_standard ?? false,
         order: templateData.order ?? 0,
+        module_template_id: templateData.module_template_id,
+        default_quantity: templateData.default_quantity ?? 0,
         template_labors: templateData.template_labors,
         template_materials: templateData.template_materials,
         template_equipments: templateData.template_equipments,
@@ -1544,6 +1550,8 @@ export class PrismaTypedService {
     unit?: string
     is_standard?: boolean
     order?: number
+    module_template_id?: string
+    default_quantity?: number
     template_labors?: any[]
     template_materials?: any[]
     template_equipments?: any[]
@@ -1558,6 +1566,8 @@ export class PrismaTypedService {
     if (templateData.unit !== undefined) updateData.unit = templateData.unit
     if (templateData.is_standard !== undefined) updateData.is_standard = templateData.is_standard
     if (templateData.order !== undefined) updateData.order = templateData.order
+    if (templateData.module_template_id !== undefined) updateData.module_template_id = templateData.module_template_id
+    if (templateData.default_quantity !== undefined) updateData.default_quantity = templateData.default_quantity
     if (templateData.template_labors !== undefined) updateData.template_labors = templateData.template_labors
     if (templateData.template_materials !== undefined) updateData.template_materials = templateData.template_materials
     if (templateData.template_equipments !== undefined) updateData.template_equipments = templateData.template_equipments
@@ -1578,8 +1588,158 @@ export class PrismaTypedService {
       .from('budget_item_templates')
       .delete()
       .eq('id', id)
-    
+
     if (error) throw error
+  }
+
+  // --- Budget Module Templates ---
+
+  static async getAllBudgetModuleTemplates(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('budget_module_templates')
+      .select('*')
+      .order('order', { ascending: true })
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async getBudgetModuleTemplateWithItems(id: string): Promise<any | null> {
+    const { data: module, error } = await supabase
+      .from('budget_module_templates')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) return null
+
+    const { data: items } = await supabase
+      .from('budget_item_templates')
+      .select('*')
+      .eq('module_template_id', id)
+      .order('order', { ascending: true })
+
+    return { ...module, items: items || [] }
+  }
+
+  static async createBudgetModuleTemplate(data: {
+    name: string
+    description?: string
+    is_active?: boolean
+    order?: number
+  }): Promise<any> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    const { data: result, error } = await supabase
+      .from('budget_module_templates')
+      .insert({
+        id: generateId(),
+        name: data.name,
+        description: data.description,
+        is_active: data.is_active ?? true,
+        order: data.order ?? 0,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return result
+  }
+
+  static async updateBudgetModuleTemplate(id: string, data: {
+    name?: string
+    description?: string
+    is_active?: boolean
+    order?: number
+    module_description?: ModuleDescriptionSection[]
+  }): Promise<any> {
+    const updateData: any = { updated_at: new Date().toISOString() }
+    if (data.name !== undefined) updateData.name = data.name
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.is_active !== undefined) updateData.is_active = data.is_active
+    if (data.order !== undefined) updateData.order = data.order
+    if (data.module_description !== undefined) updateData.module_description = data.module_description
+
+    const { data: result, error } = await supabase
+      .from('budget_module_templates')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return result
+  }
+
+  static async deleteBudgetModuleTemplate(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('budget_module_templates')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // Copia todos los ítems (con sus análisis de precios) de un módulo a otro
+  static async cloneBudgetModuleItems(sourceModuleId: string, targetModuleId: string): Promise<void> {
+    const generateId = () => {
+      const timestamp = Date.now().toString(36)
+      const random = Math.random().toString(36).substring(2, 15)
+      return `${timestamp}-${random}`
+    }
+
+    // Obtener módulo fuente (descripción) e ítems en paralelo
+    const [{ data: sourceModule }, { data: sourceItems, error }] = await Promise.all([
+      supabase
+        .from('budget_module_templates')
+        .select('module_description')
+        .eq('id', sourceModuleId)
+        .single(),
+      supabase
+        .from('budget_item_templates')
+        .select('*')
+        .eq('module_template_id', sourceModuleId)
+        .order('order', { ascending: true })
+    ])
+
+    if (error) throw error
+
+    // Copiar module_description si el módulo fuente tiene una
+    if (sourceModule?.module_description?.length > 0) {
+      await supabase
+        .from('budget_module_templates')
+        .update({ module_description: sourceModule.module_description, updated_at: new Date().toISOString() })
+        .eq('id', targetModuleId)
+    }
+
+    if (!sourceItems || sourceItems.length === 0) return
+
+    const clonedItems = sourceItems.map((item: any) => ({
+      id: generateId(),
+      code: item.code,
+      category: item.category,
+      description: item.description,
+      unit: item.unit,
+      is_standard: false,
+      order: item.order,
+      default_quantity: item.default_quantity,
+      module_template_id: targetModuleId,
+      template_labors: item.template_labors ?? [],
+      template_materials: item.template_materials ?? [],
+      template_equipments: item.template_equipments ?? [],
+      updated_at: new Date().toISOString(),
+    }))
+
+    const { error: insertError } = await supabase
+      .from('budget_item_templates')
+      .insert(clonedItems)
+
+    if (insertError) throw insertError
   }
 
   // --- Budgets (Presupuestos) ---
@@ -1670,6 +1830,7 @@ export class PrismaTypedService {
     location: string
     description?: string
     client_id?: string
+    module_template_id?: string
     general_expenses_pct?: number
     benefit_pct?: number
     iva_pct?: number
@@ -1694,7 +1855,31 @@ export class PrismaTypedService {
 
     const budgetId = generateId()
 
-    // Crear presupuesto con descripción estándar del módulo
+    // Si hay módulo seleccionado, obtener su descripción y sus ítems en paralelo
+    const [moduleTemplateResult, templatesResult] = await Promise.all([
+      budgetData.module_template_id
+        ? supabase
+            .from('budget_module_templates')
+            .select('module_description')
+            .eq('id', budgetData.module_template_id)
+            .single()
+        : Promise.resolve({ data: null }),
+      budgetData.module_template_id
+        ? supabase
+            .from('budget_item_templates')
+            .select('*')
+            .eq('module_template_id', budgetData.module_template_id)
+            .order('order', { ascending: true })
+        : Promise.resolve({ data: [] })
+    ])
+
+    const moduleTemplateDesc = moduleTemplateResult.data?.module_description
+    const moduleDescription =
+      Array.isArray(moduleTemplateDesc) && moduleTemplateDesc.length > 0
+        ? moduleTemplateDesc
+        : this.DEFAULT_MODULE_DESCRIPTION
+
+    // Crear presupuesto
     const { data: budget, error } = await supabase
       .from('budgets')
       .insert({
@@ -1713,39 +1898,47 @@ export class PrismaTypedService {
         subtotal_with_benefit: 0,
         calculated_price: 0,
         final_price: 0,
-        module_description: this.DEFAULT_MODULE_DESCRIPTION,
+        module_description: moduleDescription,
         updated_at: new Date().toISOString()
       })
       .select()
       .single()
-    
+
     if (error) throw error
 
-    // Cargar ítems estándar desde templates
-    const { data: templates } = await supabase
-      .from('budget_item_templates')
-      .select('*')
-      .eq('is_standard', true)
-      .order('order', { ascending: true })
+    const templates = templatesResult.data
 
     if (templates && templates.length > 0) {
-      const budgetItems = templates.map((template: any, index: number) => ({
-        id: generateId(),
-        budget_id: budget.id,
-        template_id: template.id,
-        code: template.code,
-        category: template.category,
-        description: template.description,
-        unit: template.unit,
-        is_custom: false,
-        order: index,
-        quantity: template.default_quantity || 0,
-        unit_cost_labor: 0,
-        unit_cost_materials: 0,
-        unit_cost_equipment: 0,
-        unit_cost_total: 0,
-        total_cost: 0
-      }))
+      const budgetItems = templates.map((template: any, index: number) => {
+        const laborCost = (template.template_labors || []).reduce(
+          (s: number, l: any) => s + (l.quantity_hours || 0) * (l.hourly_rate || 0), 0
+        )
+        const materialCost = (template.template_materials || []).reduce(
+          (s: number, m: any) => s + (m.quantity || 0) * (m.unit_price || 0), 0
+        )
+        const equipmentCost = (template.template_equipments || []).reduce(
+          (s: number, e: any) => s + (e.quantity_hours || 0) * (e.hourly_cost || 0), 0
+        )
+        const unitCostTotal = laborCost + materialCost + equipmentCost
+        const qty = template.default_quantity || 0
+        return {
+          id: generateId(),
+          budget_id: budget.id,
+          template_id: template.id,
+          code: template.code,
+          category: template.category,
+          description: template.description,
+          unit: template.unit,
+          is_custom: false,
+          order: index,
+          quantity: qty,
+          unit_cost_labor: laborCost,
+          unit_cost_materials: materialCost,
+          unit_cost_equipment: equipmentCost,
+          unit_cost_total: unitCostTotal,
+          total_cost: qty * unitCostTotal
+        }
+      })
 
       const { error: itemsError } = await supabase
         .from('budget_items')
@@ -1758,10 +1951,10 @@ export class PrismaTypedService {
         const template = templates[i]
         const budgetItem = budgetItems[i]
 
-        // Crear análisis vacío
+        // Crear análisis
         const { data: analysis } = await supabase
           .from('budget_item_price_analyses')
-          .insert({ 
+          .insert({
             id: generateId(),
             budget_item_id: budgetItem.id,
             updated_at: new Date().toISOString()
@@ -1769,71 +1962,80 @@ export class PrismaTypedService {
           .select()
           .single()
 
-        if (analysis) {
-          // Copiar labors del template si existen
-          if (template.template_labors && template.template_labors.length > 0) {
-            const labors = await Promise.all(
-              template.template_labors.map(async (labor: any) => {
+        if (!analysis) continue
+
+        // Copiar labors del template si existen
+        if (template.template_labors && template.template_labors.length > 0) {
+          const labors = await Promise.all(
+            template.template_labors.map(async (labor: any) => {
+              let hourlyRate = labor.hourly_rate
+              if (!hourlyRate) {
                 const { data: concept } = await supabase
                   .from('labor_concepts')
                   .select('hourly_rate')
                   .eq('id', labor.labor_concept_id)
                   .single()
-                
-                return {
-                  id: generateId(),
-                  analysis_id: analysis.id,
-                  labor_concept_id: labor.labor_concept_id,
-                  quantity_hours: labor.quantity_hours,
-                  hourly_rate: concept?.hourly_rate || 0,
-                  total_cost: (labor.quantity_hours || 0) * (concept?.hourly_rate || 0)
-                }
-              })
-            )
+                hourlyRate = concept?.hourly_rate || 0
+              }
+              return {
+                id: generateId(),
+                analysis_id: analysis.id,
+                labor_concept_id: labor.labor_concept_id,
+                quantity_hours: labor.quantity_hours,
+                hourly_rate: hourlyRate,
+                total_cost: (labor.quantity_hours || 0) * hourlyRate
+              }
+            })
+          )
+          await supabase.from('budget_item_labors').insert(labors)
+        }
 
-            await supabase.from('budget_item_labors').insert(labors)
-          }
-
-          // Copiar materiales del template si existen
-          if (template.template_materials && template.template_materials.length > 0) {
-            const materials = await Promise.all(
-              template.template_materials.map(async (material: any) => {
+        // Copiar materiales del template si existen
+        if (template.template_materials && template.template_materials.length > 0) {
+          const materials = await Promise.all(
+            template.template_materials.map(async (material: any) => {
+              let unitPrice = material.unit_price
+              let materialName = material.material_name
+              if (!unitPrice && material.material_id) {
                 const { data: mat } = await supabase
                   .from('materials')
                   .select('unit_price, name')
                   .eq('id', material.material_id)
                   .single()
-                
-                return {
-                  id: generateId(),
-                  analysis_id: analysis.id,
-                  material_id: material.material_id,
-                  material_name: mat?.name,
-                  quantity: material.quantity,
-                  unit_price: mat?.unit_price || 0,
-                  total_cost: (material.quantity || 0) * (mat?.unit_price || 0)
-                }
-              })
-            )
+                unitPrice = mat?.unit_price || 0
+                materialName = mat?.name || materialName
+              }
+              return {
+                id: generateId(),
+                analysis_id: analysis.id,
+                material_id: material.material_id,
+                material_name: materialName,
+                quantity: material.quantity,
+                unit_price: unitPrice || 0,
+                total_cost: (material.quantity || 0) * (unitPrice || 0)
+              }
+            })
+          )
+          await supabase.from('budget_item_materials').insert(materials)
+        }
 
-            await supabase.from('budget_item_materials').insert(materials)
-          }
-
-          // Copiar equipos del template si existen
-          if (template.template_equipments && template.template_equipments.length > 0) {
-            const equipments = template.template_equipments.map((equipment: any) => ({
-              id: generateId(),
-              analysis_id: analysis.id,
-              name: equipment.name,
-              quantity_hours: equipment.quantity_hours,
-              hourly_cost: equipment.hourly_cost,
-              total_cost: (equipment.quantity_hours || 0) * (equipment.hourly_cost || 0)
-            }))
-
-            await supabase.from('budget_item_equipments').insert(equipments)
-          }
+        // Copiar equipos del template si existen
+        if (template.template_equipments && template.template_equipments.length > 0) {
+          const equipments = template.template_equipments.map((equipment: any) => ({
+            id: generateId(),
+            analysis_id: analysis.id,
+            name: equipment.name,
+            quantity_hours: equipment.quantity_hours,
+            hourly_cost: equipment.hourly_cost,
+            total_cost: (equipment.quantity_hours || 0) * (equipment.hourly_cost || 0)
+          }))
+          await supabase.from('budget_item_equipments').insert(equipments)
         }
       }
+
+      // Recalcular todos los unit_cost_* leyendo desde las tablas recién insertadas
+      // (mismo mecanismo que cuando el usuario guarda manualmente el análisis)
+      await this.recalculateBudget(budget.id)
     }
 
     return this.getBudgetById(budget.id)
