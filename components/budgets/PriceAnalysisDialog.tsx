@@ -757,6 +757,7 @@ export function PriceAnalysisDialog({
         onSubmit={handleCreateMaterial}
         isEditing={false}
         isLoading={creatingMaterial}
+        existingMaterials={materials}
       />
     </>
   );

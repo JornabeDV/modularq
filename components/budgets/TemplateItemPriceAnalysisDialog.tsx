@@ -764,6 +764,7 @@ export function TemplateItemPriceAnalysisDialog({
         onSubmit={handleCreateMaterial}
         isEditing={false}
         isLoading={creatingMaterial}
+        existingMaterials={materials}
       />
     </>
   );
