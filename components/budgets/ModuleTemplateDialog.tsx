@@ -115,7 +115,7 @@ export function ModuleTemplateDialog({
                   setSourceModuleId(val === "none" ? null : val)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Módulo en blanco" />
                 </SelectTrigger>
                 <SelectContent>
@@ -135,7 +135,7 @@ export function ModuleTemplateDialog({
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 max-sm:flex-col">
             <Button
               type="button"
               variant="outline"

@@ -102,7 +102,7 @@ export function CreateBudgetDialog({
                   setSelectedModuleId(val === "none" ? null : val)
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Presupuesto en blanco" />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,7 +155,7 @@ export function CreateBudgetDialog({
             </div>
           </div>
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 max-sm:flex-col">
             <Button
               type="button"
               variant="outline"

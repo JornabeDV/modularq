@@ -289,7 +289,7 @@ export default function BudgetsPage() {
         </div>
 
         <Tabs defaultValue="budgets" className="w-full">
-          <TabsList className="h-auto">
+          <TabsList className="h-auto max-sm:w-full">
             <TabsTrigger
               value="budgets"
               className="cursor-pointer text-sm py-2 h-auto"

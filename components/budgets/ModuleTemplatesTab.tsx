@@ -343,8 +343,7 @@ export function ModuleTemplatesTab() {
             <div>
               <h2 className="text-lg font-semibold">Módulos Estándar</h2>
               <p className="text-sm text-muted-foreground">
-                Configurá los módulos que se usan como base al crear
-                presupuestos.
+                Configurá los módulos que se usan como base al crear presupuestos.
               </p>
             </div>
             <Button
@@ -392,7 +391,7 @@ export function ModuleTemplatesTab() {
               {modules.map((mod) => (
                 <Card
                   key={mod.id}
-                  className="hover:shadow-md transition-shadow"
+                  className="hover:shadow-md transition-shadow justify-between"
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
@@ -555,17 +554,16 @@ export function ModuleTemplatesTab() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex max-sm:flex-col tems-center gap-2">
             <Button
               variant="outline"
-              size="sm"
               className="cursor-pointer"
               onClick={() => {
                 setEditingModule(selectedModule);
                 setShowModuleDialog(true);
               }}
             >
-              <Pencil className="w-3.5 h-3.5 mr-1.5" />
+              <Pencil className="w-4 h-4 mr-2" />
               Editar módulo
             </Button>
             <Button
