@@ -2721,8 +2721,167 @@ export class PrismaTypedService {
       .from('budget_attachments')
       .delete()
       .eq('id', id)
-    
+
     if (error) throw error
+  }
+
+  // ==================== MÓDULO DE COTIZADOR ====================
+
+  static async getAllStandardModules(onlyActive = false) {
+    let query = supabase
+      .from('standard_modules')
+      .select(`
+        *,
+        materials:standard_module_materials(
+          *,
+          material:materials(*)
+        ),
+        attachments:standard_module_attachments(*)
+      `)
+      .order('order', { ascending: true })
+      .order('created_at', { ascending: false })
+
+    if (onlyActive) {
+      query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data
+  }
+
+  static async getStandardModuleById(id: string) {
+    const { data, error } = await supabase
+      .from('standard_modules')
+      .select(`
+        *,
+        materials:standard_module_materials(
+          *,
+          material:materials(*)
+        ),
+        attachments:standard_module_attachments(*)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async createStandardModule(moduleData: {
+    name: string
+    description?: string
+    base_price?: number
+    is_active?: boolean
+    order?: number
+  }) {
+    const { data, error } = await supabase
+      .from('standard_modules')
+      .insert(moduleData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateStandardModule(id: string, moduleData: {
+    name?: string
+    description?: string
+    base_price?: number
+    is_active?: boolean
+    order?: number
+  }) {
+    const { data, error } = await supabase
+      .from('standard_modules')
+      .update({ ...moduleData, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteStandardModule(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('standard_modules')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  static async addStandardModuleMaterial(moduleId: string, materialId: string, quantity = 1, notes?: string) {
+    const { data, error } = await supabase
+      .from('standard_module_materials')
+      .insert({ module_id: moduleId, material_id: materialId, quantity, notes })
+      .select(`*, material:materials(*)`)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateStandardModuleMaterial(id: string, quantity: number, notes?: string) {
+    const { data, error } = await supabase
+      .from('standard_module_materials')
+      .update({ quantity, notes })
+      .eq('id', id)
+      .select(`*, material:materials(*)`)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async removeStandardModuleMaterial(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('standard_module_materials')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  static async createStandardModuleAttachment(attachmentData: {
+    module_id: string
+    filename: string
+    original_name: string
+    mime_type: string
+    size: number
+    url: string
+    storage_path: string
+    description?: string
+  }) {
+    const { data, error } = await supabase
+      .from('standard_module_attachments')
+      .insert(attachmentData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteStandardModuleAttachment(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('standard_module_attachments')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  static async getAdicionales() {
+    const { data, error } = await supabase
+      .from('materials')
+      .select('*')
+      .eq('category', 'adicional')
+      .order('name', { ascending: true })
+
+    if (error) throw error
+    return data
   }
 }
 

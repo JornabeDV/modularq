@@ -14,7 +14,7 @@ import {
   BarChart3,
   ClipboardList,
   Package,
-  Calculator,
+  ShoppingCart,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,7 +36,8 @@ const adminNavigation = [
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
-  { name: "Presupuestos", href: "/admin/budgets", icon: Calculator },
+  { name: "Cotizador", href: "/cotizador", icon: ShoppingCart },
+  { name: "Módulos Estándar", href: "/admin/standard-modules", icon: Package, adminOnly: true },
   { name: "Reportes", href: "/reports", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
@@ -109,10 +110,10 @@ export function Sidebar() {
             <>
               {adminNavigation
                 .filter((item) => {
-                  if (
-                    item.name === "Gestión del Personal" &&
-                    userProfile?.role !== "admin"
-                  ) {
+                  if ("adminOnly" in item && item.adminOnly && userProfile?.role !== "admin") {
+                    return false;
+                  }
+                  if (item.name === "Gestión del Personal" && userProfile?.role !== "admin") {
                     return false;
                   }
                   return true;
