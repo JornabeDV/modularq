@@ -1,5 +1,8 @@
 // Constantes del sistema
 
+// Flag temporal: poner en false para permitir completar tareas sin operario asignado
+export const REQUIRE_OPERARIO_FOR_TASK = false
+
 // Categorías de tareas
 export const TASK_CATEGORIES = [
   'Estructura',
