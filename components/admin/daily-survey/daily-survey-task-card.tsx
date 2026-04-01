@@ -25,6 +25,7 @@ import { useTaskCollaborators } from "@/hooks/use-task-collaborators";
 import { useAuth } from "@/lib/auth-context";
 import type { ProjectTask, TaskCollaborator } from "@/lib/types";
 import { getStatusIcon, getStatusLabel } from "@/lib/utils/status-label";
+import { REQUIRE_OPERARIO_FOR_TASK } from "@/lib/constants";
 
 interface DailySurveyTaskCardProps {
   task: ProjectTask;
@@ -185,6 +186,7 @@ export function DailySurveyTaskCard({
 
   const handleStatusChange = async (newStatus: string) => {
     if (
+      REQUIRE_OPERARIO_FOR_TASK &&
       (newStatus === "in_progress" || newStatus === "completed") &&
       !hasOperario
     ) {
@@ -356,14 +358,14 @@ export function DailySurveyTaskCard({
                   <SelectItem value="pending">Pendiente</SelectItem>
                   <SelectItem
                     value="in_progress"
-                    disabled={!hasOperario}
+                    disabled={REQUIRE_OPERARIO_FOR_TASK && !hasOperario}
                     className={
-                      !hasOperario ? "opacity-50 cursor-not-allowed" : ""
+                      REQUIRE_OPERARIO_FOR_TASK && !hasOperario ? "opacity-50 cursor-not-allowed" : ""
                     }
                   >
                     <div className="flex items-center justify-between w-full">
                       <span>En Progreso</span>
-                      {!hasOperario && (
+                      {REQUIRE_OPERARIO_FOR_TASK && !hasOperario && (
                         <span className="text-xs text-muted-foreground ml-2">
                           (Requiere operario)
                         </span>
@@ -372,14 +374,14 @@ export function DailySurveyTaskCard({
                   </SelectItem>
                   <SelectItem
                     value="completed"
-                    disabled={!hasOperario}
+                    disabled={REQUIRE_OPERARIO_FOR_TASK && !hasOperario}
                     className={
-                      !hasOperario ? "opacity-50 cursor-not-allowed" : ""
+                      REQUIRE_OPERARIO_FOR_TASK && !hasOperario ? "opacity-50 cursor-not-allowed" : ""
                     }
                   >
                     <div className="flex items-center justify-between w-full">
                       <span>Completada</span>
-                      {!hasOperario && (
+                      {REQUIRE_OPERARIO_FOR_TASK && !hasOperario && (
                         <span className="text-xs text-muted-foreground ml-2">
                           (Requiere operario)
                         </span>

@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/lib/auth-context";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import { getProgressColor } from "@/lib/utils/project-utils";
+import { REQUIRE_OPERARIO_FOR_TASK } from "@/lib/constants";
 import {
   RadialBarChart,
   RadialBar,
@@ -66,6 +67,7 @@ export function DailySurveyProjectTasks({
     const currentTask = projectTasks.find((t) => t.id === taskId);
 
     if (
+      REQUIRE_OPERARIO_FOR_TASK &&
       (newStatus === "in_progress" || newStatus === "completed") &&
       !currentTask?.assignedTo
     ) {
