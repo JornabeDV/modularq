@@ -66,6 +66,8 @@ export function useProjectsPrisma() {
         createdBy: project.created_by,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
+        completedAt: project.completed_at ?? undefined,
+        deliveredAt: project.delivered_at ?? undefined,
         clientId: project.client_id,
         // Especificaciones técnicas
         modulation: project.modulation || 'standard',
@@ -115,7 +117,8 @@ export function useProjectsPrisma() {
           assignedUser: pt.assigned_user ? {
             id: pt.assigned_user.id,
             name: pt.assigned_user.name,
-            role: pt.assigned_user.role
+            role: pt.assigned_user.role,
+            deletedAt: pt.assigned_user.deleted_at ?? null,
           } : undefined,
           startedByUser: pt.started_by_user ? {
             id: pt.started_by_user.id,

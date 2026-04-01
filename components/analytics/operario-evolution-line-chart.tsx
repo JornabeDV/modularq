@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ChartContainer,
@@ -16,62 +23,95 @@ import {
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  type ChartConfig,
 } from "@/components/ui/chart";
+import { TrendingUp } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { chartConfig } from "./analytics-config";
+import { getOperarioList, processOperarioEvolution } from "./analytics-utils";
 
-interface ProjectCreationLineChartProps {
-  weeklyChartData: Array<{ semana: string; proyectos: number; fecha: string }>;
-  monthlyChartData: Array<{ semana: string; proyectos: number; fecha: string }>;
+interface OperarioEvolutionLineChartProps {
+  projects: any[];
 }
 
-export function ProjectCreationLineChart({
-  weeklyChartData,
-  monthlyChartData,
-}: ProjectCreationLineChartProps) {
-  const isMobile = useIsMobile();
-  const [mode, setMode] = useState<"week" | "month">("week");
+const chartConfig: ChartConfig = {
+  tareas: { label: "Tareas completadas", color: "#a855f7" },
+};
 
-  const rawData = mode === "week" ? weeklyChartData : monthlyChartData;
-  const displayData =
-    isMobile && rawData.length > 12 ? rawData.slice(-12) : rawData;
+export function OperarioEvolutionLineChart({ projects }: OperarioEvolutionLineChartProps) {
+  const isMobile = useIsMobile();
+  const [mode, setMode] = useState<"week" | "month">("month");
+
+  const operarios = useMemo(() => getOperarioList(projects), [projects]);
+  const [selectedOperario, setSelectedOperario] = useState<string>("");
+
+  const activeOperario = selectedOperario || operarios[0] || "";
+
+  const data = useMemo(() => {
+    if (!activeOperario) return [];
+    return processOperarioEvolution(projects, activeOperario, mode);
+  }, [projects, activeOperario, mode]);
+
+  const displayData = isMobile && data.length > 12 ? data.slice(-12) : data;
 
   return (
     <Card className="max-sm:py-3">
       <CardHeader className="pb-3 sm:pb-6">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
-            <CardTitle className="text-base sm:text-lg">
-              Proyectos Creados
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+              Evolución por Operario
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">
-              Evolución de proyectos creados por {mode === "week" ? "semana" : "mes"}
+              Tareas completadas por {mode === "week" ? "semana" : "mes"}
+              {activeOperario ? ` — ${activeOperario}` : ""}
             </CardDescription>
           </div>
-          <div className="flex gap-1 shrink-0">
-            <Button
-              variant={mode === "week" ? "default" : "outline"}
-              size="sm"
-              className="h-7 text-xs px-2"
-              onClick={() => setMode("week")}
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={activeOperario}
+              onValueChange={setSelectedOperario}
             >
-              Semana
-            </Button>
-            <Button
-              variant={mode === "month" ? "default" : "outline"}
-              size="sm"
-              className="h-7 text-xs px-2"
-              onClick={() => setMode("month")}
-            >
-              Mes
-            </Button>
+              <SelectTrigger className="h-7 text-xs w-[150px] sm:w-[180px]">
+                <SelectValue placeholder="Seleccionar operario" />
+              </SelectTrigger>
+              <SelectContent>
+                {operarios.map(op => (
+                  <SelectItem key={op} value={op} className="text-xs">
+                    {op}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-1">
+              <Button
+                variant={mode === "week" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs px-2"
+                onClick={() => setMode("week")}
+              >
+                Semana
+              </Button>
+              <Button
+                variant={mode === "month" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs px-2"
+                onClick={() => setMode("month")}
+              >
+                Mes
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="px-2 sm:px-6 pb-4 sm:pb-6">
-        {displayData.length === 0 ? (
+        {operarios.length === 0 ? (
           <div className="flex items-center justify-center h-[250px] sm:h-[300px] text-muted-foreground text-sm">
-            <p>No hay datos suficientes para mostrar</p>
+            <p>No hay operarios con tareas registradas</p>
+          </div>
+        ) : displayData.length === 0 ? (
+          <div className="flex items-center justify-center h-[250px] sm:h-[300px] text-muted-foreground text-sm">
+            <p>Sin tareas completadas para este operario</p>
           </div>
         ) : (
           <div className="w-full overflow-hidden relative max-w-full">
@@ -111,8 +151,7 @@ export function ProjectCreationLineChart({
                   content={
                     <ChartTooltipContent
                       formatter={(value, name) => {
-                        const itemConfig = chartConfig[name as keyof typeof chartConfig];
-                        const label = itemConfig?.label || name;
+                        const label = chartConfig[name as keyof typeof chartConfig]?.label ?? name;
                         return (
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
@@ -128,10 +167,10 @@ export function ProjectCreationLineChart({
                 <ChartLegend content={<ChartLegendContent />} />
                 <Line
                   type="monotone"
-                  dataKey="proyectos"
-                  stroke="#3b82f6"
+                  dataKey="tareas"
+                  stroke="#a855f7"
                   strokeWidth={isMobile ? 2 : 3}
-                  dot={{ fill: "#3b82f6", r: isMobile ? 3 : 4, strokeWidth: 2, stroke: "#fff" }}
+                  dot={{ fill: "#a855f7", r: isMobile ? 3 : 4, strokeWidth: 2, stroke: "#fff" }}
                   activeDot={{ r: isMobile ? 5 : 6, strokeWidth: 2, stroke: "#fff" }}
                   connectNulls={false}
                 />

@@ -28,30 +28,37 @@ interface ProjectWithStatus {
   status: ProjectStatusType;
   completionPercentage: number;
   statusInfo: ReturnType<typeof getStatusInfo>;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  pendingTasks: number;
 }
 
 interface ProjectProgressGridProps {
   filteredProjects: ProjectWithStatus[];
 }
 
+const ACTIVE_STATUSES = new Set(["planning", "active", "paused"]);
+
 export function ProjectProgressGrid({
   filteredProjects,
 }: ProjectProgressGridProps) {
   const isMobile = useIsMobile();
+  const visibleProjects = filteredProjects.filter(p => ACTIVE_STATUSES.has(p.status));
 
   return (
     <Card className="max-sm:py-3">
       <CardHeader className="pb-3 sm:pb-6">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5" />
-          Progreso de Proyectos ({filteredProjects.length})
+          Progreso de Proyectos ({visibleProjects.length})
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">
           Estado y progreso de cada proyecto basado en tareas completadas
         </CardDescription>
       </CardHeader>
       <CardContent className="px-2 sm:px-6">
-        {filteredProjects.length === 0 ? (
+        {visibleProjects.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
             <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-base sm:text-lg font-medium mb-2">
@@ -63,14 +70,14 @@ export function ProjectProgressGrid({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredProjects.map((project) => {
+            {visibleProjects.map((project) => {
               const statusInfo = project.statusInfo;
-
               const progressColor = getProgressColor(
-                project.completionPercentage
+                project.completionPercentage,
               );
+              const remainingTasks =
+                project.pendingTasks + project.inProgressTasks;
 
-              // Datos para el gráfico radial
               const radialData = [
                 {
                   name: "progreso",
@@ -151,10 +158,11 @@ export function ProjectProgressGrid({
                                     >
                                       <tspan
                                         x={viewBox.cx}
-                                        y={viewBox.cy}
-                                        className={`fill-foreground font-bold ${
-                                          isMobile ? "text-2xl" : "text-3xl"
-                                        }`}
+                                        y={
+                                          (viewBox.cy || 0) -
+                                          (isMobile ? 8 : 10)
+                                        }
+                                        className={`fill-foreground font-bold ${isMobile ? "text-2xl" : "text-3xl"}`}
                                       >
                                         {project.completionPercentage}%
                                       </tspan>
@@ -162,7 +170,7 @@ export function ProjectProgressGrid({
                                         x={viewBox.cx}
                                         y={
                                           (viewBox.cy || 0) +
-                                          (isMobile ? 16 : 20)
+                                          (isMobile ? 10 : 12)
                                         }
                                         className="fill-muted-foreground text-xs"
                                       >
@@ -176,6 +184,15 @@ export function ProjectProgressGrid({
                           </PolarRadiusAxis>
                         </RadialBarChart>
                       </ChartContainer>
+                      <div className="text-center mt-2 sm:mt-3">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          {remainingTasks > 0
+                            ? `${remainingTasks} tarea${remainingTasks !== 1 ? "s" : ""} pendiente${remainingTasks !== 1 ? "s" : ""}`
+                            : project.totalTasks > 0
+                              ? "Sin pendientes"
+                              : "Sin tareas"}
+                        </span>
+                      </div>
                     </CardContent>
                   </Card>
                 </Link>

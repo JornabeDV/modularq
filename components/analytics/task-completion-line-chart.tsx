@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -19,29 +19,30 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { processTaskCompletionData } from "./analytics-utils";
 
-interface ProjectDeliveryLineChartProps {
-  deliveredWeeklyChartData: Array<{ semana: string; proyectos: number; fecha: string }>;
-  deliveredMonthlyChartData: Array<{ semana: string; proyectos: number; fecha: string }>;
+interface TaskCompletionLineChartProps {
+  projects: any[];
 }
 
-const deliveredChartConfig: ChartConfig = {
-  proyectos: {
-    label: "Proyectos Entregados",
-    color: "hsl(var(--chart-1))",
+const chartConfig: ChartConfig = {
+  tareas: {
+    label: "Tareas Completadas",
+    color: "#22c55e",
   },
 };
 
-export function ProjectDeliveryLineChart({
-  deliveredWeeklyChartData,
-  deliveredMonthlyChartData,
-}: ProjectDeliveryLineChartProps) {
+export function TaskCompletionLineChart({ projects }: TaskCompletionLineChartProps) {
   const isMobile = useIsMobile();
   const [mode, setMode] = useState<"week" | "month">("week");
 
-  const rawData = mode === "week" ? deliveredWeeklyChartData : deliveredMonthlyChartData;
+  const data = useMemo(
+    () => processTaskCompletionData(projects, mode),
+    [projects, mode]
+  );
+
   const displayData =
-    isMobile && rawData.length > 12 ? rawData.slice(-12) : rawData;
+    isMobile && data.length > 12 ? data.slice(-12) : data;
 
   return (
     <Card className="max-sm:py-3">
@@ -49,10 +50,10 @@ export function ProjectDeliveryLineChart({
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base sm:text-lg">
-              Proyectos Entregados
+              Tareas Completadas
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm mt-1">
-              Evolución de proyectos entregados por {mode === "week" ? "semana" : "mes"}
+              Evolución de tareas completadas por {mode === "week" ? "semana" : "mes"}
             </CardDescription>
           </div>
           <div className="flex gap-1 shrink-0">
@@ -77,14 +78,14 @@ export function ProjectDeliveryLineChart({
       </CardHeader>
       <CardContent className="px-2 sm:px-6 pb-4 sm:pb-6">
         {displayData.length === 0 ? (
-          <div className="flex items-center justify-center h-[200px] sm:h-[300px] text-muted-foreground text-sm">
+          <div className="flex items-center justify-center h-[250px] sm:h-[300px] text-muted-foreground text-sm">
             <p>No hay datos suficientes para mostrar</p>
           </div>
         ) : (
           <div className="w-full overflow-hidden relative max-w-full">
             <ChartContainer
-              config={deliveredChartConfig}
-              className="h-[200px] sm:h-[300px] w-full !aspect-auto [&>div]:overflow-hidden [&>div]:max-w-full"
+              config={chartConfig}
+              className="h-[250px] sm:h-[300px] w-full !aspect-auto [&>div]:overflow-hidden [&>div]:max-w-full"
             >
               <LineChart
                 data={displayData}
@@ -92,7 +93,7 @@ export function ProjectDeliveryLineChart({
                   top: 5,
                   right: isMobile ? 5 : 10,
                   left: isMobile ? -5 : 0,
-                  bottom: isMobile ? 90 : 35,
+                  bottom: isMobile ? 70 : 35,
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -118,8 +119,7 @@ export function ProjectDeliveryLineChart({
                   content={
                     <ChartTooltipContent
                       formatter={(value, name) => {
-                        const itemConfig = deliveredChartConfig[name as keyof typeof deliveredChartConfig];
-                        const label = itemConfig?.label || name;
+                        const label = chartConfig[name as keyof typeof chartConfig]?.label ?? name;
                         return (
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
@@ -135,10 +135,10 @@ export function ProjectDeliveryLineChart({
                 <ChartLegend content={<ChartLegendContent />} />
                 <Line
                   type="monotone"
-                  dataKey="proyectos"
-                  stroke="#a855f7"
+                  dataKey="tareas"
+                  stroke="#22c55e"
                   strokeWidth={isMobile ? 2 : 3}
-                  dot={{ fill: "#a855f7", r: isMobile ? 3 : 4, strokeWidth: 2, stroke: "#fff" }}
+                  dot={{ fill: "#22c55e", r: isMobile ? 3 : 4, strokeWidth: 2, stroke: "#fff" }}
                   activeDot={{ r: isMobile ? 5 : 6, strokeWidth: 2, stroke: "#fff" }}
                   connectNulls={false}
                 />

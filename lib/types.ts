@@ -13,6 +13,8 @@ export interface Project {
   createdBy: string
   createdAt: string
   updatedAt: string
+  completedAt?: string
+  deliveredAt?: string
   clientId?: string
   client?: {
     id: string

@@ -277,10 +277,9 @@ export class PrismaTypedService {
     module_count?: number
   }): Promise<any> {
     const updateData: any = {}
-    
+
     if (projectData.name !== undefined) updateData.name = projectData.name
     if (projectData.description !== undefined) updateData.description = projectData.description
-    if (projectData.status !== undefined) updateData.status = projectData.status
     if (projectData.condition !== undefined) updateData.condition = projectData.condition
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date.toISOString()
     if (projectData.end_date !== undefined) updateData.end_date = projectData.end_date.toISOString()
@@ -292,6 +291,33 @@ export class PrismaTypedService {
     if (projectData.width !== undefined) updateData.width = projectData.width
     if (projectData.depth !== undefined) updateData.depth = projectData.depth
     if (projectData.module_count !== undefined) updateData.module_count = projectData.module_count
+
+    if (projectData.status !== undefined) {
+      updateData.status = projectData.status
+      if (projectData.status === 'completed') {
+        const { data: current } = await supabase
+          .from('projects')
+          .select('completed_at')
+          .eq('id', id)
+          .single()
+        if (!current?.completed_at) {
+          updateData.completed_at = new Date().toISOString()
+        }
+      } else if (projectData.status === 'delivered') {
+        const { data: current } = await supabase
+          .from('projects')
+          .select('delivered_at')
+          .eq('id', id)
+          .single()
+        if (!current?.delivered_at) {
+          updateData.delivered_at = new Date().toISOString()
+        }
+      } else {
+        // Reactivating a project clears both terminal dates
+        updateData.completed_at = null
+        updateData.delivered_at = null
+      }
+    }
 
     const { data, error } = await supabase
       .from('projects')
