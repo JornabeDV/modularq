@@ -22,6 +22,13 @@ export interface PdfProject {
   totalTasks: number;
   estimatedHours: number;
   actualHours: number;
+  pendingTaskNames: string[];
+  startDate: string | null;
+  endDate: string | null;
+  daysUntilDeadline: number | null;
+  clientName: string | null;
+  completedAt: string | null;
+  deliveredAt: string | null;
 }
 
 export interface PdfTaskStats {
@@ -44,6 +51,10 @@ export interface AnalyticsPdfData {
   periodMode: "week" | "month";
   periodLabel: string;
   projects: PdfProject[];
+  deliveredProjects: PdfProject[];
+  completedProjects: PdfProject[];
+  planningProjects: PdfProject[];
+  pausedProjects: PdfProject[];
   statusCounts: PdfStatusCounts;
   taskStats: PdfTaskStats;
   periodActivity: PeriodActivityStats;
@@ -132,7 +143,7 @@ const s = StyleSheet.create({
     right: 30,
     flexDirection: "row",
     justifyContent: "space-between",
-    fontSize: 8,
+    fontSize: 9,
     color: "#9ca3af",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
@@ -150,13 +161,12 @@ const s = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   kpiLabel: {
-    fontSize: 7,
+    fontSize: 8,
     color: "#6b7280",
     textTransform: "uppercase",
     marginBottom: 3,
   },
-  kpiValue: { fontSize: 17, fontWeight: "bold", color: "#1e293b" },
-  kpiSub: { fontSize: 7, color: "#94a3b8", marginTop: 2 },
+  kpiValue: { fontSize: 20, fontWeight: "bold", color: "#1e293b" },
 
   // Activity strip
   activityStrip: {
@@ -171,7 +181,7 @@ const s = StyleSheet.create({
   activityItem: { flex: 1, alignItems: "center" },
   activityValue: { fontSize: 18, fontWeight: "bold", color: "#1e40af" },
   activityLabel: {
-    fontSize: 7,
+    fontSize: 9,
     color: "#3b82f6",
     textTransform: "uppercase",
     textAlign: "center",
@@ -186,7 +196,7 @@ const s = StyleSheet.create({
 
   // Section title
   sectionTitle: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "bold",
     color: "#374151",
     marginBottom: 5,
@@ -200,13 +210,13 @@ const s = StyleSheet.create({
   tableHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
     marginBottom: 1,
   },
   tableHeaderText: {
-    fontSize: 7,
+    fontSize: 9,
     fontWeight: "bold",
     color: "#6b7280",
     textTransform: "uppercase",
@@ -214,7 +224,7 @@ const s = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
@@ -277,9 +287,6 @@ function progressColor(pct: number): string {
 function fmt(n: number): string {
   return n.toLocaleString("es-AR");
 }
-function fmtH(n: number): string {
-  return `${fmt(n)} hs`;
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -323,13 +330,70 @@ function PdfFooter() {
   return (
     <View style={s.footer} fixed>
       <Text>
-        {COMPANY_INFO.name} — {COMPANY_INFO.address} — CUIT {COMPANY_INFO.cuit}
+        {COMPANY_INFO.name} — {COMPANY_INFO.address}
       </Text>
       <Text
         render={({ pageNumber, totalPages }) =>
           `Página ${pageNumber} de ${totalPages}`
         }
       />
+    </View>
+  );
+}
+
+// ─── Project Status Section ───────────────────────────────────────────────────
+
+function ProjectStatusSection({
+  title,
+  projects,
+  dateLabel,
+  dateField,
+}: {
+  title: string;
+  projects: PdfProject[];
+  dateLabel: string;
+  dateField: "deliveredAt" | "completedAt" | "planning";
+}) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={s.sectionTitle}>
+        {title} ({projects.length})
+      </Text>
+      {projects.map((p, i) => (
+        <View
+          key={i}
+          style={[
+            s.tableRow,
+            i % 2 === 1 ? s.tableRowAlt : {},
+            { paddingVertical: 5 },
+          ]}
+        >
+          <View style={{ flex: 3, paddingRight: 8 }}>
+            <Text style={{ fontSize: 10, fontWeight: "bold", color: "#1e293b" }}>
+              {p.name}
+            </Text>
+            {p.clientName && (
+              <Text style={{ fontSize: 9, color: "#6b7280", marginTop: 1 }}>
+                {p.clientName}
+              </Text>
+            )}
+          </View>
+          <View style={{ flex: 2 }}>
+            {dateField === "planning" ? (
+              <Text style={{ fontSize: 9, color: "#374151" }}>
+                Inicio: {p.startDate ?? "—"} | Fin: {p.endDate ?? "sin fecha"}
+              </Text>
+            ) : (
+              <Text style={{ fontSize: 9, color: "#374151" }}>
+                {dateLabel}:{" "}
+                {(dateField === "deliveredAt"
+                  ? p.deliveredAt
+                  : p.completedAt) ?? "—"}
+              </Text>
+            )}
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
@@ -342,11 +406,15 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
     periodLabel,
     periodMode,
     projects,
+    deliveredProjects,
+    completedProjects,
+    planningProjects,
+    pausedProjects,
     statusCounts,
     taskStats,
     periodActivity,
   } = data;
-  const { operarios, tasksCompleted, projectsCreated, projectsDelivered } =
+  const { operarios, projectsDelivered, projectsCompletedInPeriod } =
     periodActivity;
 
   const totalTasks =
@@ -354,13 +422,18 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
     taskStats.in_progress +
     taskStats.completed +
     taskStats.cancelled;
-  const totalProjects = projects.length;
-  const ACTIVE_LABELS = new Set(["Planificación", "Activo", "En Pausa"]);
-  const visibleProjects = projects.filter((p) =>
-    ACTIVE_LABELS.has(p.statusLabel),
+  const visibleProjects = projects.filter((p) => p.statusLabel === "Activo");
+  const totalProjects =
+    (statusCounts.active ?? 0) +
+    (statusCounts.planning ?? 0) +
+    (statusCounts.paused ?? 0) +
+    projectsCompletedInPeriod +
+    projectsDelivered;
+  const periodOperarios = operarios.filter((o) => o.completedInPeriod > 0);
+  const maxOpPeriod = Math.max(
+    ...periodOperarios.map((o) => o.completedInPeriod),
+    1,
   );
-  const maxOpTotal = Math.max(...operarios.map((o) => o.completedTotal), 1);
-  const periodWord = periodMode === "week" ? "sem." : "mes";
 
   return (
     <Document>
@@ -375,59 +448,38 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
         {/* ── KPIs ── */}
         <View style={s.kpiRow}>
           <View style={s.kpiCard}>
-            <Text style={s.kpiLabel}>Total Proyectos</Text>
+            <Text style={s.kpiLabel}>Activos</Text>
+            <Text style={s.kpiValue}>{fmt(statusCounts.active ?? 0)}</Text>
+          </View>
+          <View style={s.kpiCard}>
+            <Text style={s.kpiLabel}>Planificación</Text>
+            <Text style={s.kpiValue}>{fmt(statusCounts.planning ?? 0)}</Text>
+          </View>
+          <View style={s.kpiCard}>
+            <Text style={s.kpiLabel}>Completados</Text>
+            <Text style={s.kpiValue}>{fmt(projectsCompletedInPeriod)}</Text>
+          </View>
+          <View style={s.kpiCard}>
+            <Text style={s.kpiLabel}>Pausados</Text>
+            <Text style={s.kpiValue}>{fmt(statusCounts.paused ?? 0)}</Text>
+          </View>
+          <View style={s.kpiCard}>
+            <Text style={s.kpiLabel}>Entregados</Text>
+            <Text style={s.kpiValue}>{fmt(projectsDelivered)}</Text>
+          </View>
+          <View
+            style={[
+              s.kpiCard,
+              { borderColor: "#1e293b", backgroundColor: "#f1f5f9" },
+            ]}
+          >
+            <Text style={s.kpiLabel}>Total</Text>
             <Text style={s.kpiValue}>{fmt(totalProjects)}</Text>
-            <Text style={s.kpiSub}>{statusCounts.active} activos</Text>
-          </View>
-          <View style={s.kpiCard}>
-            <Text style={s.kpiLabel}>Tareas completadas</Text>
-            <Text style={s.kpiValue}>{fmt(tasksCompleted)}</Text>
-            <Text style={s.kpiSub}>completadas en el período</Text>
-          </View>
-          <View style={s.kpiCard}>
-            <Text style={s.kpiLabel}>Tareas pendientes</Text>
-            <Text style={s.kpiValue}>{fmt(taskStats.pending)}</Text>
-            <Text style={s.kpiSub}>
-              {fmt(taskStats.in_progress)} en progreso
-            </Text>
-          </View>
-          <View style={s.kpiCard}>
-            <Text style={s.kpiLabel}>Operarios activos</Text>
-            <Text style={s.kpiValue}>{fmt(operarios.length)}</Text>
-            <Text style={s.kpiSub}>
-              {fmt(operarios.reduce((acc, o) => acc + o.completedInPeriod, 0))}{" "}
-              tareas {periodMode === "week" ? "esta sem." : "este mes"}
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Actividad del período ── */}
-        <View style={s.activityStrip}>
-          <View style={s.activityItem}>
-            <Text style={s.activityValue}>{fmt(tasksCompleted)}</Text>
-            <Text style={s.activityLabel}>Tareas completadas</Text>
-          </View>
-          <View style={s.activityDivider} />
-          <View style={s.activityItem}>
-            <Text style={s.activityValue}>{fmt(projectsCreated)}</Text>
-            <Text style={s.activityLabel}>Proyectos creados</Text>
-          </View>
-          <View style={s.activityDivider} />
-          <View style={s.activityItem}>
-            <Text style={s.activityValue}>{fmt(projectsDelivered)}</Text>
-            <Text style={s.activityLabel}>Proyectos entregados</Text>
-          </View>
-          <View style={s.activityDivider} />
-          <View style={s.activityItem}>
-            <Text style={s.activityValue}>
-              {fmt(operarios.filter((o) => o.completedInPeriod > 0).length)}
-            </Text>
-            <Text style={s.activityLabel}>Operarios con actividad</Text>
           </View>
         </View>
 
         {/* ── Estado proyectos + estado tareas + progreso ── */}
-        <View style={s.threeCol}>
+        {((statusCounts.active ?? 0) + (statusCounts.planning ?? 0) + (statusCounts.paused ?? 0) > 0) && <View style={s.threeCol}>
           {/* Estado de proyectos */}
           <View style={s.col}>
             <Text style={s.sectionTitle}>Proyectos en Curso</Text>
@@ -458,14 +510,14 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
 
           {/* Estado de tareas */}
           <View style={s.col}>
-            <Text style={s.sectionTitle}>Tareas — Proyectos Activos</Text>
+            <Text style={s.sectionTitle}>Tareas — Proyectos</Text>
             {TASK_STATUS_ROWS.map((row) => {
               const count = taskStats[row.key as keyof PdfTaskStats];
               const pct =
                 totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0;
               return (
                 <View key={row.key} style={s.tableRow}>
-                  <Text style={{ fontSize: 8, width: 58 }}>{row.label}</Text>
+                  <Text style={{ fontSize: 9, width: 58 }}>{row.label}</Text>
                   <View style={s.barBg}>
                     <View
                       style={[
@@ -491,10 +543,50 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
               );
             })}
           </View>
-        </View>
+        </View>}
+
+        {/* ── Proyectos Entregados ── */}
+        {deliveredProjects.length > 0 && (
+          <ProjectStatusSection
+            title="Proyectos Entregados en el Período"
+            projects={deliveredProjects}
+            dateLabel="Fecha de entrega"
+            dateField="deliveredAt"
+          />
+        )}
+
+        {/* ── Proyectos Completados ── */}
+        {completedProjects.length > 0 && (
+          <ProjectStatusSection
+            title="Proyectos Completados en el Período"
+            projects={completedProjects}
+            dateLabel="Fecha de completado"
+            dateField="completedAt"
+          />
+        )}
+
+        {/* ── Proyectos en Planificación ── */}
+        {planningProjects.length > 0 && (
+          <ProjectStatusSection
+            title="Proyectos en Planificación"
+            projects={planningProjects}
+            dateLabel="Fecha inicio → fin"
+            dateField="planning"
+          />
+        )}
+
+        {/* ── Proyectos Pausados ── */}
+        {pausedProjects.length > 0 && (
+          <ProjectStatusSection
+            title="Proyectos Pausados"
+            projects={pausedProjects}
+            dateLabel="Fecha inicio → fin"
+            dateField="planning"
+          />
+        )}
 
         {/* ── Progreso de Proyectos ── */}
-        <View style={{ marginBottom: 14 }}>
+        {visibleProjects.length > 0 && <View style={{ marginBottom: 14 }}>
           <Text style={s.sectionTitle}>
             Progreso de Proyectos — Activos ({fmt(visibleProjects.length)})
           </Text>
@@ -510,17 +602,17 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
             </View>
             <View style={s.cNum}>
               <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                ✓
+                C
               </Text>
             </View>
             <View style={s.cNum}>
               <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                ⏳
+                P
               </Text>
             </View>
             <View style={s.cNum}>
               <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                ▶
+                Pr
               </Text>
             </View>
           </View>
@@ -530,8 +622,58 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
               style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}
             >
               <View style={s.cName}>
-                <Text style={{ fontSize: 8 }}>
-                  {p.name.length > 48 ? p.name.slice(0, 45) + "..." : p.name}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Text style={{ fontSize: 10 }}>
+                    {p.name.length > 40 ? p.name.slice(0, 37) + "..." : p.name}
+                  </Text>
+                  {p.daysUntilDeadline !== null &&
+                    (() => {
+                      const d = p.daysUntilDeadline!;
+                      const bg =
+                        d < 0
+                          ? "#ef4444"
+                          : d <= 7
+                            ? "#f97316"
+                            : d <= 30
+                              ? "#eab308"
+                              : "#22c55e";
+                      const label =
+                        d < 0
+                          ? `Vencido hace ${Math.abs(d)}d`
+                          : d === 0
+                            ? "Vence hoy"
+                            : `${d}d restantes`;
+                      return (
+                        <View
+                          style={{
+                            backgroundColor: bg,
+                            borderRadius: 3,
+                            paddingHorizontal: 4,
+                            paddingVertical: 1,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: "#ffffff",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {label}
+                          </Text>
+                        </View>
+                      );
+                    })()}
+                </View>
+                <Text style={{ fontSize: 9, color: "#94a3b8", marginTop: 1 }}>
+                  Inicio: {p.startDate ?? "—"} | Fin: {p.endDate ?? "sin fecha"}
                 </Text>
               </View>
               <View style={s.cStatus}>
@@ -544,7 +686,7 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
                       { backgroundColor: p.statusColor, width: 5, height: 5 },
                     ]}
                   />
-                  <Text style={{ fontSize: 8, color: "#374151" }}>
+                  <Text style={{ fontSize: 10, color: "#374151" }}>
                     {p.statusLabel}
                   </Text>
                 </View>
@@ -561,14 +703,14 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
                     ]}
                   />
                 </View>
-                <Text style={{ fontSize: 8, width: 24, textAlign: "right" }}>
+                <Text style={{ fontSize: 10, width: 24, textAlign: "right" }}>
                   {p.completionPercentage}%
                 </Text>
               </View>
               <View style={s.cNum}>
                 <Text
                   style={{
-                    fontSize: 8,
+                    fontSize: 10,
                     color: "#22c55e",
                     fontWeight: "bold",
                     textAlign: "center",
@@ -580,7 +722,7 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
               <View style={s.cNum}>
                 <Text
                   style={{
-                    fontSize: 8,
+                    fontSize: 10,
                     color: "#f59e0b",
                     fontWeight: "bold",
                     textAlign: "center",
@@ -592,7 +734,7 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
               <View style={s.cNum}>
                 <Text
                   style={{
-                    fontSize: 8,
+                    fontSize: 10,
                     color: "#3b82f6",
                     fontWeight: "bold",
                     textAlign: "center",
@@ -603,10 +745,80 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
               </View>
             </View>
           ))}
-        </View>
+        </View>}
+
+        {/* ── Tareas Pendientes por Proyecto ── */}
+        {periodMode === "week" &&
+          visibleProjects.some((p) => p.pendingTaskNames.length > 0) && (
+            <View style={{ marginBottom: 14 }}>
+              <Text style={s.sectionTitle}>
+                Tareas Pendientes — Proyectos Activos
+              </Text>
+              {visibleProjects
+                .filter((p) => p.pendingTaskNames.length > 0)
+                .map((p, pi) => (
+                  <View key={pi} style={{ marginBottom: 8 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 5,
+                        marginBottom: 3,
+                      }}
+                    >
+                      <View
+                        style={[
+                          s.dot,
+                          {
+                            backgroundColor: p.statusColor,
+                            width: 6,
+                            height: 6,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: "bold",
+                          color: "#1e293b",
+                        }}
+                      >
+                        {p.name} ({p.pendingTaskNames.length})
+                      </Text>
+                    </View>
+                    {p.pendingTaskNames.map((taskName, ti) => (
+                      <View
+                        key={ti}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingLeft: 14,
+                          paddingVertical: 2,
+                          borderBottomWidth: 1,
+                          borderBottomColor: "#f1f5f9",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 4,
+                            height: 4,
+                            borderRadius: 2,
+                            backgroundColor: "#f59e0b",
+                            marginRight: 6,
+                          }}
+                        />
+                        <Text style={{ fontSize: 10, color: "#374151" }}>
+                          {taskName}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+            </View>
+          )}
 
         {/* ── Rendimiento de Operarios ── */}
-        {operarios.length > 0 && (
+        {periodOperarios.length > 0 && (
           <View>
             <Text style={s.sectionTitle}>
               Rendimiento de Operarios — {periodLabel}
@@ -616,30 +828,15 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
                 <Text style={s.tableHeaderText}>Operario</Text>
               </View>
               <View style={s.oBar}>
-                <Text style={s.tableHeaderText}>Actividad total</Text>
+                <Text style={s.tableHeaderText}>Actividad en el período</Text>
               </View>
               <View style={s.oNum}>
                 <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                  Este {periodWord}
-                </Text>
-              </View>
-              <View style={s.oNum}>
-                <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                  Total
-                </Text>
-              </View>
-              <View style={s.oHours}>
-                <Text style={[s.tableHeaderText, { textAlign: "right" }]}>
-                  Hs. {periodWord}
-                </Text>
-              </View>
-              <View style={s.oProj}>
-                <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                  Proyectos
+                  Tareas
                 </Text>
               </View>
             </View>
-            {operarios.map((op, i) => (
+            {periodOperarios.map((op, i) => (
               <View
                 key={i}
                 style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}
@@ -653,7 +850,7 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
                       style={[
                         s.barFill,
                         {
-                          width: `${Math.round((op.completedTotal / maxOpTotal) * 100)}%`,
+                          width: `${Math.round((op.completedInPeriod / maxOpPeriod) * 100)}%`,
                           backgroundColor: "#3b82f6",
                         },
                       ]}
@@ -666,33 +863,10 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
                       fontSize: 9,
                       fontWeight: "bold",
                       textAlign: "center",
-                      color: op.completedInPeriod > 0 ? "#1e293b" : "#94a3b8",
+                      color: "#1e293b",
                     }}
                   >
                     {op.completedInPeriod}
-                  </Text>
-                </View>
-                <View style={s.oNum}>
-                  <Text style={{ fontSize: 9, textAlign: "center" }}>
-                    {op.completedTotal}
-                  </Text>
-                </View>
-                <View style={s.oHours}>
-                  <Text
-                    style={{
-                      fontSize: 9,
-                      textAlign: "right",
-                      color: "#6b7280",
-                    }}
-                  >
-                    {op.actualHoursInPeriod > 0
-                      ? fmtH(op.actualHoursInPeriod)
-                      : "—"}
-                  </Text>
-                </View>
-                <View style={s.oProj}>
-                  <Text style={{ fontSize: 9, textAlign: "center" }}>
-                    {op.activeProjects}
                   </Text>
                 </View>
               </View>
@@ -701,16 +875,17 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
               <Text
                 style={{ fontSize: 9, color: "#ffffff", fontWeight: "bold" }}
               >
-                {operarios.length} operario{operarios.length !== 1 ? "s" : ""}{" "}
-                activos
+                {periodOperarios.length} operario
+                {periodOperarios.length !== 1 ? "s" : ""} con actividad
               </Text>
               <Text style={{ fontSize: 9, color: "#94a3b8" }}>
                 {fmt(
-                  operarios.reduce((acc, o) => acc + o.completedInPeriod, 0),
+                  periodOperarios.reduce(
+                    (acc, o) => acc + o.completedInPeriod,
+                    0,
+                  ),
                 )}{" "}
-                tareas {periodMode === "week" ? "esta semana" : "este mes"} •{" "}
-                {fmt(operarios.reduce((acc, o) => acc + o.completedTotal, 0))}{" "}
-                tareas totales
+                tareas {periodMode === "week" ? "esta semana" : "este mes"}
               </Text>
             </View>
           </View>

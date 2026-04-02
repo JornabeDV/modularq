@@ -107,6 +107,7 @@ export interface PeriodActivityStats {
   tasksCompleted: number;
   projectsCreated: number;
   projectsDelivered: number;
+  projectsCompletedInPeriod: number;
   estimatedHours: number;
   actualHours: number;
   operarios: Array<{
@@ -148,12 +149,14 @@ export const getPeriodActivityStats = (
 
   // Projects created in period
   const projectsCreated = projects.filter(p => inPeriod(p.createdAt)).length;
-  // Projects finalized in period: delivered uses deliveredAt, completed uses completedAt
-  const projectsDelivered = projects.filter(p => {
-    if (p.status === 'delivered') return inPeriod(p.deliveredAt ?? p.updatedAt);
-    if (p.status === 'completed') return inPeriod(p.completedAt ?? p.updatedAt);
-    return false;
-  }).length;
+  // Projects delivered in period (status=delivered, deliveredAt in period)
+  const projectsDelivered = projects.filter(p =>
+    p.status === 'delivered' && inPeriod(p.deliveredAt ?? p.updatedAt)
+  ).length;
+  // Projects completed in period (status=completed, completedAt in period)
+  const projectsCompletedInPeriod = projects.filter(p =>
+    p.status === 'completed' && inPeriod(p.completedAt ?? p.updatedAt)
+  ).length;
 
   // All tasks
   const allTasks = projects.flatMap(p => p.projectTasks || []);
@@ -195,7 +198,7 @@ export const getPeriodActivityStats = (
     return { name, completedInPeriod, completedTotal, actualHoursInPeriod, activeProjects };
   });
 
-  return { tasksCompleted, projectsCreated, projectsDelivered, estimatedHours, actualHours, operarios };
+  return { tasksCompleted, projectsCreated, projectsDelivered, projectsCompletedInPeriod, estimatedHours, actualHours, operarios };
 };
 
 export const processOperarioTaskData = (

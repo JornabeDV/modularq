@@ -38,7 +38,7 @@ interface ProjectProgressGridProps {
   filteredProjects: ProjectWithStatus[];
 }
 
-const ACTIVE_STATUSES = new Set(["planning", "active", "paused"]);
+const ACTIVE_STATUSES = new Set(["active"]);
 
 export function ProjectProgressGrid({
   filteredProjects,

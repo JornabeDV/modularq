@@ -190,11 +190,11 @@ export function ProjectAnalytics() {
         <div className="flex flex-col gap-2 sm:items-end shrink-0">
           <p className="text-xs text-muted-foreground">Período del reporte</p>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               <Button
                 variant={periodMode === "week" ? "default" : "outline"}
                 size="sm"
-                className="h-8 text-xs px-3"
+                className="text-xs px-3 h-9"
                 onClick={() => handlePeriodModeChange("week")}
               >
                 Semana
@@ -202,7 +202,7 @@ export function ProjectAnalytics() {
               <Button
                 variant={periodMode === "month" ? "default" : "outline"}
                 size="sm"
-                className="h-8 text-xs px-3"
+                className="h-9 text-xs px-3"
                 onClick={() => handlePeriodModeChange("month")}
               >
                 Mes

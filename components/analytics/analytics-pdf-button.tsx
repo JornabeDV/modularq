@@ -55,8 +55,38 @@ export function AnalyticsPdfButton({
       periodKey,
     );
 
+    let periodStart: Date, periodEnd: Date;
+    if (periodMode === "week") {
+      periodStart = new Date(periodKey);
+      periodStart.setHours(0, 0, 0, 0);
+      periodEnd = new Date(periodStart);
+      periodEnd.setDate(periodEnd.getDate() + 6);
+      periodEnd.setHours(23, 59, 59, 999);
+    } else {
+      const [year, month] = periodKey.split("-").map(Number);
+      periodStart = new Date(year, month - 1, 1);
+      periodEnd = new Date(year, month, 0);
+      periodEnd.setHours(23, 59, 59, 999);
+    }
+    const inPeriod = (dateStr: string | null | undefined) => {
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d >= periodStart && d <= periodEnd;
+    };
+    const startedByPeriod = (p: any) =>
+      !p.startDate || new Date(p.startDate) <= periodEnd;
+
+    const periodProjects = projectsWithStatus.filter(startedByPeriod);
+    const periodStatusCounts = {
+      planning: periodProjects.filter((p) => p.status === "planning").length,
+      active: periodProjects.filter((p) => p.status === "active").length,
+      paused: periodProjects.filter((p) => p.status === "paused").length,
+      completed: projectsWithStatus.filter((p) => p.status === "completed" && inPeriod(p.completedAt ?? p.updatedAt)).length,
+      delivered: projectsWithStatus.filter((p) => p.status === "delivered" && inPeriod(p.deliveredAt ?? p.updatedAt)).length,
+    };
+
     const ACTIVE_STATUSES = new Set(["planning", "active", "paused"]);
-    const activeProjects = projectsWithStatus.filter((p) =>
+    const activeProjects = periodProjects.filter((p) =>
       ACTIVE_STATUSES.has(p.status),
     );
     const activeTaskStats = activeProjects.reduce(
@@ -74,7 +104,7 @@ export function AnalyticsPdfButton({
       generatedAt: new Date(),
       periodMode,
       periodLabel,
-      projects: projectsWithStatus.map((p) => ({
+      projects: projectsWithStatus.filter(startedByPeriod).map((p) => ({
         name: p.name,
         statusLabel: STATUS_LABELS[p.status] ?? p.status,
         statusColor: STATUS_COLORS[p.status] ?? "#94a3b8",
@@ -93,8 +123,106 @@ export function AnalyticsPdfButton({
             (s: number, t: any) => s + (t.actualHours || 0),
             0,
           ) ?? 0,
+        pendingTaskNames:
+          p.projectTasks
+            ?.filter((t: any) => t.status === "pending")
+            .map((t: any) => (t.task?.title ?? "") as string) ?? [],
+        startDate: p.startDate ? new Date(p.startDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+        endDate: p.endDate ? new Date(p.endDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+        daysUntilDeadline: p.endDate
+          ? Math.ceil((new Date(p.endDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000)
+          : null,
+        clientName: p.client?.companyName ?? null,
+        completedAt: p.completedAt ? new Date(p.completedAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+        deliveredAt: p.deliveredAt ? new Date(p.deliveredAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
       })),
-      statusCounts: stats.statusCounts as any,
+      deliveredProjects: projectsWithStatus
+        .filter((p) => p.status === "delivered" && inPeriod(p.deliveredAt ?? p.updatedAt))
+        .map((p) => ({
+          name: p.name,
+          statusLabel: STATUS_LABELS[p.status] ?? p.status,
+          statusColor: STATUS_COLORS[p.status] ?? "#94a3b8",
+          completionPercentage: p.completionPercentage,
+          completedTasks: p.completedTasks,
+          pendingTasks: p.pendingTasks,
+          inProgressTasks: p.inProgressTasks,
+          totalTasks: p.totalTasks,
+          estimatedHours: 0,
+          actualHours: 0,
+          pendingTaskNames: [],
+          startDate: p.startDate ? new Date(p.startDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          endDate: p.endDate ? new Date(p.endDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          daysUntilDeadline: null,
+          clientName: p.client?.companyName ?? null,
+          completedAt: null,
+          deliveredAt: p.deliveredAt ? new Date(p.deliveredAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+        })),
+      completedProjects: projectsWithStatus
+        .filter((p) => p.status === "completed" && inPeriod(p.completedAt ?? p.updatedAt))
+        .map((p) => ({
+          name: p.name,
+          statusLabel: STATUS_LABELS[p.status] ?? p.status,
+          statusColor: STATUS_COLORS[p.status] ?? "#94a3b8",
+          completionPercentage: p.completionPercentage,
+          completedTasks: p.completedTasks,
+          pendingTasks: p.pendingTasks,
+          inProgressTasks: p.inProgressTasks,
+          totalTasks: p.totalTasks,
+          estimatedHours: 0,
+          actualHours: 0,
+          pendingTaskNames: [],
+          startDate: p.startDate ? new Date(p.startDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          endDate: p.endDate ? new Date(p.endDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          daysUntilDeadline: null,
+          clientName: p.client?.companyName ?? null,
+          completedAt: p.completedAt ? new Date(p.completedAt).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          deliveredAt: null,
+        })),
+      pausedProjects: projectsWithStatus
+        .filter((p) => p.status === "paused" && startedByPeriod(p))
+        .map((p) => ({
+          name: p.name,
+          statusLabel: STATUS_LABELS[p.status] ?? p.status,
+          statusColor: STATUS_COLORS[p.status] ?? "#94a3b8",
+          completionPercentage: p.completionPercentage,
+          completedTasks: p.completedTasks,
+          pendingTasks: p.pendingTasks,
+          inProgressTasks: p.inProgressTasks,
+          totalTasks: p.totalTasks,
+          estimatedHours: 0,
+          actualHours: 0,
+          pendingTaskNames: [],
+          startDate: p.startDate ? new Date(p.startDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          endDate: p.endDate ? new Date(p.endDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          daysUntilDeadline: p.endDate
+            ? Math.ceil((new Date(p.endDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000)
+            : null,
+          clientName: p.client?.companyName ?? null,
+          completedAt: null,
+          deliveredAt: null,
+        })),
+      planningProjects: projectsWithStatus
+        .filter((p) => p.status === "planning" && startedByPeriod(p))
+        .map((p) => ({
+          name: p.name,
+          statusLabel: STATUS_LABELS[p.status] ?? p.status,
+          statusColor: STATUS_COLORS[p.status] ?? "#94a3b8",
+          completionPercentage: p.completionPercentage,
+          completedTasks: p.completedTasks,
+          pendingTasks: p.pendingTasks,
+          inProgressTasks: p.inProgressTasks,
+          totalTasks: p.totalTasks,
+          estimatedHours: 0,
+          actualHours: 0,
+          pendingTaskNames: [],
+          startDate: p.startDate ? new Date(p.startDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          endDate: p.endDate ? new Date(p.endDate).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : null,
+          daysUntilDeadline: null,
+          clientName: p.client?.companyName ?? null,
+          completedAt: null,
+          deliveredAt: null,
+        })),
+      statusCounts: periodStatusCounts,
       taskStats: activeTaskStats,
       periodActivity,
     };
@@ -126,7 +254,7 @@ export function AnalyticsPdfButton({
       size="sm"
       onClick={handleDownload}
       disabled={isGenerating}
-      className="gap-2 cursor-pointer"
+      className="gap-2 cursor-pointer h-9"
     >
       {isGenerating ? (
         <>
