@@ -31,9 +31,13 @@ export function ProjectStatusPieChart({
 }: ProjectStatusPieChartProps) {
   const isMobile = useIsMobile();
 
-  const chartData = STATUS_CONFIG.filter(
-    (config) => config.type !== "completed",
-  ).map((config) => ({
+  // Excluimos delivered y completed
+  const visibleStatuses = STATUS_CONFIG.filter(
+    (config) =>
+      config.type !== "delivered" && config.type !== "completed"
+  );
+
+  const chartData = visibleStatuses.map((config) => ({
     name: config.label,
     value: statusCounts[config.type] || 0,
     fill: statusColors[config.type] || "#64748b",
@@ -49,6 +53,7 @@ export function ProjectStatusPieChart({
           Porcentaje de proyectos en cada estado del proyecto
         </CardDescription>
       </CardHeader>
+
       <CardContent className="px-2 sm:px-6 pb-4 sm:pb-6">
         <div className="w-full overflow-hidden relative max-w-full">
           <ChartContainer
@@ -63,8 +68,8 @@ export function ProjectStatusPieChart({
                 cy="50%"
                 labelLine={false}
                 label={({ name, percent, value }) => {
-                  if (value === 0) return "";
-                  return `${name}\n${(percent * 100).toFixed(0)}%`;
+                  if (!value) return "";
+                  return `${name}\n${((percent || 0) * 100).toFixed(0)}%`;
                 }}
                 outerRadius={isMobile ? 40 : 60}
                 innerRadius={isMobile ? 15 : 20}
@@ -83,30 +88,29 @@ export function ProjectStatusPieChart({
         <div className="text-xs sm:text-sm text-muted-foreground mb-3">
           <strong>Estados del proyecto:</strong>
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {STATUS_CONFIG.filter((config) => config.type !== "completed").map(
-            (config) => (
-              <div key={config.type} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: statusColors[config.type] }}
-                />
-                <span className="text-xs sm:text-sm">
-                  <Badge variant="outline" className="text-xs mr-1 px-1 py-0">
-                    {config.label}
-                  </Badge>
-                  {config.type === "planning" &&
-                    "Proyecto en fase de planificación"}
-                  {config.type === "active" &&
-                    "Proyecto actualmente en ejecución"}
-                  {config.type === "paused" &&
-                    "Proyecto temporalmente detenido"}
-                  {config.type === "delivered" &&
-                    "Proyecto finalizado y entregado"}
-                </span>
-              </div>
-            ),
-          )}
+          {visibleStatuses.map((config) => (
+            <div key={config.type} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: statusColors[config.type] }}
+              />
+
+              <span className="text-xs sm:text-sm">
+                <Badge variant="outline" className="text-xs mr-1 px-1 py-0">
+                  {config.label}
+                </Badge>
+
+                {config.type === "planning" &&
+                  "Proyecto en fase de planificación"}
+                {config.type === "active" &&
+                  "Proyecto actualmente en ejecución"}
+                {config.type === "paused" &&
+                  "Proyecto temporalmente detenido"}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </Card>

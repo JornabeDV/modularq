@@ -11,6 +11,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  transpilePackages: ['@react-pdf/renderer'],
 }
 
 const pwaConfig = withPWA({
