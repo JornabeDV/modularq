@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Document,
   Page,
@@ -369,7 +367,9 @@ function ProjectStatusSection({
           ]}
         >
           <View style={{ flex: 3, paddingRight: 8 }}>
-            <Text style={{ fontSize: 10, fontWeight: "bold", color: "#1e293b" }}>
+            <Text
+              style={{ fontSize: 10, fontWeight: "bold", color: "#1e293b" }}
+            >
               {p.name}
             </Text>
             {p.clientName && (
@@ -479,71 +479,78 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
         </View>
 
         {/* ── Estado proyectos + estado tareas + progreso ── */}
-        {((statusCounts.active ?? 0) + (statusCounts.planning ?? 0) + (statusCounts.paused ?? 0) > 0) && <View style={s.threeCol}>
-          {/* Estado de proyectos */}
-          <View style={s.col}>
-            <Text style={s.sectionTitle}>Proyectos en Curso</Text>
-            {(["planning", "active", "paused"] as const).map((key) => (
-              <View key={key} style={s.tableRow}>
-                <View
-                  style={[
-                    s.dot,
-                    { backgroundColor: STATUS_COLORS[key] ?? "#94a3b8" },
-                  ]}
-                />
-                <Text style={{ flex: 1, fontSize: 9 }}>
-                  {STATUS_LABELS[key]}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 9,
-                    fontWeight: "bold",
-                    width: 20,
-                    textAlign: "right",
-                  }}
-                >
-                  {statusCounts[key] ?? 0}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Estado de tareas */}
-          <View style={s.col}>
-            <Text style={s.sectionTitle}>Tareas — Proyectos</Text>
-            {TASK_STATUS_ROWS.map((row) => {
-              const count = taskStats[row.key as keyof PdfTaskStats];
-              const pct =
-                totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0;
-              return (
-                <View key={row.key} style={s.tableRow}>
-                  <Text style={{ fontSize: 9, width: 58 }}>{row.label}</Text>
-                  <View style={s.barBg}>
-                    <View
-                      style={[
-                        s.barFill,
-                        { width: `${pct}%`, backgroundColor: row.color },
-                      ]}
-                    />
-                  </View>
-                  <Text style={{ fontSize: 9, width: 20, textAlign: "right" }}>
-                    {count}
+        {(statusCounts.active ?? 0) +
+          (statusCounts.planning ?? 0) +
+          (statusCounts.paused ?? 0) >
+          0 && (
+          <View style={s.threeCol}>
+            {/* Estado de proyectos */}
+            <View style={s.col}>
+              <Text style={s.sectionTitle}>Proyectos en Curso</Text>
+              {(["planning", "active", "paused"] as const).map((key) => (
+                <View key={key} style={s.tableRow}>
+                  <View
+                    style={[
+                      s.dot,
+                      { backgroundColor: STATUS_COLORS[key] ?? "#94a3b8" },
+                    ]}
+                  />
+                  <Text style={{ flex: 1, fontSize: 9 }}>
+                    {STATUS_LABELS[key]}
                   </Text>
                   <Text
                     style={{
-                      fontSize: 8,
-                      color: "#94a3b8",
-                      width: 22,
+                      fontSize: 9,
+                      fontWeight: "bold",
+                      width: 20,
                       textAlign: "right",
                     }}
                   >
-                    {pct}%
+                    {statusCounts[key] ?? 0}
                   </Text>
                 </View>
-              );
-            })}
+              ))}
+            </View>
+
+            {/* Estado de tareas */}
+            <View style={s.col}>
+              <Text style={s.sectionTitle}>Tareas — Proyectos</Text>
+              {TASK_STATUS_ROWS.map((row) => {
+                const count = taskStats[row.key as keyof PdfTaskStats];
+                const pct =
+                  totalTasks > 0 ? Math.round((count / totalTasks) * 100) : 0;
+                return (
+                  <View key={row.key} style={s.tableRow}>
+                    <Text style={{ fontSize: 9, width: 58 }}>{row.label}</Text>
+                    <View style={s.barBg}>
+                      <View
+                        style={[
+                          s.barFill,
+                          { width: `${pct}%`, backgroundColor: row.color },
+                        ]}
+                      />
+                    </View>
+                    <Text
+                      style={{ fontSize: 9, width: 20, textAlign: "right" }}
+                    >
+                      {count}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 8,
+                        color: "#94a3b8",
+                        width: 22,
+                        textAlign: "right",
+                      }}
+                    >
+                      {pct}%
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        </View>}
+        )}
 
         {/* ── Proyectos Entregados ── */}
         {deliveredProjects.length > 0 && (
@@ -586,166 +593,177 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
         )}
 
         {/* ── Progreso de Proyectos ── */}
-        {visibleProjects.length > 0 && <View style={{ marginBottom: 14 }}>
-          <Text style={s.sectionTitle}>
-            Progreso de Proyectos — Activos ({fmt(visibleProjects.length)})
-          </Text>
-          <View style={s.tableHeader}>
-            <View style={s.cName}>
-              <Text style={s.tableHeaderText}>Proyecto</Text>
-            </View>
-            <View style={s.cStatus}>
-              <Text style={s.tableHeaderText}>Estado</Text>
-            </View>
-            <View style={s.cBar}>
-              <Text style={s.tableHeaderText}>Avance</Text>
-            </View>
-            <View style={s.cNum}>
-              <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                C
-              </Text>
-            </View>
-            <View style={s.cNum}>
-              <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                P
-              </Text>
-            </View>
-            <View style={s.cNum}>
-              <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
-                Pr
-              </Text>
-            </View>
-          </View>
-          {visibleProjects.map((p, i) => (
-            <View
-              key={i}
-              style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}
-            >
+        {visibleProjects.length > 0 && (
+          <View style={{ marginBottom: 14 }}>
+            <Text style={s.sectionTitle}>
+              Progreso de Proyectos — Activos ({fmt(visibleProjects.length)})
+            </Text>
+            <View style={s.tableHeader}>
               <View style={s.cName}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 5,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Text style={{ fontSize: 10 }}>
-                    {p.name.length > 40 ? p.name.slice(0, 37) + "..." : p.name}
-                  </Text>
-                  {p.daysUntilDeadline !== null &&
-                    (() => {
-                      const d = p.daysUntilDeadline!;
-                      const bg =
-                        d < 0
-                          ? "#ef4444"
-                          : d <= 7
-                            ? "#f97316"
-                            : d <= 30
-                              ? "#eab308"
-                              : "#22c55e";
-                      const label =
-                        d < 0
-                          ? `Vencido hace ${Math.abs(d)}d`
-                          : d === 0
-                            ? "Vence hoy"
-                            : `${d}d restantes`;
-                      return (
-                        <View
-                          style={{
-                            backgroundColor: bg,
-                            borderRadius: 3,
-                            paddingHorizontal: 4,
-                            paddingVertical: 1,
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 10,
-                              color: "#ffffff",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            {label}
-                          </Text>
-                        </View>
-                      );
-                    })()}
-                </View>
-                <Text style={{ fontSize: 9, color: "#94a3b8", marginTop: 1 }}>
-                  Inicio: {p.startDate ?? "—"} | Fin: {p.endDate ?? "sin fecha"}
-                </Text>
+                <Text style={s.tableHeaderText}>Proyecto</Text>
               </View>
               <View style={s.cStatus}>
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
-                >
-                  <View
-                    style={[
-                      s.dot,
-                      { backgroundColor: p.statusColor, width: 5, height: 5 },
-                    ]}
-                  />
-                  <Text style={{ fontSize: 10, color: "#374151" }}>
-                    {p.statusLabel}
-                  </Text>
-                </View>
+                <Text style={s.tableHeaderText}>Estado</Text>
               </View>
               <View style={s.cBar}>
-                <View style={s.barBg}>
-                  <View
-                    style={[
-                      s.barFill,
-                      {
-                        width: `${p.completionPercentage}%`,
-                        backgroundColor: progressColor(p.completionPercentage),
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={{ fontSize: 10, width: 24, textAlign: "right" }}>
-                  {p.completionPercentage}%
+                <Text style={s.tableHeaderText}>Avance</Text>
+              </View>
+              <View style={s.cNum}>
+                <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
+                  C
                 </Text>
               </View>
               <View style={s.cNum}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    color: "#22c55e",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                >
-                  {p.completedTasks}
+                <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
+                  P
                 </Text>
               </View>
               <View style={s.cNum}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    color: "#f59e0b",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                >
-                  {p.pendingTasks}
-                </Text>
-              </View>
-              <View style={s.cNum}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    color: "#3b82f6",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                >
-                  {p.inProgressTasks}
+                <Text style={[s.tableHeaderText, { textAlign: "center" }]}>
+                  Pr
                 </Text>
               </View>
             </View>
-          ))}
-        </View>}
+            {visibleProjects.map((p, i) => (
+              <View
+                key={i}
+                style={[s.tableRow, i % 2 === 1 ? s.tableRowAlt : {}]}
+              >
+                <View style={s.cName}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 5,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Text style={{ fontSize: 10 }}>
+                      {p.name.length > 40
+                        ? p.name.slice(0, 37) + "..."
+                        : p.name}
+                    </Text>
+                    {p.daysUntilDeadline !== null &&
+                      (() => {
+                        const d = p.daysUntilDeadline!;
+                        const bg =
+                          d < 0
+                            ? "#ef4444"
+                            : d <= 7
+                              ? "#f97316"
+                              : d <= 30
+                                ? "#eab308"
+                                : "#22c55e";
+                        const label =
+                          d < 0
+                            ? `Vencido hace ${Math.abs(d)}d`
+                            : d === 0
+                              ? "Vence hoy"
+                              : `${d}d restantes`;
+                        return (
+                          <View
+                            style={{
+                              backgroundColor: bg,
+                              borderRadius: 3,
+                              paddingHorizontal: 4,
+                              paddingVertical: 1,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                color: "#ffffff",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {label}
+                            </Text>
+                          </View>
+                        );
+                      })()}
+                  </View>
+                  <Text style={{ fontSize: 9, color: "#94a3b8", marginTop: 1 }}>
+                    Inicio: {p.startDate ?? "—"} | Fin:{" "}
+                    {p.endDate ?? "sin fecha"}
+                  </Text>
+                </View>
+                <View style={s.cStatus}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    <View
+                      style={[
+                        s.dot,
+                        { backgroundColor: p.statusColor, width: 5, height: 5 },
+                      ]}
+                    />
+                    <Text style={{ fontSize: 10, color: "#374151" }}>
+                      {p.statusLabel}
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.cBar}>
+                  <View style={s.barBg}>
+                    <View
+                      style={[
+                        s.barFill,
+                        {
+                          width: `${p.completionPercentage}%`,
+                          backgroundColor: progressColor(
+                            p.completionPercentage,
+                          ),
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={{ fontSize: 10, width: 24, textAlign: "right" }}>
+                    {p.completionPercentage}%
+                  </Text>
+                </View>
+                <View style={s.cNum}>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: "#22c55e",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {p.completedTasks}
+                  </Text>
+                </View>
+                <View style={s.cNum}>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: "#f59e0b",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {p.pendingTasks}
+                  </Text>
+                </View>
+                <View style={s.cNum}>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: "#3b82f6",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    {p.inProgressTasks}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ── Tareas Pendientes por Proyecto ── */}
         {periodMode === "week" &&
