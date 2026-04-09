@@ -2,9 +2,8 @@ name: Monthly Analytics Report
 
 on:
   schedule:
-    # Último viernes del mes a las 8 PM UTC (5 PM Argentina, UTC-3)
-    # días 25-31 + viernes garantiza que sea siempre el último viernes del mes
-    - cron: '0 20 25-31 * 5'
+    # Primer día de cada mes a las 10 AM UTC (7 AM Argentina, UTC-3)
+    - cron: '0 10 1 * *'
 
   # Permite ejecutar manualmente desde GitHub para testear
   workflow_dispatch:
@@ -23,12 +22,13 @@ jobs:
           REPORT_FILE="reporte_mensual_${DATE}.pdf"
           HUMAN_DATE=$(date '+%d/%m/%Y %H:%M')
 
-          # Nombre del mes en español
-          MONTH_NUM=$(date +%m)
-          YEAR=$(date +%Y)
+          # Mes anterior en formato YYYY-MM (el reporte se envía el día 1 del mes siguiente)
+          PREV_MONTH_KEY=$(date -d "last month" '+%Y-%m')
+          PREV_MONTH_NUM=$(date -d "last month" +%m)
+          PREV_YEAR=$(date -d "last month" +%Y)
           MONTH_NAMES=("Enero" "Febrero" "Marzo" "Abril" "Mayo" "Junio" "Julio" "Agosto" "Septiembre" "Octubre" "Noviembre" "Diciembre")
-          MONTH_NAME=${MONTH_NAMES[$((10#$MONTH_NUM - 1))]}
-          PERIOD_LABEL="${MONTH_NAME} ${YEAR}"
+          MONTH_NAME=${MONTH_NAMES[$((10#$PREV_MONTH_NUM - 1))]}
+          PERIOD_LABEL="${MONTH_NAME} ${PREV_YEAR}"
 
           echo "📊 Generating monthly report — $PERIOD_LABEL..."
 
@@ -36,7 +36,7 @@ jobs:
             -X POST "$APP_URL/api/reports/generate" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            -d '{"period":"month"}')
+            -d "{\"period\":\"month\",\"periodKey\":\"$PREV_MONTH_KEY\"}")
 
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "❌ ERROR: API returned status $HTTP_STATUS"
@@ -66,7 +66,7 @@ jobs:
           username: ${{ secrets.GMAIL_USERNAME }}
           password: ${{ secrets.GMAIL_APP_PASSWORD }}
           subject: "📈 Reporte Mensual ModulArq — ${{ env.PERIOD_LABEL }}"
-          to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}
+          to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}, ${{ secrets.CARLA_EMAIL }}
           from: ${{ secrets.GMAIL_USERNAME }}
           body: |
             📈 REPORTE MENSUAL — ${{ env.PERIOD_LABEL }}
