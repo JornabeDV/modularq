@@ -31,11 +31,13 @@ export async function POST(request: NextRequest) {
   }
 
   let period: 'week' | 'month'
+  let periodKeyOverride: string | undefined
   try {
     const body = await request.json()
     period = body.period === 'week' ? 'week' : 'month'
+    periodKeyOverride = typeof body.periodKey === 'string' ? body.periodKey : undefined
   } catch {
-    return NextResponse.json({ error: 'Invalid request body. Expected: { period: "week" | "month" }' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid request body. Expected: { period: "week" | "month", periodKey?: string }' }, { status: 400 })
   }
 
   console.log(`📊 [REPORT] Generating ${period} report...`)
@@ -135,11 +137,13 @@ export async function POST(request: NextRequest) {
     }
   })
 
-  // Resolve current period key and label
+  // Resolve period key and label — use override if provided (e.g. previous month from cron)
   const periods = getAvailablePeriods(period)
-  const currentPeriod = periods[periods.length - 1]
-  const periodKey = currentPeriod.key
-  const periodLabel = currentPeriod.label
+  const resolvedPeriod = periodKeyOverride
+    ? (periods.find((p) => p.key === periodKeyOverride) ?? periods[periods.length - 1])
+    : periods[periods.length - 1]
+  const periodKey = resolvedPeriod.key
+  const periodLabel = resolvedPeriod.label
 
   // Compute period bounds (mirrors analytics-pdf-button.tsx)
   let periodStart: Date

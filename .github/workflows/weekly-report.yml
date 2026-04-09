@@ -2,8 +2,8 @@ name: Weekly Analytics Report
 
 on:
   schedule:
-    # Cada viernes a las 8 PM UTC (5 PM Argentina, UTC-3)
-    - cron: '0 20 * * 5'
+    # Cada viernes a las 10 AM UTC (7 AM Argentina, UTC-3)
+    - cron: '0 10 * * 5'
 
   # Permite ejecutar manualmente desde GitHub para testear
   workflow_dispatch:
@@ -67,7 +67,7 @@ jobs:
           username: ${{ secrets.GMAIL_USERNAME }}
           password: ${{ secrets.GMAIL_APP_PASSWORD }}
           subject: "📊 Reporte Semanal ModulArq — ${{ env.PERIOD_LABEL }}"
-          to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}
+          to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}, ${{ secrets.CARLA_EMAIL }}, ${{ secrets.CONTACT_EMAIL }}, ${{ secrets.OPERATIONS_EMAIL }}
           from: ${{ secrets.GMAIL_USERNAME }}
           body: |
             📊 REPORTE SEMANAL — ${{ env.PERIOD_LABEL }}
