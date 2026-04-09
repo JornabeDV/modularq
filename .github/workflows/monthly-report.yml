@@ -21,9 +21,16 @@ jobs:
         run: |
           DATE=$(date +%Y%m%d_%H%M%S)
           REPORT_FILE="reporte_mensual_${DATE}.pdf"
-          HUMAN_DATE=$(date '+%Y-%m-%d %H:%M:%S UTC')
+          HUMAN_DATE=$(date '+%d/%m/%Y %H:%M')
 
-          echo "📊 Generating monthly report..."
+          # Nombre del mes en español
+          MONTH_NUM=$(date +%m)
+          YEAR=$(date +%Y)
+          MONTH_NAMES=("Enero" "Febrero" "Marzo" "Abril" "Mayo" "Junio" "Julio" "Agosto" "Septiembre" "Octubre" "Noviembre" "Diciembre")
+          MONTH_NAME=${MONTH_NAMES[$((10#$MONTH_NUM - 1))]}
+          PERIOD_LABEL="${MONTH_NAME} ${YEAR}"
+
+          echo "📊 Generating monthly report — $PERIOD_LABEL..."
 
           HTTP_STATUS=$(curl -s -o "$REPORT_FILE" -w "%{http_code}" \
             -X POST "$APP_URL/api/reports/generate" \
@@ -46,6 +53,7 @@ jobs:
 
           echo "REPORT_FILE=$REPORT_FILE" >> $GITHUB_ENV
           echo "REPORT_DATE=$HUMAN_DATE" >> $GITHUB_ENV
+          echo "PERIOD_LABEL=$PERIOD_LABEL" >> $GITHUB_ENV
           echo "✅ Report generated: $REPORT_FILE ($SIZE bytes)"
 
       - name: Send Report by Email
@@ -57,13 +65,26 @@ jobs:
           secure: true
           username: ${{ secrets.GMAIL_USERNAME }}
           password: ${{ secrets.GMAIL_APP_PASSWORD }}
-          subject: "📈 Reporte Mensual ModulArq — ${{ env.REPORT_DATE }}"
+          subject: "📈 Reporte Mensual ModulArq — ${{ env.PERIOD_LABEL }}"
           to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}
           from: ${{ secrets.GMAIL_USERNAME }}
           body: |
-            📈 Reporte Mensual generado automáticamente
+            📈 REPORTE MENSUAL — ${{ env.PERIOD_LABEL }}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-            📁 Adjunto: ${{ env.REPORT_FILE }}
-            🗓️ Fecha de generación: ${{ env.REPORT_DATE }}
-            🔗 Ver detalles: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Se adjunta el reporte mensual de ModulArq correspondiente a ${{ env.PERIOD_LABEL }}.
+
+            📋 CONTENIDO DEL REPORTE
+            • Resumen ejecutivo del mes
+            • Estado general de todos los proyectos
+            • Métricas de rendimiento del equipo de operarios
+            • Proyectos completados y entregados en el mes
+            • Proyectos en planificación y pausados
+
+            📁 Archivo: ${{ env.REPORT_FILE }}
+            🗓️ Generado el: ${{ env.REPORT_DATE }}
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            Este reporte es generado automáticamente por el sistema ModulArq.
+            Para más detalles, accedé al sistema en ${{ secrets.APP_URL }}
           attachments: ${{ env.REPORT_FILE }}
