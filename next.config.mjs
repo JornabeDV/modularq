@@ -12,6 +12,11 @@ const nextConfig = {
     unoptimized: true,
   },
   transpilePackages: ['@react-pdf/renderer'],
+  experimental: {
+    // Prevent webpack from bundling @react-pdf/renderer server-side.
+    // It must run as a native Node.js module; bundling breaks its internal classes.
+    serverComponentsExternalPackages: ['@react-pdf/renderer'],
+  },
 }
 
 const pwaConfig = withPWA({
