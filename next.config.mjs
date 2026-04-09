@@ -11,10 +11,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  transpilePackages: ['@react-pdf/renderer'],
   experimental: {
-    // Prevent webpack from bundling @react-pdf/renderer server-side.
-    // It must run as a native Node.js module; bundling breaks its internal classes.
+    // @react-pdf/renderer must NOT be bundled by webpack (breaks internal classes).
+    // Runs as native Node.js module server-side; Next.js handles it as ESM client-side.
     serverComponentsExternalPackages: ['@react-pdf/renderer'],
   },
 }
