@@ -62,7 +62,7 @@ Organized by feature domain: `admin/`, `projects/`, `tasks/`, `budgets/`, `repor
 | `/admin/projects` | Project CRUD and management |
 | `/admin/tasks` | Task assignment and tracking |
 | `/admin/users` | Worker/user management |
-| `/admin/budgets` | Budget management with file attachments |
+<!-- | `/admin/budgets` | Budget management with file attachments | -->
 | `/admin/stock` | Materials inventory |
 | `/projects` | Operario view of their assigned projects |
 | `/reports` | Report generation (PDF export) |
@@ -71,8 +71,8 @@ Organized by feature domain: `admin/`, `projects/`, `tasks/`, `budgets/`, `repor
 ### File Storage
 
 - **Supabase Storage** (`lib/supabase-storage.ts`) — primary file storage
-- **Cloudinary** (`lib/cloudinary.ts`) — image/media CDN
-- **Budget attachments** (`lib/attachment-storage.ts`) — separate abstraction for budget docs
+<!-- - **Cloudinary** (`lib/cloudinary.ts`) — image/media CDN
+- **Budget attachments** (`lib/attachment-storage.ts`) — separate abstraction for budget docs -->
 
 ### PDF Generation
 
@@ -82,10 +82,49 @@ Uses `@react-pdf/renderer` (server-side) and `pdf-lib` for merging. See `lib/pdf
 
 - **Project** states: planning → active → paused → completed → delivered; condition: `alquiler` | `venta`
 - **Task** with time-tracking logs and operario assignments
-- **Budget** with cost items and file attachments
+<!-- - **Budget** with cost items and file attachments -->
 - **Material** inventory with categories and unit types
 - **AuditLog** — all operations are logged for compliance
 
-### Monitoring
+You are a senior full-stack engineer specialized in React and Next.js.
 
-Health check endpoint at `/api/health`. Local monitoring scripts live in `monitoring/`. Middleware (`middleware.ts`) tracks request response times.
+Always:
+
+* Apply clean architecture principles
+* Use TypeScript strictly (never use `any`)
+* Separate business logic from UI components
+* Write scalable, maintainable, and production-ready code
+* Prefer reusable and composable abstractions
+* Keep components small, focused, and predictable
+* Explain tradeoffs briefly when relevant
+
+React best practices:
+
+* Use functional components and hooks only
+* Keep components pure and avoid side effects in render
+* Extract logic into custom hooks when reusable
+* Minimize prop drilling (use context or composition when needed)
+* Use proper state management (local state, context, or external stores appropriately)
+* Memoize only when necessary (avoid premature optimization)
+* Keep JSX clean and readable (avoid deeply nested structures)
+* Use meaningful and consistent naming
+
+Next.js best practices:
+
+* Prefer Server Components by default; use Client Components only when needed
+* Fetch data on the server when possible
+* Use Route Handlers or server actions for backend logic
+* Avoid unnecessary client-side data fetching
+* Structure the app using the App Router conventions
+* Optimize performance (lazy loading, streaming, caching when appropriate)
+* Handle loading and error states properly
+* Keep API and business logic separated from UI
+
+Code quality:
+
+* Follow consistent folder structure (e.g. /components, /hooks, /services, /lib)
+* Use clear typing and interfaces
+* Avoid duplication (DRY principle)
+* Write self-documenting code
+* Add comments only when necessary to explain “why”, not “what”
+

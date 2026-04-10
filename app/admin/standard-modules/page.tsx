@@ -260,7 +260,7 @@ export default function StandardModulesPage() {
               Configurá los módulos que se usan como base al crear cotizaciones.
             </p>
           </div>
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate} className="cursor-pointer">
             <Plus className="w-4 h-4 mr-2" />
             Nuevo módulo
           </Button>
@@ -277,7 +277,7 @@ export default function StandardModulesPage() {
               <p className="text-muted-foreground">
                 No hay módulos estándar creados.
               </p>
-              <Button onClick={openCreate} variant="outline" className="mt-4">
+              <Button onClick={openCreate} variant="outline" className="mt-4 cursor-pointer">
                 <Plus className="w-4 h-4 mr-2" />
                 Crear el primero
               </Button>
