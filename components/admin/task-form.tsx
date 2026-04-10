@@ -292,12 +292,13 @@ export function TaskForm({
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2 mt-4">
+          <div className="flex justify-end space-x-2 mt-4 max-md:flex-col max-md:gap-4">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
+              className="max-md:w-full"
             >
               Cancelar
             </Button>

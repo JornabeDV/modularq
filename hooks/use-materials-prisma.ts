@@ -8,7 +8,7 @@ export interface Material {
   code: string
   name: string
   description?: string
-  category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+  category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
   unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
   stockQuantity: number
   minStock: number
@@ -22,7 +22,7 @@ export interface CreateMaterialData {
   code: string
   name: string
   description?: string
-  category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+  category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
   unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
   stock_quantity?: number
   min_stock?: number
@@ -34,7 +34,7 @@ export interface UpdateMaterialData {
   code?: string
   name?: string
   description?: string
-  category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+  category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
   unit?: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
   stock_quantity?: number
   min_stock?: number

@@ -9,11 +9,12 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { LOGO_BASE64 } from "@/lib/logo-base64";
+import { COMPANY } from "@/lib/company-config";
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    paddingTop: 110,
+    paddingTop: 120,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
@@ -41,21 +42,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-  companySlogan: {
+  companyTagline: {
     fontSize: 9,
     color: "#6b7280",
   },
-  quoteTitle: {
+  companyContact: {
+    fontSize: 8,
+    color: "#6b7280",
+    marginTop: 2,
+  },
+  quoteBlock: {
     textAlign: "right",
   },
   quoteTitleText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
+  },
+  quoteNumber: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#374151",
+    marginTop: 3,
   },
   quoteDate: {
     fontSize: 9,
     color: "#6b7280",
-    marginTop: 4,
+    marginTop: 2,
   },
   section: {
     marginBottom: 12,
@@ -69,23 +81,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
     paddingBottom: 3,
-  },
-  clientInfo: {
-    flexDirection: "row",
-    gap: 40,
-  },
-  clientBlock: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 8,
-    color: "#6b7280",
-    textTransform: "uppercase",
-    marginBottom: 2,
-  },
-  value: {
-    fontSize: 11,
-    fontWeight: "medium",
   },
   moduleCard: {
     marginBottom: 10,
@@ -118,6 +113,21 @@ const styles = StyleSheet.create({
     color: "#4b5563",
     lineHeight: 1.5,
   },
+  descriptionSections: {
+    marginTop: 6,
+  },
+  descriptionSectionTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#374151",
+    marginTop: 5,
+    marginBottom: 2,
+  },
+  descriptionSectionBody: {
+    fontSize: 9,
+    color: "#4b5563",
+    lineHeight: 1.5,
+  },
   adicionalesSection: {
     marginTop: 8,
   },
@@ -136,6 +146,12 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: "Courier",
     color: "#374151",
+  },
+  label: {
+    fontSize: 8,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    marginBottom: 2,
   },
   totalsBox: {
     backgroundColor: "#f9fafb",
@@ -218,20 +234,32 @@ const styles = StyleSheet.create({
     right: 30,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
     paddingTop: 6,
   },
-  footerText: {
+  footerLeft: {
     fontSize: 8,
     color: "#9ca3af",
   },
+  footerRight: {
+    fontSize: 8,
+    color: "#9ca3af",
+    textAlign: "right",
+  },
 });
+
+export interface CotizadorDescriptionSection {
+  section: string;
+  description: string;
+}
 
 export interface CotizadorItem {
   moduleId: string;
   moduleName: string;
   moduleDescription?: string;
+  moduleDescriptionSections?: CotizadorDescriptionSection[];
   basePrice: number;
   adicionales: Array<{
     id: string;
@@ -241,13 +269,12 @@ export interface CotizadorItem {
 }
 
 export interface CotizadorPDFProps {
-  clientName: string;
-  clientCompany?: string;
-  clientPhone?: string;
-  clientEmail?: string;
+  quoteNumber?: string;
   notes?: string;
   items: CotizadorItem[];
   date: string;
+  validUntil?: string;
+  generatorName?: string;
 }
 
 function formatCurrency(amount: number): string {
@@ -260,13 +287,12 @@ function formatCurrency(amount: number): string {
 }
 
 export function CotizadorPDFDocument({
-  clientName,
-  clientCompany,
-  clientPhone,
-  clientEmail,
+  quoteNumber,
   notes,
   items,
   date,
+  validUntil,
+  generatorName,
 }: CotizadorPDFProps) {
   const subtotalModules = items.reduce((acc, item) => acc + item.basePrice, 0);
   const subtotalAdicionales = items.reduce(
@@ -280,46 +306,28 @@ export function CotizadorPDFDocument({
       <Page size="A4" style={styles.page}>
         {/* Header fijo */}
         <View style={styles.header} fixed>
+          {/* Izquierda: logo + datos empresa */}
           <View style={styles.logoSection}>
             <Image style={styles.logo} src={LOGO_BASE64} />
             <View>
-              <Text style={styles.companyName}>ModulArq</Text>
-              <Text style={styles.companySlogan}>
-                Construcción Modular Industrial
+              <Text style={styles.companyName}>{COMPANY.name}</Text>
+              <Text style={styles.companyTagline}>{COMPANY.tagline}</Text>
+              <Text style={styles.companyContact}>{COMPANY.address}</Text>
+              <Text style={styles.companyContact}>
+                {COMPANY.phone} · {COMPANY.email}
               </Text>
             </View>
           </View>
-          <View style={styles.quoteTitle}>
-            <Text style={styles.quoteTitleText}>COTIZACIÓN</Text>
-            <Text style={styles.quoteDate}>{date}</Text>
-          </View>
-        </View>
 
-        {/* Datos del cliente */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Datos del Cliente</Text>
-          <View style={styles.clientInfo}>
-            <View style={styles.clientBlock}>
-              <Text style={styles.label}>Nombre / Contacto</Text>
-              <Text style={styles.value}>{clientName}</Text>
-            </View>
-            {clientCompany && (
-              <View style={styles.clientBlock}>
-                <Text style={styles.label}>Empresa</Text>
-                <Text style={styles.value}>{clientCompany}</Text>
-              </View>
+          {/* Derecha: título + número + fecha */}
+          <View style={styles.quoteBlock}>
+            <Text style={styles.quoteTitleText}>COTIZACIÓN</Text>
+            {quoteNumber && (
+              <Text style={styles.quoteNumber}>{quoteNumber}</Text>
             )}
-            {clientPhone && (
-              <View style={styles.clientBlock}>
-                <Text style={styles.label}>Teléfono</Text>
-                <Text style={styles.value}>{clientPhone}</Text>
-              </View>
-            )}
-            {clientEmail && (
-              <View style={styles.clientBlock}>
-                <Text style={styles.label}>Email</Text>
-                <Text style={styles.value}>{clientEmail}</Text>
-              </View>
+            <Text style={styles.quoteDate}>Emisión: {date}</Text>
+            {validUntil && (
+              <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
             )}
           </View>
         </View>
@@ -327,12 +335,12 @@ export function CotizadorPDFDocument({
         {/* Módulos cotizados */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Módulos Cotizados</Text>
-          {items.map((item) => {
+          {items.map((item, idx) => {
             const itemTotal =
               item.basePrice +
               item.adicionales.reduce((a, ad) => a + ad.price, 0);
             return (
-              <View key={item.moduleId} style={styles.moduleCard}>
+              <View key={`${item.moduleId}-${idx}`} style={styles.moduleCard}>
                 <View style={styles.moduleHeader}>
                   <Text style={styles.moduleName}>{item.moduleName}</Text>
                   <Text style={styles.modulePrice}>
@@ -343,6 +351,16 @@ export function CotizadorPDFDocument({
                   <Text style={styles.moduleDescription}>
                     {item.moduleDescription}
                   </Text>
+                )}
+                {item.moduleDescriptionSections && item.moduleDescriptionSections.length > 0 && (
+                  <View style={styles.descriptionSections}>
+                    {item.moduleDescriptionSections.map((sec, i) => (
+                      <View key={i}>
+                        <Text style={styles.descriptionSectionTitle}>{sec.section}</Text>
+                        <Text style={styles.descriptionSectionBody}>{sec.description}</Text>
+                      </View>
+                    ))}
+                  </View>
                 )}
                 {item.adicionales.length > 0 && (
                   <View style={styles.adicionalesSection}>
@@ -398,11 +416,11 @@ export function CotizadorPDFDocument({
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>
-            ModulArq — Construcción Modular Industrial
+          <Text style={styles.footerLeft}>
+            {generatorName ? `Preparado por: ${generatorName}` : COMPANY.legalName}
           </Text>
           <Text
-            style={styles.footerText}
+            style={styles.footerRight}
             render={({ pageNumber, totalPages }) =>
               `Página ${pageNumber} de ${totalPages}`
             }

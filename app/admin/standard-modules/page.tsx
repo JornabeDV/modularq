@@ -4,13 +4,10 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
-  Pencil,
+  Edit,
   Trash2,
   Package,
   ChevronDown,
-  ChevronUp,
-  ToggleLeft,
-  ToggleRight,
   Loader2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -38,6 +35,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import {
   useStandardModules,
@@ -65,7 +69,7 @@ function ModuleFormFields({
         <Label htmlFor="name">Nombre *</Label>
         <Input
           id="name"
-          placeholder="Ej: Kitchenette seca 120"
+          placeholder="Ej: Planta Libre"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
@@ -75,6 +79,7 @@ function ModuleFormFields({
         <Textarea
           id="description"
           placeholder="Descripción del módulo..."
+          className="text-sm"
           value={form.description}
           onChange={(e) =>
             setForm((f) => ({ ...f, description: e.target.value }))
@@ -113,7 +118,7 @@ function ModuleFormFields({
 }
 
 export default function StandardModulesPage() {
-  const { modules, loading, reload, createModule, updateModule, deleteModule } =
+  const { modules, loading, reload, createModule, updateModule, patchModule, deleteModule } =
     useStandardModules();
   const { toast } = useToast();
   const { userProfile, isLoading: authLoading } = useAuth();
@@ -232,7 +237,7 @@ export default function StandardModulesPage() {
 
   async function handleToggleActive(mod: StandardModule) {
     try {
-      await updateModule(mod.id, { is_active: !mod.is_active });
+      await patchModule(mod.id, { is_active: !mod.is_active });
       toast({
         title: mod.is_active ? "Módulo desactivado" : "Módulo activado",
       });
@@ -247,7 +252,7 @@ export default function StandardModulesPage() {
 
   return (
     <MainLayout>
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 mx-auto space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Módulos Estándar</h1>
@@ -281,30 +286,25 @@ export default function StandardModulesPage() {
         ) : (
           <div className="space-y-3">
             {modules.map((mod) => (
-              <Card key={mod.id} className={mod.is_active ? "" : "opacity-60"}>
-                <CardHeader className="py-4">
-                  <div className="flex items-start justify-between gap-4">
+              <Card key={mod.id} className={!mod.is_active ? "opacity-60" : "py-0 md:py-0 h-auto sm:gap-0"}>
+                <CardHeader
+                  className="py-4 cursor-pointer select-none"
+                  onClick={() =>
+                    setExpandedId(expandedId === mod.id ? null : mod.id)
+                  }
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                    {/* Title + badge + description */}
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <button
-                        onClick={() =>
-                          setExpandedId(expandedId === mod.id ? null : mod.id)
-                        }
-                        className="mt-0.5 text-muted-foreground hover:text-foreground"
-                      >
-                        {expandedId === mod.id ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </button>
+                      <ChevronDown
+                        className={`mt-0.5 w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                          expandedId === mod.id ? "rotate-180" : ""
+                        }`}
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-base">
-                            {mod.name}
-                          </CardTitle>
-                          <Badge
-                            variant={mod.is_active ? "default" : "secondary"}
-                          >
+                          <CardTitle className="text-base">{mod.name}</CardTitle>
+                          <Badge variant={mod.is_active ? "default" : "secondary"}>
                             {mod.is_active ? "Activo" : "Inactivo"}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
@@ -319,52 +319,82 @@ export default function StandardModulesPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm font-semibold tabular-nums">
+
+                    {/* Price + actions */}
+                    <div
+                      className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-sm font-semibold tabular-nums mr-auto sm:mr-0">
                         {new Intl.NumberFormat("es-AR", {
                           style: "currency",
                           currency: "ARS",
                           minimumFractionDigits: 0,
                         }).format(mod.base_price)}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        title={mod.is_active ? "Desactivar" : "Activar"}
-                        onClick={() => handleToggleActive(mod)}
-                      >
-                        {mod.is_active ? (
-                          <ToggleRight className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <ToggleLeft className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(mod)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteTarget(mod)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger className="items-center flex">
+                            <Switch
+                              checked={mod.is_active}
+                              onCheckedChange={() => handleToggleActive(mod)}
+                              className="cursor-pointer"
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {mod.is_active ? "Desactivar módulo" : "Activar módulo"}
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="cursor-pointer"
+                              onClick={() => openEdit(mod)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar módulo</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="cursor-pointer"
+                              onClick={() => setDeleteTarget(mod)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Eliminar módulo</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 </CardHeader>
 
-                {expandedId === mod.id && (
-                  <CardContent className="pt-0 pb-4">
-                    <StandardModuleDetail module={mod} onRefresh={reload} />
-                  </CardContent>
-                )}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    expandedId === mod.id
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <CardContent className="pt-0 pb-4">
+                      <StandardModuleDetail
+                        module={mod}
+                        onRefresh={reload}
+                        onSaveDescription={(sections) =>
+                          patchModule(mod.id, { module_description: sections })
+                        }
+                      />
+                    </CardContent>
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
@@ -372,16 +402,16 @@ export default function StandardModulesPage() {
 
         {/* Dialog crear */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent>
+          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
             <DialogHeader>
               <DialogTitle>Nuevo módulo estándar</DialogTitle>
             </DialogHeader>
             <ModuleFormFields form={form} setForm={setForm} />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              <Button variant="outline" onClick={() => setCreateOpen(false)} className="cursor-pointer max-md:order-2">
                 Cancelar
               </Button>
-              <Button onClick={handleCreate} disabled={!form.name.trim()}>
+              <Button onClick={handleCreate} disabled={!form.name.trim()} className="cursor-pointer max-md:order-1">
                 Crear módulo
               </Button>
             </DialogFooter>
@@ -393,16 +423,16 @@ export default function StandardModulesPage() {
           open={!!editModule}
           onOpenChange={(o) => !o && setEditModule(null)}
         >
-          <DialogContent>
+          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
             <DialogHeader>
               <DialogTitle>Editar módulo</DialogTitle>
             </DialogHeader>
             <ModuleFormFields form={form} setForm={setForm} />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditModule(null)}>
+            <DialogFooter className="max-md:gap-4">
+              <Button variant="outline" className="cursor-pointer max-md:order-2" onClick={() => setEditModule(null)}>
                 Cancelar
               </Button>
-              <Button onClick={handleEdit} disabled={!form.name.trim()}>
+              <Button onClick={handleEdit} className="cursor-pointer max-md:order-1" disabled={!form.name.trim()}>
                 Guardar cambios
               </Button>
             </DialogFooter>
@@ -426,8 +456,7 @@ export default function StandardModulesPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-destructive hover:bg-destructive/90"
+                onClick={handleDelete}                
               >
                 Eliminar
               </AlertDialogAction>

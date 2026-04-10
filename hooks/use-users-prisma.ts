@@ -6,14 +6,14 @@ import type { User } from '@/lib/prisma-typed-service'
 
 export interface CreateUserData {
   name: string
-  role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
+  role: 'admin' | 'supervisor' | 'operario' | 'subcontratista' | 'vendedor'
   password?: string
 }
 
 export interface UpdateUserData {
   email?: string
   name?: string
-  role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
+  role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista' | 'vendedor'
   password?: string
   total_hours?: number
   efficiency?: number

@@ -123,6 +123,31 @@ export function useStandardModules(onlyActive = false) {
     return data.module
   }
 
+  // Optimistic update: patches local state immediately, reverts on API error
+  const patchModule = async (
+    id: string,
+    patch: Partial<{ name: string; description: string; base_price: number; is_active: boolean; order: number; module_description: ModuleDescriptionSection[] }>
+  ): Promise<void> => {
+    const previous = modules.find((m) => m.id === id)
+    setModules((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)))
+    try {
+      const res = await fetch(`/api/standard-modules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? 'Error al actualizar módulo')
+      }
+    } catch (err) {
+      if (previous) {
+        setModules((prev) => prev.map((m) => (m.id === id ? previous : m)))
+      }
+      throw err
+    }
+  }
+
   const deleteModule = async (id: string): Promise<void> => {
     const res = await fetch(`/api/standard-modules/${id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -196,6 +221,7 @@ export function useStandardModules(onlyActive = false) {
     reload: load,
     createModule,
     updateModule,
+    patchModule,
     deleteModule,
     addMaterial,
     removeMaterial,

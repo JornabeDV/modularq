@@ -190,6 +190,12 @@ export function CreateUserForm() {
                         <span>Subcontratista</span>
                       </div>
                     </SelectItem>
+                    <SelectItem value="vendedor">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">Vendedor</Badge>
+                        <span>Vendedor</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -25,7 +25,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { name, description, base_price, is_active, order } = body
+    const { name, description, base_price, is_active, order, module_description } = body
 
     if (name !== undefined && !name?.trim()) {
       return NextResponse.json({ error: 'El nombre no puede estar vacío' }, { status: 400 })
@@ -37,6 +37,7 @@ export async function PUT(
       ...(base_price !== undefined && { base_price }),
       ...(is_active !== undefined && { is_active }),
       ...(order !== undefined && { order }),
+      ...(module_description !== undefined && { module_description }),
     })
 
     return NextResponse.json({ module })

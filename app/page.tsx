@@ -15,7 +15,7 @@ export default function HomePage() {
         if (userProfile.role === "admin" || userProfile.role === "supervisor") {
           router.push("/dashboard");
         } else if (userProfile.role === "vendedor") {
-          router.push("/cotizador");
+          router.push("/quoter");
         } else {
           router.push("/projects");
         }

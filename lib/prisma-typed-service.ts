@@ -43,7 +43,7 @@ export class PrismaTypedService {
   static async createUser(userData: {
     email: string
     name: string
-    role: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
+    role: 'admin' | 'supervisor' | 'operario' | 'subcontratista' | 'vendedor'
     password?: string
   }): Promise<User> {
     const { data, error } = await supabase
@@ -66,7 +66,7 @@ export class PrismaTypedService {
   static async updateUser(id: string, userData: {
     email?: string
     name?: string
-    role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista'
+    role?: 'admin' | 'supervisor' | 'operario' | 'subcontratista' | 'vendedor'
     password?: string
     total_hours?: number
     efficiency?: number
@@ -905,7 +905,7 @@ export class PrismaTypedService {
     code: string
     name: string
     description?: string
-    category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+    category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
     unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
     stock_quantity?: number
     min_stock?: number
@@ -931,7 +931,7 @@ export class PrismaTypedService {
     code?: string
     name?: string
     description?: string
-    category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros'
+    category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
     unit?: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
     stock_quantity?: number
     min_stock?: number
@@ -2791,6 +2791,7 @@ export class PrismaTypedService {
     base_price?: number
     is_active?: boolean
     order?: number
+    module_description?: ModuleDescriptionSection[]
   }) {
     const { data, error } = await supabase
       .from('standard_modules')
@@ -2864,6 +2865,16 @@ export class PrismaTypedService {
     return data
   }
 
+  static async getStandardModuleAttachments(moduleId: string) {
+    const { data, error } = await supabase
+      .from('standard_module_attachments')
+      .select('*')
+      .eq('module_id', moduleId)
+
+    if (error) throw error
+    return data ?? []
+  }
+
   static async deleteStandardModuleAttachment(id: string): Promise<void> {
     const { error } = await supabase
       .from('standard_module_attachments')
@@ -2882,6 +2893,177 @@ export class PrismaTypedService {
 
     if (error) throw error
     return data
+  }
+
+  // ==================== QUOTES ====================
+
+  static async generateQuoteNumber(): Promise<string> {
+    const year = new Date().getFullYear().toString()
+    const prefix = `QUO-${year}-`
+
+    const { data } = await supabase
+      .from('quotes')
+      .select('number')
+      .like('number', `${prefix}%`)
+      .order('number', { ascending: false })
+      .limit(1)
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const lastNum = parseInt(data[0].number.replace(prefix, ''), 10)
+      if (!isNaN(lastNum)) nextNum = lastNum + 1
+    }
+
+    return `${prefix}${nextNum.toString().padStart(4, '0')}`
+  }
+
+  static async createQuote(input: {
+    number: string
+    client_id?: string | null
+    client_name: string
+    client_company?: string
+    client_phone?: string
+    client_email?: string
+    notes?: string
+    subtotal: number
+    total: number
+    pdf_url?: string
+    created_by: string
+    modules: Array<{
+      standard_module_id?: string
+      module_name: string
+      module_description?: string
+      base_price: number
+      subtotal: number
+      sort_order: number
+      additionals: Array<{
+        material_id?: string
+        name: string
+        unit_price: number
+        quantity: number
+        subtotal: number
+      }>
+    }>
+  }): Promise<{ id: string; number: string }> {
+    const validUntil = new Date()
+    validUntil.setDate(validUntil.getDate() + 30)
+
+    const { data: quote, error } = await supabase
+      .from('quotes')
+      .insert({
+        number: input.number,
+        status: 'draft',
+        client_id: input.client_id ?? null,
+        client_name: input.client_name,
+        client_company: input.client_company ?? null,
+        client_phone: input.client_phone ?? null,
+        client_email: input.client_email ?? null,
+        notes: input.notes ?? null,
+        subtotal: input.subtotal,
+        total: input.total,
+        pdf_url: input.pdf_url ?? null,
+        valid_until: validUntil.toISOString().split('T')[0],
+        created_by: input.created_by,
+      })
+      .select('id, number')
+      .single()
+
+    if (error) throw error
+
+    for (const mod of input.modules) {
+      const { data: qMod, error: modErr } = await supabase
+        .from('quote_modules')
+        .insert({
+          quote_id: quote.id,
+          standard_module_id: mod.standard_module_id ?? null,
+          module_name: mod.module_name,
+          module_description: mod.module_description ?? null,
+          base_price: mod.base_price,
+          subtotal: mod.subtotal,
+          sort_order: mod.sort_order,
+        })
+        .select('id')
+        .single()
+
+      if (modErr) throw modErr
+
+      if (mod.additionals.length > 0) {
+        const { error: addErr } = await supabase
+          .from('quote_additionals')
+          .insert(
+            mod.additionals.map((a) => ({
+              quote_module_id: qMod.id,
+              material_id: a.material_id ?? null,
+              name: a.name,
+              unit_price: a.unit_price,
+              quantity: a.quantity,
+              subtotal: a.subtotal,
+            }))
+          )
+        if (addErr) throw addErr
+      }
+    }
+
+    return { id: quote.id, number: quote.number }
+  }
+
+  static async updateQuotePdfUrl(id: string, pdfUrl: string): Promise<void> {
+    const { error } = await supabase
+      .from('quotes')
+      .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
+  }
+
+  static async getQuotes(userId: string, role: string, status?: string) {
+    let query = supabase
+      .from('quotes')
+      .select('id, number, status, client_name, client_company, client_phone, client_email, subtotal, total, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .order('created_at', { ascending: false })
+
+    // All authorized roles (admin, supervisor, vendedor) see all quotes
+    // Access control is enforced at the page/route level
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getQuoteById(id: string) {
+    const { data, error } = await supabase
+      .from('quotes')
+      .select(`
+        *,
+        modules:quote_modules(
+          *,
+          additionals:quote_additionals(*)
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateQuoteStatus(
+    id: string,
+    status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired'
+  ): Promise<void> {
+    const now = new Date().toISOString()
+    const extra: Record<string, string> = { updated_at: now }
+    if (status === 'sent') extra.sent_at = now
+    if (['approved', 'rejected', 'expired'].includes(status)) extra.closed_at = now
+
+    const { error } = await supabase
+      .from('quotes')
+      .update({ status, ...extra })
+      .eq('id', id)
+
+    if (error) throw error
   }
 }
 
