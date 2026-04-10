@@ -37,7 +37,8 @@ interface MaterialFormData {
     | "aislacion"
     | "electricidad"
     | "sanitarios"
-    | "otros";
+    | "otros"
+    | "adicional";
   unit:
     | "unidad"
     | "metro"
@@ -157,6 +158,7 @@ const CATEGORIES = [
   { value: "electricidad", label: "Electricidad" },
   { value: "sanitarios", label: "Sanitarios" },
   { value: "otros", label: "Otros" },
+  { value: "adicional", label: "Adicionales" },
 ];
 
 const UNITS = [

@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -18,6 +17,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Calculator,
   Users,
@@ -31,23 +43,14 @@ import {
   Check,
   ChevronsUpDown,
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { BudgetItem, LaborConcept } from "@/lib/prisma-typed-service";
+import { LaborConcept } from "@/lib/prisma-typed-service";
 import { MaterialForm } from "@/components/admin/material-form";
 import { CreateMaterialData } from "@/hooks/use-materials-prisma";
 import { formatCurrency } from "./BudgetTotalsCards";
 import { UNIT_LABELS } from "@/lib/constants";
 
-interface AnalysisData {
+export interface TemplateAnalysisData {
   labors: {
     labor_concept_id: string;
     quantity_hours: number;
@@ -62,18 +65,18 @@ interface AnalysisData {
   equipments: { name: string; quantity_hours: number; hourly_cost: number }[];
 }
 
-interface PriceAnalysisDialogProps {
+interface TemplateItemPriceAnalysisDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  item: BudgetItem | null;
+  item: any | null;
   laborConcepts: LaborConcept[];
   materials: any[];
   isSaving: boolean;
-  onSave: (itemId: string, data: AnalysisData, itemName: string) => void;
+  onSave: (itemId: string, data: TemplateAnalysisData) => void;
   onCreateMaterial: (data: CreateMaterialData) => Promise<boolean>;
 }
 
-export function PriceAnalysisDialog({
+export function TemplateItemPriceAnalysisDialog({
   isOpen,
   onClose,
   item,
@@ -82,55 +85,47 @@ export function PriceAnalysisDialog({
   isSaving,
   onSave,
   onCreateMaterial,
-}: PriceAnalysisDialogProps) {
-  const [itemName, setItemName] = useState("");
-  const [analysisData, setAnalysisData] = useState<AnalysisData>({
+}: TemplateItemPriceAnalysisDialogProps) {
+  const [analysisData, setAnalysisData] = useState<TemplateAnalysisData>({
     labors: [],
     materials: [],
     equipments: [],
   });
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [creatingMaterial, setCreatingMaterial] = useState(false);
-  const [materialPopoverOpen, setMaterialPopoverOpen] = useState<Record<number, boolean>>({});
+  const [materialPopoverOpen, setMaterialPopoverOpen] = useState<
+    Record<number, boolean>
+  >({});
 
   useEffect(() => {
     if (item) {
-      setItemName(item.description);
-      const analysis = Array.isArray(item.price_analysis)
-        ? item.price_analysis[0]
-        : item.price_analysis;
-
-      if (analysis) {
-        setAnalysisData({
-          labors: (analysis.labors || []).map((l: any) => {
-            const concept = laborConcepts.find(
-              (c) => c.id === l.labor_concept_id,
-            );
-            return {
-              labor_concept_id: l.labor_concept_id,
-              quantity_hours: l.quantity_hours,
-              hourly_rate: l.hourly_rate || concept?.hourly_rate || 0,
-            };
-          }),
-          materials: (analysis.materials || []).map((m: any) => ({
-            material_id: m.material_id,
-            material_name: m.material_name,
-            quantity: m.quantity,
-            unit_price: m.unit_price,
-          })),
-          equipments: (analysis.equipments || []).map((e: any) => ({
-            name: e.name,
-            quantity_hours: e.quantity_hours,
-            hourly_cost: e.hourly_cost,
-          })),
-        });
-      } else {
-        setAnalysisData({ labors: [], materials: [], equipments: [] });
-      }
+      setAnalysisData({
+        labors: (item.template_labors || []).map((l: any) => {
+          const concept = laborConcepts.find(
+            (c) => c.id === l.labor_concept_id,
+          );
+          return {
+            labor_concept_id: l.labor_concept_id,
+            quantity_hours: l.quantity_hours,
+            hourly_rate: l.hourly_rate || concept?.hourly_rate || 0,
+          };
+        }),
+        materials: (item.template_materials || []).map((m: any) => ({
+          material_id: m.material_id,
+          material_name: m.material_name,
+          quantity: m.quantity,
+          unit_price: m.unit_price,
+        })),
+        equipments: (item.template_equipments || []).map((e: any) => ({
+          name: e.name,
+          quantity_hours: e.quantity_hours,
+          hourly_cost: e.hourly_cost,
+        })),
+      });
     }
   }, [item, laborConcepts]);
 
-  const addLabor = () => {
+  const addLabor = () =>
     setAnalysisData((prev) => ({
       ...prev,
       labors: [
@@ -138,25 +133,22 @@ export function PriceAnalysisDialog({
         { labor_concept_id: "", quantity_hours: 0, hourly_rate: 0 },
       ],
     }));
-  };
 
-  const updateLabor = (index: number, field: string, value: any) => {
+  const updateLabor = (index: number, field: string, value: any) =>
     setAnalysisData((prev) => ({
       ...prev,
       labors: prev.labors.map((l, i) =>
         i === index ? { ...l, [field]: value } : l,
       ),
     }));
-  };
 
-  const removeLabor = (index: number) => {
+  const removeLabor = (index: number) =>
     setAnalysisData((prev) => ({
       ...prev,
       labors: prev.labors.filter((_, i) => i !== index),
     }));
-  };
 
-  const addMaterial = () => {
+  const addMaterial = () =>
     setAnalysisData((prev) => ({
       ...prev,
       materials: [
@@ -164,25 +156,22 @@ export function PriceAnalysisDialog({
         { material_id: "", quantity: 0, unit_price: 0 },
       ],
     }));
-  };
 
-  const updateMaterial = (index: number, field: string, value: any) => {
+  const updateMaterial = (index: number, field: string, value: any) =>
     setAnalysisData((prev) => ({
       ...prev,
       materials: prev.materials.map((m, i) =>
         i === index ? { ...m, [field]: value } : m,
       ),
     }));
-  };
 
-  const removeMaterial = (index: number) => {
+  const removeMaterial = (index: number) =>
     setAnalysisData((prev) => ({
       ...prev,
       materials: prev.materials.filter((_, i) => i !== index),
     }));
-  };
 
-  const addEquipment = () => {
+  const addEquipment = () =>
     setAnalysisData((prev) => ({
       ...prev,
       equipments: [
@@ -190,35 +179,31 @@ export function PriceAnalysisDialog({
         { name: "", quantity_hours: 0, hourly_cost: 0 },
       ],
     }));
-  };
 
-  const updateEquipment = (index: number, field: string, value: any) => {
+  const updateEquipment = (index: number, field: string, value: any) =>
     setAnalysisData((prev) => ({
       ...prev,
       equipments: prev.equipments.map((e, i) =>
         i === index ? { ...e, [field]: value } : e,
       ),
     }));
-  };
 
-  const removeEquipment = (index: number) => {
+  const removeEquipment = (index: number) =>
     setAnalysisData((prev) => ({
       ...prev,
       equipments: prev.equipments.filter((_, i) => i !== index),
     }));
-  };
 
   const handleCreateMaterial = async (data: CreateMaterialData) => {
     setCreatingMaterial(true);
     const success = await onCreateMaterial(data);
     if (success) {
-      // Agregar el nuevo material al análisis
       setAnalysisData((prev) => ({
         ...prev,
         materials: [
           ...prev.materials,
           {
-            material_id: "", // Se actualizará cuando se recarguen los materiales
+            material_id: "",
             material_name: data.name,
             quantity: 0,
             unit_price: data.unit_price || 0,
@@ -230,31 +215,27 @@ export function PriceAnalysisDialog({
     setCreatingMaterial(false);
   };
 
-  const calculateTotals = () => {
-    const laborTotal = analysisData.labors.reduce(
-      (sum, l) => sum + l.quantity_hours * (l.hourly_rate || 0),
-      0,
-    );
-    const materialTotal = analysisData.materials.reduce((sum, m) => {
-      const price =
-        m.unit_price ||
-        materials.find((mat: any) => mat.id === m.material_id)?.unit_price ||
-        0;
-      return sum + m.quantity * price;
-    }, 0);
-    const equipmentTotal = analysisData.equipments.reduce(
-      (sum, e) => sum + e.quantity_hours * e.hourly_cost,
-      0,
-    );
-    return {
-      laborTotal,
-      materialTotal,
-      equipmentTotal,
-      total: laborTotal + materialTotal + equipmentTotal,
-    };
+  const laborTotal = analysisData.labors.reduce(
+    (s, l) => s + l.quantity_hours * (l.hourly_rate || 0),
+    0,
+  );
+  const materialTotal = analysisData.materials.reduce((s, m) => {
+    const price =
+      m.unit_price ||
+      materials.find((mat: any) => mat.id === m.material_id)?.unit_price ||
+      0;
+    return s + m.quantity * price;
+  }, 0);
+  const equipmentTotal = analysisData.equipments.reduce(
+    (s, e) => s + e.quantity_hours * e.hourly_cost,
+    0,
+  );
+  const totals = {
+    laborTotal,
+    materialTotal,
+    equipmentTotal,
+    total: laborTotal + materialTotal + equipmentTotal,
   };
-
-  const totals = calculateTotals();
 
   if (!item) return null;
 
@@ -265,22 +246,13 @@ export function PriceAnalysisDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Calculator className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="truncate">Análisis de Precios - {item.code}</span>
+              <span className="truncate">
+                Análisis de Precios — {item.code} · {item.description}
+              </span>
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 w-full min-w-0">
-            {/* Nombre editable del ítem */}
-            <div className="space-y-2">
-              <Label htmlFor="item-name">Nombre del Ítem</Label>
-              <Input
-                id="item-name"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                placeholder="Descripción del ítem"
-              />
-            </div>
-
             {/* MANO DE OBRA */}
             <Card>
               <CardHeader className="py-3 px-3 sm:px-6">
@@ -308,7 +280,6 @@ export function PriceAnalysisDialog({
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {/* Headers - Hidden on mobile */}
                     <div className="hidden sm:flex gap-3 text-xs text-muted-foreground font-medium px-1">
                       <div className="flex-[3]">Concepto</div>
                       <div className="w-24 text-center">Horas</div>
@@ -322,7 +293,9 @@ export function PriceAnalysisDialog({
                         className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center p-3 sm:p-0 bg-muted/30 sm:bg-transparent rounded-lg sm:rounded-none min-w-0"
                       >
                         <div className="w-full sm:flex-[3] min-w-0">
-                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">Concepto:</span>
+                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                            Concepto:
+                          </span>
                           <Select
                             value={labor.labor_concept_id}
                             onValueChange={(value) => {
@@ -330,19 +303,18 @@ export function PriceAnalysisDialog({
                                 (c) => c.id === value,
                               );
                               updateLabor(index, "labor_concept_id", value);
-                              if (concept) {
+                              if (concept)
                                 updateLabor(
                                   index,
                                   "hourly_rate",
                                   concept.hourly_rate,
                                 );
-                              }
                             }}
                           >
-                            <SelectTrigger className="text-xs sm:text-sm h-8 sm:h-10 w-full max-w-[calc(100vw-80px)] truncate">
-                              <SelectValue placeholder="Seleccionar concepto" className="truncate" />
+                            <SelectTrigger className="text-xs sm:text-sm h-8 sm:h-10 w-full truncate">
+                              <SelectValue placeholder="Seleccionar concepto" />
                             </SelectTrigger>
-                            <SelectContent className="max-w-[300px]">
+                            <SelectContent>
                               {laborConcepts.map((concept) => (
                                 <SelectItem key={concept.id} value={concept.id}>
                                   {concept.name} (
@@ -354,7 +326,9 @@ export function PriceAnalysisDialog({
                         </div>
                         <div className="w-full sm:w-auto flex gap-2 sm:gap-3 items-center">
                           <div className="w-20 sm:w-24 flex-shrink-0">
-                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Horas:</span>
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                              Horas:
+                            </span>
                             <Input
                               type="number"
                               step="0.001"
@@ -366,12 +340,13 @@ export function PriceAnalysisDialog({
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              placeholder="Horas"
                               className="text-xs sm:text-sm h-8 sm:h-10 w-full text-center px-1"
                             />
                           </div>
                           <div className="w-24 sm:w-28 flex-shrink-0">
-                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Tarifa:</span>
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                              Tarifa:
+                            </span>
                             <Input
                               type="number"
                               step="0.01"
@@ -383,7 +358,6 @@ export function PriceAnalysisDialog({
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              placeholder="$/h"
                               className="text-xs sm:text-sm h-8 sm:h-10 w-full text-center px-1"
                             />
                           </div>
@@ -393,7 +367,8 @@ export function PriceAnalysisDialog({
                             )}
                           </div>
                           <div className="sm:hidden text-xs text-muted-foreground whitespace-nowrap">
-                            Total: {formatCurrency(
+                            Total:{" "}
+                            {formatCurrency(
                               labor.quantity_hours * (labor.hourly_rate || 0),
                             )}
                           </div>
@@ -442,23 +417,19 @@ export function PriceAnalysisDialog({
                       className="px-2 sm:px-3 cursor-pointer"
                     >
                       <Plus className="w-4 h-4 sm:mr-1" />
-                      <span className="hidden sm:inline">Nuevo</span>
-                      <span className="sm:hidden">Nuevo</span>
+                      <span>Nuevo</span>
                     </Button>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3 sm:px-6 min-w-0">
                 {analysisData.materials.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-4 space-y-2">
+                  <div className="text-sm text-muted-foreground text-center py-4 space-y-1">
                     <p>No hay materiales</p>
-                    <p className="text-sm">
-                      Usá "Nuevo" para crear uno
-                    </p>
+                    <p className="text-xs">Usá "Nuevo" para crear uno</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Headers - Hidden on mobile */}
                     <div className="hidden sm:flex gap-3 text-xs text-muted-foreground font-medium px-1">
                       <div className="flex-[3]">Material</div>
                       <div className="w-28 text-center">Cantidad</div>
@@ -471,24 +442,31 @@ export function PriceAnalysisDialog({
                         className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center p-3 sm:p-0 bg-muted/30 sm:bg-transparent rounded-lg sm:rounded-none min-w-0"
                       >
                         <div className="w-full sm:flex-[3] min-w-0">
-                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">Material:</span>
+                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                            Material:
+                          </span>
                           <Popover
                             open={materialPopoverOpen[index] || false}
                             onOpenChange={(open) =>
-                              setMaterialPopoverOpen((prev) => ({ ...prev, [index]: open }))
+                              setMaterialPopoverOpen((prev) => ({
+                                ...prev,
+                                [index]: open,
+                              }))
                             }
                           >
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
                                 role="combobox"
-                                aria-expanded={materialPopoverOpen[index] || false}
                                 className="w-full justify-between text-xs sm:text-sm h-8 sm:h-10 truncate"
                               >
                                 <span className="truncate">
                                   {material.material_id
                                     ? (() => {
-                                        const mat = materials.find((m: any) => m.id === material.material_id);
+                                        const mat = materials.find(
+                                          (m: any) =>
+                                            m.id === material.material_id,
+                                        );
                                         return mat
                                           ? `${mat.code} - ${mat.name} (${formatCurrency(mat.unit_price || 0)}/${UNIT_LABELS[mat.unit] || mat.unit})`
                                           : "Seleccionar material";
@@ -500,32 +478,55 @@ export function PriceAnalysisDialog({
                             </PopoverTrigger>
                             <PopoverContent className="w-[300px] sm:w-full p-0">
                               <Command>
-                                <CommandInput placeholder="Buscar material..." className="h-9" />
+                                <CommandInput
+                                  placeholder="Buscar material..."
+                                  className="h-9"
+                                />
                                 <CommandList>
-                                  <CommandEmpty>No se encontró material.</CommandEmpty>
+                                  <CommandEmpty>
+                                    No se encontró material.
+                                  </CommandEmpty>
                                   <CommandGroup>
                                     {materials.map((mat: any) => (
                                       <CommandItem
                                         key={mat.id}
                                         value={`${mat.code} ${mat.name} ${mat.unit}`}
                                         onSelect={() => {
-                                          updateMaterial(index, "material_id", mat.id);
-                                          updateMaterial(index, "material_name", mat.name);
-                                          updateMaterial(index, "unit_price", mat.unit_price || 0);
-                                          setMaterialPopoverOpen((prev) => ({ ...prev, [index]: false }));
+                                          updateMaterial(
+                                            index,
+                                            "material_id",
+                                            mat.id,
+                                          );
+                                          updateMaterial(
+                                            index,
+                                            "material_name",
+                                            mat.name,
+                                          );
+                                          updateMaterial(
+                                            index,
+                                            "unit_price",
+                                            mat.unit_price || 0,
+                                          );
+                                          setMaterialPopoverOpen((prev) => ({
+                                            ...prev,
+                                            [index]: false,
+                                          }));
                                         }}
                                       >
                                         <Check
                                           className={cn(
                                             "mr-2 h-4 w-4",
-                                            material.material_id === mat.id ? "opacity-100" : "opacity-0"
+                                            material.material_id === mat.id
+                                              ? "opacity-100"
+                                              : "opacity-0",
                                           )}
                                         />
                                         <span className="flex-1 truncate">
                                           {mat.code} - {mat.name}
                                         </span>
                                         <span className="ml-2 text-muted-foreground text-xs whitespace-nowrap">
-                                          {formatCurrency(mat.unit_price || 0)}/{UNIT_LABELS[mat.unit] || mat.unit}
+                                          {formatCurrency(mat.unit_price || 0)}/
+                                          {UNIT_LABELS[mat.unit] || mat.unit}
                                         </span>
                                       </CommandItem>
                                     ))}
@@ -537,7 +538,9 @@ export function PriceAnalysisDialog({
                         </div>
                         <div className="w-full sm:w-auto flex gap-2 sm:gap-3 items-center">
                           <div className="w-24 sm:w-28 flex-shrink-0">
-                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Cantidad:</span>
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                              Cantidad:
+                            </span>
                             <Input
                               type="number"
                               step="0.001"
@@ -549,13 +552,14 @@ export function PriceAnalysisDialog({
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              placeholder="Cantidad"
                               className="text-xs sm:text-sm h-8 sm:h-10 w-full text-center px-1"
                             />
                           </div>
                           <div className="w-28 sm:w-32 text-right text-sm text-muted-foreground flex-shrink-0">
                             <span className="sm:hidden text-xs">Total: </span>
-                            {formatCurrency((material.unit_price || 0) * material.quantity)}
+                            {formatCurrency(
+                              (material.unit_price || 0) * material.quantity,
+                            )}
                           </div>
                         </div>
                         <div className="w-full sm:w-10 flex justify-end">
@@ -602,7 +606,6 @@ export function PriceAnalysisDialog({
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {/* Headers - Hidden on mobile */}
                     <div className="hidden sm:flex gap-3 text-xs text-muted-foreground font-medium px-1">
                       <div className="flex-[2]">Equipo</div>
                       <div className="w-24 text-center">Cantidad</div>
@@ -616,19 +619,23 @@ export function PriceAnalysisDialog({
                         className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center p-3 sm:p-0 bg-muted/30 sm:bg-transparent rounded-lg sm:rounded-none min-w-0"
                       >
                         <div className="w-full sm:flex-[2] min-w-0">
-                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">Nombre:</span>
+                          <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                            Nombre:
+                          </span>
                           <Input
                             value={equipment.name}
                             onChange={(e) =>
                               updateEquipment(index, "name", e.target.value)
                             }
                             placeholder="Nombre del equipo"
-                            className="text-xs sm:text-sm h-8 sm:h-10 w-full truncate"
+                            className="text-xs sm:text-sm h-8 sm:h-10 w-full"
                           />
                         </div>
                         <div className="w-full sm:w-auto flex gap-2 sm:gap-3 items-center">
                           <div className="w-20 sm:w-24 flex-shrink-0">
-                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Cantidad:</span>
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                              Cantidad:
+                            </span>
                             <Input
                               type="number"
                               step="0.5"
@@ -640,12 +647,13 @@ export function PriceAnalysisDialog({
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              placeholder="Cantidad"
                               className="text-xs sm:text-sm h-8 sm:h-10 w-full text-center px-1"
                             />
                           </div>
                           <div className="w-24 sm:w-28 flex-shrink-0">
-                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">Precio Unit.:</span>
+                            <span className="sm:hidden text-xs text-muted-foreground block mb-1">
+                              Precio Unit.:
+                            </span>
                             <Input
                               type="number"
                               value={equipment.hourly_cost}
@@ -656,7 +664,6 @@ export function PriceAnalysisDialog({
                                   parseFloat(e.target.value) || 0,
                                 )
                               }
-                              placeholder="Precio Unit."
                               className="text-xs sm:text-sm h-8 sm:h-10 w-full text-center px-1"
                             />
                           </div>
@@ -686,7 +693,7 @@ export function PriceAnalysisDialog({
 
             {/* TOTALES */}
             <Card className="bg-muted">
-              <CardContent className="py-4 px-3 sm:px-6 min-w-0">
+              <CardContent className="py-4 px-3 sm:px-6">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Mano de Obra (A):</span>
@@ -706,8 +713,10 @@ export function PriceAnalysisDialog({
                       {formatCurrency(totals.equipmentTotal)}
                     </span>
                   </div>
-                  <div className="border-t pt-2 flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                    <span className="text-sm sm:text-lg font-bold">COSTO UNITARIO (A+B+C):</span>
+                  <div className="border-t pt-2 flex flex-col sm:flex-row sm:justify-between gap-1">
+                    <span className="text-sm sm:text-lg font-bold">
+                      COSTO UNITARIO (A+B+C):
+                    </span>
                     <span className="text-lg sm:text-xl font-bold text-green-600">
                       {formatCurrency(totals.total)}
                     </span>
@@ -716,7 +725,6 @@ export function PriceAnalysisDialog({
               </CardContent>
             </Card>
 
-            {/* BOTONES */}
             <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
               <Button
                 type="button"
@@ -730,7 +738,7 @@ export function PriceAnalysisDialog({
               <Button
                 type="button"
                 className="cursor-pointer"
-                onClick={() => item && onSave(item.id, analysisData, itemName)}
+                onClick={() => item && onSave(item.id, analysisData)}
                 disabled={isSaving}
               >
                 {isSaving ? (
@@ -741,7 +749,7 @@ export function PriceAnalysisDialog({
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Guardar
+                    Guardar análisis
                   </>
                 )}
               </Button>
@@ -750,7 +758,6 @@ export function PriceAnalysisDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Modal para crear nuevo material */}
       <MaterialForm
         isOpen={showMaterialForm}
         onClose={() => setShowMaterialForm(false)}

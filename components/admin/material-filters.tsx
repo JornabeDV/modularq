@@ -21,7 +21,8 @@ const CATEGORIES = [
   { value: 'aislacion', label: 'Aislación' },
   { value: 'electricidad', label: 'Electricidad' },
   { value: 'sanitarios', label: 'Sanitarios' },
-  { value: 'otros', label: 'Otros' }
+  { value: 'otros', label: 'Otros' },
+  { value: 'adicional', label: 'Adicionales' }
 ]
 
 export function MaterialFilters({

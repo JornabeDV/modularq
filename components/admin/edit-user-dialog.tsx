@@ -78,6 +78,7 @@ export function EditUserDialog({
                 <SelectItem value="supervisor">Supervisor</SelectItem>
                 <SelectItem value="operario">Operario</SelectItem>
                 <SelectItem value="subcontratista">Subcontratista</SelectItem>
+                <SelectItem value="vendedor">Vendedor</SelectItem>
               </SelectContent>
             </Select>
           </div>

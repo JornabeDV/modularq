@@ -32,12 +32,12 @@ export function RouteGuard({
         const userRole = userProfile.role
         if (!allowedRoles.includes(userRole)) {
           // Redirigir según el rol del usuario
-          if (userRole === 'admin') {
-            router.push("/dashboard")
-          } else if (userRole === 'supervisor') {
+          if (userRole === 'admin' || userRole === 'supervisor') {
             router.push("/dashboard")
           } else if (userRole === 'operario') {
             router.push("/projects")
+          } else if (userRole === 'vendedor') {
+            router.push("/quoter")
           } else {
             router.push(redirectTo || "/login")
           }

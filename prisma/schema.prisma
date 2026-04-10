@@ -14,6 +14,7 @@ enum UserRole {
   supervisor
   operario
   subcontratista
+  vendedor
 }
 
 enum ProjectStatus {
@@ -77,6 +78,7 @@ enum MaterialCategory {
   electricidad
   sanitarios
   otros
+  adicional
 }
 
 enum UnitType {
@@ -285,7 +287,8 @@ model Material {
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
 
-  project_materials ProjectMaterial[]
+  project_materials        ProjectMaterial[]
+  standard_module_materials StandardModuleMaterial[]
 
   @@map("materials")
 }
@@ -605,4 +608,59 @@ model BudgetAttachment {
   budget      Budget   @relation(fields: [budget_id], references: [id], onDelete: Cascade)
 
   @@map("budget_attachments")
+}
+
+// ==================== MÓDULO DE COTIZADOR ====================
+
+// Módulos estándar que se usan como base para cotizaciones rápidas
+model StandardModule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  base_price  Float    @default(0)
+  is_active   Boolean  @default(true)
+  order       Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  module_description Json?   // [{ "section": "...", "description": "..." }]
+
+  materials   StandardModuleMaterial[]
+  attachments StandardModuleAttachment[]
+
+  @@map("standard_modules")
+}
+
+// Materiales que componen un módulo estándar
+model StandardModuleMaterial {
+  id          String  @id @default(cuid())
+  module_id   String
+  material_id String
+  quantity    Float   @default(1)
+  notes       String?
+
+  module   StandardModule @relation(fields: [module_id], references: [id], onDelete: Cascade)
+  material Material       @relation(fields: [material_id], references: [id])
+
+  @@unique([module_id, material_id])
+  @@map("standard_module_materials")
+}
+
+// Archivos adjuntos de módulos estándar (PDFs que se incluyen en la cotización)
+model StandardModuleAttachment {
+  id            String   @id @default(cuid())
+  module_id     String
+  filename      String
+  original_name String
+  mime_type     String
+  size          Int
+  url           String   // URL en Supabase Storage
+  storage_path  String   // Path para poder eliminar
+  description   String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  module StandardModule @relation(fields: [module_id], references: [id], onDelete: Cascade)
+
+  @@map("standard_module_attachments")
 }

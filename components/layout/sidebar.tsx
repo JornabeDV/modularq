@@ -14,7 +14,8 @@ import {
   BarChart3,
   ClipboardList,
   Package,
-  Calculator,
+  ShoppingCart,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -36,7 +37,9 @@ const adminNavigation = [
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
-  { name: "Presupuestos", href: "/admin/budgets", icon: Calculator },
+  { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
+  { name: "Cotizaciones", href: "/quoter/history", icon: History },
+  { name: "Módulos Estándar", href: "/admin/standard-modules", icon: Package, adminOnly: true },
   { name: "Reportes", href: "/reports", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
@@ -104,15 +107,48 @@ export function Sidebar() {
               );
             })}
 
+          {userProfile?.role === "vendedor" && (
+            <>
+              <li key="cotizador">
+                <Link
+                  href="/quoter"
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                    pathname === "/quoter"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Cotizador
+                </Link>
+              </li>
+              <li key="cotizador-historial">
+                <Link
+                  href="/quoter/history"
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors",
+                    pathname === "/quoter/history"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                >
+                  <History className="h-4 w-4" />
+                  Cotizaciones
+                </Link>
+              </li>
+            </>
+          )}
+
           {(userProfile?.role === "admin" ||
             userProfile?.role === "supervisor") && (
             <>
               {adminNavigation
                 .filter((item) => {
-                  if (
-                    item.name === "Gestión del Personal" &&
-                    userProfile?.role !== "admin"
-                  ) {
+                  if ("adminOnly" in item && item.adminOnly && userProfile?.role !== "admin") {
+                    return false;
+                  }
+                  if (item.name === "Gestión del Personal" && userProfile?.role !== "admin") {
                     return false;
                   }
                   return true;
