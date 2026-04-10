@@ -361,7 +361,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
               />
               <Button
                 size="sm"
-                className="h-8 flex-1 sm:flex-none"
+                className="h-8 flex-1 sm:flex-none cursor-pointer"
                 disabled={addingMaterial || !selectedMaterialId}
                 onClick={handleAddMaterial}
               >

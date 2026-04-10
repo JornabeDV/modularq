@@ -107,6 +107,9 @@ export function DraggableTaskRow({
             {task.type === "standard" ? "Estándar" : "Personalizada"}
           </Badge>
         </TableCell>
+        <TableCell className="text-center">
+          {task.estimatedHours ? `${task.estimatedHours}h` : "-"}
+        </TableCell>
         {!isReadOnly && (
           <TableCell className="text-center">
             <div className="flex items-center justify-center space-x-2">
