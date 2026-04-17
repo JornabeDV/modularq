@@ -1,0 +1,90 @@
+name: Monthly Analytics Report
+
+on:
+  schedule:
+    # Primer día de cada mes a las 10 AM UTC (7 AM Argentina, UTC-3)
+    - cron: '0 10 1 * *'
+
+  # Permite ejecutar manualmente desde GitHub para testear
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Monthly Report PDF
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          DATE=$(date +%Y%m%d_%H%M%S)
+          REPORT_FILE="reporte_mensual_${DATE}.pdf"
+          HUMAN_DATE=$(date '+%d/%m/%Y %H:%M')
+
+          # Mes anterior en formato YYYY-MM (el reporte se envía el día 1 del mes siguiente)
+          PREV_MONTH_KEY=$(date -d "last month" '+%Y-%m')
+          PREV_MONTH_NUM=$(date -d "last month" +%m)
+          PREV_YEAR=$(date -d "last month" +%Y)
+          MONTH_NAMES=("Enero" "Febrero" "Marzo" "Abril" "Mayo" "Junio" "Julio" "Agosto" "Septiembre" "Octubre" "Noviembre" "Diciembre")
+          MONTH_NAME=${MONTH_NAMES[$((10#$PREV_MONTH_NUM - 1))]}
+          PERIOD_LABEL="${MONTH_NAME} ${PREV_YEAR}"
+
+          echo "📊 Generating monthly report — $PERIOD_LABEL..."
+
+          HTTP_STATUS=$(curl -s -o "$REPORT_FILE" -w "%{http_code}" \
+            -X POST "$APP_URL/api/reports/generate" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"period\":\"month\",\"periodKey\":\"$PREV_MONTH_KEY\"}")
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ ERROR: API returned status $HTTP_STATUS"
+            cat "$REPORT_FILE"
+            exit 1
+          fi
+
+          SIZE=$(stat -c%s "$REPORT_FILE")
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "❌ ERROR: Report file is too small ($SIZE bytes) — likely an error response"
+            cat "$REPORT_FILE"
+            exit 1
+          fi
+
+          echo "REPORT_FILE=$REPORT_FILE" >> $GITHUB_ENV
+          echo "REPORT_DATE=$HUMAN_DATE" >> $GITHUB_ENV
+          echo "PERIOD_LABEL=$PERIOD_LABEL" >> $GITHUB_ENV
+          echo "✅ Report generated: $REPORT_FILE ($SIZE bytes)"
+
+      - name: Send Report by Email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "📈 Reporte Mensual ModulArq — ${{ env.PERIOD_LABEL }}"
+          to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}, ${{ secrets.CARLA_EMAIL }}
+          from: ${{ secrets.GMAIL_USERNAME }}
+          body: |
+            📈 REPORTE MENSUAL — ${{ env.PERIOD_LABEL }}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            Se adjunta el reporte mensual de ModulArq correspondiente a ${{ env.PERIOD_LABEL }}.
+
+            📋 CONTENIDO DEL REPORTE
+            • Resumen ejecutivo del mes
+            • Estado general de todos los proyectos
+            • Métricas de rendimiento del equipo de operarios
+            • Proyectos completados y entregados en el mes
+            • Proyectos en planificación y pausados
+
+            📁 Archivo: ${{ env.REPORT_FILE }}
+            🗓️ Generado el: ${{ env.REPORT_DATE }}
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            Este reporte es generado automáticamente por el sistema ModulArq.
+            Para más detalles, accedé al sistema en ${{ secrets.APP_URL }}
+          attachments: ${{ env.REPORT_FILE }}

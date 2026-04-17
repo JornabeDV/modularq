@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
 import { supabase } from '@/lib/supabase'
+import { REQUIRE_OPERARIO_FOR_TASK } from '@/lib/constants'
 import type { ProjectTask } from '@/lib/types'
 
 export interface CreateProjectTaskData {
@@ -166,15 +167,15 @@ export function useProjectTasksPrisma(projectId?: string) {
       setError(null)
       
       // Validación: si el nuevo estado es 'in_progress' o 'completed', verificar que haya un operario asignado
-      if (projectTaskData.status === 'in_progress' || projectTaskData.status === 'completed') {
+      if (REQUIRE_OPERARIO_FOR_TASK && (projectTaskData.status === 'in_progress' || projectTaskData.status === 'completed')) {
         // Obtener la tarea actual para verificar si tiene operario asignado
         const currentTask = projectTasks.find(pt => pt.id === projectTaskId)
         const assignedTo = projectTaskData.assignedTo || currentTask?.assignedTo
-        
+
         if (!assignedTo) {
-          return { 
-            success: false, 
-            error: 'Debe asignar un operario antes de cambiar el estado a "En Progreso" o "Completada"' 
+          return {
+            success: false,
+            error: 'Debe asignar un operario antes de cambiar el estado a "En Progreso" o "Completada"'
           }
         }
       }

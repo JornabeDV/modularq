@@ -11,6 +11,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    // @react-pdf/renderer must NOT be bundled by webpack (breaks internal classes).
+    // Runs as native Node.js module server-side; Next.js handles it as ESM client-side.
+    serverComponentsExternalPackages: ['@react-pdf/renderer'],
+  },
 }
 
 const pwaConfig = withPWA({

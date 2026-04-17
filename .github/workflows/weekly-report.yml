@@ -1,0 +1,91 @@
+name: Weekly Analytics Report
+
+on:
+  schedule:
+    # Cada viernes a las 10 AM UTC (7 AM Argentina, UTC-3)
+    - cron: '0 10 * * 5'
+
+  # Permite ejecutar manualmente desde GitHub para testear
+  workflow_dispatch:
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Weekly Report PDF
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          DATE=$(date +%Y%m%d_%H%M%S)
+          REPORT_FILE="reporte_semanal_${DATE}.pdf"
+          HUMAN_DATE=$(date '+%d/%m/%Y %H:%M')
+
+          # Semana del mes (1–5) y nombre del mes en español
+          DAY=$(date +%d)
+          WEEK_NUM=$(( (10#$DAY - 1) / 7 + 1 ))
+          MONTH_NUM=$(date +%m)
+          YEAR=$(date +%Y)
+          MONTH_NAMES=("Enero" "Febrero" "Marzo" "Abril" "Mayo" "Junio" "Julio" "Agosto" "Septiembre" "Octubre" "Noviembre" "Diciembre")
+          MONTH_NAME=${MONTH_NAMES[$((10#$MONTH_NUM - 1))]}
+          PERIOD_LABEL="Semana ${WEEK_NUM} de ${MONTH_NAME} ${YEAR}"
+
+          echo "📊 Generating weekly report — $PERIOD_LABEL..."
+
+          HTTP_STATUS=$(curl -s -o "$REPORT_FILE" -w "%{http_code}" \
+            -X POST "$APP_URL/api/reports/generate" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"period":"week"}')
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ ERROR: API returned status $HTTP_STATUS"
+            cat "$REPORT_FILE"
+            exit 1
+          fi
+
+          SIZE=$(stat -c%s "$REPORT_FILE")
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "❌ ERROR: Report file is too small ($SIZE bytes) — likely an error response"
+            cat "$REPORT_FILE"
+            exit 1
+          fi
+
+          echo "REPORT_FILE=$REPORT_FILE" >> $GITHUB_ENV
+          echo "REPORT_DATE=$HUMAN_DATE" >> $GITHUB_ENV
+          echo "PERIOD_LABEL=$PERIOD_LABEL" >> $GITHUB_ENV
+          echo "✅ Report generated: $REPORT_FILE ($SIZE bytes)"
+
+      - name: Send Report by Email
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "📊 Reporte Semanal ModulArq — ${{ env.PERIOD_LABEL }}"
+          to: ${{ secrets.OWNER_EMAIL }}, ${{ secrets.ARCHITECT_EMAIL }}, ${{ secrets.DEV_EMAIL }}, ${{ secrets.CARLA_EMAIL }}, ${{ secrets.CONTACT_EMAIL }}, ${{ secrets.OPERATIONS_EMAIL }}
+          from: ${{ secrets.GMAIL_USERNAME }}
+          body: |
+            📊 REPORTE SEMANAL — ${{ env.PERIOD_LABEL }}
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            Se adjunta el reporte semanal de ModulArq correspondiente a la ${{ env.PERIOD_LABEL }}.
+
+            📋 CONTENIDO DEL REPORTE
+            • Estado actual de proyectos activos
+            • Progreso de tareas por proyecto
+            • Rendimiento del equipo de operarios en el período
+            • Proyectos completados y entregados esta semana
+            • Tareas pendientes por proyecto
+
+            📁 Archivo: ${{ env.REPORT_FILE }}
+            🗓️ Generado el: ${{ env.REPORT_DATE }}
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            Este reporte es generado automáticamente por el sistema ModulArq.
+            Para más detalles, accedé al sistema en ${{ secrets.APP_URL }}
+          attachments: ${{ env.REPORT_FILE }}
