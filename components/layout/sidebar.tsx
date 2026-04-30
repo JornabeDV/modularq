@@ -40,6 +40,7 @@ const adminNavigation = [
   { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
   { name: "Cotizaciones", href: "/quoter/history", icon: History },
   { name: "Módulos Estándar", href: "/admin/standard-modules", icon: Package, adminOnly: true },
+  { name: "Catálogo de Servicios", href: "/admin/services", icon: ShoppingCart, adminOnly: true },
   { name: "Reportes", href: "/reports", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];

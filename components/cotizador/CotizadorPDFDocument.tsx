@@ -102,12 +102,6 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     flex: 1,
   },
-  modulePrice: {
-    fontSize: 12,
-    fontWeight: "bold",
-    fontFamily: "Courier",
-    color: "#1f2937",
-  },
   moduleDescription: {
     fontSize: 9,
     color: "#4b5563",
@@ -129,23 +123,80 @@ const styles = StyleSheet.create({
     lineHeight: 1.5,
   },
   adicionalesSection: {
-    marginTop: 8,
+    marginTop: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
   },
-  adicionalRow: {
+  adicionalesLabel: {
+    fontSize: 8,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  adicionalItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 3,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    alignItems: "center",
+    paddingVertical: 4,
+    gap: 6,
+  },
+  adicionalBullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#9ca3af",
   },
   adicionalName: {
-    fontSize: 9,
+    fontSize: 10,
     color: "#374151",
   },
   adicionalPrice: {
     fontSize: 9,
     fontFamily: "Courier",
     color: "#374151",
+  },
+  clientBox: {
+    marginBottom: 20,
+    padding: 14,
+    backgroundColor: "#f9fafb",
+    borderRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: "#1f2937",
+  },
+  clientLabel: {
+    fontSize: 8,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  clientRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 20,
+  },
+  clientCol: {
+    flex: 1,
+  },
+  clientName: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#1f2937",
+    marginBottom: 10,
+  },
+  clientDetail: {
+    fontSize: 10,
+    color: "#4b5563",
+    marginTop: 4,
+    lineHeight: 1.4,
+  },
+  clientDetailLabel: {
+    fontSize: 8,
+    color: "#9ca3af",
+    textTransform: "uppercase",
+    marginTop: 6,
+    marginBottom: 2,
   },
   label: {
     fontSize: 8,
@@ -256,11 +307,13 @@ export interface CotizadorDescriptionSection {
 }
 
 export interface CotizadorItem {
+  type: 'standard_module' | 'custom_module' | 'service';
   moduleId: string;
   moduleName: string;
   moduleDescription?: string;
   moduleDescriptionSections?: CotizadorDescriptionSection[];
   basePrice: number;
+  quantity: number;
   adicionales: Array<{
     id: string;
     name: string;
@@ -275,6 +328,14 @@ export interface CotizadorPDFProps {
   date: string;
   validUntil?: string;
   generatorName?: string;
+  finalTotal?: number;
+  client?: {
+    name: string;
+    cuit?: string;
+    contact?: string;
+    email?: string;
+    phone?: string;
+  };
 }
 
 function formatCurrency(amount: number): string {
@@ -293,13 +354,64 @@ export function CotizadorPDFDocument({
   date,
   validUntil,
   generatorName,
+  finalTotal,
+  client,
 }: CotizadorPDFProps) {
-  const subtotalModules = items.reduce((acc, item) => acc + item.basePrice, 0);
-  const subtotalAdicionales = items.reduce(
-    (acc, item) => acc + item.adicionales.reduce((a, ad) => a + ad.price, 0),
-    0,
-  );
-  const total = subtotalModules + subtotalAdicionales;
+  const standardItems = items.filter((i) => i.type === 'standard_module');
+  const customItems = items.filter((i) => i.type === 'custom_module');
+  const serviceItems = items.filter((i) => i.type === 'service');
+
+  const calculateItemTotal = (item: CotizadorItem) => {
+    const base = item.basePrice * item.quantity;
+    const adds = item.adicionales.reduce((a, ad) => a + ad.price, 0);
+    return base + adds;
+  };
+
+  const subtotalStandard = standardItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
+  const subtotalCustom = customItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
+  const subtotalServices = serviceItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
+  const computedTotal = subtotalStandard + subtotalCustom + subtotalServices;
+  const displayTotal = finalTotal ?? computedTotal;
+
+  const renderItem = (item: CotizadorItem, idx: number) => {
+    const showQty = item.quantity > 1;
+    return (
+      <View key={`${item.moduleId}-${idx}`} style={styles.moduleCard}>
+        <View style={styles.moduleHeader}>
+          <Text style={styles.moduleName}>
+            {item.moduleName}
+            {showQty ? ` (x${item.quantity})` : ''}
+          </Text>
+        </View>
+        {item.moduleDescription && (
+          <Text style={styles.moduleDescription}>
+            {item.moduleDescription}
+          </Text>
+        )}
+        {item.moduleDescriptionSections && item.moduleDescriptionSections.length > 0 && (
+          <View style={styles.descriptionSections}>
+            {item.moduleDescriptionSections.map((sec, i) => (
+              <View key={i}>
+                <Text style={styles.descriptionSectionTitle}>{sec.section}</Text>
+                <Text style={styles.descriptionSectionBody}>{sec.description}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        {item.adicionales.length > 0 && (
+          <View style={styles.adicionalesSection}>
+            <Text style={styles.adicionalesLabel}>Incluye</Text>
+            {item.adicionales.map((ad) => (
+              <View key={ad.id} style={styles.adicionalItem}>
+                <View style={styles.adicionalBullet} />
+                <Text style={styles.adicionalName}>{ad.name}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <Document>
@@ -332,77 +444,109 @@ export function CotizadorPDFDocument({
           </View>
         </View>
 
-        {/* Módulos cotizados */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Módulos Cotizados</Text>
-          {items.map((item, idx) => {
-            const itemTotal =
-              item.basePrice +
-              item.adicionales.reduce((a, ad) => a + ad.price, 0);
-            return (
-              <View key={`${item.moduleId}-${idx}`} style={styles.moduleCard}>
-                <View style={styles.moduleHeader}>
-                  <Text style={styles.moduleName}>{item.moduleName}</Text>
-                  <Text style={styles.modulePrice}>
-                    {formatCurrency(itemTotal)}
-                  </Text>
-                </View>
-                {item.moduleDescription && (
-                  <Text style={styles.moduleDescription}>
-                    {item.moduleDescription}
-                  </Text>
+        {/* Datos del cliente */}
+        {client && (
+          <View style={styles.clientBox}>
+            <Text style={styles.clientLabel}>Datos del cliente</Text>
+            <Text style={styles.clientName}>{client.name}</Text>
+            <View style={styles.clientRow}>
+              <View style={styles.clientCol}>
+                {client.cuit && (
+                  <>
+                    <Text style={styles.clientDetailLabel}>CUIT</Text>
+                    <Text style={styles.clientDetail}>{client.cuit}</Text>
+                  </>
                 )}
-                {item.moduleDescriptionSections && item.moduleDescriptionSections.length > 0 && (
-                  <View style={styles.descriptionSections}>
-                    {item.moduleDescriptionSections.map((sec, i) => (
-                      <View key={i}>
-                        <Text style={styles.descriptionSectionTitle}>{sec.section}</Text>
-                        <Text style={styles.descriptionSectionBody}>{sec.description}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {item.adicionales.length > 0 && (
-                  <View style={styles.adicionalesSection}>
-                    <Text
-                      style={[styles.label, { marginTop: 6, marginBottom: 4 }]}
-                    >
-                      Adicionales incluidos
-                    </Text>
-                    {item.adicionales.map((ad) => (
-                      <View key={ad.id} style={styles.adicionalRow}>
-                        <Text style={styles.adicionalName}>+ {ad.name}</Text>
-                        <Text style={styles.adicionalPrice}>
-                          {formatCurrency(ad.price)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
+                {client.contact && (
+                  <>
+                    <Text style={styles.clientDetailLabel}>Contacto</Text>
+                    <Text style={styles.clientDetail}>{client.contact}</Text>
+                  </>
                 )}
               </View>
-            );
-          })}
-        </View>
+              <View style={styles.clientCol}>
+                {client.email && (
+                  <>
+                    <Text style={styles.clientDetailLabel}>Email</Text>
+                    <Text style={styles.clientDetail}>{client.email}</Text>
+                  </>
+                )}
+                {client.phone && (
+                  <>
+                    <Text style={styles.clientDetailLabel}>Teléfono</Text>
+                    <Text style={styles.clientDetail}>{client.phone}</Text>
+                  </>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Módulos Estándar */}
+        {standardItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Módulos Estándar</Text>
+            {standardItems.map((item, idx) => renderItem(item, idx))}
+          </View>
+        )}
+
+        {/* Módulos Personalizados */}
+        {customItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Módulos Personalizados</Text>
+            {customItems.map((item, idx) => renderItem(item, idx))}
+          </View>
+        )}
+
+        {/* Servicios */}
+        {serviceItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Servicios</Text>
+            {serviceItems.map((item, idx) => renderItem(item, idx))}
+          </View>
+        )}
 
         {/* Totales */}
         <View style={styles.totalsBox}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal módulos</Text>
-            <Text style={styles.totalValue}>
-              {formatCurrency(subtotalModules)}
-            </Text>
-          </View>
-          {subtotalAdicionales > 0 && (
+          {subtotalStandard > 0 && (
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal adicionales</Text>
+              <Text style={styles.totalLabel}>Subtotal módulos estándar</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(subtotalAdicionales)}
+                {formatCurrency(subtotalStandard)}
               </Text>
             </View>
           )}
+          {subtotalCustom > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Subtotal módulos personalizados</Text>
+              <Text style={styles.totalValue}>
+                {formatCurrency(subtotalCustom)}
+              </Text>
+            </View>
+          )}
+          {subtotalServices > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Subtotal servicios</Text>
+              <Text style={styles.totalValue}>
+                {formatCurrency(subtotalServices)}
+              </Text>
+            </View>
+          )}
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Subtotal (sin IVA)</Text>
+            <Text style={styles.totalValue}>
+              {formatCurrency(displayTotal / 1.21)}
+            </Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>IVA 21%</Text>
+            <Text style={styles.totalValue}>
+              {formatCurrency(displayTotal - displayTotal / 1.21)}
+            </Text>
+          </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(total)}</Text>
+            <Text style={styles.grandTotalValue}>{formatCurrency(displayTotal)}</Text>
           </View>
         </View>
 

@@ -2954,14 +2954,18 @@ export class PrismaTypedService {
     subtotal: number
     total: number
     pdf_url?: string
+    valid_until?: string
     created_by: string
-    modules: Array<{
+    items: Array<{
+      type: 'standard_module' | 'custom_module' | 'service'
       standard_module_id?: string
-      module_name: string
-      module_description?: string
-      base_price: number
+      name: string
+      description?: string
+      unit_price: number
+      quantity: number
       subtotal: number
       sort_order: number
+      module_description?: { section: string; description: string }[] | null
       additionals: Array<{
         material_id?: string
         name: string
@@ -2971,8 +2975,9 @@ export class PrismaTypedService {
       }>
     }>
   }): Promise<{ id: string; number: string }> {
-    const validUntil = new Date()
-    validUntil.setDate(validUntil.getDate() + 30)
+    const validUntil = input.valid_until
+      ? new Date(input.valid_until)
+      : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d })()
 
     const { data: quote, error } = await supabase
       .from('quotes')
@@ -2996,37 +3001,51 @@ export class PrismaTypedService {
 
     if (error) throw error
 
-    for (const mod of input.modules) {
-      const { data: qMod, error: modErr } = await supabase
-        .from('quote_modules')
-        .insert({
-          quote_id: quote.id,
-          standard_module_id: mod.standard_module_id ?? null,
-          module_name: mod.module_name,
-          module_description: mod.module_description ?? null,
-          base_price: mod.base_price,
-          subtotal: mod.subtotal,
-          sort_order: mod.sort_order,
-        })
+    for (const item of input.items) {
+      const itemPayload = {
+        quote_id: quote.id,
+        type: item.type,
+        standard_module_id: item.standard_module_id ?? null,
+        name: item.name,
+        description: item.description ?? null,
+        unit_price: item.unit_price,
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+        sort_order: item.sort_order,
+        module_description: item.module_description ?? null,
+      }
+      console.log('[createQuote] item payload:', JSON.stringify(itemPayload))
+
+      const { data: qItem, error: itemErr } = await supabase
+        .from('quote_items')
+        .insert(itemPayload)
         .select('id')
         .single()
 
-      if (modErr) throw modErr
+      if (itemErr) {
+        console.error('[createQuote] item insert error:', itemErr)
+        throw new Error(`Failed to insert quote_item: ${itemErr.message} (${itemErr.code})`)
+      }
 
-      if (mod.additionals.length > 0) {
+      if (item.additionals.length > 0) {
+        const addPayload = item.additionals.map((a) => ({
+          quote_item_id: qItem.id,
+          material_id: a.material_id ?? null,
+          name: a.name,
+          unit_price: a.unit_price,
+          quantity: a.quantity,
+          subtotal: a.subtotal,
+        }))
+        console.log('[createQuote] additionals payload:', JSON.stringify(addPayload))
+
         const { error: addErr } = await supabase
-          .from('quote_additionals')
-          .insert(
-            mod.additionals.map((a) => ({
-              quote_module_id: qMod.id,
-              material_id: a.material_id ?? null,
-              name: a.name,
-              unit_price: a.unit_price,
-              quantity: a.quantity,
-              subtotal: a.subtotal,
-            }))
-          )
-        if (addErr) throw addErr
+          .from('quote_item_additionals')
+          .insert(addPayload)
+
+        if (addErr) {
+          console.error('[createQuote] additionals insert error:', addErr)
+          throw new Error(`Failed to insert additionals: ${addErr.message} (${addErr.code})`)
+        }
       }
     }
 
@@ -3039,6 +3058,122 @@ export class PrismaTypedService {
       .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
       .eq('id', id)
     if (error) throw error
+  }
+
+  static async replaceQuote(
+    id: string,
+    input: {
+      client_id?: string | null
+      client_name: string
+      client_company?: string
+      client_phone?: string
+      client_email?: string
+      notes?: string
+      subtotal: number
+      total: number
+      valid_until?: string
+      items: Array<{
+        type: 'standard_module' | 'custom_module' | 'service'
+        standard_module_id?: string
+        name: string
+        description?: string
+        unit_price: number
+        quantity: number
+        subtotal: number
+        sort_order: number
+        module_description?: { section: string; description: string }[] | null
+        additionals: Array<{
+          material_id?: string
+          name: string
+          unit_price: number
+          quantity: number
+          subtotal: number
+        }>
+      }>
+    }
+  ): Promise<{ id: string; number: string }> {
+    // 1. Obtener el número de la cotización existente
+    const { data: existing, error: existingErr } = await supabase
+      .from('quotes')
+      .select('number')
+      .eq('id', id)
+      .single()
+    if (existingErr) throw existingErr
+
+    // 2. Actualizar cabecera
+    const updatePayload: Record<string, unknown> = {
+      client_id: input.client_id ?? null,
+      client_name: input.client_name,
+      client_company: input.client_company ?? null,
+      client_phone: input.client_phone ?? null,
+      client_email: input.client_email ?? null,
+      notes: input.notes ?? null,
+      subtotal: input.subtotal,
+      total: input.total,
+      updated_at: new Date().toISOString(),
+    }
+    if (input.valid_until) {
+      updatePayload.valid_until = input.valid_until
+    }
+    const { error: updateErr } = await supabase
+      .from('quotes')
+      .update(updatePayload)
+      .eq('id', id)
+    if (updateErr) throw updateErr
+
+    // 3. Eliminar items viejos (cascade elimina additionals)
+    const { error: deleteErr } = await supabase
+      .from('quote_items')
+      .delete()
+      .eq('quote_id', id)
+    if (deleteErr) throw deleteErr
+
+    // 4. Insertar items nuevos (mismo código que createQuote)
+    for (const item of input.items) {
+      const itemPayload = {
+        quote_id: id,
+        type: item.type,
+        standard_module_id: item.standard_module_id ?? null,
+        name: item.name,
+        description: item.description ?? null,
+        unit_price: item.unit_price,
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+        sort_order: item.sort_order,
+        module_description: item.module_description ?? null,
+      }
+
+      const { data: qItem, error: itemErr } = await supabase
+        .from('quote_items')
+        .insert(itemPayload)
+        .select('id')
+        .single()
+
+      if (itemErr) {
+        throw new Error(`Failed to insert quote_item: ${itemErr.message} (${itemErr.code})`)
+      }
+
+      if (item.additionals.length > 0) {
+        const addPayload = item.additionals.map((a) => ({
+          quote_item_id: qItem.id,
+          material_id: a.material_id ?? null,
+          name: a.name,
+          unit_price: a.unit_price,
+          quantity: a.quantity,
+          subtotal: a.subtotal,
+        }))
+
+        const { error: addErr } = await supabase
+          .from('quote_item_additionals')
+          .insert(addPayload)
+
+        if (addErr) {
+          throw new Error(`Failed to insert additionals: ${addErr.message} (${addErr.code})`)
+        }
+      }
+    }
+
+    return { id, number: existing.number }
   }
 
   static async getQuotes(userId: string, role: string, status?: string) {
@@ -3059,20 +3194,48 @@ export class PrismaTypedService {
   }
 
   static async getQuoteById(id: string) {
-    const { data, error } = await supabase
+    // 1. Traer la cabecera
+    const { data: quote, error: quoteError } = await supabase
       .from('quotes')
-      .select(`
-        *,
-        modules:quote_modules(
-          *,
-          additionals:quote_additionals(*)
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single()
 
-    if (error) throw error
-    return data
+    if (quoteError) throw quoteError
+    if (!quote) return null
+
+    // 2. Traer los items
+    const { data: items, error: itemsError } = await supabase
+      .from('quote_items')
+      .select('*')
+      .eq('quote_id', id)
+      .order('sort_order', { ascending: true })
+
+    if (itemsError) throw itemsError
+
+    // 3. Traer los additionals de todos los items
+    const itemIds = items?.map((i) => i.id) ?? []
+    let additionals: any[] = []
+    if (itemIds.length > 0) {
+      const { data: adds, error: addsError } = await supabase
+        .from('quote_item_additionals')
+        .select('*')
+        .in('quote_item_id', itemIds)
+
+      if (addsError) throw addsError
+      additionals = adds ?? []
+    }
+
+    // 4. Armar la estructura anidada manualmente
+    const itemsWithAdditionals = (items ?? []).map((item) => ({
+      ...item,
+      additionals: additionals.filter((a) => a.quote_item_id === item.id),
+    }))
+
+    return {
+      ...quote,
+      items: itemsWithAdditionals,
+    }
   }
 
   static async updateQuoteStatus(
@@ -3089,6 +3252,68 @@ export class PrismaTypedService {
       .update({ status, ...extra })
       .eq('id', id)
 
+    if (error) throw error
+  }
+
+  // ==================== SERVICE CATALOG ====================
+
+  static async getServiceCatalog(activeOnly = true) {
+    let query = supabase.from('service_catalogs').select('*').order('name')
+    if (activeOnly) query = query.eq('is_active', true)
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async createServiceCatalog(input: {
+    name: string
+    description?: string
+    unit_price: number
+    unit?: string
+    is_active?: boolean
+  }) {
+    const { data, error } = await supabase
+      .from('service_catalogs')
+      .insert({
+        name: input.name,
+        description: input.description ?? null,
+        unit_price: input.unit_price,
+        unit: input.unit ?? 'unidad',
+        is_active: input.is_active ?? true,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateServiceCatalog(
+    id: string,
+    input: {
+      name?: string
+      description?: string
+      unit_price?: number
+      unit?: string
+      is_active?: boolean
+    }
+  ) {
+    const { data, error } = await supabase
+      .from('service_catalogs')
+      .update({
+        ...input,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteServiceCatalog(id: string) {
+    const { error } = await supabase.from('service_catalogs').delete().eq('id', id)
     if (error) throw error
   }
 }

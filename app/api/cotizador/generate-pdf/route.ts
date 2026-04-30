@@ -71,27 +71,31 @@ export async function POST(request: NextRequest) {
     if (quoteDataRaw) {
       try {
         const quoteData = JSON.parse(quoteDataRaw)
-        const number = await PrismaTypedService.generateQuoteNumber()
+        const existingQuoteId = formData.get('existingQuoteId') as string | null
 
-        // Crear registro en DB (sin pdf_url aún)
-        const created = await PrismaTypedService.createQuote({
-          number,
-          ...quoteData,
-        })
-
-        quoteId = created.id
-        quoteNumber = created.number
+        if (existingQuoteId) {
+          // Modo editar borrador existente
+          const updated = await PrismaTypedService.replaceQuote(existingQuoteId, quoteData)
+          quoteId = updated.id
+          quoteNumber = updated.number
+        } else {
+          // Modo crear nueva cotización
+          const number = await PrismaTypedService.generateQuoteNumber()
+          const created = await PrismaTypedService.createQuote({
+            number,
+            ...quoteData,
+          })
+          quoteId = created.id
+          quoteNumber = created.number
+        }
 
         // Subir PDF al Storage y actualizar el registro
-        try {
-          const pdfUrl = await uploadQuotePdf(finalBytes, quoteId, quoteNumber)
-          await PrismaTypedService.updateQuotePdfUrl(quoteId, pdfUrl)
-        } catch (uploadErr) {
-          console.error('[generate-pdf] Storage upload error:', uploadErr)
-        }
+        const pdfUrl = await uploadQuotePdf(finalBytes, quoteId, quoteNumber)
+        await PrismaTypedService.updateQuotePdfUrl(quoteId, pdfUrl)
       } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error al guardar la cotización'
         console.error('Error persisting quote:', err)
-        // No bloqueamos la descarga del PDF aunque falle el guardado
+        return NextResponse.json({ error: message }, { status: 500 })
       }
     }
 

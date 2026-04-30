@@ -24,9 +24,11 @@ export interface Quote {
   closed_at?: string
 }
 
+export type QuoteItemType = 'standard_module' | 'custom_module' | 'service'
+
 export interface QuoteAdditional {
   id: string
-  quote_module_id: string
+  quote_item_id: string
   material_id?: string
   name: string
   unit_price: number
@@ -34,20 +36,23 @@ export interface QuoteAdditional {
   subtotal: number
 }
 
-export interface QuoteModule {
+export interface QuoteItem {
   id: string
   quote_id: string
+  type: QuoteItemType
   standard_module_id?: string
-  module_name: string
-  module_description?: string
-  base_price: number
+  name: string
+  description?: string
+  unit_price: number
+  quantity: number
   subtotal: number
   sort_order: number
+  module_description?: { section: string; description: string }[] | null
   additionals: QuoteAdditional[]
 }
 
 export interface QuoteWithDetails extends Quote {
-  modules: QuoteModule[]
+  items: QuoteItem[]
 }
 
 export function useQuotes(userId: string, role: string, statusFilter?: QuoteStatus) {
