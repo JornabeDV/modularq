@@ -1,20 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
 import {
   Download,
-  Plus,
-  X,
-  Package,
   CheckCircle2,
   Loader2,
   History,
   ChevronsUpDown,
   Check,
   UserPlus,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -43,34 +42,22 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 import {
   useStandardModules,
   StandardModule,
-  ModuleDescriptionSection,
 } from "@/hooks/use-standard-modules";
 import {
   useClientsPrisma,
   Client,
   CreateClientData,
 } from "@/hooks/use-clients-prisma";
-
-interface SelectedAdicional {
-  id: string;
-  name: string;
-  price: number;
-}
-
-interface SelectedModule {
-  key: string;
-  moduleId: string;
-  moduleName: string;
-  moduleDescription?: string;
-  moduleDescriptionSections?: ModuleDescriptionSection[];
-  basePrice: number;
-  adicionales: SelectedAdicional[];
-}
+import { StandardModulesTab } from "@/components/cotizador/StandardModulesTab";
+import { CustomModuleForm } from "@/components/cotizador/CustomModuleForm";
+import { ServicesTab, ServiceCatalogItem } from "@/components/cotizador/ServicesTab";
+import { QuoteItemCard, QuoteItemState } from "@/components/cotizador/QuoteItemCard";
 
 const ALLOWED_ROLES = ["admin", "supervisor", "vendedor"];
 
@@ -275,32 +262,59 @@ function ClientSelector({
   );
 }
 
-// ── Resumen card (shared between desktop col-1 and mobile bottom) ────────────
+// ── Resumen card ─────────────────────────────────────────────────────────────
+function formatARSInput(value: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+  }).format(value);
+}
+
+function parseARSInput(value: string): number {
+  const cleaned = value
+    .replace(/[^0-9,]/g, "")
+    .replace(/\./g, "")
+    .replace(/,/g, ".");
+  return Number(cleaned) || 0;
+}
+
 function ResumenCard({
-  selectedModules,
+  quoteItems,
   subtotal,
+  finalTotal,
   generating,
   selectedClient,
   savedQuote,
   onGeneratePDF,
+  onUpdateFinalTotal,
 }: {
-  selectedModules: SelectedModule[];
+  quoteItems: QuoteItemState[];
   subtotal: number;
+  finalTotal: number;
   generating: boolean;
   selectedClient: Client | null;
   savedQuote: { id: string; number: string } | null;
   onGeneratePDF: () => void;
+  onUpdateFinalTotal: (value: number) => void;
 }) {
+  const hasAdjustment = finalTotal !== subtotal;
+  const [totalInput, setTotalInput] = useState(formatARSInput(finalTotal));
+
+  useEffect(() => {
+    setTotalInput(formatARSInput(finalTotal));
+  }, [finalTotal]);
+
   return (
     <Card>
       <CardContent className="pt-4 space-y-4">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Módulos seleccionados</span>
-          <span className="font-semibold">{selectedModules.length}</span>
+          <span className="text-sm text-muted-foreground">Ítems seleccionados</span>
+          <span className="font-semibold">{quoteItems.length}</span>
         </div>
         <div className="flex justify-between items-center border-t pt-3">
-          <span className="font-semibold">Total</span>
-          <span className="text-lg font-bold tabular-nums">
+          <span className="text-sm text-muted-foreground">Subtotal calculado</span>
+          <span className="text-sm font-medium tabular-nums">
             {new Intl.NumberFormat("es-AR", {
               style: "currency",
               currency: "ARS",
@@ -308,10 +322,39 @@ function ResumenCard({
             }).format(subtotal)}
           </span>
         </div>
+        <div className="flex justify-between items-center gap-3">
+          <span className="font-semibold">Total final</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={totalInput}
+              onChange={(e) => setTotalInput(e.target.value)}
+              onBlur={(e) => {
+                const parsed = parseARSInput(e.target.value);
+                setTotalInput(formatARSInput(parsed));
+                onUpdateFinalTotal(parsed);
+              }}
+              className={`w-36 text-right text-lg font-bold tabular-nums border rounded px-2 py-1 ${
+                hasAdjustment ? "border-primary bg-primary/5" : ""
+              }`}
+            />
+          </div>
+        </div>
+        {hasAdjustment && (
+          <p className="text-xs text-muted-foreground text-right">
+            Ajuste: {new Intl.NumberFormat("es-AR", {
+              style: "currency",
+              currency: "ARS",
+              signDisplay: "exceptZero",
+              minimumFractionDigits: 0,
+            }).format(finalTotal - subtotal)}
+          </p>
+        )}
         <Button
           className="w-full cursor-pointer"
           onClick={onGeneratePDF}
-          disabled={generating || !selectedClient || selectedModules.length === 0}
+          disabled={generating || !selectedClient || quoteItems.length === 0}
         >
           <Download className="w-4 h-4 mr-2" />
           {generating ? "Generando PDF..." : "Descargar cotización PDF"}
@@ -338,21 +381,34 @@ function ResumenCard({
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function CotizadorPage() {
-  const { modules, loading } = useStandardModules(true);
+  const { modules, loading: modulesLoading } = useStandardModules(true);
   const { clients } = useClientsPrisma();
   const { toast } = useToast();
   const { userProfile, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [notes, setNotes] = useState("");
-  const [selectedModules, setSelectedModules] = useState<SelectedModule[]>([]);
+  const [quoteItems, setQuoteItems] = useState<QuoteItemState[]>([]);
   const [generating, setGenerating] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; number: string } | null>(null);
-  const [adicionales, setAdicionales] = useState<
-    { id: string; name: string; unit_price: number }[]
-  >([]);
+  const [adicionales, setAdicionales] = useState<{ id: string; name: string; unit_price: number }[]>([]);
+  const [services, setServices] = useState<ServiceCatalogItem[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [loadingDuplicate, setLoadingDuplicate] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [finalTotal, setFinalTotal] = useState(0);
+
+  // Fecha de vencimiento por defecto: hoy + 30 días
+  const getDefaultValidUntil = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  };
+  const [validUntilDate, setValidUntilDate] = useState<string>(getDefaultValidUntil());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !userProfile) {
@@ -371,6 +427,84 @@ export default function CotizadorPage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    setServicesLoading(true);
+    fetch("/api/services")
+      .then((r) => r.json())
+      .then((d) => setServices(d.services ?? []))
+      .catch(() => {})
+      .finally(() => setServicesLoading(false));
+  }, []);
+
+  // ── Duplicar / Editar cotización ───────────────────────────────────────────
+  useEffect(() => {
+    const duplicateId = searchParams.get("duplicate");
+    const editId = searchParams.get("edit");
+    const sourceId = duplicateId || editId;
+    const isEdit = !!editId;
+
+    if (!sourceId || !clients || clients.length === 0) return;
+
+    setLoadingDuplicate(true);
+    fetch(`/api/quotes/${sourceId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const quote = data.quote;
+        if (!quote) {
+          toast({ title: "Cotización no encontrada", variant: "destructive" });
+          return;
+        }
+
+        // Precargar cliente
+        const client = clients.find((c: Client) => c.id === quote.client_id);
+        if (client) setSelectedClient(client);
+
+        // Precargar notas
+        setNotes(quote.notes ?? "");
+
+        // Precargar fecha de vencimiento
+        if (quote.valid_until) {
+          setValidUntilDate(quote.valid_until.split('T')[0]);
+        } else {
+          setValidUntilDate(getDefaultValidUntil());
+        }
+
+        // Precargar items
+        const items: QuoteItemState[] = (quote.items ?? []).map((item: any) => ({
+          key: `${item.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type: item.type,
+          standardModuleId: item.standard_module_id ?? undefined,
+          name: item.name,
+          description: item.description ?? undefined,
+          moduleDescriptionSections: item.module_description ?? undefined,
+          unitPrice: item.unit_price,
+          quantity: item.quantity,
+          adicionales: (item.additionals ?? []).map((ad: any) => ({
+            id: ad.material_id ?? ad.id,
+            name: ad.name,
+            price: ad.unit_price,
+          })),
+        }));
+        setQuoteItems(items);
+
+        // Precargar total (si existe en la cotización original)
+        setFinalTotal(quote.total ?? quote.subtotal ?? 0);
+
+        if (isEdit) {
+          setEditingQuoteId(sourceId);
+          setSavedQuote({ id: sourceId, number: quote.number });
+          toast({ title: `Editando borrador ${quote.number}` });
+        } else {
+          setEditingQuoteId(null);
+          setSavedQuote(null);
+          toast({ title: `Cotización ${quote.number} duplicada` });
+        }
+      })
+      .catch(() => {
+        toast({ title: "Error al cargar cotización", variant: "destructive" });
+      })
+      .finally(() => setLoadingDuplicate(false));
+  }, [searchParams, clients, toast]);
 
   if (authLoading || !userProfile) {
     return (
@@ -382,56 +516,126 @@ export default function CotizadorPage() {
 
   if (!ALLOWED_ROLES.includes(userProfile.role)) return null;
 
-  function addModule(mod: StandardModule) {
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  function addStandardModule(mod: StandardModule) {
     const key = `${mod.id}-${Date.now()}`;
-    setSelectedModules((prev) => [
+    setQuoteItems((prev) => [
       ...prev,
       {
         key,
-        moduleId: mod.id,
-        moduleName: mod.name,
-        moduleDescription: mod.description,
-        moduleDescriptionSections: mod.module_description,
-        basePrice: mod.base_price,
+        type: "standard_module",
+        standardModuleId: mod.id,
+        name: mod.name,
+        description: mod.description ?? undefined,
+        moduleDescriptionSections: mod.module_description ?? undefined,
+        unitPrice: mod.base_price,
+        quantity: 1,
         adicionales: [],
       },
     ]);
   }
 
-  function removeModule(key: string) {
-    setSelectedModules((prev) => prev.filter((m) => m.key !== key));
+  function addCustomModule(item: { name: string; description: string; unitPrice: number; quantity: number }) {
+    const key = `custom-${Date.now()}`;
+    setQuoteItems((prev) => [
+      ...prev,
+      {
+        key,
+        type: "custom_module",
+        name: item.name,
+        description: item.description || undefined,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        adicionales: [],
+      },
+    ]);
   }
 
-  function toggleAdicional(
-    moduleKey: string,
-    adicional: { id: string; name: string; unit_price: number },
-  ) {
-    setSelectedModules((prev) =>
-      prev.map((m) => {
-        if (m.key !== moduleKey) return m;
-        const exists = m.adicionales.find((a) => a.id === adicional.id);
-        return {
-          ...m,
-          adicionales: exists
-            ? m.adicionales.filter((a) => a.id !== adicional.id)
-            : [...m.adicionales, { id: adicional.id, name: adicional.name, price: adicional.unit_price }],
-        };
-      }),
+  function addService(svc: ServiceCatalogItem) {
+    const key = `svc-${svc.id}-${Date.now()}`;
+    setQuoteItems((prev) => [
+      ...prev,
+      {
+        key,
+        type: "service",
+        name: svc.name,
+        description: svc.description || undefined,
+        unitPrice: svc.unit_price,
+        quantity: 1,
+        adicionales: [],
+      },
+    ]);
+  }
+
+  function addCustomService(item: { name: string; description: string; unitPrice: number; quantity: number; unit: string }) {
+    const key = `svc-custom-${Date.now()}`;
+    setQuoteItems((prev) => [
+      ...prev,
+      {
+        key,
+        type: "service",
+        name: item.name,
+        description: item.description || undefined,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        adicionales: [],
+      },
+    ]);
+  }
+
+  function removeItem(key: string) {
+    setQuoteItems((prev) => prev.filter((m) => m.key !== key));
+  }
+
+  function updateQuantity(key: string, quantity: number) {
+    setQuoteItems((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, quantity } : item))
     );
   }
 
-  const subtotal = selectedModules.reduce(
-    (acc, m) => acc + m.basePrice + m.adicionales.reduce((a, ad) => a + ad.price, 0),
-    0,
-  );
+  function updatePrice(key: string, unitPrice: number) {
+    setQuoteItems((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, unitPrice } : item))
+    );
+  }
 
+  function toggleAdicional(
+    itemKey: string,
+    adicional: { id: string; name: string; unit_price: number }
+  ) {
+    setQuoteItems((prev) =>
+      prev.map((item) => {
+        if (item.key !== itemKey) return item;
+        const exists = item.adicionales.find((a) => a.id === adicional.id);
+        return {
+          ...item,
+          adicionales: exists
+            ? item.adicionales.filter((a) => a.id !== adicional.id)
+            : [...item.adicionales, { id: adicional.id, name: adicional.name, price: adicional.unit_price }],
+        };
+      })
+    );
+  }
+
+  const subtotal = quoteItems.reduce((acc, item) => {
+    const itemTotal = item.unitPrice * item.quantity;
+    const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
+    return acc + itemTotal + adicionalesTotal;
+  }, 0);
+
+  useEffect(() => {
+    setFinalTotal(subtotal);
+  }, [subtotal]);
+
+  // ── PDF generation ────────────────────────────────────────────────────────
   async function handleGeneratePDF() {
     if (!selectedClient) {
       toast({ title: "Seleccioná un cliente", variant: "destructive" });
       return;
     }
-    if (selectedModules.length === 0) {
-      toast({ title: "Seleccioná al menos un módulo", variant: "destructive" });
+    if (quoteItems.length === 0) {
+      toast({ title: "Seleccioná al menos un ítem", variant: "destructive" });
       return;
     }
 
@@ -446,9 +650,8 @@ export default function CotizadorPage() {
         month: "long",
         year: "numeric",
       });
-      const validUntilDate = new Date(now);
-      validUntilDate.setDate(validUntilDate.getDate() + 30);
-      const validUntil = validUntilDate.toLocaleDateString("es-AR", {
+      const validUntilObj = new Date(validUntilDate + 'T00:00:00');
+      const validUntil = validUntilObj.toLocaleDateString("es-AR", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -457,21 +660,41 @@ export default function CotizadorPage() {
       const pdfBlob = await pdf(
         <CotizadorPDFDocument
           notes={notes || undefined}
-          items={selectedModules.map((m) => ({
-            moduleId: m.moduleId,
-            moduleName: m.moduleName,
-            moduleDescription: m.moduleDescription,
-            moduleDescriptionSections: m.moduleDescriptionSections,
-            basePrice: m.basePrice,
-            adicionales: m.adicionales,
+          items={quoteItems.map((item) => ({
+            type: item.type,
+            moduleId: item.standardModuleId ?? item.key,
+            moduleName: item.name,
+            moduleDescription: item.description,
+            moduleDescriptionSections: item.moduleDescriptionSections,
+            basePrice: item.unitPrice,
+            quantity: item.quantity,
+            adicionales: item.adicionales,
           }))}
           date={date}
           validUntil={validUntil}
           generatorName={userProfile.name ?? userProfile.email ?? undefined}
-        />,
+          finalTotal={finalTotal}
+          client={
+            selectedClient
+              ? {
+                  name: selectedClient.companyName,
+                  cuit: selectedClient.cuit || undefined,
+                  contact: selectedClient.representative || undefined,
+                  email: selectedClient.email || undefined,
+                  phone: selectedClient.phone || undefined,
+                }
+              : undefined
+          }
+        />
       ).toBlob();
 
-      const moduleIds = [...new Set(selectedModules.map((m) => m.moduleId))];
+      const standardModuleIds = [
+        ...new Set(
+          quoteItems
+            .filter((i) => i.type === "standard_module" && i.standardModuleId)
+            .map((i) => i.standardModuleId!)
+        ),
+      ];
 
       const quoteData = {
         client_id: selectedClient.id,
@@ -481,16 +704,20 @@ export default function CotizadorPage() {
         client_email: selectedClient.email,
         notes: notes || undefined,
         subtotal,
-        total: subtotal,
+        total: finalTotal,
+        valid_until: validUntilDate,
         created_by: userProfile.id,
-        modules: selectedModules.map((m, i) => ({
-          standard_module_id: m.moduleId,
-          module_name: m.moduleName,
-          module_description: m.moduleDescription,
-          base_price: m.basePrice,
-          subtotal: m.basePrice + m.adicionales.reduce((a, ad) => a + ad.price, 0),
+        items: quoteItems.map((item, i) => ({
+          type: item.type,
+          standard_module_id: item.standardModuleId,
+          name: item.name,
+          description: item.description,
+          unit_price: item.unitPrice,
+          quantity: item.quantity,
+          subtotal: item.unitPrice * item.quantity + item.adicionales.reduce((a, ad) => a + ad.price, 0),
           sort_order: i,
-          additionals: m.adicionales.map((ad) => ({
+          module_description: item.moduleDescriptionSections ?? null,
+          additionals: item.adicionales.map((ad) => ({
             material_id: ad.id,
             name: ad.name,
             unit_price: ad.price,
@@ -502,8 +729,11 @@ export default function CotizadorPage() {
 
       const formData = new FormData();
       formData.append("pdf", pdfBlob, "cotizacion.pdf");
-      formData.append("moduleIds", JSON.stringify(moduleIds));
+      formData.append("moduleIds", JSON.stringify(standardModuleIds));
       formData.append("quoteData", JSON.stringify(quoteData));
+      if (editingQuoteId) {
+        formData.append("existingQuoteId", editingQuoteId);
+      }
 
       const res = await fetch("/api/cotizador/generate-pdf", {
         method: "POST",
@@ -544,13 +774,32 @@ export default function CotizadorPage() {
     }
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 mx-auto space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Cotizador</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Cotizador</h1>
+            {loadingDuplicate && (
+              <Badge variant="secondary" className="text-xs">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Cargando duplicado...
+              </Badge>
+            )}
+            {searchParams.get("duplicate") && !loadingDuplicate && quoteItems.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                Cotización duplicada
+              </Badge>
+            )}
+            {editingQuoteId && !loadingDuplicate && (
+              <Badge variant="default" className="text-xs">
+                Editando borrador
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Generá un presupuesto rápido seleccionando módulos y adicionales.
+            Generá un presupuesto seleccionando módulos estándar, personalizados o servicios.
           </p>
         </div>
 
@@ -584,6 +833,42 @@ export default function CotizadorPage() {
                   </div>
                 )}
                 <div className="space-y-1">
+                  <Label className="text-xs">Válida hasta</Label>
+                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal text-sm",
+                          !validUntilDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {validUntilDate
+                          ? new Date(validUntilDate + 'T00:00:00').toLocaleDateString("es-AR", {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric",
+                            })
+                          : "Seleccionar fecha"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={validUntilDate ? new Date(validUntilDate + 'T00:00:00') : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setValidUntilDate(date.toISOString().split('T')[0]);
+                            setCalendarOpen(false);
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-1">
                   <Label htmlFor="notes" className="text-xs">Notas para el PDF</Label>
                   <Textarea
                     id="notes"
@@ -600,66 +885,45 @@ export default function CotizadorPage() {
             {/* Resumen visible solo en desktop */}
             <div className="hidden lg:block">
               <ResumenCard
-                selectedModules={selectedModules}
+                quoteItems={quoteItems}
                 subtotal={subtotal}
+                finalTotal={finalTotal}
                 generating={generating}
                 selectedClient={selectedClient}
                 savedQuote={savedQuote}
                 onGeneratePDF={handleGeneratePDF}
+                onUpdateFinalTotal={setFinalTotal}
               />
             </div>
           </div>
 
-          {/* Col 2: Catálogo */}
+          {/* Col 2: Tabs de catálogo */}
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Módulos disponibles
-            </h2>
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Cargando módulos...</p>
-            ) : modules.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground text-sm">
-                  <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  No hay módulos disponibles.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {modules.map((mod) => (
-                  <Card
-                    key={mod.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow md:py-4"
-                    onClick={() => addModule(mod)}
-                  >
-                    <CardContent className="py-3 px-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{mod.name}</p>
-                          {mod.description && (
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {mod.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm font-semibold tabular-nums">
-                            {new Intl.NumberFormat("es-AR", {
-                              style: "currency",
-                              currency: "ARS",
-                              minimumFractionDigits: 0,
-                            }).format(mod.base_price)}
-                          </span>
-                          <Button size="icon" variant="ghost" className="h-7 w-7">
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <Tabs defaultValue="standard" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="standard">Estándar</TabsTrigger>
+                <TabsTrigger value="custom">Personalizados</TabsTrigger>
+                <TabsTrigger value="services">Servicios</TabsTrigger>
+              </TabsList>
+              <TabsContent value="standard" className="mt-4">
+                <StandardModulesTab
+                  modules={modules}
+                  loading={modulesLoading}
+                  onAddModule={addStandardModule}
+                />
+              </TabsContent>
+              <TabsContent value="custom" className="mt-4">
+                <CustomModuleForm onAdd={addCustomModule} />
+              </TabsContent>
+              <TabsContent value="services" className="mt-4">
+                <ServicesTab
+                  services={services}
+                  loading={servicesLoading}
+                  onAddService={addService}
+                  onAddCustomService={addCustomService}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Col 3: Cotización armada */}
@@ -667,89 +931,25 @@ export default function CotizadorPage() {
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Cotización
             </h2>
-            {selectedModules.length === 0 ? (
+            {quoteItems.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground text-sm">
                   <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                  Hacé clic en un módulo para agregarlo.
+                  Agregá ítems desde las pestañas.
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {selectedModules.map((m) => (
-                  <Card key={m.key}>
-                    <CardContent className="py-3 px-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{m.moduleName}</p>
-                          <p className="text-xs tabular-nums text-muted-foreground">
-                            {new Intl.NumberFormat("es-AR", {
-                              style: "currency",
-                              currency: "ARS",
-                              minimumFractionDigits: 0,
-                            }).format(m.basePrice)}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0"
-                          onClick={() => removeModule(m.key)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-
-                      {adicionales.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                            Adicionales
-                          </p>
-                          <div className="space-y-1">
-                            {adicionales.map((ad) => {
-                              const selected = m.adicionales.some((a) => a.id === ad.id);
-                              return (
-                                <button
-                                  key={ad.id}
-                                  type="button"
-                                  onClick={() => toggleAdicional(m.key, ad)}
-                                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md border text-xs select-none transition-colors cursor-pointer ${
-                                    selected
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-background text-foreground border-border hover:bg-muted"
-                                  }`}
-                                >
-                                  <span>{ad.name}</span>
-                                  <span className="tabular-nums font-medium">
-                                    {new Intl.NumberFormat("es-AR", {
-                                      style: "currency",
-                                      currency: "ARS",
-                                      minimumFractionDigits: 0,
-                                    }).format(ad.unit_price)}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {m.adicionales.length > 0 && (
-                        <div className="text-xs text-right text-muted-foreground border-t pt-2">
-                          Subtotal:{" "}
-                          <span className="font-semibold tabular-nums text-foreground">
-                            {new Intl.NumberFormat("es-AR", {
-                              style: "currency",
-                              currency: "ARS",
-                              minimumFractionDigits: 0,
-                            }).format(
-                              m.basePrice + m.adicionales.reduce((a, ad) => a + ad.price, 0),
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                {quoteItems.map((item) => (
+                  <QuoteItemCard
+                    key={item.key}
+                    item={item}
+                    adicionalesDisponibles={adicionales}
+                    onRemove={removeItem}
+                    onUpdateQuantity={updateQuantity}
+                    onUpdatePrice={updatePrice}
+                    onToggleAdicional={toggleAdicional}
+                  />
                 ))}
               </div>
             )}
@@ -759,12 +959,14 @@ export default function CotizadorPage() {
         {/* Resumen visible solo en mobile, al final */}
         <div className="lg:hidden">
           <ResumenCard
-            selectedModules={selectedModules}
+            quoteItems={quoteItems}
             subtotal={subtotal}
+            finalTotal={finalTotal}
             generating={generating}
             selectedClient={selectedClient}
             savedQuote={savedQuote}
             onGeneratePDF={handleGeneratePDF}
+            onUpdateFinalTotal={setFinalTotal}
           />
         </div>
       </div>

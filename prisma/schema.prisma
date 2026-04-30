@@ -664,3 +664,86 @@ model StandardModuleAttachment {
 
   @@map("standard_module_attachments")
 }
+
+// ==================== COTIZADOR UNIFICADO ====================
+
+enum QuoteItemType {
+  standard_module
+  custom_module
+  service
+}
+
+// Cabecera de cotizaciones rápidas
+model Quote {
+  id             String   @id @default(uuid()) @map("id")
+  number         String   @unique
+  status         String   @default("draft")
+  client_id      String?
+  client_name    String
+  client_company String?
+  client_phone   String?
+  client_email   String?
+  subtotal       Float    @default(0)
+  total          Float    @default(0)
+  notes          String?
+  pdf_url        String?
+  valid_until    DateTime?
+  created_by     String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  sent_at        DateTime?
+  closed_at      DateTime?
+
+  items QuoteItem[]
+
+  @@map("quotes")
+}
+
+// Líneas de una cotización (módulos estándar, personalizados o servicios)
+model QuoteItem {
+  id                 String          @id @default(cuid())
+  quote_id           String
+  type               QuoteItemType
+  standard_module_id String?
+  name               String
+  description        String?
+  unit_price         Float           @default(0)
+  quantity           Int             @default(1)
+  subtotal           Float           @default(0)
+  sort_order         Int             @default(0)
+  module_description Json?           // snapshot de secciones descriptivas
+
+  quote       Quote                 @relation(fields: [quote_id], references: [id], onDelete: Cascade)
+  additionals QuoteItemAdditional[]
+
+  @@map("quote_items")
+}
+
+// Adicionales por línea de cotización
+model QuoteItemAdditional {
+  id            String   @id @default(cuid())
+  quote_item_id String
+  material_id   String?
+  name          String
+  unit_price    Float    @default(0)
+  quantity      Int      @default(1)
+  subtotal      Float    @default(0)
+
+  quoteItem QuoteItem @relation(fields: [quote_item_id], references: [id], onDelete: Cascade)
+
+  @@map("quote_item_additionals")
+}
+
+// Catálogo de servicios para cotizaciones
+model ServiceCatalog {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  unit_price  Float    @default(0)
+  unit        String   @default("unidad")
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("service_catalogs")
+}

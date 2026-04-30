@@ -22,6 +22,8 @@ import {
   ChevronDown,
   Loader2,
   FileText,
+  Copy,
+  Pencil,
 } from "lucide-react";
 
 const STATUS_LABELS: Record<QuoteStatus, string> = {
@@ -90,7 +92,7 @@ function QuoteCard({
   return (
     <Card className="md:py-3">
       <CardContent className="py-3 px-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-sm tabular-nums">
@@ -114,11 +116,35 @@ function QuoteCard({
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
             <span className="font-bold tabular-nums text-sm">
               {formatCurrency(quote.total)}
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {quote.status === 'draft' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs cursor-pointer"
+                  asChild
+                >
+                  <Link href={`/quoter?edit=${quote.id}`}>
+                    <Pencil className="w-3 h-3 sm:mr-1" />
+                    <span className="hidden sm:inline">Editar</span>
+                  </Link>
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs cursor-pointer"
+                asChild
+              >
+                <Link href={`/quoter?duplicate=${quote.id}`}>
+                  <Copy className="w-3 h-3 sm:mr-1" />
+                  <span className="hidden sm:inline">Duplicar</span>
+                </Link>
+              </Button>
               {quote.pdf_url && (
                 <Button
                   variant="outline"
@@ -127,8 +153,8 @@ function QuoteCard({
                   asChild
                 >
                   <a href={quote.pdf_url} target="_blank" rel="noopener noreferrer">
-                    <Download className="w-3 h-3 mr-1" />
-                    PDF
+                    <Download className="w-3 h-3 sm:mr-1" />
+                    <span className="hidden sm:inline">PDF</span>
                   </a>
                 </Button>
               )}
@@ -136,8 +162,9 @@ function QuoteCard({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-7 px-2 text-xs cursor-pointer">
-                      Estado
-                      <ChevronDown className="w-3 h-3 ml-1" />
+                      <span className="hidden sm:inline">Estado</span>
+                      <span className="sm:hidden">...</span>
+                      <ChevronDown className="w-3 h-3 ml-1 hidden sm:inline" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -198,14 +225,14 @@ export default function QuoteHistorialPage() {
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 mx-auto space-y-4 sm:space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">Cotizaciones</h1>
             <p className="text-muted-foreground text-sm mt-1">
               Historial de cotizaciones generadas.
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/quoter">
               <Plus className="w-4 h-4 mr-2" />
               Nueva cotización
