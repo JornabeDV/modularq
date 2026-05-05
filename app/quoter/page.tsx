@@ -13,6 +13,8 @@ import {
   Check,
   UserPlus,
   Calendar as CalendarIcon,
+  Plus,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -365,7 +367,7 @@ function ResumenCard({
         </div>
         <div className="space-y-2">
           <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold">Total final</span>
+            <span className="font-semibold whitespace-nowrap text-sm">Total final</span>
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -377,14 +379,14 @@ function ResumenCard({
                   setTotalInput(formatARSInput(parsed));
                   onUpdateFinalTotal(parsed);
                 }}
-                className={`w-36 text-right text-lg font-bold tabular-nums border rounded px-2 py-1 ${
+                className={`w-36 text-right text-base font-bold tabular-nums border rounded px-2 py-1 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
                 }`}
               />
             </div>
           </div>
           <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold text-muted-foreground">Total final (USD)</span>
+            <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Total final (USD)</span>
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -398,7 +400,7 @@ function ResumenCard({
                     onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
                   }
                 }}
-                className={`w-36 text-right text-lg font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
+                className={`w-36 text-right text-base font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
                 }`}
               />
@@ -454,7 +456,7 @@ export default function CotizadorPage() {
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [createClientOpen, setCreateClientOpen] = useState(false);
-  const [notes, setNotes] = useState("");
+  const [notesList, setNotesList] = useState<string[]>([]);
   const [quoteItems, setQuoteItems] = useState<QuoteItemState[]>([]);
   const [generating, setGenerating] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; number: string } | null>(null);
@@ -524,8 +526,14 @@ export default function CotizadorPage() {
         const client = clients.find((c: Client) => c.id === quote.client_id);
         if (client) setSelectedClient(client);
 
-        // Precargar notas
-        setNotes(quote.notes ?? "");
+        // Precargar notas (nuevo formato lista, o fallback a texto plano)
+        if (quote.notes_list && Array.isArray(quote.notes_list) && quote.notes_list.length > 0) {
+          setNotesList(quote.notes_list as string[]);
+        } else if (quote.notes) {
+          setNotesList([quote.notes]);
+        } else {
+          setNotesList([]);
+        }
 
         // Precargar fecha de vencimiento
         if (quote.valid_until) {
@@ -687,6 +695,18 @@ export default function CotizadorPage() {
     );
   }
 
+  function handleUpdateName(key: string, name: string) {
+    setQuoteItems((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, name } : item))
+    );
+  }
+
+  function handleUpdateDescription(key: string, description: string) {
+    setQuoteItems((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, description } : item))
+    );
+  }
+
   function toggleAdicional(
     itemKey: string,
     adicional: { id: string; name: string; unit_price: number }
@@ -750,7 +770,7 @@ export default function CotizadorPage() {
 
       const pdfBlob = await pdf(
         <CotizadorPDFDocument
-          notes={notes || undefined}
+          notesList={notesList.length > 0 ? notesList : undefined}
           items={quoteItems.map((item) => ({
             type: item.type,
             moduleId: item.standardModuleId ?? item.key,
@@ -793,7 +813,7 @@ export default function CotizadorPage() {
         client_company: selectedClient.companyName,
         client_phone: selectedClient.phone,
         client_email: selectedClient.email,
-        notes: notes || undefined,
+        notes_list: notesList.length > 0 ? notesList : undefined,
         subtotal,
         total: finalTotal,
         valid_until: validUntilDate,
@@ -961,15 +981,42 @@ export default function CotizadorPage() {
                   </Popover>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="notes" className="text-xs">Notas para el PDF</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Condiciones, aclaraciones..."
-                    className="text-sm"
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
+                  <Label className="text-xs">Notas para el PDF</Label>
+                  <div className="space-y-2">
+                    {notesList.map((note, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
+                        <input
+                          type="text"
+                          value={note}
+                          onChange={(e) => {
+                            const updated = [...notesList];
+                            updated[i] = e.target.value;
+                            setNotesList(updated);
+                          }}
+                          className="flex-1 text-xs border rounded px-2 py-1"
+                          placeholder="Nota..."
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={() => setNotesList((prev) => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setNotesList((prev) => [...prev, ""])}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Agregar nota
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1045,6 +1092,8 @@ export default function CotizadorPage() {
                     onToggleAdicional={toggleAdicional}
                     onAddAttachment={handleAddAttachment}
                     onRemoveAttachment={handleRemoveAttachment}
+                    onUpdateName={handleUpdateName}
+                    onUpdateDescription={handleUpdateDescription}
                   />
                 ))}
               </div>

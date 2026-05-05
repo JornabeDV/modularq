@@ -2951,6 +2951,7 @@ export class PrismaTypedService {
     client_phone?: string
     client_email?: string
     notes?: string
+    notes_list?: string[] | null
     subtotal: number
     total: number
     pdf_url?: string
@@ -2973,6 +2974,14 @@ export class PrismaTypedService {
         quantity: number
         subtotal: number
       }>
+      attachments?: Array<{
+        filename: string
+        original_name: string
+        mime_type: string
+        size: number
+        url: string
+        storage_path: string
+      }>
     }>
   }): Promise<{ id: string; number: string }> {
     const validUntil = input.valid_until
@@ -2990,6 +2999,7 @@ export class PrismaTypedService {
         client_phone: input.client_phone ?? null,
         client_email: input.client_email ?? null,
         notes: input.notes ?? null,
+        notes_list: input.notes_list ?? null,
         subtotal: input.subtotal,
         total: input.total,
         pdf_url: input.pdf_url ?? null,
@@ -3047,6 +3057,27 @@ export class PrismaTypedService {
           throw new Error(`Failed to insert additionals: ${addErr.message} (${addErr.code})`)
         }
       }
+
+      if (item.attachments && item.attachments.length > 0) {
+        const attPayload = item.attachments.map((a) => ({
+          quote_item_id: qItem.id,
+          filename: a.filename,
+          original_name: a.original_name,
+          mime_type: a.mime_type,
+          size: a.size,
+          url: a.url,
+          storage_path: a.storage_path,
+        }))
+
+        const { error: attErr } = await supabase
+          .from('quote_item_attachments')
+          .insert(attPayload)
+
+        if (attErr) {
+          console.error('[createQuote] attachments insert error:', attErr)
+          throw new Error(`Failed to insert attachments: ${attErr.message} (${attErr.code})`)
+        }
+      }
     }
 
     return { id: quote.id, number: quote.number }
@@ -3069,6 +3100,7 @@ export class PrismaTypedService {
       client_phone?: string
       client_email?: string
       notes?: string
+      notes_list?: string[] | null
       subtotal: number
       total: number
       valid_until?: string
@@ -3089,6 +3121,14 @@ export class PrismaTypedService {
           quantity: number
           subtotal: number
         }>
+        attachments?: Array<{
+          filename: string
+          original_name: string
+          mime_type: string
+          size: number
+          url: string
+          storage_path: string
+        }>
       }>
     }
   ): Promise<{ id: string; number: string }> {
@@ -3108,6 +3148,7 @@ export class PrismaTypedService {
       client_phone: input.client_phone ?? null,
       client_email: input.client_email ?? null,
       notes: input.notes ?? null,
+      notes_list: input.notes_list ?? null,
       subtotal: input.subtotal,
       total: input.total,
       updated_at: new Date().toISOString(),
@@ -3171,6 +3212,26 @@ export class PrismaTypedService {
           throw new Error(`Failed to insert additionals: ${addErr.message} (${addErr.code})`)
         }
       }
+
+      if (item.attachments && item.attachments.length > 0) {
+        const attPayload = item.attachments.map((a) => ({
+          quote_item_id: qItem.id,
+          filename: a.filename,
+          original_name: a.original_name,
+          mime_type: a.mime_type,
+          size: a.size,
+          url: a.url,
+          storage_path: a.storage_path,
+        }))
+
+        const { error: attErr } = await supabase
+          .from('quote_item_attachments')
+          .insert(attPayload)
+
+        if (attErr) {
+          throw new Error(`Failed to insert attachments: ${attErr.message} (${attErr.code})`)
+        }
+      }
     }
 
     return { id, number: existing.number }
@@ -3214,7 +3275,7 @@ export class PrismaTypedService {
     if (itemsError) throw itemsError
 
     // 3. Traer los additionals de todos los items
-    const itemIds = items?.map((i) => i.id) ?? []
+    const itemIds = items?.map((i: any) => i.id) ?? []
     let additionals: any[] = []
     if (itemIds.length > 0) {
       const { data: adds, error: addsError } = await supabase
@@ -3226,15 +3287,28 @@ export class PrismaTypedService {
       additionals = adds ?? []
     }
 
-    // 4. Armar la estructura anidada manualmente
-    const itemsWithAdditionals = (items ?? []).map((item) => ({
+    // 4. Traer los attachments de todos los items
+    let attachments: any[] = []
+    if (itemIds.length > 0) {
+      const { data: atts, error: attsError } = await supabase
+        .from('quote_item_attachments')
+        .select('*')
+        .in('quote_item_id', itemIds)
+
+      if (attsError) throw attsError
+      attachments = atts ?? []
+    }
+
+    // 5. Armar la estructura anidada manualmente
+    const itemsWithDetails = (items ?? []).map((item: any) => ({
       ...item,
       additionals: additionals.filter((a) => a.quote_item_id === item.id),
+      attachments: attachments.filter((a) => a.quote_item_id === item.id),
     }))
 
     return {
       ...quote,
-      items: itemsWithAdditionals,
+      items: itemsWithDetails,
     }
   }
 
