@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMaterialsPrisma } from '@/hooks/use-materials-prisma'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PriceInput } from '@/components/ui/price-input'
 import { AlertTriangle } from 'lucide-react'
 import type { ProjectMaterial, CreateProjectMaterialData, UpdateProjectMaterialData } from '@/hooks/use-project-materials-prisma'
 
@@ -50,6 +51,7 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
     unit_price: 0,
     notes: ''
   })
+  const [unitPriceInput, setUnitPriceInput] = useState('')
   const [selectedMaterial, setSelectedMaterial] = useState<any>(null)
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
@@ -73,6 +75,10 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
       setCategoryFilter('all')
     }
   }, [isEditing, initialData?.id, isOpen])
+
+  useEffect(() => {
+    setUnitPriceInput(formData.unit_price === 0 ? '' : formData.unit_price.toString().replace('.', ','))
+  }, [formData.unit_price])
 
   // Actualizar material seleccionado cuando cambia el select
   useEffect(() => {
@@ -265,14 +271,14 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
             </div>
             <div>
               <Label htmlFor="unit_price" className="mb-2">Precio Unitario (opcional)</Label>
-              <Input
+              <PriceInput
                 id="unit_price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.unit_price === 0 ? '' : formData.unit_price}
-                onChange={(e) => handleInputChange('unit_price', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
-                onFocus={(e) => {
+                value={unitPriceInput}
+                onChange={(val) => {
+                  setUnitPriceInput(val)
+                  handleInputChange('unit_price', val === '' ? 0 : parseFloat(val.replace(',', '.')) || 0)
+                }}
+                onFocus={(e: any) => {
                   if (e.target.value === '0') {
                     e.target.select()
                   }

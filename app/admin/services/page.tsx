@@ -42,6 +42,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { PriceInput } from "@/components/ui/price-input";
 
 interface Service {
   id: string;
@@ -104,13 +105,11 @@ function ServiceFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="unit_price">Precio unitario ($) *</Label>
-          <Input
+          <PriceInput
             id="unit_price"
-            type="number"
-            min="0"
             placeholder="0"
             value={form.unit_price}
-            onChange={(e) => setForm((f) => ({ ...f, unit_price: e.target.value }))}
+            onChange={(val) => setForm((f) => ({ ...f, unit_price: val }))}
           />
         </div>
         <div className="space-y-2">
@@ -199,7 +198,7 @@ export default function ServicesAdminPage() {
     setForm({
       name: service.name,
       description: service.description ?? "",
-      unit_price: String(service.unit_price),
+      unit_price: service.unit_price.toString().replace(".", ","),
       unit: service.unit,
       is_active: service.is_active,
     });
@@ -215,7 +214,7 @@ export default function ServicesAdminPage() {
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
-      unit_price: Number(form.unit_price),
+      unit_price: parseFloat(form.unit_price.replace(",", ".")) || 0,
       unit: form.unit.trim() || "unidad",
       is_active: form.is_active,
     };

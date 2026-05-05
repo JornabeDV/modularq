@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { PriceInput } from "@/components/ui/price-input";
 
 export type QuoteItemType = "standard_module" | "custom_module" | "service";
 
@@ -294,15 +295,12 @@ export function QuoteItemCard({
                 </Button>
               </div>
               <div className="flex-1">
-                <input
-                  type="number"
-                  value={item.unitPrice}
-                  onChange={(e) =>
-                    onUpdatePrice(item.key, Number(e.target.value))
+                <PriceInput
+                  value={item.unitPrice.toString().replace(".", ",")}
+                  onChange={(val) =>
+                    onUpdatePrice(item.key, parseFloat(val.replace(",", ".")) || 0)
                   }
                   className="w-full text-sm border rounded px-2 py-1 tabular-nums"
-                  min={0}
-                  step={1000}
                 />
               </div>
               <span className="text-sm font-semibold tabular-nums shrink-0">
