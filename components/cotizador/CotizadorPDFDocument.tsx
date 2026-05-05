@@ -324,6 +324,7 @@ export interface CotizadorItem {
 export interface CotizadorPDFProps {
   quoteNumber?: string;
   notes?: string;
+  notesList?: string[];
   items: CotizadorItem[];
   date: string;
   validUntil?: string;
@@ -350,6 +351,7 @@ function formatCurrency(amount: number): string {
 export function CotizadorPDFDocument({
   quoteNumber,
   notes,
+  notesList,
   items,
   date,
   validUntil,
@@ -551,12 +553,21 @@ export function CotizadorPDFDocument({
         </View>
 
         {/* Notas */}
-        {notes && (
+        {notesList && notesList.length > 0 ? (
+          <View style={styles.notesBox}>
+            <Text style={styles.notesLabel}>Notas</Text>
+            {notesList.map((note, i) => (
+              <Text key={i} style={styles.notesText}>
+                {i + 1}. {note}
+              </Text>
+            ))}
+          </View>
+        ) : notes ? (
           <View style={styles.notesBox}>
             <Text style={styles.notesLabel}>Notas</Text>
             <Text style={styles.notesText}>{notes}</Text>
           </View>
-        )}
+        ) : null}
 
         {/* Footer */}
         <View style={styles.footer} fixed>

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const moduleIds: string[] = moduleIdsRaw ? JSON.parse(moduleIdsRaw) : []
 
-    // Recopilar PDFs adjuntos de los módulos (filtro explícito por module_id)
+    // Recopilar PDFs adjuntos de los módulos estándar
     const attachmentUrls: string[] = []
     for (const moduleId of moduleIds) {
       try {
@@ -52,6 +52,24 @@ export async function POST(request: NextRequest) {
         }
       } catch {
         // continuar sin los adjuntos de este módulo
+      }
+    }
+
+    // Recopilar PDFs adjuntos de los módulos personalizados desde quoteData
+    if (quoteDataRaw) {
+      try {
+        const quoteData = JSON.parse(quoteDataRaw)
+        for (const item of quoteData.items ?? []) {
+          if (item.type === 'custom_module' && item.attachments) {
+            for (const att of item.attachments) {
+              if (att.mime_type === 'application/pdf') {
+                attachmentUrls.push(att.url)
+              }
+            }
+          }
+        }
+      } catch {
+        // continuar sin los adjuntos de custom modules
       }
     }
 
