@@ -57,7 +57,7 @@ export function StandardModulesTab({ modules, loading, onAddModule }: StandardMo
                 <span className="text-sm font-semibold tabular-nums">
                   {formatCurrency(mod.base_price)}
                 </span>
-                <Button size="icon" variant="ghost" className="h-7 w-7">
+                <Button size="icon" variant="ghost" className="h-7 w-7 cursor-pointer">
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>

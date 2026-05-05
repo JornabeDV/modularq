@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, Plus, Minus, ChevronDown } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { X, Plus, Minus, ChevronDown, FileText, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,15 @@ export interface SelectedAdicional {
   price: number;
 }
 
+export interface QuoteItemAttachment {
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  url: string;
+  storage_path: string;
+}
+
 export interface QuoteItemState {
   key: string;
   type: QuoteItemType;
@@ -25,6 +34,7 @@ export interface QuoteItemState {
   unitPrice: number;
   quantity: number;
   adicionales: SelectedAdicional[];
+  attachments?: QuoteItemAttachment[];
 }
 
 const TYPE_LABELS: Record<QuoteItemType, string> = {
@@ -46,6 +56,8 @@ interface QuoteItemCardProps {
   onUpdateQuantity: (key: string, quantity: number) => void;
   onUpdatePrice: (key: string, price: number) => void;
   onToggleAdicional: (itemKey: string, adicional: { id: string; name: string; unit_price: number }) => void;
+  onAddAttachment?: (itemKey: string, attachment: QuoteItemAttachment) => void;
+  onRemoveAttachment?: (itemKey: string, storagePath: string) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -63,14 +75,43 @@ export function QuoteItemCard({
   onUpdateQuantity,
   onUpdatePrice,
   onToggleAdicional,
+  onAddAttachment,
+  onRemoveAttachment,
 }: QuoteItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const itemSubtotal = item.unitPrice * item.quantity;
   const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
   const total = itemSubtotal + adicionalesTotal;
 
   const canHaveAdicionales = item.type === "standard_module" || item.type === "custom_module";
+  const canHaveAttachments = item.type === "custom_module";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = useCallback(async (file: File) => {
+    if (!onAddAttachment) return;
+    if (file.type !== "application/pdf") return;
+    if (file.size > 10 * 1024 * 1024) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/quote-items/upload-attachment", {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Error al subir archivo");
+      const { attachment } = await res.json();
+      onAddAttachment(item.key, attachment);
+    } catch {
+      // silently fail or could add toast here
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [item.key, onAddAttachment]);
 
   return (
     <Card>
@@ -105,6 +146,11 @@ export function QuoteItemCard({
                 {item.adicionales.length > 0 && (
                   <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
                     +{item.adicionales.length}
+                  </Badge>
+                )}
+                {item.attachments && item.attachments.length > 0 && (
+                  <Badge variant="outline" className="text-[14px] px-1 py-1 h-5 w-5 rounded-full">
+                    {item.attachments.length}
                   </Badge>
                 )}
               </>
@@ -212,6 +258,72 @@ export function QuoteItemCard({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Attachments (solo módulos personalizados) */}
+            {canHaveAttachments && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                  Archivos adjuntos (PDFs)
+                </p>
+                {item.attachments && item.attachments.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {item.attachments.map((att) => (
+                      <div
+                        key={att.storage_path}
+                        className="flex items-center gap-2 p-2 bg-muted/40 rounded-md text-xs border"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <a
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 truncate hover:underline text-primary"
+                        >
+                          {att.original_name}
+                        </a>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {(att.size / 1024).toFixed(0)} KB
+                        </span>
+                        {onRemoveAttachment && (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveAttachment(item.key, att.storage_path)}
+                            className="shrink-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div
+                  className="border-2 border-dashed rounded-lg p-3 text-center transition-colors cursor-pointer hover:bg-muted/30"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUpload(file);
+                    }}
+                  />
+                  {uploading ? (
+                    <p className="text-xs text-muted-foreground">Subiendo...</p>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">
+                        Hacé clic para subir un PDF
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             )}

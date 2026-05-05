@@ -715,6 +715,7 @@ model QuoteItem {
 
   quote       Quote                 @relation(fields: [quote_id], references: [id], onDelete: Cascade)
   additionals QuoteItemAdditional[]
+  attachments QuoteItemAttachment[]
 
   @@map("quote_items")
 }
@@ -732,6 +733,24 @@ model QuoteItemAdditional {
   quoteItem QuoteItem @relation(fields: [quote_item_id], references: [id], onDelete: Cascade)
 
   @@map("quote_item_additionals")
+}
+
+// Archivos adjuntos (PDFs) de líneas de cotización (módulos personalizados)
+model QuoteItemAttachment {
+  id            String   @id @default(cuid())
+  quote_item_id String
+  filename      String
+  original_name String
+  mime_type     String
+  size          Int
+  url           String
+  storage_path  String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  quoteItem QuoteItem @relation(fields: [quote_item_id], references: [id], onDelete: Cascade)
+
+  @@map("quote_item_attachments")
 }
 
 // Catálogo de servicios para cotizaciones
