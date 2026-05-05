@@ -48,6 +48,7 @@ import {
   StandardModule,
 } from "@/hooks/use-standard-modules";
 import { StandardModuleDetail } from "@/components/cotizador/StandardModuleDetail";
+import { PriceInput } from "@/components/ui/price-input";
 
 interface ModuleForm {
   name: string;
@@ -90,14 +91,12 @@ function ModuleFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="base_price">Precio base ($)</Label>
-          <Input
+          <PriceInput
             id="base_price"
-            type="number"
-            min="0"
             placeholder="0"
             value={form.base_price}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, base_price: e.target.value }))
+            onChange={(val) =>
+              setForm((f) => ({ ...f, base_price: val }))
             }
           />
         </div>
@@ -170,7 +169,7 @@ export default function StandardModulesPage() {
     setForm({
       name: mod.name,
       description: mod.description ?? "",
-      base_price: mod.base_price.toString(),
+      base_price: mod.base_price.toString().replace(".", ","),
       order: mod.order.toString(),
     });
     setEditModule(mod);
@@ -181,7 +180,7 @@ export default function StandardModulesPage() {
       await createModule({
         name: form.name,
         description: form.description || undefined,
-        base_price: parseFloat(form.base_price) || 0,
+        base_price: parseFloat(form.base_price.replace(",", ".")) || 0,
         order: parseInt(form.order) || 0,
       });
       setCreateOpen(false);
@@ -203,7 +202,7 @@ export default function StandardModulesPage() {
       await updateModule(editModule.id, {
         name: form.name,
         description: form.description || undefined,
-        base_price: parseFloat(form.base_price) || 0,
+        base_price: parseFloat(form.base_price.replace(",", ".")) || 0,
         order: parseInt(form.order) || 0,
       });
       setEditModule(null);

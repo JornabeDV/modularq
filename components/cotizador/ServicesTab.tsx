@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PriceInput } from "@/components/ui/price-input";
 import { Textarea } from "@/components/ui/textarea";
 
 export interface ServiceCatalogItem {
@@ -47,7 +48,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
   const [unit, setUnit] = useState("unidad");
 
   function handleAddCustom() {
-    const unitPrice = Number(price);
+    const unitPrice = Number(price.replace(",", "."));
     const qty = Number(quantity);
     if (!name.trim() || isNaN(unitPrice) || unitPrice < 0 || isNaN(qty) || qty < 1) return;
 
@@ -149,13 +150,10 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Precio *</Label>
-                <Input
-                  type="number"
+                <PriceInput
                   placeholder="0"
-                  min={0}
-                  step={1000}
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onChange={(val) => setPrice(val)}
                 />
               </div>
               <div className="space-y-1">
@@ -181,7 +179,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
               <Button
                 className="flex-1 cursor-pointer"
                 onClick={handleAddCustom}
-                disabled={!name.trim() || !price || Number(price) < 0}
+                disabled={!name.trim() || !price || Number(price.replace(",", ".")) < 0}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Agregar

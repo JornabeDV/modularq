@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PriceInput } from "@/components/ui/price-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, FileText, Trash2, Upload } from "lucide-react";
 import type { QuoteItemAttachment } from "./QuoteItemCard";
@@ -55,7 +56,7 @@ export function CustomModuleForm({ onAdd }: CustomModuleFormProps) {
   }
 
   function handleSubmit() {
-    const unitPrice = Number(price);
+    const unitPrice = Number(price.replace(",", "."));
     const qty = Number(quantity);
     if (!name.trim() || isNaN(unitPrice) || unitPrice < 0 || isNaN(qty) || qty < 1) return;
 
@@ -96,13 +97,10 @@ export function CustomModuleForm({ onAdd }: CustomModuleFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Precio unitario *</Label>
-          <Input
-            type="number"
+          <PriceInput
             placeholder="0"
-            min={0}
-            step={1000}
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            onChange={(val) => setPrice(val)}
           />
         </div>
         <div className="space-y-1">
@@ -180,7 +178,7 @@ export function CustomModuleForm({ onAdd }: CustomModuleFormProps) {
       <Button
         className="w-full cursor-pointer"
         onClick={handleSubmit}
-        disabled={!name.trim() || !price || Number(price) < 0}
+        disabled={!name.trim() || !price || Number(price.replace(",", ".")) < 0}
       >
         <Plus className="w-4 h-4 mr-2" />
         Agregar módulo personalizado

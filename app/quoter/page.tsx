@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { PriceInput } from "@/components/ui/price-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -270,37 +271,9 @@ function ClientSelector({
 }
 
 // ── Resumen card ─────────────────────────────────────────────────────────────
-function formatARSInput(value: number): string {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-  }).format(value);
-}
-
-function parseARSInput(value: string): number {
-  const cleaned = value
-    .replace(/[^0-9,]/g, "")
-    .replace(/\./g, "")
-    .replace(/,/g, ".");
-  return Number(cleaned) || 0;
-}
-
-function formatUSDInput(value: number): string {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function parseUSDInput(value: string): number {
-  const cleaned = value
-    .replace(/[^0-9,]/g, "")
-    .replace(/\./g, "")
-    .replace(/,/g, ".");
-  return Number(cleaned) || 0;
+function parsePriceInput(value: string): number {
+  const cleaned = value.replace(/\./g, "").replace(/,/g, ".");
+  return parseFloat(cleaned) || 0;
 }
 
 function ResumenCard({
@@ -327,15 +300,21 @@ function ResumenCard({
   onUpdateFinalTotal: (value: number) => void;
 }) {
   const hasAdjustment = finalTotal !== subtotal;
-  const [totalInput, setTotalInput] = useState(formatARSInput(finalTotal));
-  const [totalUSDInput, setTotalUSDInput] = useState(formatUSDInput(finalTotalUSD));
+  const [totalInput, setTotalInput] = useState(
+    finalTotal === 0 ? "" : finalTotal.toString().replace(".", ","),
+  );
+  const [totalUSDInput, setTotalUSDInput] = useState(
+    finalTotalUSD === 0 ? "" : finalTotalUSD.toFixed(2).replace(".", ","),
+  );
 
   useEffect(() => {
-    setTotalInput(formatARSInput(finalTotal));
+    setTotalInput(finalTotal === 0 ? "" : finalTotal.toString().replace(".", ","));
   }, [finalTotal]);
 
   useEffect(() => {
-    setTotalUSDInput(formatUSDInput(finalTotalUSD));
+    setTotalUSDInput(
+      finalTotalUSD === 0 ? "" : finalTotalUSD.toFixed(2).replace(".", ","),
+    );
   }, [finalTotalUSD]);
 
   return (
@@ -369,40 +348,37 @@ function ResumenCard({
           <div className="flex justify-between items-center gap-3">
             <span className="font-semibold whitespace-nowrap text-sm">Total final</span>
             <div className="flex items-center gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={totalInput}
-                onChange={(e) => setTotalInput(e.target.value)}
-                onBlur={(e) => {
-                  const parsed = parseARSInput(e.target.value);
-                  setTotalInput(formatARSInput(parsed));
-                  onUpdateFinalTotal(parsed);
-                }}
-                className={`w-36 text-right text-base font-bold tabular-nums border rounded px-2 py-1 ${
+              <PriceInput
+                className={`w-40 text-right text-base font-bold tabular-nums border rounded px-2 py-1 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
                 }`}
+                value={totalInput}
+                onChange={(val) => setTotalInput(val)}
+                onBlur={() => {
+                  const parsed = parsePriceInput(totalInput);
+                  setTotalInput(parsed === 0 ? "" : parsed.toString().replace(".", ","));
+                  onUpdateFinalTotal(parsed);
+                }}
               />
             </div>
           </div>
           <div className="flex justify-between items-center gap-3">
             <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Total final (USD)</span>
             <div className="flex items-center gap-2">
-              <input
-                type="text"
-                inputMode="decimal"
+              <PriceInput
+                className={`w-40 text-right text-base font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
+                  hasAdjustment ? "border-primary bg-primary/5" : ""
+                }`}
                 value={totalUSDInput}
-                onChange={(e) => setTotalUSDInput(e.target.value)}
-                onBlur={(e) => {
-                  const parsedUSD = parseUSDInput(e.target.value);
-                  setTotalUSDInput(formatUSDInput(parsedUSD));
+                onChange={(val) => setTotalUSDInput(val)}
+                onBlur={() => {
+                  const parsedUSD = parsePriceInput(totalUSDInput);
+                  const formatted = parsedUSD.toFixed(2).replace(".", ",");
+                  setTotalUSDInput(formatted);
                   if (exchangeRate && exchangeRate.venta > 0) {
                     onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
                   }
                 }}
-                className={`w-36 text-right text-base font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
-                  hasAdjustment ? "border-primary bg-primary/5" : ""
-                }`}
               />
             </div>
           </div>

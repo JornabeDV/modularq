@@ -25,6 +25,7 @@ import {
   type Material,
 } from "@/hooks/use-materials-prisma";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PriceInput } from "@/components/ui/price-input";
 
 interface MaterialFormData {
   code: string;
@@ -181,6 +182,7 @@ export function MaterialForm({
 }: MaterialFormProps) {
   const { getNextCode } = useMaterialsPrisma();
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [unitPriceInput, setUnitPriceInput] = useState("");
   const [formData, setFormData] = useState<MaterialFormData>({
     code: "",
     name: "",
@@ -224,6 +226,7 @@ export function MaterialForm({
         unit_price: initialData.unitPrice || 0,
         supplier: initialData.supplier || "",
       });
+      setUnitPriceInput(initialData.unitPrice?.toString().replace(".", ",") || "");
     } else {
       setFormData({
         code: "",
@@ -236,6 +239,7 @@ export function MaterialForm({
         unit_price: 0,
         supplier: "",
       });
+      setUnitPriceInput("");
     }
   }, [isEditing, initialData?.id]);
 
@@ -661,19 +665,17 @@ export function MaterialForm({
               <Label htmlFor="unit_price" className="mb-2">
                 Precio Unitario
               </Label>
-              <Input
+              <PriceInput
                 id="unit_price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.unit_price === 0 ? "" : formData.unit_price}
-                onChange={(e) =>
+                value={unitPriceInput}
+                onChange={(val) => {
+                  setUnitPriceInput(val);
                   handleInputChange(
                     "unit_price",
-                    e.target.value === "" ? 0 : parseFloat(e.target.value) || 0,
-                  )
-                }
-                onFocus={(e) => {
+                    val === "" ? 0 : parseFloat(val.replace(",", ".")) || 0,
+                  );
+                }}
+                onFocus={(e: any) => {
                   if (e.target.value === "0") {
                     e.target.select();
                   }
