@@ -337,15 +337,21 @@ export interface CotizadorPDFProps {
     email?: string;
     phone?: string;
   };
+  exchangeRate?: {
+    venta: number;
+    origen?: string;
+    actualizado?: string;
+  };
 }
 
-function formatCurrency(amount: number): string {
+function formatUSD(amountARS: number, rate: number): string {
+  const usd = rate > 0 ? amountARS / rate : 0;
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(usd);
 }
 
 export function CotizadorPDFDocument({
@@ -358,7 +364,9 @@ export function CotizadorPDFDocument({
   generatorName,
   finalTotal,
   client,
+  exchangeRate,
 }: CotizadorPDFProps) {
+  const rate = exchangeRate?.venta ?? 0;
   const standardItems = items.filter((i) => i.type === 'standard_module');
   const customItems = items.filter((i) => i.type === 'custom_module');
   const serviceItems = items.filter((i) => i.type === 'service');
@@ -443,6 +451,9 @@ export function CotizadorPDFDocument({
             {validUntil && (
               <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
             )}
+            {exchangeRate && exchangeRate.venta > 0 && (
+              <Text style={styles.quoteDate}>Dólar BNA Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
+            )}
           </View>
         </View>
 
@@ -514,7 +525,7 @@ export function CotizadorPDFDocument({
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal módulos estándar</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(subtotalStandard)}
+                {formatUSD(subtotalStandard, rate)}
               </Text>
             </View>
           )}
@@ -522,7 +533,7 @@ export function CotizadorPDFDocument({
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal módulos personalizados</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(subtotalCustom)}
+                {formatUSD(subtotalCustom, rate)}
               </Text>
             </View>
           )}
@@ -530,25 +541,25 @@ export function CotizadorPDFDocument({
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Subtotal servicios</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(subtotalServices)}
+                {formatUSD(subtotalServices, rate)}
               </Text>
             </View>
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal (sin IVA)</Text>
             <Text style={styles.totalValue}>
-              {formatCurrency(displayTotal / 1.21)}
+              {formatUSD(displayTotal, rate)}
             </Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>IVA 21%</Text>
             <Text style={styles.totalValue}>
-              {formatCurrency(displayTotal - displayTotal / 1.21)}
+              {formatUSD(displayTotal * 0.21, rate)}
             </Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(displayTotal)}</Text>
+            <Text style={styles.grandTotalValue}>{formatUSD(displayTotal * 1.21, rate)}</Text>
           </View>
         </View>
 

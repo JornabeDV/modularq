@@ -307,6 +307,11 @@ function ResumenCard({
     finalTotalUSD === 0 ? "" : finalTotalUSD.toFixed(2).replace(".", ","),
   );
 
+  const iva = finalTotal * 0.21;
+  const totalConIva = finalTotal * 1.21;
+  const ivaUSD = finalTotalUSD * 0.21;
+  const totalConIvaUSD = finalTotalUSD * 1.21;
+
   useEffect(() => {
     setTotalInput(finalTotal === 0 ? "" : finalTotal.toString().replace(".", ","));
   }, [finalTotal]);
@@ -316,6 +321,20 @@ function ResumenCard({
       finalTotalUSD === 0 ? "" : finalTotalUSD.toFixed(2).replace(".", ","),
     );
   }, [finalTotalUSD]);
+
+  const fmtARS = (n: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+    }).format(n);
+
+  const fmtUSD = (n: number) =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }).format(n);
 
   return (
     <Card>
@@ -336,37 +355,38 @@ function ResumenCard({
         </div>
         <div className="flex justify-between items-center border-t pt-3">
           <span className="text-sm text-muted-foreground">Subtotal calculado</span>
-          <span className="text-sm font-medium tabular-nums">
-            {new Intl.NumberFormat("es-AR", {
-              style: "currency",
-              currency: "ARS",
-              minimumFractionDigits: 0,
-            }).format(subtotal)}
-          </span>
+          <span className="text-sm font-medium tabular-nums">{fmtARS(subtotal)}</span>
         </div>
-        <div className="space-y-2">
+        {hasAdjustment && (
+          <p className="text-xs text-muted-foreground text-right">
+            Ajuste: {fmtARS(finalTotal - subtotal)}
+          </p>
+        )}
+
+        {/* Inputs editables: subtotal sin IVA */}
+        <div className="space-y-2 border-t pt-3">
           <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold whitespace-nowrap text-sm">Total final</span>
+            <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA</span>
             <div className="flex items-center gap-2">
               <PriceInput
-                className={`w-40 text-right text-base font-bold tabular-nums border rounded px-2 py-1 ${
+                className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
                 }`}
                 value={totalInput}
                 onChange={(val) => setTotalInput(val)}
                 onBlur={() => {
                   const parsed = parsePriceInput(totalInput);
-                  setTotalInput(parsed === 0 ? "" : parsed.toString().replace(".", ","));
+                  setTotalInput(parsed === 0 ? "" : parsed.toFixed(2).replace(".", ","));
                   onUpdateFinalTotal(parsed);
                 }}
               />
             </div>
           </div>
           <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Total final (USD)</span>
+            <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Subtotal sin IVA (USD)</span>
             <div className="flex items-center gap-2">
               <PriceInput
-                className={`w-40 text-right text-base font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
+                className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
                 }`}
                 value={totalUSDInput}
@@ -383,16 +403,29 @@ function ResumenCard({
             </div>
           </div>
         </div>
-        {hasAdjustment && (
-          <p className="text-xs text-muted-foreground text-right">
-            Ajuste: {new Intl.NumberFormat("es-AR", {
-              style: "currency",
-              currency: "ARS",
-              signDisplay: "exceptZero",
-              minimumFractionDigits: 0,
-            }).format(finalTotal - subtotal)}
-          </p>
-        )}
+
+        {/* Desglose IVA */}
+        <div className="space-y-2 border-t pt-3">
+          <div className="flex justify-between items-center gap-3">
+            <span className="text-sm text-muted-foreground">IVA 21%</span>
+            <span className="text-sm font-medium tabular-nums">{fmtARS(iva)}</span>
+          </div>
+          <div className="flex justify-between items-center gap-3">
+            <span className="text-sm text-muted-foreground">IVA 21% (USD)</span>
+            <span className="text-sm font-medium tabular-nums text-blue-700 dark:text-blue-300">{fmtUSD(ivaUSD)}</span>
+          </div>
+        </div>
+
+        {/* Total con IVA */}
+        <div className="flex justify-between items-center gap-3 bg-muted/40 rounded-lg px-3 py-2">
+          <span className="font-bold whitespace-nowrap text-sm">Total con IVA</span>
+          <span className="text-base font-bold tabular-nums">{fmtARS(totalConIva)}</span>
+        </div>
+        <div className="flex justify-between items-center gap-3 bg-muted/40 rounded-lg px-3 py-2">
+          <span className="font-bold whitespace-nowrap text-sm text-blue-700 dark:text-blue-300">Total con IVA (USD)</span>
+          <span className="text-base font-bold tabular-nums text-blue-700 dark:text-blue-300">{fmtUSD(totalConIvaUSD)}</span>
+        </div>
+
         <Button
           className="w-full cursor-pointer"
           onClick={onGeneratePDF}
@@ -772,6 +805,7 @@ export default function CotizadorPage() {
                 }
               : undefined
           }
+          exchangeRate={exchangeRate ?? undefined}
         />
       ).toBlob();
 

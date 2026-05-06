@@ -10,6 +10,10 @@ function toRaw(value: string): string {
     cleaned =
       cleaned.slice(0, firstComma + 1) +
       cleaned.slice(firstComma + 1).replace(/,/g, "");
+    // Limitar a 2 decimales
+    const integerPart = cleaned.slice(0, firstComma);
+    const decimalPart = cleaned.slice(firstComma + 1, firstComma + 3);
+    cleaned = integerPart + "," + decimalPart;
   }
   return cleaned;
 }
