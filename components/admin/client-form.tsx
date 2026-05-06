@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Plus } from "lucide-react";
+import { DialogForm } from "@/components/ui/dialog-form";
 
 interface ContactData {
   name: string;
@@ -220,7 +220,8 @@ export function ClientForm({
         }
       }}
     >
-      <DialogContent
+      <DialogForm
+        onSubmit={handleSubmit}
         className="w-full h-full max-w-full max-h-full md:w-[90vw] md:h-auto md:max-w-4xl md:max-h-[85vh] md:rounded-lg rounded-none m-0 md:m-4 overflow-y-auto top-0 left-0 translate-x-0 translate-y-0 md:top-[50%] md:left-[50%] md:translate-x-[-50%] md:translate-y-[-50%]"
         onInteractOutside={preventClose}
         onEscapeKeyDown={preventClose}
@@ -232,7 +233,7 @@ export function ClientForm({
             {isEditing ? "Editar Cliente" : "Crear Nuevo Cliente"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           {(localError || error) && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md">
               <p className="text-sm font-medium">{localError || error}</p>
@@ -485,8 +486,8 @@ export function ClientForm({
                 : "Crear Cliente"}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }

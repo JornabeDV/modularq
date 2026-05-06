@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { UNIT_LABELS } from "@/lib/constants";
 
 interface AddItemDialogProps {
@@ -65,11 +65,11 @@ export function AddItemDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>Agregar Ítem al Presupuesto</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="code">Código *</Label>
@@ -165,8 +165,8 @@ export function AddItemDialog({
               Agregar
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }

@@ -12,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Plus, Users, X } from "lucide-react";
@@ -60,6 +60,11 @@ export function ProjectSubcontractorManager({
         ? prev.filter((id) => id !== userId)
         : [...prev, userId],
     );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleAssignSelected();
   };
 
   const handleAssignSelected = async () => {
@@ -128,7 +133,7 @@ export function ProjectSubcontractorManager({
                   <span className="sm:hidden">Asignar</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogForm onSubmit={handleSubmit} className="max-w-md">
                 <DialogHeader className="max-sm:mt-4">
                   <DialogTitle>Asignar Subcontratistas al Proyecto</DialogTitle>
                 </DialogHeader>
@@ -202,7 +207,7 @@ export function ProjectSubcontractorManager({
                             Cancelar
                           </Button>
                           <Button
-                            onClick={handleAssignSelected}
+                            type="submit"
                             disabled={
                               selectedUserIds.length === 0 || isAssigning
                             }
@@ -217,7 +222,7 @@ export function ProjectSubcontractorManager({
                     </>
                   )}
                 </div>
-              </DialogContent>
+              </DialogForm>
             </Dialog>
           )}
         </div>

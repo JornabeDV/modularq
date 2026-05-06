@@ -22,17 +22,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Plus, UserPlus, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 export function CreateUserForm() {
   const { createUser } = useUsersPrisma();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
@@ -67,16 +68,27 @@ export function CreateUserForm() {
     const password = generatePassword();
     setGeneratedPassword(password);
     setFormData({ ...formData, password });
-    toast.success("Contraseña segura generada");
+    toast({
+      title: "✓ Contraseña generada",
+      description: "Contraseña segura generada",
+    });
   };
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      toast.error("El nombre es requerido");
+      toast({
+        title: "Error",
+        description: "El nombre es requerido",
+        variant: "destructive",
+      });
       return false;
     }
     if (!formData.password || formData.password.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres");
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive",
+      });
       return false;
     }
     return true;
@@ -85,9 +97,16 @@ export function CreateUserForm() {
   const handleCopyPassword = async () => {
     try {
       await navigator.clipboard.writeText(generatedPassword);
-      toast.success("Contraseña copiada al portapapeles");
+      toast({
+        title: "✓ Copiada",
+        description: "Contraseña copiada al portapapeles",
+      });
     } catch (error) {
-      toast.error("Error al copiar la contraseña");
+      toast({
+        title: "Error",
+        description: "Error al copiar la contraseña",
+        variant: "destructive",
+      });
     }
   };
 
@@ -101,7 +120,10 @@ export function CreateUserForm() {
     const result = await createUser(formData);
 
     if (result.success) {
-      toast.success("Usuario creado exitosamente");
+      toast({
+        title: "✓ Usuario creado",
+        description: "El usuario se ha creado exitosamente",
+      });
       setIsOpen(false);
       setFormData({
         password: "",
@@ -110,7 +132,11 @@ export function CreateUserForm() {
       });
       setGeneratedPassword("");
     } else {
-      toast.error(result.error || "Error al crear usuario");
+      toast({
+        title: "Error al crear usuario",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
     }
 
     setIsGenerating(false);
@@ -124,7 +150,7 @@ export function CreateUserForm() {
           Crear Usuario
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogForm onSubmit={handleSubmit} className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Usuario</DialogTitle>
           <DialogDescription>
@@ -133,7 +159,7 @@ export function CreateUserForm() {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Información Personal</CardTitle>
@@ -289,8 +315,8 @@ export function CreateUserForm() {
               {isGenerating ? "Creando..." : "Crear Usuario"}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }

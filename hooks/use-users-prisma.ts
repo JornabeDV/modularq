@@ -25,9 +25,9 @@ export function useUsersPrisma() {
   const [error, setError] = useState<string | null>(null)
 
   // Cargar usuarios
-  const fetchUsers = async () => {
+  const fetchUsers = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       
       const users = await PrismaTypedService.getAllUsers()
@@ -64,8 +64,11 @@ export function useUsersPrisma() {
         password: userData.password
       })
 
-      // Actualizar estado local
-      await fetchUsers()
+      // Actualizar estado local inmediatamente sin recargar
+      setUsers(prev => [user, ...prev])
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchUsers(true).catch(console.error)
       
       return { 
         success: true, 
@@ -110,8 +113,11 @@ export function useUsersPrisma() {
       
       const user = await PrismaTypedService.updateUser(userId, updateData)
 
-      // Actualizar estado local
-      await fetchUsers()
+      // Actualizar estado local inmediatamente sin recargar
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...user } : u))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchUsers(true).catch(console.error)
       
       return { success: true, user }
     } catch (err) {
@@ -133,8 +139,11 @@ export function useUsersPrisma() {
 
       await PrismaTypedService.deleteUser(userId)
 
-      // Actualizar estado local
-      await fetchUsers()
+      // Actualizar estado local inmediatamente sin recargar
+      setUsers(prev => prev.filter(u => u.id !== userId))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchUsers(true).catch(console.error)
 
       return { success: true }
     } catch (err) {
@@ -151,7 +160,11 @@ export function useUsersPrisma() {
 
       await PrismaTypedService.restoreUser(userId)
 
-      await fetchUsers()
+      // Actualizar estado local inmediatamente sin recargar
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, deleted_at: null } : u))
+      
+      // Refrescar datos en segundo plano sin mostrar loading
+      fetchUsers(true).catch(console.error)
 
       return { success: true }
     } catch (err) {
@@ -166,9 +179,9 @@ export function useUsersPrisma() {
     fetchUsers()
   }, [])
 
-  const fetchAllUsers = async () => {
+  const fetchAllUsers = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
 
       const data = await PrismaTypedService.getAllUsers(true)

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle } from "lucide-react";
 import { PrismaTypedService } from "@/lib/prisma-typed-service";
+import { DialogForm } from "../ui/dialog-form";
 
 interface CreateBudgetDialogProps {
   isOpen: boolean;
@@ -71,12 +71,12 @@ export function CreateBudgetDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogForm onSubmit={handleSubmit} className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Nuevo Presupuesto</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-5">
           {/* Selector de módulo */}
           <div className="space-y-2">
             <Label>
@@ -168,8 +168,8 @@ export function CreateBudgetDialog({
               Crear Presupuesto
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }

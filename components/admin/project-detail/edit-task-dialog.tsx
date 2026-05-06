@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -108,6 +108,12 @@ export function EditTaskDialog({
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task) return;
+    handleSave();
+  };
+
   const handleSave = () => {
     if (!task) return;
 
@@ -143,7 +149,7 @@ export function EditTaskDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogForm onSubmit={handleSubmit} className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">
             Editar Tarea del Proyecto
@@ -247,13 +253,13 @@ export function EditTaskDialog({
             Cancelar
           </Button>
           <Button
-            onClick={handleSave}
+            type="submit"
             className="cursor-pointer w-full sm:w-auto order-1 sm:order-2"
           >
             Guardar Cambios
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </DialogForm>
     </Dialog>
   );
 }

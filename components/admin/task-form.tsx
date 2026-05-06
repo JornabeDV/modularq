@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,8 +154,7 @@ export function TaskForm({
         if (!open && !isLoading) onClose();
       }}
     >
-      <DialogContent
-        className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle className="max-sm:mt-12">
             {isEditing
@@ -302,7 +301,7 @@ export function TaskForm({
             >
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={isLoading}>
+            <Button type="submit" disabled={isLoading}>
               {isLoading
                 ? "Guardando..."
                 : isEditing
@@ -311,7 +310,7 @@ export function TaskForm({
             </Button>
           </div>
         </div>
-      </DialogContent>
+      </DialogForm>
     </Dialog>
   );
 }

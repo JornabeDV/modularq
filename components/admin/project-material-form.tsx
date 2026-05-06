@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useMaterialsPrisma } from '@/hooks/use-materials-prisma'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { DialogForm } from '@/components/ui/dialog-form'
 import { PriceInput } from '@/components/ui/price-input'
 import { AlertTriangle } from 'lucide-react'
 import type { ProjectMaterial, CreateProjectMaterialData, UpdateProjectMaterialData } from '@/hooks/use-project-materials-prisma'
@@ -145,13 +146,13 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
         onClose()
       }
     }}>
-      <DialogContent className="w-auto max-w-2xl">
+      <DialogForm onSubmit={handleSubmit} className="w-auto max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Material del Proyecto' : 'Agregar Material al Proyecto'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           {!isEditing && (
             <div className="space-y-3">
               <div>
@@ -323,8 +324,8 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
               {isLoading ? 'Guardando...' : (isEditing ? 'Actualizar Material' : 'Agregar Material')}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   )
 }

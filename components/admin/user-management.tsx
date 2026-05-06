@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { UserStats } from "./user-stats";
 import { UserTable } from "./user-table";
 import { EditUserDialog } from "./edit-user-dialog";
@@ -15,6 +15,7 @@ export function UserManagement() {
   const { users, loading, createUser, updateUser, fetchUsers, fetchAllUsers } =
     useUsersPrisma();
   const { user: currentUser, userProfile } = useAuth();
+  const { toast } = useToast();
 
   const isReadOnly = userProfile?.role === "supervisor";
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -33,11 +34,18 @@ export function UserManagement() {
     const result = await createUser(formData);
 
     if (result.success) {
-      toast.success("Usuario creado exitosamente");
+      toast({
+        title: "✓ Usuario creado",
+        description: "El usuario se ha creado exitosamente",
+      });
       setIsCreateDialogOpen(false);
       resetFormData();
     } else {
-      toast.error(result.error || "Error al crear usuario");
+      toast({
+        title: "Error al crear usuario",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
     }
   };
 
@@ -53,20 +61,23 @@ export function UserManagement() {
     const result = await updateUser(editingUser.id, updates);
 
     if (result.success) {
-      toast.success("Usuario actualizado exitosamente");
+      toast({
+        title: "✓ Usuario actualizado",
+        description: "El usuario se ha actualizado exitosamente",
+      });
       setEditingUser(null);
       resetFormData();
     } else {
-      toast.error(result.error || "Error al actualizar usuario");
+      toast({
+        title: "Error al actualizar usuario",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (showDeleted) {
-      await fetchAllUsers();
-    } else {
-      await fetchUsers();
-    }
+  const handleDeleteUser = async (_userId: string) => {
+    // El hook ya actualiza el estado local y refresca en segundo plano
   };
 
   const handleEditUser = (user: any) => {

@@ -17,11 +17,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
-  DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -175,7 +175,8 @@ export default function StandardModulesPage() {
     setEditModule(mod);
   }
 
-  async function handleCreate() {
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
     try {
       await createModule({
         name: form.name,
@@ -196,7 +197,8 @@ export default function StandardModulesPage() {
     }
   }
 
-  async function handleEdit() {
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
     if (!editModule) return;
     try {
       await updateModule(editModule.id, {
@@ -401,20 +403,20 @@ export default function StandardModulesPage() {
 
         {/* Dialog crear */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+          <DialogForm onSubmit={handleCreate} className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
             <DialogHeader>
               <DialogTitle>Nuevo módulo estándar</DialogTitle>
             </DialogHeader>
             <ModuleFormFields form={form} setForm={setForm} />
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} className="cursor-pointer max-md:order-2">
+              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="cursor-pointer max-md:order-2">
                 Cancelar
               </Button>
-              <Button onClick={handleCreate} disabled={!form.name.trim()} className="cursor-pointer max-md:order-1">
+              <Button type="submit" disabled={!form.name.trim()} className="cursor-pointer max-md:order-1">
                 Crear módulo
               </Button>
             </DialogFooter>
-          </DialogContent>
+          </DialogForm>
         </Dialog>
 
         {/* Dialog editar */}
@@ -422,20 +424,20 @@ export default function StandardModulesPage() {
           open={!!editModule}
           onOpenChange={(o) => !o && setEditModule(null)}
         >
-          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+          <DialogForm onSubmit={handleEdit} className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
             <DialogHeader>
               <DialogTitle>Editar módulo</DialogTitle>
             </DialogHeader>
             <ModuleFormFields form={form} setForm={setForm} />
             <DialogFooter className="max-md:gap-4">
-              <Button variant="outline" className="cursor-pointer max-md:order-2" onClick={() => setEditModule(null)}>
+              <Button type="button" variant="outline" className="cursor-pointer max-md:order-2" onClick={() => setEditModule(null)}>
                 Cancelar
               </Button>
-              <Button onClick={handleEdit} className="cursor-pointer max-md:order-1" disabled={!form.name.trim()}>
+              <Button type="submit" className="cursor-pointer max-md:order-1" disabled={!form.name.trim()}>
                 Guardar cambios
               </Button>
             </DialogFooter>
-          </DialogContent>
+          </DialogForm>
         </Dialog>
 
         {/* Confirm delete */}

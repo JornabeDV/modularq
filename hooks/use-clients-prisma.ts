@@ -176,8 +176,12 @@ export function useClientsPrisma() {
     try {
       setError(null)
       
-      const { contacts } = clientData
+      const { contacts, ...clientFields } = clientData
       
+      // Actualizar datos del cliente
+      const client = await PrismaTypedService.updateClient(clientId, clientFields)
+      
+      // Actualizar contactos
       if (contacts !== undefined) {
         await PrismaTypedService.deleteAllClientContacts(clientId)
         
@@ -190,10 +194,37 @@ export function useClientsPrisma() {
         }
       }
 
+      // Obtener contactos actualizados
+      const clientContacts = await PrismaTypedService.getClientContacts(clientId)
+      
+      const formattedClient: Client = {
+        id: client.id,
+        cuit: client.cuit,
+        companyName: client.company_name,
+        representative: client.representative || undefined,
+        email: client.email || undefined,
+        phone: client.phone || undefined,
+        contacts: clientContacts?.map(contact => ({
+          id: contact.id,
+          name: contact.name,
+          email: contact.email,
+          phone: contact.phone,
+          role: contact.role,
+          isPrimary: contact.is_primary || false,
+          createdAt: typeof contact.created_at === 'string' ? contact.created_at : contact.created_at.toISOString(),
+          updatedAt: typeof contact.updated_at === 'string' ? contact.updated_at : contact.updated_at.toISOString()
+        })) || [],
+        createdAt: typeof client.created_at === 'string' ? client.created_at : client.created_at.toISOString(),
+        updatedAt: typeof client.updated_at === 'string' ? client.updated_at : client.updated_at.toISOString()
+      }
+
+      // Actualizar estado local inmediatamente sin recargar
+      setClients(prev => prev.map(c => c.id === clientId ? formattedClient : c))
+      
       // Refrescar datos en segundo plano sin mostrar loading
       fetchClients(true).catch(console.error)
       
-      return { success: true, client: undefined }
+      return { success: true, client: formattedClient }
     } catch (err: any) {
       console.error('Error updating client:', err)
       let errorMessage = 'Error al actualizar cliente'

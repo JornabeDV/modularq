@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -256,12 +256,17 @@ export function PriceAnalysisDialog({
 
   const totals = calculateTotals();
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (item) onSave(item.id, analysisData, itemName);
+  };
+
   if (!item) return null;
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-screen h-screen sm:w-[95vw] sm:max-w-6xl sm:max-h-[90vh] sm:h-auto overflow-y-auto overflow-x-hidden p-3 sm:p-6 m-0 sm:m-auto rounded-none sm:rounded-lg max-w-none">
+        <DialogForm onSubmit={handleSubmit} className="w-screen h-screen sm:w-[95vw] sm:max-w-6xl sm:max-h-[90vh] sm:h-auto overflow-y-auto overflow-x-hidden p-3 sm:p-6 m-0 sm:m-auto rounded-none sm:rounded-lg max-w-none">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Calculator className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -728,9 +733,8 @@ export function PriceAnalysisDialog({
                 Cancelar
               </Button>
               <Button
-                type="button"
+                type="submit"
                 className="cursor-pointer"
-                onClick={() => item && onSave(item.id, analysisData, itemName)}
                 disabled={isSaving}
               >
                 {isSaving ? (
@@ -747,7 +751,7 @@ export function PriceAnalysisDialog({
               </Button>
             </div>
           </div>
-        </DialogContent>
+        </DialogForm>
       </Dialog>
 
       {/* Modal para crear nuevo material */}
