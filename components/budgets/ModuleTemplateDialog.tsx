@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -15,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Save, X } from "lucide-react";
@@ -68,13 +68,13 @@ export function ModuleTemplateDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogForm onSubmit={handleSubmit} className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Módulo" : "Nuevo Módulo Estándar"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="module-name">Nombre del Módulo *</Label>
             <Input
@@ -159,8 +159,8 @@ export function ModuleTemplateDialog({
               {isEditing ? "Guardar cambios" : "Crear módulo"}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }

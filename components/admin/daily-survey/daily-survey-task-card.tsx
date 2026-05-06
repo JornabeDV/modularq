@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/select";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -26,6 +25,7 @@ import { useAuth } from "@/lib/auth-context";
 import type { ProjectTask, TaskCollaborator } from "@/lib/types";
 import { getStatusIcon, getStatusLabel } from "@/lib/utils/status-label";
 import { REQUIRE_OPERARIO_FOR_TASK } from "@/lib/constants";
+import { DialogForm } from "@/components/ui/dialog-form";
 
 interface DailySurveyTaskCardProps {
   task: ProjectTask;
@@ -125,6 +125,11 @@ export function DailySurveyTaskCard({
       }
       setPendingAdditions(newAdditions);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSaveChanges();
   };
 
   const handleSaveChanges = async () => {
@@ -416,7 +421,7 @@ export function DailySurveyTaskCard({
                     </Button>
                   </DialogTrigger>
 
-                  <DialogContent className="w-full h-full max-w-full max-h-full md:w-[90vw] md:h-auto md:max-w-lg md:max-h-[90vh] md:rounded-lg rounded-none m-0 md:m-6 overflow-y-auto top-0 left-0 translate-x-0 translate-y-0 md:top-[50%] md:left-[50%] md:translate-x-[-50%] md:translate-y-[-50%]">
+                  <DialogForm onSubmit={handleSubmit} className="w-full h-full max-w-full max-h-full md:w-[90vw] md:h-auto md:max-w-lg md:max-h-[90vh] md:rounded-lg rounded-none m-0 md:m-6 overflow-y-auto top-0 left-0 translate-x-0 translate-y-0 md:top-[50%] md:left-[50%] md:translate-x-[-50%] md:translate-y-[-50%]">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
                         <Users className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -621,7 +626,7 @@ export function DailySurveyTaskCard({
                           Cancelar
                         </Button>
                         <Button
-                          onClick={handleSaveChanges}
+                          type="submit"
                           disabled={!hasPendingChanges || isLoading}
                           className="cursor-pointer h-10 sm:h-9"
                           size="sm"
@@ -642,7 +647,7 @@ export function DailySurveyTaskCard({
                         </Button>
                       </div>
                     </div>
-                  </DialogContent>
+                  </DialogForm>
                 </Dialog>
               </div>
 

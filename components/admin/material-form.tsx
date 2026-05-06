@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -26,6 +25,7 @@ import {
 } from "@/hooks/use-materials-prisma";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PriceInput } from "@/components/ui/price-input";
+import { DialogForm } from "@/components/ui/dialog-form";
 
 interface MaterialFormData {
   code: string;
@@ -418,13 +418,13 @@ export function MaterialForm({
         }
       }}
     >
-      <DialogContent className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] overflow-y-auto md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] overflow-y-auto md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Material" : "Crear Nuevo Material"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           {/* 1. Categoría */}
           <div>
             <Label htmlFor="category" className="mb-2">
@@ -719,8 +719,8 @@ export function MaterialForm({
                   : "Crear Material"}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }

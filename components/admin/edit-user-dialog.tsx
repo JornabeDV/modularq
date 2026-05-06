@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DialogForm } from '@/components/ui/dialog-form'
 
 import type { CreateUserData } from '@/hooks/use-users-prisma'
 
@@ -31,13 +32,13 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-md mx-auto">
+      <DialogForm onSubmit={onSubmit} className="w-[95vw] max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="max-w-sm">
             <Label htmlFor="name" className="mb-2">Nombre Completo</Label>
             <Input
@@ -92,8 +93,8 @@ export function EditUserDialog({
               {isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   )
 }

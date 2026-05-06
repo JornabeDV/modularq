@@ -16,11 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
-  DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -205,7 +205,8 @@ export default function ServicesAdminPage() {
     setDialogOpen(true);
   }
 
-  async function handleSave() {
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
     if (!form.name.trim() || !form.unit_price.trim()) {
       toast({ title: "Nombre y precio son requeridos", variant: "destructive" });
       return;
@@ -424,7 +425,7 @@ export default function ServicesAdminPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogForm onSubmit={handleSave}>
           <DialogHeader>
             <DialogTitle>
               {editingService ? "Editar servicio" : "Nuevo servicio"}
@@ -432,18 +433,18 @@ export default function ServicesAdminPage() {
           </DialogHeader>
           <ServiceFormFields form={form} setForm={setForm} />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
             <Button
-              onClick={handleSave}
+              type="submit"
               disabled={saving || !form.name.trim() || !form.unit_price}
             >
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Guardar
             </Button>
           </DialogFooter>
-        </DialogContent>
+        </DialogForm>
       </Dialog>
 
       {/* Delete Confirmation */}

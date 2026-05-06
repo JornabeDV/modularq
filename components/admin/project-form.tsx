@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,6 +20,7 @@ import {
 import { Calendar } from "lucide-react";
 import type { Project } from "@/lib/types";
 import { useClientsPrisma } from "@/hooks/use-clients-prisma";
+import { DialogForm } from "@/components/ui/dialog-form";
 
 interface ProjectFormData {
   name: string;
@@ -212,13 +212,13 @@ export function ProjectForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-y-auto rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="h-[100dvh] w-[100dvw] max-w-none overflow-y-auto rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Proyecto" : "Crear Nuevo Proyecto"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name" className="mb-2">
@@ -488,8 +488,8 @@ export function ProjectForm({
                 : "Crear Proyecto"}
             </Button>
           </div>
-        </form>
-      </DialogContent>
+        </div>
+      </DialogForm>
     </Dialog>
   );
 }
