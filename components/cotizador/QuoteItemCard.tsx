@@ -10,7 +10,6 @@ import {
   Trash2,
   Upload,
   Edit2,
-  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,13 +34,18 @@ export interface QuoteItemAttachment {
   storage_path: string;
 }
 
+export interface ModuleDescriptionSection {
+  section: string;
+  description: string;
+}
+
 export interface QuoteItemState {
   key: string;
   type: QuoteItemType;
   standardModuleId?: string;
   name: string;
   description?: string;
-  moduleDescriptionSections?: Array<{ section: string; description: string }>;
+  moduleDescriptionSections?: ModuleDescriptionSection[];
   unitPrice: number;
   quantity: number;
   adicionales: SelectedAdicional[];
@@ -68,12 +72,11 @@ interface QuoteItemCardProps {
   onUpdatePrice: (key: string, price: number) => void;
   onToggleAdicional: (
     itemKey: string,
-    adicional: { id: string; name: string; unit_price: number },
+    adicional: { id: string; name: string; unit_price: number }
   ) => void;
   onAddAttachment?: (itemKey: string, attachment: QuoteItemAttachment) => void;
   onRemoveAttachment?: (itemKey: string, storagePath: string) => void;
-  onUpdateName?: (itemKey: string, name: string) => void;
-  onUpdateDescription?: (itemKey: string, description: string) => void;
+  onStartEdit?: (itemKey: string) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -93,16 +96,10 @@ export function QuoteItemCard({
   onToggleAdicional,
   onAddAttachment,
   onRemoveAttachment,
-  onUpdateName,
-  onUpdateDescription,
+  onStartEdit,
 }: QuoteItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editName, setEditName] = useState(item.name);
-  const [editDescription, setEditDescription] = useState(
-    item.description ?? "",
-  );
 
   const itemSubtotal = item.unitPrice * item.quantity;
   const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
@@ -111,6 +108,7 @@ export function QuoteItemCard({
   const canHaveAdicionales =
     item.type === "standard_module" || item.type === "custom_module";
   const canHaveAttachments = item.type === "custom_module";
+  const canEdit = item.type === "custom_module";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
@@ -131,13 +129,13 @@ export function QuoteItemCard({
         const { attachment } = await res.json();
         onAddAttachment(item.key, attachment);
       } catch {
-        // silently fail or could add toast here
+        // silently fail
       } finally {
         setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [item.key, onAddAttachment],
+    [item.key, onAddAttachment]
   );
 
   return (
@@ -152,13 +150,13 @@ export function QuoteItemCard({
                 variant="secondary"
                 className={cn(
                   "text-[10px] px-1.5 py-0",
-                  TYPE_BADGE_COLORS[item.type],
+                  TYPE_BADGE_COLORS[item.type]
                 )}
               >
                 {TYPE_LABELS[item.type]}
               </Badge>
             </div>
-            {isExpanded && item.description && !editing && (
+            {isExpanded && item.description && (
               <p className="text-xs text-muted-foreground truncate mt-0.5">
                 {item.description}
               </p>
@@ -191,33 +189,19 @@ export function QuoteItemCard({
                 )}
               </>
             )}
-            {item.type === "custom_module" &&
-              onUpdateName &&
-              onUpdateDescription && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => {
-                    if (editing) {
-                      onUpdateName(item.key, editName.trim() || item.name);
-                      onUpdateDescription(item.key, editDescription.trim());
-                      setEditing(false);
-                    } else {
-                      setEditName(item.name);
-                      setEditDescription(item.description ?? "");
-                      setEditing(true);
-                      setIsExpanded(true);
-                    }
-                  }}
-                >
-                  {editing ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Edit2 className="w-4 h-4" />
-                  )}
-                </Button>
-              )}
+            {canEdit && onStartEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => {
+                  onStartEdit(item.key);
+                }}
+                title="Editar módulo"
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -250,24 +234,20 @@ export function QuoteItemCard({
           }`}
         >
           <div className="overflow-hidden space-y-3">
-            {editing && item.type === "custom_module" && (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full text-sm font-medium border rounded px-2 py-1"
-                  placeholder="Nombre del módulo"
-                />
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full text-xs border rounded px-2 py-1"
-                  placeholder="Descripción..."
-                  rows={2}
-                />
-              </div>
-            )}
+            {/* Secciones descriptivas (solo lectura) */}
+            {item.moduleDescriptionSections &&
+              item.moduleDescriptionSections.length > 0 && (
+                <div className="space-y-2">
+                  {item.moduleDescriptionSections.map((sec, i) => (
+                    <div key={i} className="border-l-2 border-primary/40 pl-3">
+                      <p className="font-medium text-sm">{sec.section}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {sec.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
             {/* Precio y cantidad */}
             <div className="flex items-center gap-3">
@@ -298,7 +278,10 @@ export function QuoteItemCard({
                 <PriceInput
                   value={item.unitPrice.toString().replace(".", ",")}
                   onChange={(val) =>
-                    onUpdatePrice(item.key, parseFloat(val.replace(",", ".")) || 0)
+                    onUpdatePrice(
+                      item.key,
+                      parseFloat(val.replace(",", ".")) || 0
+                    )
                   }
                   className="w-full text-sm border rounded px-2 py-1 tabular-nums"
                 />
@@ -317,7 +300,7 @@ export function QuoteItemCard({
                 <div className="space-y-1">
                   {adicionalesDisponibles.map((ad) => {
                     const selected = item.adicionales.some(
-                      (a) => a.id === ad.id,
+                      (a) => a.id === ad.id
                     );
                     return (
                       <button

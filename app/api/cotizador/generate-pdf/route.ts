@@ -34,6 +34,27 @@ export async function POST(request: NextRequest) {
     const moduleIdsRaw = formData.get('moduleIds') as string
     const quoteDataRaw = formData.get('quoteData') as string | null
 
+    // Si no viene PDF pero sí quoteData, solo creamos/reservamos la cotización y devolvemos el número
+    if (!pdfFile && quoteDataRaw) {
+      try {
+        const quoteData = JSON.parse(quoteDataRaw)
+        const existingQuoteId = formData.get('existingQuoteId') as string | null
+
+        if (existingQuoteId) {
+          const updated = await PrismaTypedService.replaceQuote(existingQuoteId, quoteData)
+          return NextResponse.json({ quoteId: updated.id, quoteNumber: updated.number })
+        } else {
+          const number = await PrismaTypedService.generateQuoteNumber()
+          const created = await PrismaTypedService.createQuote({ number, ...quoteData })
+          return NextResponse.json({ quoteId: created.id, quoteNumber: created.number })
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error al guardar la cotización'
+        console.error('Error persisting quote:', err)
+        return NextResponse.json({ error: message }, { status: 500 })
+      }
+    }
+
     if (!pdfFile) {
       return NextResponse.json({ error: 'No se recibió el PDF' }, { status: 400 })
     }

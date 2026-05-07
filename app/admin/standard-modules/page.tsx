@@ -95,9 +95,7 @@ function ModuleFormFields({
             id="base_price"
             placeholder="0"
             value={form.base_price}
-            onChange={(val) =>
-              setForm((f) => ({ ...f, base_price: val }))
-            }
+            onChange={(val) => setForm((f) => ({ ...f, base_price: val }))}
           />
         </div>
         <div className="space-y-2">
@@ -117,8 +115,15 @@ function ModuleFormFields({
 }
 
 export default function StandardModulesPage() {
-  const { modules, loading, reload, createModule, updateModule, patchModule, deleteModule } =
-    useStandardModules();
+  const {
+    modules,
+    loading,
+    reload,
+    createModule,
+    updateModule,
+    patchModule,
+    deleteModule,
+  } = useStandardModules();
   const { toast } = useToast();
   const { userProfile, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -278,7 +283,11 @@ export default function StandardModulesPage() {
               <p className="text-muted-foreground">
                 No hay módulos estándar creados.
               </p>
-              <Button onClick={openCreate} variant="outline" className="mt-4 cursor-pointer">
+              <Button
+                onClick={openCreate}
+                variant="outline"
+                className="mt-4 cursor-pointer"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Crear el primero
               </Button>
@@ -287,7 +296,12 @@ export default function StandardModulesPage() {
         ) : (
           <div className="space-y-3">
             {modules.map((mod) => (
-              <Card key={mod.id} className={!mod.is_active ? "opacity-60" : "py-0 md:py-0 h-auto sm:gap-0"}>
+              <Card
+                key={mod.id}
+                className={
+                  !mod.is_active ? "opacity-60" : "py-0 md:py-0 h-auto sm:gap-0"
+                }
+              >
                 <CardHeader
                   className="py-4 cursor-pointer select-none"
                   onClick={() =>
@@ -304,8 +318,12 @@ export default function StandardModulesPage() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-base">{mod.name}</CardTitle>
-                          <Badge variant={mod.is_active ? "default" : "secondary"}>
+                          <CardTitle className="text-base">
+                            {mod.name}
+                          </CardTitle>
+                          <Badge
+                            variant={mod.is_active ? "default" : "secondary"}
+                          >
                             {mod.is_active ? "Activo" : "Inactivo"}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
@@ -314,7 +332,7 @@ export default function StandardModulesPage() {
                           </span>
                         </div>
                         {mod.description && (
-                          <p className="text-sm text-muted-foreground mt-1 truncate">
+                          <p className="text-sm text-muted-foreground mt-1">
                             {mod.description}
                           </p>
                         )}
@@ -343,7 +361,9 @@ export default function StandardModulesPage() {
                             />
                           </TooltipTrigger>
                           <TooltipContent>
-                            {mod.is_active ? "Desactivar módulo" : "Activar módulo"}
+                            {mod.is_active
+                              ? "Desactivar módulo"
+                              : "Activar módulo"}
                           </TooltipContent>
                         </Tooltip>
                         <Tooltip>
@@ -403,16 +423,28 @@ export default function StandardModulesPage() {
 
         {/* Dialog crear */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogForm onSubmit={handleCreate} className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+          <DialogForm
+            onSubmit={handleCreate}
+            className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg"
+          >
             <DialogHeader>
               <DialogTitle>Nuevo módulo estándar</DialogTitle>
             </DialogHeader>
             <ModuleFormFields form={form} setForm={setForm} />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="cursor-pointer max-md:order-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+                className="cursor-pointer max-md:order-2"
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={!form.name.trim()} className="cursor-pointer max-md:order-1">
+              <Button
+                type="submit"
+                disabled={!form.name.trim()}
+                className="cursor-pointer max-md:order-1"
+              >
                 Crear módulo
               </Button>
             </DialogFooter>
@@ -424,16 +456,28 @@ export default function StandardModulesPage() {
           open={!!editModule}
           onOpenChange={(o) => !o && setEditModule(null)}
         >
-          <DialogForm onSubmit={handleEdit} className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg">
+          <DialogForm
+            onSubmit={handleEdit}
+            className="h-[100dvh] w-[100dvw] max-w-none rounded-none md:h-auto md:w-full md:max-w-2xl md:rounded-lg"
+          >
             <DialogHeader>
               <DialogTitle>Editar módulo</DialogTitle>
             </DialogHeader>
             <ModuleFormFields form={form} setForm={setForm} />
             <DialogFooter className="max-md:gap-4">
-              <Button type="button" variant="outline" className="cursor-pointer max-md:order-2" onClick={() => setEditModule(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="cursor-pointer max-md:order-2"
+                onClick={() => setEditModule(null)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" className="cursor-pointer max-md:order-1" disabled={!form.name.trim()}>
+              <Button
+                type="submit"
+                className="cursor-pointer max-md:order-1"
+                disabled={!form.name.trim()}
+              >
                 Guardar cambios
               </Button>
             </DialogFooter>
@@ -456,9 +500,7 @@ export default function StandardModulesPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}                
-              >
+              <AlertDialogAction onClick={handleDelete}>
                 Eliminar
               </AlertDialogAction>
             </AlertDialogFooter>

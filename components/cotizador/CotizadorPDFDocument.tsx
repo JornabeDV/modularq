@@ -15,6 +15,7 @@ const styles = StyleSheet.create({
   page: {
     padding: 30,
     paddingTop: 120,
+    paddingBottom: 60,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
@@ -60,8 +61,7 @@ const styles = StyleSheet.create({
   },
   quoteNumber: {
     fontSize: 10,
-    fontWeight: "bold",
-    color: "#374151",
+    color: "#6b7280",
     marginTop: 3,
   },
   quoteDate: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 10,
-    width: 140,
+    width: 200,
     textAlign: "right",
     paddingRight: 15,
     color: "#4b5563",
@@ -443,9 +443,10 @@ export function CotizadorPDFDocument({
 
           {/* Derecha: título + número + fecha */}
           <View style={styles.quoteBlock}>
-            <Text style={styles.quoteTitleText}>COTIZACIÓN</Text>
             {quoteNumber && (
-              <Text style={styles.quoteNumber}>{quoteNumber}</Text>
+              <>
+                <Text style={styles.quoteNumber}>Presupuesto N°: {quoteNumber.split('-').pop()}</Text>
+              </>
             )}
             <Text style={styles.quoteDate}>Emisión: {date}</Text>
             {validUntil && (
