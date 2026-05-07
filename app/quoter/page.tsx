@@ -15,6 +15,7 @@ import {
   Calendar as CalendarIcon,
   Plus,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,8 +65,9 @@ import {
 } from "@/hooks/use-clients-prisma";
 import { StandardModulesTab } from "@/components/cotizador/StandardModulesTab";
 import { CustomModuleForm } from "@/components/cotizador/CustomModuleForm";
+import { CustomModuleEditor } from "@/components/cotizador/CustomModuleEditor";
 import { ServicesTab, ServiceCatalogItem } from "@/components/cotizador/ServicesTab";
-import { QuoteItemCard, QuoteItemState } from "@/components/cotizador/QuoteItemCard";
+import { QuoteItemCard, QuoteItemState, ModuleDescriptionSection } from "@/components/cotizador/QuoteItemCard";
 
 const ALLOWED_ROLES = ["admin", "supervisor", "vendedor"];
 
@@ -474,6 +476,7 @@ export default function CotizadorPage() {
   const [servicesLoading, setServicesLoading] = useState(false);
   const [loadingDuplicate, setLoadingDuplicate] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [editingItemKey, setEditingItemKey] = useState<string | null>(null);
   const [finalTotal, setFinalTotal] = useState(0);
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
 
@@ -485,6 +488,7 @@ export default function CotizadorPage() {
   };
   const [validUntilDate, setValidUntilDate] = useState<string>(getDefaultValidUntil());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [quoteHeaderExpanded, setQuoteHeaderExpanded] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !userProfile) {
@@ -619,7 +623,7 @@ export default function CotizadorPage() {
     ]);
   }
 
-  function addCustomModule(item: { name: string; description: string; unitPrice: number; quantity: number; attachments?: { filename: string; original_name: string; mime_type: string; size: number; url: string; storage_path: string }[] }) {
+  function addCustomModule(item: { name: string; description: string; moduleDescriptionSections?: Array<{ section: string; description: string }>; unitPrice: number; quantity: number; attachments?: { filename: string; original_name: string; mime_type: string; size: number; url: string; storage_path: string }[] }) {
     const key = `custom-${Date.now()}`;
     setQuoteItems((prev) => [
       ...prev,
@@ -628,6 +632,7 @@ export default function CotizadorPage() {
         type: "custom_module",
         name: item.name,
         description: item.description || undefined,
+        moduleDescriptionSections: item.moduleDescriptionSections ?? undefined,
         unitPrice: item.unitPrice,
         quantity: item.quantity,
         adicionales: [],
@@ -704,16 +709,47 @@ export default function CotizadorPage() {
     );
   }
 
-  function handleUpdateName(key: string, name: string) {
-    setQuoteItems((prev) =>
-      prev.map((item) => (item.key === key ? { ...item, name } : item))
-    );
+  const editingItem = editingItemKey
+    ? quoteItems.find((i) => i.key === editingItemKey)
+    : null;
+
+  function handleStartEdit(key: string) {
+    setEditingItemKey(key);
   }
 
-  function handleUpdateDescription(key: string, description: string) {
+  function handleSaveEdit(updates: {
+    key: string;
+    name: string;
+    description: string;
+    moduleDescriptionSections: ModuleDescriptionSection[];
+    unitPrice: number;
+    quantity: number;
+    attachments: { filename: string; original_name: string; mime_type: string; size: number; url: string; storage_path: string }[];
+  }) {
     setQuoteItems((prev) =>
-      prev.map((item) => (item.key === key ? { ...item, description } : item))
+      prev.map((item) =>
+        item.key === updates.key
+          ? {
+              ...item,
+              name: updates.name,
+              description: updates.description || undefined,
+              moduleDescriptionSections:
+                updates.moduleDescriptionSections.length > 0
+                  ? updates.moduleDescriptionSections
+                  : undefined,
+              unitPrice: updates.unitPrice,
+              quantity: updates.quantity,
+              attachments: updates.attachments,
+            }
+          : item
+      )
     );
+    setEditingItemKey(null);
+    toast({ title: "Módulo personalizado actualizado" });
+  }
+
+  function handleCancelEdit() {
+    setEditingItemKey(null);
   }
 
   function toggleAdicional(
@@ -761,9 +797,6 @@ export default function CotizadorPage() {
 
     setGenerating(true);
     try {
-      const { pdf } = await import("@react-pdf/renderer");
-      const { CotizadorPDFDocument } = await import("@/components/cotizador/CotizadorPDFDocument");
-
       const now = new Date();
       const date = now.toLocaleDateString("es-AR", {
         day: "2-digit",
@@ -776,38 +809,6 @@ export default function CotizadorPage() {
         month: "long",
         year: "numeric",
       });
-
-      const pdfBlob = await pdf(
-        <CotizadorPDFDocument
-          notesList={notesList.length > 0 ? notesList : undefined}
-          items={quoteItems.map((item) => ({
-            type: item.type,
-            moduleId: item.standardModuleId ?? item.key,
-            moduleName: item.name,
-            moduleDescription: item.description,
-            moduleDescriptionSections: item.moduleDescriptionSections,
-            basePrice: item.unitPrice,
-            quantity: item.quantity,
-            adicionales: item.adicionales,
-          }))}
-          date={date}
-          validUntil={validUntil}
-          generatorName={userProfile.name ?? userProfile.email ?? undefined}
-          finalTotal={finalTotal}
-          client={
-            selectedClient
-              ? {
-                  name: selectedClient.companyName,
-                  cuit: selectedClient.cuit || undefined,
-                  contact: selectedClient.representative || undefined,
-                  email: selectedClient.email || undefined,
-                  phone: selectedClient.phone || undefined,
-                }
-              : undefined
-          }
-          exchangeRate={exchangeRate ?? undefined}
-        />
-      ).toBlob();
 
       const standardModuleIds = [
         ...new Set(
@@ -849,28 +850,80 @@ export default function CotizadorPage() {
         })),
       };
 
-      const formData = new FormData();
-      formData.append("pdf", pdfBlob, "cotizacion.pdf");
-      formData.append("moduleIds", JSON.stringify(standardModuleIds));
-      formData.append("quoteData", JSON.stringify(quoteData));
+      // ── Paso 1: reservar/cotizar para obtener el número ──
+      const reserveFormData = new FormData();
+      reserveFormData.append("quoteData", JSON.stringify(quoteData));
       if (editingQuoteId) {
-        formData.append("existingQuoteId", editingQuoteId);
+        reserveFormData.append("existingQuoteId", editingQuoteId);
       }
+
+      const reserveRes = await fetch("/api/cotizador/generate-pdf", {
+        method: "POST",
+        body: reserveFormData,
+      });
+
+      if (!reserveRes.ok) {
+        const data = await reserveRes.json();
+        throw new Error(data.error ?? "Error al guardar la cotización");
+      }
+
+      const { quoteId, quoteNumber } = await reserveRes.json();
+      if (quoteId && quoteNumber) {
+        setSavedQuote({ id: quoteId, number: quoteNumber });
+      }
+
+      // ── Paso 2: generar el PDF con el número ──
+      const { pdf } = await import("@react-pdf/renderer");
+      const { CotizadorPDFDocument } = await import("@/components/cotizador/CotizadorPDFDocument");
+
+      const pdfBlob = await pdf(
+        <CotizadorPDFDocument
+          quoteNumber={quoteNumber}
+          notesList={notesList.length > 0 ? notesList : undefined}
+          items={quoteItems.map((item) => ({
+            type: item.type,
+            moduleId: item.standardModuleId ?? item.key,
+            moduleName: item.name,
+            moduleDescription: item.description,
+            moduleDescriptionSections: item.moduleDescriptionSections,
+            basePrice: item.unitPrice,
+            quantity: item.quantity,
+            adicionales: item.adicionales,
+          }))}
+          date={date}
+          validUntil={validUntil}
+          generatorName={userProfile.name ?? userProfile.email ?? undefined}
+          finalTotal={finalTotal}
+          client={
+            selectedClient
+              ? {
+                  name: selectedClient.companyName,
+                  cuit: selectedClient.cuit || undefined,
+                  contact: selectedClient.representative || undefined,
+                  email: selectedClient.email || undefined,
+                  phone: selectedClient.phone || undefined,
+                }
+              : undefined
+          }
+          exchangeRate={exchangeRate ?? undefined}
+        />
+      ).toBlob();
+
+      // ── Paso 3: subir el PDF final ──
+      const uploadFormData = new FormData();
+      uploadFormData.append("pdf", pdfBlob, "cotizacion.pdf");
+      uploadFormData.append("moduleIds", JSON.stringify(standardModuleIds));
+      uploadFormData.append("quoteData", JSON.stringify(quoteData));
+      uploadFormData.append("existingQuoteId", quoteId);
 
       const res = await fetch("/api/cotizador/generate-pdf", {
         method: "POST",
-        body: formData,
+        body: uploadFormData,
       });
 
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error ?? "Error al generar PDF");
-      }
-
-      const quoteId = res.headers.get("X-Quote-Id");
-      const quoteNumber = res.headers.get("X-Quote-Number");
-      if (quoteId && quoteNumber) {
-        setSavedQuote({ id: quoteId, number: quoteNumber });
       }
 
       const blob = await res.blob();
@@ -925,14 +978,41 @@ export default function CotizadorPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Col 1: cliente + resumen (solo desktop) */}
-          <div className="md:space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Cliente</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+        {/* ── Fila 1: Datos de la cotización ─────────────────────────────── */}
+        <Card className="sm:gap-3">
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setQuoteHeaderExpanded((v) => !v)}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Datos de la cotización</CardTitle>
+              <div className="flex items-center gap-2">
+                {selectedClient && !quoteHeaderExpanded && (
+                  <span className="text-xs text-muted-foreground truncate max-w-[160px] sm:max-w-[240px]">
+                    {selectedClient.companyName}
+                  </span>
+                )}
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                    quoteHeaderExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <div
+            className={`grid transition-all duration-300 ease-in-out ${
+              quoteHeaderExpanded
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cliente */}
+              <div className="space-y-3">
+                <Label className="text-xs">Cliente</Label>
                 <ClientSelector
                   clients={clients ?? []}
                   selected={selectedClient}
@@ -954,134 +1034,143 @@ export default function CotizadorPage() {
                     )}
                   </div>
                 )}
-                <div className="space-y-1">
-                  <Label className="text-xs">Válida hasta</Label>
-                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal text-sm",
-                          !validUntilDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {validUntilDate
-                          ? new Date(validUntilDate + 'T00:00:00').toLocaleDateString("es-AR", {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                            })
-                          : "Seleccionar fecha"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={validUntilDate ? new Date(validUntilDate + 'T00:00:00') : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            setValidUntilDate(date.toISOString().split('T')[0]);
-                            setCalendarOpen(false);
-                          }
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Notas para el PDF</Label>
-                  <div className="space-y-2">
-                    {notesList.map((note, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
-                        <input
-                          type="text"
-                          value={note}
-                          onChange={(e) => {
-                            const updated = [...notesList];
-                            updated[i] = e.target.value;
-                            setNotesList(updated);
-                          }}
-                          className="flex-1 text-xs border rounded px-2 py-1"
-                          placeholder="Nota..."
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0"
-                          onClick={() => setNotesList((prev) => prev.filter((_, idx) => idx !== i))}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
+              </div>
+
+              {/* Fecha de validez */}
+              <div className="space-y-3">
+                <Label className="text-xs">Válida hasta</Label>
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="w-full text-xs"
-                      onClick={() => setNotesList((prev) => [...prev, ""])}
+                      className={cn(
+                        "w-full justify-start text-left font-normal text-sm",
+                        !validUntilDate && "text-muted-foreground"
+                      )}
                     >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Agregar nota
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {validUntilDate
+                        ? new Date(validUntilDate + 'T00:00:00').toLocaleDateString("es-AR", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Seleccionar fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={validUntilDate ? new Date(validUntilDate + 'T00:00:00') : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setValidUntilDate(date.toISOString().split('T')[0]);
+                          setCalendarOpen(false);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            {/* Notas */}
+            <div className="pt-4 border-t space-y-2">
+              <Label className="text-xs">Notas para el PDF</Label>
+              <div className="space-y-2">
+                {notesList.map((note, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
+                    <input
+                      type="text"
+                      value={note}
+                      onChange={(e) => {
+                        const updated = [...notesList];
+                        updated[i] = e.target.value;
+                        setNotesList(updated);
+                      }}
+                      className="flex-1 text-xs border rounded px-2 py-1"
+                      placeholder="Nota..."
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => setNotesList((prev) => prev.filter((_, idx) => idx !== i))}
+                    >
+                      <X className="w-3 h-3" />
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Resumen visible solo en desktop */}
-            <div className="hidden lg:block">
-              <ResumenCard
-                quoteItems={quoteItems}
-                subtotal={subtotal}
-                finalTotal={finalTotal}
-                finalTotalUSD={exchangeRate && exchangeRate.venta > 0 ? finalTotal / exchangeRate.venta : 0}
-                exchangeRate={exchangeRate}
-                generating={generating}
-                selectedClient={selectedClient}
-                savedQuote={savedQuote}
-                onGeneratePDF={handleGeneratePDF}
-                onUpdateFinalTotal={setFinalTotal}
-              />
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={() => setNotesList((prev) => [...prev, ""])}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Agregar nota
+                </Button>
+              </div>
+            </div>
+          </CardContent>
             </div>
           </div>
+        </Card>
 
-          {/* Col 2: Tabs de catálogo */}
-          <div className="space-y-4">
-            <Tabs defaultValue="standard" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="standard">Estándar</TabsTrigger>
-                <TabsTrigger value="custom">Personalizados</TabsTrigger>
-                <TabsTrigger value="services">Servicios</TabsTrigger>
-              </TabsList>
-              <TabsContent value="standard" className="mt-4">
-                <StandardModulesTab
-                  modules={modules}
-                  loading={modulesLoading}
-                  onAddModule={addStandardModule}
-                />
-              </TabsContent>
-              <TabsContent value="custom" className="mt-4">
-                <CustomModuleForm onAdd={addCustomModule} />
-              </TabsContent>
-              <TabsContent value="services" className="mt-4">
-                <ServicesTab
-                  services={services}
-                  loading={servicesLoading}
-                  onAddService={addService}
-                  onAddCustomService={addCustomService}
-                />
-              </TabsContent>
-            </Tabs>
+        {/* ── Fila 2: Builder (Catálogo + Cotización) ─────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Izquierda: Catálogo o Editor (3/5 = 60%) */}
+          <div className="lg:col-span-3 space-y-4">
+            {editingItem ? (
+              <CustomModuleEditor
+                item={editingItem}
+                onSave={handleSaveEdit}
+                onCancel={handleCancelEdit}
+              />
+            ) : (
+              <Tabs defaultValue="standard" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="standard">Estándar</TabsTrigger>
+                  <TabsTrigger value="custom">Personalizados</TabsTrigger>
+                  <TabsTrigger value="services">Servicios</TabsTrigger>
+                </TabsList>
+                <TabsContent value="standard" className="mt-4">
+                  <StandardModulesTab
+                    modules={modules}
+                    loading={modulesLoading}
+                    onAddModule={addStandardModule}
+                  />
+                </TabsContent>
+                <TabsContent value="custom" className="mt-4">
+                  <CustomModuleForm onAdd={addCustomModule} />
+                </TabsContent>
+                <TabsContent value="services" className="mt-4">
+                  <ServicesTab
+                    services={services}
+                    loading={servicesLoading}
+                    onAddService={addService}
+                    onAddCustomService={addCustomService}
+                  />
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
 
-          {/* Col 3: Cotización armada */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Cotización
-            </h2>
+          {/* Derecha: Cotización armada + Resumen (2/5 = 40%) */}
+          <div className="lg:col-span-2 space-y-4 lg:sticky lg:top-4 lg:self-start">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Cotización
+              </h2>
+              {quoteItems.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {quoteItems.length} ítem{quoteItems.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+
             {quoteItems.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground text-sm">
@@ -1102,29 +1191,25 @@ export default function CotizadorPage() {
                     onToggleAdicional={toggleAdicional}
                     onAddAttachment={handleAddAttachment}
                     onRemoveAttachment={handleRemoveAttachment}
-                    onUpdateName={handleUpdateName}
-                    onUpdateDescription={handleUpdateDescription}
+                    onStartEdit={handleStartEdit}
                   />
                 ))}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Resumen visible solo en mobile, al final */}
-        <div className="lg:hidden">
-          <ResumenCard
-            quoteItems={quoteItems}
-            subtotal={subtotal}
-            finalTotal={finalTotal}
-            finalTotalUSD={exchangeRate && exchangeRate.venta > 0 ? finalTotal / exchangeRate.venta : 0}
-            exchangeRate={exchangeRate}
-            generating={generating}
-            selectedClient={selectedClient}
-            savedQuote={savedQuote}
-            onGeneratePDF={handleGeneratePDF}
-            onUpdateFinalTotal={setFinalTotal}
-          />
+            <ResumenCard
+              quoteItems={quoteItems}
+              subtotal={subtotal}
+              finalTotal={finalTotal}
+              finalTotalUSD={exchangeRate && exchangeRate.venta > 0 ? finalTotal / exchangeRate.venta : 0}
+              exchangeRate={exchangeRate}
+              generating={generating}
+              selectedClient={selectedClient}
+              savedQuote={savedQuote}
+              onGeneratePDF={handleGeneratePDF}
+              onUpdateFinalTotal={setFinalTotal}
+            />
+          </div>
         </div>
       </div>
 

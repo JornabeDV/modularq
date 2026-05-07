@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Toaster } from "@/components/ui/toaster"
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -21,6 +22,16 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sidebar-collapsed") === "true"
+    }
+    return false
+  })
+
+  useEffect(() => {
+    localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed))
+  }, [sidebarCollapsed])
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -43,8 +54,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col">
-        <Sidebar />
+      <div className={cn("hidden lg:flex lg:flex-col transition-all duration-300", sidebarCollapsed ? "lg:w-16" : "lg:w-64")}>
+        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
       </div>
 
       {/* Mobile Header */}
@@ -61,7 +72,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <Sidebar />
+              <Sidebar collapsed={false} onToggle={() => {}} />
             </SheetContent>
           </Sheet>
           <div className="flex items-center justify-center flex-1 py-2">
