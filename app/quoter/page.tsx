@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -361,7 +361,7 @@ function ResumenCard({
         </div>
         {hasAdjustment && (
           <p className="text-xs text-muted-foreground text-right">
-            Ajuste: {fmtARS(finalTotal - subtotal)}
+            Descuento: {fmtARS(finalTotal - subtotal)}
           </p>
         )}
 
@@ -381,6 +381,11 @@ function ResumenCard({
                   setTotalInput(parsed === 0 ? "" : parsed.toFixed(2).replace(".", ","));
                   onUpdateFinalTotal(parsed);
                 }}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
+                }}
               />
             </div>
           </div>
@@ -399,6 +404,11 @@ function ResumenCard({
                   setTotalUSDInput(formatted);
                   if (exchangeRate && exchangeRate.venta > 0) {
                     onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
+                  }
+                }}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
                   }
                 }}
               />
@@ -894,6 +904,7 @@ export default function CotizadorPage() {
           validUntil={validUntil}
           generatorName={userProfile.name ?? userProfile.email ?? undefined}
           finalTotal={finalTotal}
+          discount={subtotal > finalTotal ? subtotal - finalTotal : undefined}
           client={
             selectedClient
               ? {

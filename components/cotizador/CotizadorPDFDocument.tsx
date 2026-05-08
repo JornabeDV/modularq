@@ -330,6 +330,7 @@ export interface CotizadorPDFProps {
   validUntil?: string;
   generatorName?: string;
   finalTotal?: number;
+  discount?: number;
   client?: {
     name: string;
     cuit?: string;
@@ -363,6 +364,7 @@ export function CotizadorPDFDocument({
   validUntil,
   generatorName,
   finalTotal,
+  discount,
   client,
   exchangeRate,
 }: CotizadorPDFProps) {
@@ -382,6 +384,10 @@ export function CotizadorPDFDocument({
   const subtotalServices = serviceItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
   const computedTotal = subtotalStandard + subtotalCustom + subtotalServices;
   const displayTotal = finalTotal ?? computedTotal;
+  const discountAmount = discount ?? 0;
+  const taxableAmount = Math.max(0, discountAmount > 0 ? computedTotal - discountAmount : displayTotal);
+  const ivaAmount = taxableAmount * 0.21;
+  const totalAmount = taxableAmount * 1.21;
 
   const renderItem = (item: CotizadorItem, idx: number) => {
     const showQty = item.quantity > 1;
@@ -522,45 +528,37 @@ export function CotizadorPDFDocument({
 
         {/* Totales */}
         <View style={styles.totalsBox}>
-          {subtotalStandard > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal módulos estándar</Text>
-              <Text style={styles.totalValue}>
-                {formatUSD(subtotalStandard, rate)}
-              </Text>
-            </View>
-          )}
-          {subtotalCustom > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal módulos personalizados</Text>
-              <Text style={styles.totalValue}>
-                {formatUSD(subtotalCustom, rate)}
-              </Text>
-            </View>
-          )}
-          {subtotalServices > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal servicios</Text>
-              <Text style={styles.totalValue}>
-                {formatUSD(subtotalServices, rate)}
-              </Text>
-            </View>
-          )}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal (sin IVA)</Text>
+            <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>
-              {formatUSD(displayTotal, rate)}
+              {formatUSD(discountAmount > 0 ? computedTotal : displayTotal, rate)}
             </Text>
           </View>
+          {discountAmount > 0 && (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Descuentos</Text>
+                <Text style={styles.totalValue}>
+                  {formatUSD(discountAmount, rate)}
+                </Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Importe Gravado</Text>
+                <Text style={styles.totalValue}>
+                  {formatUSD(taxableAmount, rate)}
+                </Text>
+              </View>
+            </>
+          )}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>IVA 21%</Text>
+            <Text style={styles.totalLabel}>Impuestos</Text>
             <Text style={styles.totalValue}>
-              {formatUSD(displayTotal * 0.21, rate)}
+              {formatUSD(ivaAmount, rate)}
             </Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatUSD(displayTotal * 1.21, rate)}</Text>
+            <Text style={styles.grandTotalValue}>{formatUSD(totalAmount, rate)}</Text>
           </View>
         </View>
 
