@@ -45,7 +45,9 @@ const adminNavigation = [
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Alquileres", href: "/rentals/modules", icon: Truck },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
+  { name: "Gestión de Proveedores", href: "/admin/suppliers", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
+  { name: "Órdenes de Compra", href: "/admin/purchase-orders", icon: ShoppingCart },
   { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
   { name: "Cotizaciones", href: "/quoter/history", icon: History },
   {

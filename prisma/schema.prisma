@@ -90,6 +90,15 @@ enum RentalContractStatus {
   overdue
   cancelled
 }
+
+enum PurchaseOrderStatus {
+  draft
+  pending
+  approved
+  received
+  cancelled
+}
+
 // Models
 model User {
   id          String   @id @default(cuid())
@@ -202,6 +211,8 @@ model Material {
   updated_at      DateTime        @updatedAt
   project_materials        ProjectMaterial[]
   standard_module_materials StandardModuleMaterial[]
+  purchase_order_items     PurchaseOrderItem[]
+
   @@map("materials")
 }
 model ProjectMaterial {
@@ -423,6 +434,7 @@ model ServiceCatalog {
   updated_at  DateTime @updatedAt
   @@map("service_catalogs")
 }
+
 model RentalModule {
   id              String            @id @default(uuid()) @db.Uuid
   code            String            @unique
@@ -470,4 +482,81 @@ model RentalContract {
   updated_at        DateTime            @updatedAt
   current_for_module RentalModule?      @relation("CurrentContract")
   @@map("rental_contracts")
+}
+
+// ==================== MÓDULO ÓRDENES DE COMPRA ====================
+
+model Supplier {
+  id            String   @id @default(uuid())
+  name          String
+  contact_name  String?
+  email         String?
+  phone         String?
+  address       String?
+  cuit          String?
+  notes         String?
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  purchase_orders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id                String              @id @default(uuid())
+  order_number      String              @unique
+  supplier_id       String
+  supplier          Supplier            @relation(fields: [supplier_id], references: [id])
+  status            PurchaseOrderStatus @default(draft)
+  items             PurchaseOrderItem[]
+  attachments       PurchaseOrderAttachment[]
+
+  subtotal          Float               @default(0)
+  tax_pct           Float               @default(21)
+  tax_amount        Float               @default(0)
+  total             Float               @default(0)
+
+  payment_terms     String?
+  delivery_terms    String?
+  delivery_date     DateTime?
+  notes             String?
+
+  created_by        String?
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  received_at       DateTime?
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                String   @id @default(uuid())
+  purchase_order_id String
+  purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade)
+
+  material_id       String?
+  material          Material? @relation(fields: [material_id], references: [id])
+
+  description       String
+  quantity          Float
+  unit              UnitType
+  unit_price        Float
+  total_price       Float
+
+  @@map("purchase_order_items")
+}
+
+model PurchaseOrderAttachment {
+  id                String   @id @default(uuid())
+  purchase_order_id String
+  purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade)
+
+  file_name         String
+  file_url          String
+  file_type         String?
+  uploaded_at       DateTime @default(now())
+
+  @@map("purchase_order_attachments")
 }
