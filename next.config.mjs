@@ -126,6 +126,11 @@ const pwaConfig = withPWA({
       }
     },
     {
+      urlPattern: /\/api\/exchange-rate/i,
+      handler: 'NetworkOnly',
+      method: 'GET'
+    },
+    {
       urlPattern: /^.*\/api\/.*$/i,
       handler: 'NetworkFirst',
       method: 'GET',
