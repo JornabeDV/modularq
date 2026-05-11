@@ -603,6 +603,20 @@ export default function CotizadorPage() {
       .finally(() => setLoadingDuplicate(false));
   }, [searchParams, clients, toast]);
 
+  const subtotal = quoteItems.reduce((acc, item) => {
+    const itemTotal = item.unitPrice * item.quantity;
+    const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
+    return acc + itemTotal + adicionalesTotal;
+  }, 0);
+
+  useEffect(() => {
+    setFinalTotal(subtotal);
+  }, [subtotal]);
+
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
+
   if (authLoading || !userProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -779,20 +793,6 @@ export default function CotizadorPage() {
       })
     );
   }
-
-  const subtotal = quoteItems.reduce((acc, item) => {
-    const itemTotal = item.unitPrice * item.quantity;
-    const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
-    return acc + itemTotal + adicionalesTotal;
-  }, 0);
-
-  useEffect(() => {
-    setFinalTotal(subtotal);
-  }, [subtotal]);
-
-  useEffect(() => {
-    getExchangeRate().then(setExchangeRate).catch(() => {});
-  }, []);
 
   // ── PDF generation ────────────────────────────────────────────────────────
   async function handleGeneratePDF() {
