@@ -36,7 +36,7 @@ export function ProjectSpecs({ project }: ProjectSpecsProps) {
               {project.height}m •
               <span className="text-muted-foreground"> Ancho:</span>{" "}
               {project.width}m •
-              <span className="text-muted-foreground"> Profundidad:</span>{" "}
+              <span className="text-muted-foreground"> Largo:</span>{" "}
               {project.depth}m
             </p>
           </div>

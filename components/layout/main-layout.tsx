@@ -22,16 +22,22 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("sidebar-collapsed") === "true"
-    }
-    return false
-  })
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed))
-  }, [sidebarCollapsed])
+    setMounted(true)
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") {
+      setSidebarCollapsed(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed))
+    }
+  }, [sidebarCollapsed, mounted])
 
   useEffect(() => {
     if (!isLoading && !user) {
