@@ -216,7 +216,7 @@ export default function QuoteHistorialPage() {
   async function handleStatusChange(id: string, status: QuoteStatus) {
     try {
       await updateStatus(id, status);
-      toast({ title: `Cotización marcada como ${STATUS_LABELS[status]}` });
+      toast({ title: `Cotización ${STATUS_LABELS[status]}` });
     } catch {
       toast({ title: "Error al actualizar estado", variant: "destructive" });
     }
