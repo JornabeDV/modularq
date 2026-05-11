@@ -102,6 +102,20 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     flex: 1,
   },
+  modulePriceBlock: {
+    alignItems: "flex-end",
+    marginLeft: 10,
+  },
+  moduleUnitPrice: {
+    fontSize: 9,
+    color: "#6b7280",
+  },
+  moduleSubtotal: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#1f2937",
+    fontFamily: "Courier",
+  },
   moduleDescription: {
     fontSize: 9,
     color: "#4b5563",
@@ -138,6 +152,7 @@ const styles = StyleSheet.create({
   adicionalItem: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 4,
     gap: 6,
   },
@@ -150,6 +165,7 @@ const styles = StyleSheet.create({
   adicionalName: {
     fontSize: 10,
     color: "#374151",
+    flex: 1,
   },
   adicionalPrice: {
     fontSize: 9,
@@ -391,6 +407,7 @@ export function CotizadorPDFDocument({
 
   const renderItem = (item: CotizadorItem, idx: number) => {
     const showQty = item.quantity > 1;
+    const itemTotal = calculateItemTotal(item);
     return (
       <View key={`${item.moduleId}-${idx}`} style={styles.moduleCard}>
         <View style={styles.moduleHeader}>
@@ -398,6 +415,16 @@ export function CotizadorPDFDocument({
             {item.moduleName}
             {showQty ? ` (x${item.quantity})` : ''}
           </Text>
+          <View style={styles.modulePriceBlock}>
+            {showQty && (
+              <Text style={styles.moduleUnitPrice}>
+                {formatUSD(item.basePrice, rate)} c/u
+              </Text>
+            )}
+            <Text style={styles.moduleSubtotal}>
+              {formatUSD(itemTotal, rate)}
+            </Text>
+          </View>
         </View>
         {item.moduleDescription && (
           <Text style={styles.moduleDescription}>
@@ -419,8 +446,11 @@ export function CotizadorPDFDocument({
             <Text style={styles.adicionalesLabel}>Incluye</Text>
             {item.adicionales.map((ad) => (
               <View key={ad.id} style={styles.adicionalItem}>
-                <View style={styles.adicionalBullet} />
-                <Text style={styles.adicionalName}>{ad.name}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                  <View style={styles.adicionalBullet} />
+                  <Text style={styles.adicionalName}>{ad.name}</Text>
+                </View>
+                <Text style={styles.adicionalPrice}>{formatUSD(ad.price, rate)}</Text>
               </View>
             ))}
           </View>
