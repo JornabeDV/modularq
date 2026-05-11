@@ -103,11 +103,11 @@ function QuoteCard({
               </Badge>
             </div>
             <p className="text-sm font-medium mt-0.5 truncate">{quote.client_name}</p>
-            {quote.client_company && (
+            {/* {quote.client_company && (
               <p className="text-xs text-muted-foreground truncate">
                 {quote.client_company}
               </p>
-            )}
+            )} */}
             <p className="text-xs text-muted-foreground mt-1">
               {formatDate(quote.created_at)}
               {quote.valid_until && (

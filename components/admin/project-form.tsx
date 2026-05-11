@@ -424,7 +424,7 @@ export function ProjectForm({
                     htmlFor="depth"
                     className="text-sm text-muted-foreground"
                   >
-                    Profundidad
+                    Largo
                   </Label>
                   <Input
                     id="depth"
