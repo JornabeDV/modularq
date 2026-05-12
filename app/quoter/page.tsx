@@ -475,6 +475,51 @@ function ResumenCard({
   );
 }
 
+/**
+ * Ajusta los ítems para el PDF distribuyendo la diferencia entre
+ * el subtotal calculado y el finalTotal al ítem de mayor valor.
+ * Así los precios en el PDF coinciden visualmente con el subtotal final.
+ */
+function getPDFItems(
+  items: QuoteItemState[],
+  subtotal: number,
+  finalTotal: number
+) {
+  const diff = finalTotal - subtotal;
+
+  const mapped = items.map((item) => ({
+    type: item.type,
+    moduleId: item.standardModuleId ?? item.key,
+    moduleName: item.name,
+    moduleDescription: item.description,
+    moduleDescriptionSections: item.moduleDescriptionSections,
+    basePrice: item.unitPrice,
+    quantity: item.quantity,
+    adicionales: item.adicionales,
+  }));
+
+  if (diff === 0 || items.length === 0) return mapped;
+
+  // Encontrar ítem con mayor valor total (unitPrice * quantity)
+  let maxIndex = 0;
+  let maxValue = items[0].unitPrice * items[0].quantity;
+  for (let i = 1; i < items.length; i++) {
+    const val = items[i].unitPrice * items[i].quantity;
+    if (val > maxValue) {
+      maxValue = val;
+      maxIndex = i;
+    }
+  }
+
+  const adjustmentPerUnit = diff / items[maxIndex].quantity;
+  mapped[maxIndex] = {
+    ...mapped[maxIndex],
+    basePrice: Math.max(0, mapped[maxIndex].basePrice + adjustmentPerUnit),
+  };
+
+  return mapped;
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function CotizadorPage() {
   const { modules, loading: modulesLoading } = useStandardModules(true);
@@ -918,16 +963,7 @@ export default function CotizadorPage() {
             ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
             ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
           ]}
-          items={quoteItems.map((item) => ({
-            type: item.type,
-            moduleId: item.standardModuleId ?? item.key,
-            moduleName: item.name,
-            moduleDescription: item.description,
-            moduleDescriptionSections: item.moduleDescriptionSections,
-            basePrice: item.unitPrice,
-            quantity: item.quantity,
-            adicionales: item.adicionales,
-          }))}
+          items={getPDFItems(quoteItems, subtotal, finalTotal)}
           date={date}
           validUntil={validUntil}
           generatorName={userProfile.name ?? userProfile.email ?? undefined}
