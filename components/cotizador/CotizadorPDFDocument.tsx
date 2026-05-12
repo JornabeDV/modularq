@@ -7,9 +7,11 @@ import {
   View,
   StyleSheet,
   Image,
+  Link,
 } from "@react-pdf/renderer";
 import { LOGO_BASE64 } from "@/lib/logo-base64";
 import { COMPANY } from "@/lib/company-config";
+import type { NoteItem, GroupNote } from "@/lib/quote-notes-config";
 
 const styles = StyleSheet.create({
   page: {
@@ -294,6 +296,30 @@ const styles = StyleSheet.create({
     color: "#4b5563",
     lineHeight: 1.5,
   },
+  groupItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 2,
+    paddingLeft: 8,
+  },
+  groupItemLabel: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#4b5563",
+    width: 16,
+  },
+  groupItemText: {
+    fontSize: 9,
+    color: "#4b5563",
+    lineHeight: 1.5,
+    flex: 1,
+  },
+  groupItemLink: {
+    fontSize: 9,
+    color: "#2563eb",
+    lineHeight: 1.5,
+    textDecoration: "underline",
+  },
   footer: {
     position: "absolute",
     bottom: 20,
@@ -340,7 +366,7 @@ export interface CotizadorItem {
 export interface CotizadorPDFProps {
   quoteNumber?: string;
   notes?: string;
-  notesList?: string[];
+  notesList?: NoteItem[];
   items: CotizadorItem[];
   date: string;
   validUntil?: string;
@@ -593,21 +619,92 @@ export function CotizadorPDFDocument({
         </View>
 
         {/* Notas */}
-        {notesList && notesList.length > 0 ? (
-          <View style={styles.notesBox}>
-            <Text style={styles.notesLabel}>Notas</Text>
-            {notesList.map((note, i) => (
-              <Text key={i} style={styles.notesText}>
-                {i + 1}. {note}
-              </Text>
-            ))}
-          </View>
-        ) : notes ? (
-          <View style={styles.notesBox}>
-            <Text style={styles.notesLabel}>Notas</Text>
-            <Text style={styles.notesText}>{notes}</Text>
-          </View>
-        ) : null}
+        {(() => {
+          const displayNotes: NoteItem[] = [
+            ...(exchangeRate
+              ? [{
+                  type: 'free' as const,
+                  content: `Precio de venta: Dólar Venta Banco Nación $${exchangeRate.venta.toLocaleString('es-AR')}`,
+                }]
+              : []),
+            ...(notesList ?? []),
+          ];
+
+          if (displayNotes.length === 0 && !notes) return null;
+
+          return (
+            <View style={styles.notesBox}>
+              <Text style={styles.notesLabel}>Notas</Text>
+              {displayNotes.map((note, i) => {
+                if (typeof note === 'string') {
+                  // Legacy string format
+                  return (
+                    <Text key={i} style={styles.notesText}>
+                      {i + 1}. {note}
+                    </Text>
+                  );
+                }
+                if (note.type === 'free') {
+                  return (
+                    <Text key={i} style={styles.notesText}>
+                      {i + 1}. {note.content}
+                    </Text>
+                  );
+                }
+                // Group note (ej: Forma de Pago, Lugar de entrega)
+                const group = note as GroupNote;
+                const checkedItems = group.items.filter((it) => it.checked);
+                if (checkedItems.length === 0) return null;
+
+                // Lugar de entrega: sin subincisos, en una sola línea
+                if (group.title === 'Lugar de entrega') {
+                  return (
+                    <View key={i} style={{ marginTop: i > 0 ? 4 : 0, flexDirection: 'row', flexWrap: 'wrap' }}>
+                      <Text style={styles.notesText}>
+                        {i + 1}. {group.title}:{' '}
+                      </Text>
+                      {checkedItems.map((item, idx) => (
+                        <View key={idx} style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                          <Text style={styles.notesText}>{item.content}</Text>
+                          {item.link && (
+                            <Link src={item.link.url} style={styles.groupItemLink}>
+                              {' '}{item.link.text}
+                            </Link>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  );
+                }
+
+                // Forma de Pago y otros: con subincisos a/b/c
+                return (
+                  <View key={i} style={{ marginTop: i > 0 ? 4 : 0 }}>
+                    <Text style={styles.notesText}>
+                      {i + 1}. {group.title}
+                    </Text>
+                    {checkedItems.map((item, idx) => (
+                      <View key={idx} style={styles.groupItem}>
+                        <Text style={styles.groupItemLabel}>{item.label})</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+                          <Text style={styles.groupItemText}>{item.content}</Text>
+                          {item.link && (
+                            <Link src={item.link.url} style={styles.groupItemLink}>
+                              {' '}{item.link.text}
+                            </Link>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })}
+              {notes && displayNotes.length === 0 && (
+                <Text style={styles.notesText}>{notes}</Text>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Footer */}
         <View style={styles.footer} fixed>
