@@ -68,6 +68,15 @@ import { CustomModuleForm } from "@/components/cotizador/CustomModuleForm";
 import { CustomModuleEditor } from "@/components/cotizador/CustomModuleEditor";
 import { ServicesTab, ServiceCatalogItem } from "@/components/cotizador/ServicesTab";
 import { QuoteItemCard, QuoteItemState, ModuleDescriptionSection } from "@/components/cotizador/QuoteItemCard";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  type FreeNote,
+  type GroupNote,
+  createPaymentNote,
+  createDeliveryNote,
+  migrateNotesList,
+  groupHasCheckedItems,
+} from "@/lib/quote-notes-config";
 
 const ALLOWED_ROLES = ["admin", "supervisor", "vendedor"];
 
@@ -477,7 +486,9 @@ export default function CotizadorPage() {
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [createClientOpen, setCreateClientOpen] = useState(false);
-  const [notesList, setNotesList] = useState<string[]>([]);
+  const [freeNotes, setFreeNotes] = useState<FreeNote[]>([]);
+  const [paymentNote, setPaymentNote] = useState<GroupNote>(createPaymentNote());
+  const [deliveryNote, setDeliveryNote] = useState<GroupNote>(createDeliveryNote());
   const [quoteItems, setQuoteItems] = useState<QuoteItemState[]>([]);
   const [generating, setGenerating] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; number: string } | null>(null);
@@ -549,14 +560,23 @@ export default function CotizadorPage() {
         const client = clients.find((c: Client) => c.id === quote.client_id);
         if (client) setSelectedClient(client);
 
-        // Precargar notas (nuevo formato lista, o fallback a texto plano)
-        if (quote.notes_list && Array.isArray(quote.notes_list) && quote.notes_list.length > 0) {
-          setNotesList(quote.notes_list as string[]);
-        } else if (quote.notes) {
-          setNotesList([quote.notes]);
-        } else {
-          setNotesList([]);
-        }
+        // Precargar notas (nuevo formato tipado, o fallback a texto plano)
+        const migrated = migrateNotesList(
+          quote.notes_list && Array.isArray(quote.notes_list) && quote.notes_list.length > 0
+            ? quote.notes_list
+            : quote.notes
+            ? [quote.notes]
+            : []
+        );
+        setFreeNotes(migrated.filter((n) => n.type === 'free') as FreeNote[]);
+        const existingPayment = migrated.find(
+          (n) => n.type === 'group' && n.title === 'Forma de Pago'
+        ) as GroupNote | undefined;
+        setPaymentNote(existingPayment ?? createPaymentNote());
+        const existingDelivery = migrated.find(
+          (n) => n.type === 'group' && n.title === 'Lugar de entrega'
+        ) as GroupNote | undefined;
+        setDeliveryNote(existingDelivery ?? createDeliveryNote());
 
         // Precargar fecha de vencimiento
         if (quote.valid_until) {
@@ -834,7 +854,11 @@ export default function CotizadorPage() {
         client_company: selectedClient.companyName,
         client_phone: selectedClient.phone,
         client_email: selectedClient.email,
-        notes_list: notesList.length > 0 ? notesList : undefined,
+        notes_list: [
+          ...freeNotes,
+          ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
+          ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
+        ],
         subtotal,
         total: finalTotal,
         valid_until: validUntilDate,
@@ -889,7 +913,11 @@ export default function CotizadorPage() {
       const pdfBlob = await pdf(
         <CotizadorPDFDocument
           quoteNumber={quoteNumber}
-          notesList={notesList.length > 0 ? notesList : undefined}
+          notesList={[
+            ...freeNotes,
+            ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
+            ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
+          ]}
           items={quoteItems.map((item) => ({
             type: item.type,
             moduleId: item.standardModuleId ?? item.key,
@@ -1087,19 +1115,34 @@ export default function CotizadorPage() {
             </div>
 
             {/* Notas */}
-            <div className="pt-4 border-t space-y-2">
+            <div className="pt-4 border-t space-y-3">
               <Label className="text-xs">Notas para el PDF</Label>
+
+              {/* Notas libres */}
               <div className="space-y-2">
-                {notesList.map((note, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
+                {/* Nota fija: precio de venta / dólar */}
+                {exchangeRate && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-5">1.</span>
                     <input
                       type="text"
-                      value={note}
+                      value={`Precio de venta: Dólar Venta Banco Nación $${exchangeRate.venta.toLocaleString('es-AR')}`}
+                      disabled
+                      className="flex-1 text-xs border rounded px-2 py-1 bg-muted/50 text-muted-foreground"
+                    />
+                    <div className="h-6 w-6 shrink-0" /> {/* spacer para alinear */}
+                  </div>
+                )}
+                {freeNotes.map((note, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-5">{i + 2}.</span>
+                    <input
+                      type="text"
+                      value={note.content}
                       onChange={(e) => {
-                        const updated = [...notesList];
-                        updated[i] = e.target.value;
-                        setNotesList(updated);
+                        const updated = [...freeNotes];
+                        updated[i] = { ...note, content: e.target.value };
+                        setFreeNotes(updated);
                       }}
                       className="flex-1 text-xs border rounded px-2 py-1"
                       placeholder="Nota..."
@@ -1108,7 +1151,7 @@ export default function CotizadorPage() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 shrink-0"
-                      onClick={() => setNotesList((prev) => prev.filter((_, idx) => idx !== i))}
+                      onClick={() => setFreeNotes((prev) => prev.filter((_, idx) => idx !== i))}
                     >
                       <X className="w-3 h-3" />
                     </Button>
@@ -1118,11 +1161,100 @@ export default function CotizadorPage() {
                   variant="outline"
                   size="sm"
                   className="w-full text-xs"
-                  onClick={() => setNotesList((prev) => [...prev, ""])}
+                  onClick={() => setFreeNotes((prev) => [...prev, { type: 'free', content: '' }])}
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   Agregar nota
                 </Button>
+              </div>
+
+              {/* Forma de pago + Lugar de entrega — 2 cols en desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Forma de pago */}
+                <div className="rounded border bg-muted/30 p-3 space-y-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">
+                    {paymentNote.title}
+                  </span>
+                  <div className="space-y-1.5 pl-1">
+                    {paymentNote.items.map((item, idx) => (
+                      <label
+                        key={idx}
+                        className="flex items-start gap-2 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={item.checked}
+                          onCheckedChange={(checked) => {
+                            setPaymentNote((prev) => ({
+                              ...prev,
+                              items: prev.items.map((it, j) =>
+                                j === idx ? { ...it, checked: checked === true } : it
+                              ),
+                            }));
+                          }}
+                          className="mt-0.5"
+                        />
+                        <span className="text-xs text-muted-foreground leading-tight">
+                          {item.label}) {item.content}
+                          {item.link && (
+                            <a
+                              href={item.link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline ml-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.link.text}
+                            </a>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Lugar de entrega */}
+                <div className="rounded border bg-muted/30 p-3 space-y-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">
+                    {deliveryNote.title}
+                  </span>
+                  <div className="space-y-1.5 pl-1">
+                    {deliveryNote.items.map((item, idx) => (
+                      <label
+                        key={idx}
+                        className="flex items-start gap-2 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={item.checked}
+                          onCheckedChange={(checked) => {
+                            setDeliveryNote((prev) => ({
+                              ...prev,
+                              items: prev.items.map((it, j) =>
+                                j === idx
+                                  ? { ...it, checked: checked === true }
+                                  : { ...it, checked: false }
+                              ),
+                            }));
+                          }}
+                          className="mt-0.5"
+                        />
+                        <span className="text-xs text-muted-foreground leading-tight">
+                          {item.label}) {item.content}
+                          {item.link && (
+                            <a
+                              href={item.link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline ml-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {item.link.text}
+                            </a>
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

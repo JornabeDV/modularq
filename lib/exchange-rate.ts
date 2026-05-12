@@ -8,10 +8,10 @@ export interface ExchangeRate {
   actualizado: string
 }
 
-// Cache simple para no saturar la API
+// Cache simple en memoria del navegador para no saturar la API
 let cachedRate: ExchangeRate | null = null
 let lastFetch: number = 0
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
+const CACHE_DURATION = 60 * 1000 // 1 minuto
 
 export async function getExchangeRate(): Promise<ExchangeRate | null> {
   // Si tenemos cache válido, usarlo
@@ -21,14 +21,15 @@ export async function getExchangeRate(): Promise<ExchangeRate | null> {
 
   try {
     // Usar API route local para evitar CORS
-    const response = await fetch('/api/exchange-rate')
+    // cache: 'no-store' evita que el navegador use cache HTTP
+    const response = await fetch('/api/exchange-rate', { cache: 'no-store' })
     if (!response.ok) throw new Error('Error fetching exchange rate')
-    
+
     const data: ExchangeRate = await response.json()
-    // Guardar en cache
+    // Guardar en cache de memoria
     cachedRate = data
     lastFetch = Date.now()
-    
+
     return data
   } catch (error) {
     console.error('Error obteniendo cotización:', error)
