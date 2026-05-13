@@ -2923,9 +2923,9 @@ export class PrismaTypedService {
 
   // ==================== QUOTES ====================
 
-  static async generateQuoteNumber(): Promise<string> {
+  static async generateQuoteNumber(quoteType: 'sale' | 'rental' = 'sale'): Promise<string> {
     const year = new Date().getFullYear().toString()
-    const prefix = `QUO-${year}-`
+    const prefix = quoteType === 'rental' ? `ALQ-${year}-` : `VEN-${year}-`
 
     const { data } = await supabase
       .from('quotes')
@@ -2945,6 +2945,7 @@ export class PrismaTypedService {
 
   static async createQuote(input: {
     number: string
+    quote_type?: 'sale' | 'rental'
     client_id?: string | null
     client_name: string
     client_company?: string
@@ -2992,6 +2993,7 @@ export class PrismaTypedService {
       .from('quotes')
       .insert({
         number: input.number,
+        quote_type: input.quote_type ?? 'sale',
         status: 'draft',
         client_id: input.client_id ?? null,
         client_name: input.client_name,
@@ -3094,6 +3096,7 @@ export class PrismaTypedService {
   static async replaceQuote(
     id: string,
     input: {
+      quote_type?: 'sale' | 'rental'
       client_id?: string | null
       client_name: string
       client_company?: string
@@ -3142,6 +3145,7 @@ export class PrismaTypedService {
 
     // 2. Actualizar cabecera
     const updatePayload: Record<string, unknown> = {
+      quote_type: input.quote_type ?? 'sale',
       client_id: input.client_id ?? null,
       client_name: input.client_name,
       client_company: input.client_company ?? null,
@@ -3237,16 +3241,19 @@ export class PrismaTypedService {
     return { id, number: existing.number }
   }
 
-  static async getQuotes(userId: string, role: string, status?: string) {
+  static async getQuotes(userId: string, role: string, status?: string, quoteType?: string) {
     let query = supabase
       .from('quotes')
-      .select('id, number, status, client_name, client_company, client_phone, client_email, subtotal, total, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .select('id, number, quote_type, status, client_name, client_company, client_phone, client_email, subtotal, total, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
       .order('created_at', { ascending: false })
 
     // All authorized roles (admin, supervisor, vendedor) see all quotes
     // Access control is enforced at the page/route level
     if (status) {
       query = query.eq('status', status)
+    }
+    if (quoteType) {
+      query = query.eq('quote_type', quoteType)
     }
 
     const { data, error } = await query

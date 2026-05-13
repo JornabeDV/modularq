@@ -531,6 +531,7 @@ export default function CotizadorPage() {
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [createClientOpen, setCreateClientOpen] = useState(false);
+  const [quoteType, setQuoteType] = useState<'sale' | 'rental'>('sale');
   const [freeNotes, setFreeNotes] = useState<FreeNote[]>([]);
   const [paymentNote, setPaymentNote] = useState<GroupNote>(createPaymentNote());
   const [deliveryNote, setDeliveryNote] = useState<GroupNote>(createDeliveryNote());
@@ -604,6 +605,9 @@ export default function CotizadorPage() {
         // Precargar cliente
         const client = clients.find((c: Client) => c.id === quote.client_id);
         if (client) setSelectedClient(client);
+
+        // Precargar tipo de cotización
+        setQuoteType(quote.quote_type === 'rental' ? 'rental' : 'sale');
 
         // Precargar notas (nuevo formato tipado, o fallback a texto plano)
         const migrated = migrateNotesList(
@@ -899,6 +903,7 @@ export default function CotizadorPage() {
         client_company: selectedClient.companyName,
         client_phone: selectedClient.phone,
         client_email: selectedClient.email,
+        quote_type: quoteType,
         notes_list: [
           ...freeNotes,
           ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
@@ -963,6 +968,7 @@ export default function CotizadorPage() {
             ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
             ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
           ]}
+          quoteType={quoteType}
           items={getPDFItems(quoteItems, subtotal, finalTotal)}
           date={date}
           validUntil={validUntil}
@@ -1084,6 +1090,35 @@ export default function CotizadorPage() {
           >
             <div className="overflow-hidden">
               <CardContent className="space-y-4">
+                {/* Tipo de cotización */}
+                <div className="flex items-center gap-3">
+                  <Label className="text-xs shrink-0">Tipo</Label>
+                  <div className="flex rounded-md border overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setQuoteType('sale')}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                        quoteType === 'sale'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      Venta
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuoteType('rental')}
+                      className={`px-3 py-1.5 text-xs font-medium transition-colors border-l ${
+                        quoteType === 'rental'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      Alquiler
+                    </button>
+                  </div>
+                </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Cliente */}
               <div className="space-y-3">

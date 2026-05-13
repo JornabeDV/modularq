@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           const updated = await PrismaTypedService.replaceQuote(existingQuoteId, quoteData)
           return NextResponse.json({ quoteId: updated.id, quoteNumber: updated.number })
         } else {
-          const number = await PrismaTypedService.generateQuoteNumber()
+          const number = await PrismaTypedService.generateQuoteNumber(quoteData.quote_type)
           const created = await PrismaTypedService.createQuote({ number, ...quoteData })
           return NextResponse.json({ quoteId: created.id, quoteNumber: created.number })
         }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
           quoteNumber = updated.number
         } else {
           // Modo crear nueva cotización
-          const number = await PrismaTypedService.generateQuoteNumber()
+          const number = await PrismaTypedService.generateQuoteNumber(quoteData.quote_type)
           const created = await PrismaTypedService.createQuote({
             number,
             ...quoteData,

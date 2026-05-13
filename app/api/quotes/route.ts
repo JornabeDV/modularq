@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId') ?? ''
     const role = searchParams.get('role') ?? 'supervisor'
     const status = searchParams.get('status') ?? undefined
+    const quoteType = searchParams.get('quoteType') ?? undefined
 
-    const quotes = await PrismaTypedService.getQuotes(userId, role, status)
+    const quotes = await PrismaTypedService.getQuotes(userId, role, status, quoteType)
     return NextResponse.json({ quotes })
   } catch (error) {
     console.error('Error fetching quotes:', error)
