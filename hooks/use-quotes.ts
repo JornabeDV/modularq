@@ -7,6 +7,7 @@ export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired'
 export interface Quote {
   id: string
   number: string
+  quote_type: 'sale' | 'rental'
   status: QuoteStatus
   client_id?: string
   client_name: string
@@ -55,7 +56,7 @@ export interface QuoteWithDetails extends Quote {
   items: QuoteItem[]
 }
 
-export function useQuotes(userId: string, role: string, statusFilter?: QuoteStatus) {
+export function useQuotes(userId: string, role: string, statusFilter?: QuoteStatus, quoteTypeFilter?: 'sale' | 'rental') {
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -65,13 +66,14 @@ export function useQuotes(userId: string, role: string, statusFilter?: QuoteStat
     try {
       const params = new URLSearchParams({ userId, role })
       if (statusFilter) params.set('status', statusFilter)
+      if (quoteTypeFilter) params.set('quoteType', quoteTypeFilter)
       const res = await fetch(`/api/quotes?${params}`)
       const data = await res.json()
       setQuotes(data.quotes ?? [])
     } finally {
       setLoading(false)
     }
-  }, [userId, role, statusFilter])
+  }, [userId, role, statusFilter, quoteTypeFilter])
 
   useEffect(() => {
     load()

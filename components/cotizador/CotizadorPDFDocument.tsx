@@ -61,6 +61,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
   },
+  quoteTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#1f2937",
+  },
   quoteNumber: {
     fontSize: 10,
     color: "#6b7280",
@@ -365,6 +370,7 @@ export interface CotizadorItem {
 
 export interface CotizadorPDFProps {
   quoteNumber?: string;
+  quoteType?: 'sale' | 'rental';
   notes?: string;
   notesList?: NoteItem[];
   items: CotizadorItem[];
@@ -399,6 +405,7 @@ function formatUSD(amountARS: number, rate: number): string {
 
 export function CotizadorPDFDocument({
   quoteNumber,
+  quoteType,
   notes,
   notesList,
   items,
@@ -505,10 +512,11 @@ export function CotizadorPDFDocument({
 
           {/* Derecha: título + número + fecha */}
           <View style={styles.quoteBlock}>
+            <Text style={styles.quoteTitle}>
+              {quoteType === 'rental' ? 'Presupuesto de Alquiler' : 'Presupuesto de Venta'}
+            </Text>
             {quoteNumber && (
-              <>
-                <Text style={styles.quoteNumber}>Presupuesto N°: {quoteNumber.split('-').pop()}</Text>
-              </>
+              <Text style={styles.quoteNumber}>N°: {quoteNumber.split('-').pop()}</Text>
             )}
             <Text style={styles.quoteDate}>Emisión: {date}</Text>
             {validUntil && (

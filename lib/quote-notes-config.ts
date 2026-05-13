@@ -60,7 +60,7 @@ export const DEFAULT_DELIVERY_OPTIONS: Omit<GroupNoteItem, 'checked'>[] = [
 export function createPaymentNote(): GroupNote {
   return {
     type: 'group',
-    title: 'Forma de Pago',
+    title: 'Forma de Pago:',
     items: DEFAULT_PAYMENT_OPTIONS.map((opt) => ({ ...opt, checked: false })),
   };
 }

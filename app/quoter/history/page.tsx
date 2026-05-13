@@ -98,6 +98,9 @@ function QuoteCard({
               <span className="font-semibold text-sm tabular-nums">
                 {quote.number}
               </span>
+              <Badge variant={quote.quote_type === 'rental' ? 'secondary' : 'outline'} className="text-xs">
+                {quote.quote_type === 'rental' ? 'Alquiler' : 'Venta'}
+              </Badge>
               <Badge variant={STATUS_VARIANTS[quote.status]} className="text-xs">
                 {STATUS_LABELS[quote.status]}
               </Badge>
@@ -193,11 +196,13 @@ export default function QuoteHistorialPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [activeFilter, setActiveFilter] = useState<QuoteStatus | "all">("all");
+  const [activeType, setActiveType] = useState<'sale' | 'rental'>('sale');
 
   const { quotes, loading, updateStatus } = useQuotes(
     userProfile?.id ?? "",
     userProfile?.role ?? "supervisor",
-    activeFilter === "all" ? undefined : activeFilter
+    activeFilter === "all" ? undefined : activeFilter,
+    activeType
   );
 
   if (authLoading || !userProfile) {
@@ -240,7 +245,31 @@ export default function QuoteHistorialPage() {
           </Button>
         </div>
 
-        {/* Filtros */}
+        {/* Tabs Venta / Alquiler */}
+        <div className="flex border-b">
+          <button
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeType === 'sale'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setActiveType('sale')}
+          >
+            Ventas
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeType === 'rental'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setActiveType('rental')}
+          >
+            Alquileres
+          </button>
+        </div>
+
+        {/* Filtros de estado */}
         <div className="flex gap-2 flex-wrap">
           {FILTERS.map((f) => (
             <Button
@@ -265,8 +294,8 @@ export default function QuoteHistorialPage() {
               <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-40" />
               <p className="text-muted-foreground text-sm">
                 {activeFilter === "all"
-                  ? "No hay cotizaciones todavía."
-                  : `No hay cotizaciones con estado "${STATUS_LABELS[activeFilter]}".`}
+                  ? `No hay cotizaciones de ${activeType === 'rental' ? 'alquiler' : 'venta'} todavía.`
+                  : `No hay cotizaciones de ${activeType === 'rental' ? 'alquiler' : 'venta'} con estado "${STATUS_LABELS[activeFilter]}".`}
               </p>
               <Button asChild variant="outline" className="mt-4">
                 <Link href="/quoter">

@@ -677,6 +677,7 @@ enum QuoteItemType {
 model Quote {
   id             String   @id @default(uuid()) @map("id")
   number         String   @unique
+  quote_type     String   @default("sale") // 'sale' | 'rental'
   status         String   @default("draft")
   client_id      String?
   client_name    String
