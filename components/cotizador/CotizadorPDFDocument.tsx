@@ -632,7 +632,7 @@ export function CotizadorPDFDocument({
             ...(exchangeRate
               ? [{
                   type: 'free' as const,
-                  content: `Precio de venta: Dólar Venta Banco Nación $${exchangeRate.venta.toLocaleString('es-AR')}`,
+                  content: `Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.`,
                 }]
               : []),
             ...(notesList ?? []),
@@ -693,7 +693,7 @@ export function CotizadorPDFDocument({
                     </Text>
                     {checkedItems.map((item, idx) => (
                       <View key={idx} style={styles.groupItem}>
-                        <Text style={styles.groupItemLabel}>{item.label})</Text>
+                        <Text style={styles.groupItemLabel}>{String.fromCharCode(97 + idx)})</Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
                           <Text style={styles.groupItemText}>{item.content}</Text>
                           {item.link && (
