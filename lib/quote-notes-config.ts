@@ -41,6 +41,10 @@ export const DEFAULT_PAYMENT_OPTIONS: Omit<GroupNoteItem, 'checked'>[] = [
     label: 'c',
     content: 'Posibilidad de financiación 0.30.60.90.120 echeqs anticipados.',
   },
+    {
+    label: 'd',
+    content: 'BNA CONECTA.',
+  },
 ];
 
 /** Opciones predefinidas de lugar de entrega */
