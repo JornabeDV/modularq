@@ -478,7 +478,9 @@ function ResumenCard({
 /**
  * Ajusta los ítems para el PDF distribuyendo la diferencia entre
  * el subtotal calculado y el finalTotal al ítem de mayor valor.
- * Así los precios en el PDF coinciden visualmente con el subtotal final.
+ * Solo aplica cuando finalTotal es mayor que subtotal (aumento).
+ * En caso de descuento los ítems se mantienen sin modificación
+ * y el descuento se muestra como línea separada en el PDF.
  */
 function getPDFItems(
   items: QuoteItemState[],
@@ -498,7 +500,7 @@ function getPDFItems(
     adicionales: item.adicionales,
   }));
 
-  if (diff === 0 || items.length === 0) return mapped;
+  if (diff <= 0 || items.length === 0) return mapped;
 
   // Encontrar ítem con mayor valor total (unitPrice * quantity)
   let maxIndex = 0;
