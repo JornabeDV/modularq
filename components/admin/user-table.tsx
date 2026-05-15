@@ -49,6 +49,8 @@ export function UserTable({
   return (
     <Card>
       <CardHeader>
+        <CardTitle>Personal</CardTitle>
+        <CardDescription>Lista de todos los usuarios del sistema</CardDescription>
         <UserFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}
@@ -63,7 +65,7 @@ export function UserTable({
               <TableRow className="hover:bg-background">
                 <TableHead className="min-w-[200px]">Usuario</TableHead>
                 <TableHead className="text-center min-w-[120px]">Rol</TableHead>
-                <TableHead className="text-center min-w-[120px]">
+                <TableHead className="text-right min-w-[120px]">
                   Acciones
                 </TableHead>
               </TableRow>

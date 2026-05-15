@@ -58,7 +58,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop Sidebar */}
       <div className={cn("hidden lg:flex lg:flex-col transition-all duration-300", sidebarCollapsed ? "lg:w-16" : "lg:w-64")}>
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
@@ -95,7 +95,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:ml-0 pt-20 lg:pt-0">
+      <main className="flex-1 overflow-auto min-h-0 lg:ml-0 pt-20 lg:pt-0">
         {children}
       </main>
       

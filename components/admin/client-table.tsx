@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ArrowUpDown } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -55,6 +55,8 @@ export function ClientTable({
   return (
     <Card>
       <CardHeader>
+        <CardTitle>Clientes</CardTitle>
+        <CardDescription>Lista de todos los clientes registrados</CardDescription>
         <ClientFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}

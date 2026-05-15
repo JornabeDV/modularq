@@ -89,8 +89,8 @@ export function UserRow({
             <span className="ml-1 capitalize">{user.role}</span>
           </Badge>
         </TableCell>
-        <TableCell className="text-center">
-          <div className="flex items-center justify-center space-x-2">
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end space-x-2">
             {!isReadOnly && (
               <>
                 {!isDeleted && (

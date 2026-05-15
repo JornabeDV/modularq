@@ -3336,6 +3336,11 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
+  static async deleteQuote(id: string): Promise<void> {
+    const { error } = await supabase.from('quotes').delete().eq('id', id)
+    if (error) throw error
+  }
+
   // ==================== SERVICE CATALOG ====================
 
   static async getServiceCatalog(activeOnly = true) {

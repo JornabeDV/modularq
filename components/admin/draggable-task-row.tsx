@@ -111,8 +111,8 @@ export function DraggableTaskRow({
           {task.estimatedHours ? `${task.estimatedHours}h` : "-"}
         </TableCell>
         {!isReadOnly && (
-          <TableCell className="text-center">
-            <div className="flex items-center justify-center space-x-2">
+          <TableCell className="text-right">
+            <div className="flex items-center justify-end space-x-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

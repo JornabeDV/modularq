@@ -158,6 +158,8 @@ export function ProjectTable({
   return (
     <Card>
       <CardHeader>
+        <CardTitle>Proyectos</CardTitle>
+        <CardDescription>Lista de todos los proyectos registrados</CardDescription>
         <ProjectFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}
@@ -242,7 +244,7 @@ export function ProjectTable({
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </TableHead>
-                <TableHead className="text-center min-w-[120px]">
+                <TableHead className="text-right min-w-[120px]">
                   Acciones
                 </TableHead>
               </TableRow>

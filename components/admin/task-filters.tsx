@@ -2,6 +2,7 @@
 
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Search } from 'lucide-react'
 import { TASK_CATEGORIES } from '@/lib/constants'
 
 interface TaskFiltersProps {
@@ -22,17 +23,18 @@ export function TaskFilters({
   onTypeFilterChange
 }: TaskFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mt-4">
-      <div className="flex-1">
+    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por título o descripción..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full sm:max-w-sm"
+          className="pl-9"
         />
       </div>
       <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-        <SelectTrigger className="w-full sm:w-48">
+        <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrar por categoría" />
         </SelectTrigger>
         <SelectContent>
@@ -45,7 +47,7 @@ export function TaskFilters({
         </SelectContent>
       </Select>
       <Select value={typeFilter} onValueChange={onTypeFilterChange}>
-        <SelectTrigger className="w-full sm:w-48">
+        <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrar por tipo" />
         </SelectTrigger>
         <SelectContent>
