@@ -111,11 +111,6 @@ export function QuoteRow({
       <TableCell>
         <div className="flex flex-col">
           <span className="font-medium text-sm">{quote.client_name}</span>
-          {quote.client_company && (
-            <span className="text-xs text-muted-foreground">
-              {quote.client_company}
-            </span>
-          )}
         </div>
       </TableCell>
       <TableCell>
