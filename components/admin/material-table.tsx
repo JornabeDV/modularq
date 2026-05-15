@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DataPagination } from "@/components/ui/data-pagination";
 import {
   Table,
   TableBody,
@@ -42,6 +43,11 @@ interface MaterialTableProps {
   sortField?: SortField;
   sortOrder?: "asc" | "desc";
   onSort?: (field: SortField) => void;
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (value: number) => void;
 }
 
 export function MaterialTable({
@@ -58,6 +64,11 @@ export function MaterialTable({
   sortField,
   sortOrder,
   onSort,
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  onPageChange,
+  onItemsPerPageChange,
 }: MaterialTableProps) {
   return (
     <Card>
@@ -137,7 +148,7 @@ export function MaterialTable({
                   </div>
                 </TableHead>
                 {!isReadOnly && (
-                  <TableHead className="text-center">Acciones</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -166,6 +177,20 @@ export function MaterialTable({
               )}
             </TableBody>
           </Table>
+
+          {totalItems > 0 && (
+            <div className="pt-4 border-t">
+              <DataPagination
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                currentPage={currentPage}
+                onPageChange={onPageChange}
+                onItemsPerPageChange={onItemsPerPageChange}
+                itemsPerPageOptions={[5, 10, 20, 50]}
+                itemsText="materiales"
+              />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

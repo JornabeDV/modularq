@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ArrowUpDown } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -137,6 +137,8 @@ export function TaskTable({
   return (
     <Card>
       <CardHeader>
+        <CardTitle>Tareas</CardTitle>
+        <CardDescription>Lista de todas las tareas configuradas</CardDescription>
         <TaskFilters
           searchTerm={searchTerm}
           onSearchChange={onSearchChange}
@@ -189,7 +191,7 @@ export function TaskTable({
                   </div>
                 </TableHead>
                 {!isReadOnly && (
-                  <TableHead className="text-center min-w-[120px]">
+                  <TableHead className="text-right min-w-[120px]">
                     Acciones
                   </TableHead>
                 )}

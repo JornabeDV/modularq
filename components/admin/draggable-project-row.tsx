@@ -204,9 +204,9 @@ export function DraggableProjectRow({
             <div className="font-medium">{progress}%</div>
           </div>
         </TableCell>
-        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
           <div
-            className="flex items-center justify-center space-x-2"
+            className="flex items-center justify-end space-x-2"
             data-action-button
           >
             <Tooltip>

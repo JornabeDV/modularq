@@ -94,5 +94,25 @@ export function useQuotes(userId: string, role: string, statusFilter?: QuoteStat
     }
   }
 
-  return { quotes, loading, reload: load, updateStatus }
+  const deleteQuote = async (id: string, userId: string, role: string) => {
+    // Optimistic update
+    const previous = quotes
+    setQuotes((prev) => prev.filter((q) => q.id !== id))
+    try {
+      const res = await fetch(`/api/quotes/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Error al eliminar')
+      }
+    } catch {
+      setQuotes(previous) // revert on failure
+      throw new Error()
+    }
+  }
+
+  return { quotes, loading, reload: load, updateStatus, deleteQuote }
 }
