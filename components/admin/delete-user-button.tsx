@@ -6,6 +6,7 @@ import { Trash2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useUsersPrisma } from '@/hooks/use-users-prisma'
 import { useToast } from '@/hooks/use-toast'
+import { useState } from 'react'
 
 interface DeleteUserButtonProps {
   userId: string
@@ -22,22 +23,28 @@ export function DeleteUserButton({
 }: DeleteUserButtonProps) {
   const { deleteUser } = useUsersPrisma()
   const { toast } = useToast()
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-    const result = await deleteUser(userId, currentUserId)
-    if (result.success) {
-      toast({
-        title: "Usuario eliminado",
-        description: `El usuario "${userName}" ha sido eliminado.`,
-        variant: "default",
-      })
-      onDelete?.(userId)
-    } else {
-      toast({
-        title: "Error",
-        description: result.error || "No se pudo eliminar el usuario",
-        variant: "destructive",
-      })
+    setIsDeleting(true)
+    try {
+      const result = await deleteUser(userId, currentUserId)
+      if (result.success) {
+        toast({
+          title: "Usuario eliminado",
+          description: `El usuario "${userName}" ha sido eliminado.`,
+          variant: "default",
+        })
+        onDelete?.(userId)
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "No se pudo eliminar el usuario",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -66,11 +73,19 @@ export function DeleteUserButton({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
+              <strong> &quot;{userName}&quot;</strong> y todos sus datos asociados.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>
-              Eliminar Usuario
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="cursor-pointer"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
