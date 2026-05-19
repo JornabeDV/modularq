@@ -97,19 +97,22 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: "#1f2937",
   },
-  moduleHeader: {
+  moduleRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 6,
+    gap: 10,
+  },
+  moduleContent: {
+    flex: 1,
   },
   moduleName: {
     fontSize: 12,
     fontWeight: "bold",
     color: "#1f2937",
-    flex: 1,
+    marginBottom: 4,
   },
-  modulePriceBlock: {
+  modulePriceColumn: {
+    width: 100,
     alignItems: "flex-end",
     marginLeft: 10,
   },
@@ -443,12 +446,43 @@ export function CotizadorPDFDocument({
     const itemTotal = calculateItemTotal(item);
     return (
       <View key={`${item.moduleId}-${idx}`} style={styles.moduleCard}>
-        <View style={styles.moduleHeader}>
-          <Text style={styles.moduleName}>
-            {item.moduleName}
-            {showQty ? ` (x${item.quantity})` : ''}
-          </Text>
-          <View style={styles.modulePriceBlock}>
+        <View style={styles.moduleRow}>
+          <View style={styles.moduleContent}>
+            <Text style={styles.moduleName}>
+              {item.moduleName}
+              {showQty ? ` (x${item.quantity})` : ''}
+            </Text>
+            {item.moduleDescription && (
+              <Text style={styles.moduleDescription}>
+                {item.moduleDescription}
+              </Text>
+            )}
+            {item.moduleDescriptionSections && item.moduleDescriptionSections.length > 0 && (
+              <View style={styles.descriptionSections}>
+                {item.moduleDescriptionSections.map((sec, i) => (
+                  <View key={i}>
+                    <Text style={styles.descriptionSectionTitle}>{sec.section}</Text>
+                    <Text style={styles.descriptionSectionBody}>{sec.description}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {item.adicionales.length > 0 && (
+              <View style={styles.adicionalesSection}>
+                <Text style={styles.adicionalesLabel}>Incluye</Text>
+                {item.adicionales.map((ad) => (
+                  <View key={ad.id} style={styles.adicionalItem}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                      <View style={styles.adicionalBullet} />
+                      <Text style={styles.adicionalName}>{ad.name}</Text>
+                    </View>
+                    <Text style={styles.adicionalPrice}>{formatUSD(ad.price, rate)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+          <View style={styles.modulePriceColumn}>
             {showQty && (
               <Text style={styles.moduleUnitPrice}>
                 {formatUSD(item.basePrice, rate)} c/u
@@ -459,35 +493,6 @@ export function CotizadorPDFDocument({
             </Text>
           </View>
         </View>
-        {item.moduleDescription && (
-          <Text style={styles.moduleDescription}>
-            {item.moduleDescription}
-          </Text>
-        )}
-        {item.moduleDescriptionSections && item.moduleDescriptionSections.length > 0 && (
-          <View style={styles.descriptionSections}>
-            {item.moduleDescriptionSections.map((sec, i) => (
-              <View key={i}>
-                <Text style={styles.descriptionSectionTitle}>{sec.section}</Text>
-                <Text style={styles.descriptionSectionBody}>{sec.description}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-        {item.adicionales.length > 0 && (
-          <View style={styles.adicionalesSection}>
-            <Text style={styles.adicionalesLabel}>Incluye</Text>
-            {item.adicionales.map((ad) => (
-              <View key={ad.id} style={styles.adicionalItem}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
-                  <View style={styles.adicionalBullet} />
-                  <Text style={styles.adicionalName}>{ad.name}</Text>
-                </View>
-                <Text style={styles.adicionalPrice}>{formatUSD(ad.price, rate)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
     );
   };
