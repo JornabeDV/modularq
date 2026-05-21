@@ -16,6 +16,7 @@ export interface Quote {
   client_email?: string
   subtotal: number
   total: number
+  currency?: string
   notes?: string
   pdf_url?: string
   valid_until?: string

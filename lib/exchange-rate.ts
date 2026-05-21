@@ -48,6 +48,15 @@ export function formatUSD(amountARS: number, rate: number): string {
   }).format(usd)
 }
 
+export function formatARS(amount: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
 export function formatExchangeRate(rate: ExchangeRate): string {
   return `$${rate.venta.toLocaleString('es-AR')}`
 }

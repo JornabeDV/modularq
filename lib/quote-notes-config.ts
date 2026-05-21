@@ -60,6 +60,18 @@ export const DEFAULT_DELIVERY_OPTIONS: Omit<GroupNoteItem, 'checked'>[] = [
   },
 ];
 
+/** Opciones predefinidas de servicios adicionales */
+export const DEFAULT_ADDITIONAL_SERVICES_OPTIONS: Omit<GroupNoteItem, 'checked'>[] = [
+  {
+    label: 'a',
+    content: 'En caso de requerir traslado, se enviará cotización adicional.',
+  },
+  {
+    label: 'b',
+    content: 'En caso de requerir instalación, se enviará cotización adicional.',
+  },
+];
+
 /** Crea una nota de grupo "Forma de Pago" con todas las opciones desmarcadas */
 export function createPaymentNote(): GroupNote {
   return {
@@ -73,8 +85,17 @@ export function createPaymentNote(): GroupNote {
 export function createDeliveryNote(): GroupNote {
   return {
     type: 'group',
-    title: 'Lugar de entrega',
+    title: 'Lugar de entrega:',
     items: DEFAULT_DELIVERY_OPTIONS.map((opt) => ({ ...opt, checked: false })),
+  };
+}
+
+/** Crea una nota de grupo "Servicios adicionales" con todas las opciones desmarcadas */
+export function createAdditionalServicesNote(): GroupNote {
+  return {
+    type: 'group',
+    title: 'Servicios adicionales:',
+    items: DEFAULT_ADDITIONAL_SERVICES_OPTIONS.map((opt) => ({ ...opt, checked: false })),
   };
 }
 

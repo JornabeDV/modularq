@@ -74,6 +74,7 @@ import {
   type GroupNote,
   createPaymentNote,
   createDeliveryNote,
+  createAdditionalServicesNote,
   migrateNotesList,
   groupHasCheckedItems,
 } from "@/lib/quote-notes-config";
@@ -293,6 +294,7 @@ function ResumenCard({
   finalTotal,
   finalTotalUSD,
   exchangeRate,
+  currency,
   generating,
   selectedClient,
   savedQuote,
@@ -304,6 +306,7 @@ function ResumenCard({
   finalTotal: number;
   finalTotalUSD: number;
   exchangeRate: ExchangeRate | null;
+  currency: 'ARS' | 'USD';
   generating: boolean;
   selectedClient: Client | null;
   savedQuote: { id: string; number: string } | null;
@@ -350,7 +353,7 @@ function ResumenCard({
   return (
     <Card>
       <CardContent className="space-y-4">
-        {exchangeRate && (
+        {exchangeRate && currency === 'USD' && (
           <div className="flex justify-end">
             <Badge
               variant="outline"
@@ -370,7 +373,7 @@ function ResumenCard({
         </div>
         {hasAdjustment && (
           <p className="text-xs text-muted-foreground text-right">
-            Descuento: {fmtARS(finalTotal - subtotal)}
+            Diferencia: {fmtARS(finalTotal - subtotal)}
           </p>
         )}
 
@@ -398,31 +401,33 @@ function ResumenCard({
               />
             </div>
           </div>
-          <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Subtotal sin IVA (USD)</span>
-            <div className="flex items-center gap-2">
-              <PriceInput
-                className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
-                  hasAdjustment ? "border-primary bg-primary/5" : ""
-                }`}
-                value={totalUSDInput}
-                onChange={(val) => setTotalUSDInput(val)}
-                onBlur={() => {
-                  const parsedUSD = parsePriceInput(totalUSDInput);
-                  const formatted = parsedUSD.toFixed(2).replace(".", ",");
-                  setTotalUSDInput(formatted);
-                  if (exchangeRate && exchangeRate.venta > 0) {
-                    onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
-                  }
-                }}
-                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  }
-                }}
-              />
+          {currency === 'USD' && (
+            <div className="flex justify-between items-center gap-3">
+              <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Subtotal sin IVA (USD)</span>
+              <div className="flex items-center gap-2">
+                <PriceInput
+                  className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 text-blue-700 dark:text-blue-300 ${
+                    hasAdjustment ? "border-primary bg-primary/5" : ""
+                  }`}
+                  value={totalUSDInput}
+                  onChange={(val) => setTotalUSDInput(val)}
+                  onBlur={() => {
+                    const parsedUSD = parsePriceInput(totalUSDInput);
+                    const formatted = parsedUSD.toFixed(2).replace(".", ",");
+                    setTotalUSDInput(formatted);
+                    if (exchangeRate && exchangeRate.venta > 0) {
+                      onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
+                    }
+                  }}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur();
+                    }
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Desglose IVA */}
@@ -431,10 +436,12 @@ function ResumenCard({
             <span className="text-sm text-muted-foreground">IVA 21%</span>
             <span className="text-sm font-medium tabular-nums">{fmtARS(iva)}</span>
           </div>
-          <div className="flex justify-between items-center gap-3">
-            <span className="text-sm text-muted-foreground">IVA 21% (USD)</span>
-            <span className="text-sm font-medium tabular-nums text-blue-700 dark:text-blue-300">{fmtUSD(ivaUSD)}</span>
-          </div>
+          {currency === 'USD' && (
+            <div className="flex justify-between items-center gap-3">
+              <span className="text-sm text-muted-foreground">IVA 21% (USD)</span>
+              <span className="text-sm font-medium tabular-nums text-blue-700 dark:text-blue-300">{fmtUSD(ivaUSD)}</span>
+            </div>
+          )}
         </div>
 
         {/* Total con IVA */}
@@ -442,10 +449,12 @@ function ResumenCard({
           <span className="font-bold whitespace-nowrap text-sm">Total con IVA</span>
           <span className="text-base font-bold tabular-nums">{fmtARS(totalConIva)}</span>
         </div>
-        <div className="flex justify-between items-center gap-3 bg-muted/40 rounded-lg px-3 py-2">
-          <span className="font-bold whitespace-nowrap text-sm text-blue-700 dark:text-blue-300">Total con IVA (USD)</span>
-          <span className="text-base font-bold tabular-nums text-blue-700 dark:text-blue-300">{fmtUSD(totalConIvaUSD)}</span>
-        </div>
+        {currency === 'USD' && (
+          <div className="flex justify-between items-center gap-3 bg-muted/40 rounded-lg px-3 py-2">
+            <span className="font-bold whitespace-nowrap text-sm text-blue-700 dark:text-blue-300">Total con IVA (USD)</span>
+            <span className="text-base font-bold tabular-nums text-blue-700 dark:text-blue-300">{fmtUSD(totalConIvaUSD)}</span>
+          </div>
+        )}
 
         <Button
           className="w-full cursor-pointer"
@@ -537,6 +546,7 @@ export default function CotizadorPage() {
   const [freeNotes, setFreeNotes] = useState<FreeNote[]>([]);
   const [paymentNote, setPaymentNote] = useState<GroupNote>(createPaymentNote());
   const [deliveryNote, setDeliveryNote] = useState<GroupNote>(createDeliveryNote());
+  const [additionalServicesNote, setAdditionalServicesNote] = useState<GroupNote>(createAdditionalServicesNote());
   const [quoteItems, setQuoteItems] = useState<QuoteItemState[]>([]);
   const [generating, setGenerating] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; number: string } | null>(null);
@@ -548,6 +558,7 @@ export default function CotizadorPage() {
   const [editingItemKey, setEditingItemKey] = useState<string | null>(null);
   const [finalTotal, setFinalTotal] = useState(0);
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
+  const [quoteCurrency, setQuoteCurrency] = useState<'ARS' | 'USD'>('USD');
 
   // Fecha de vencimiento por defecto: hoy + 30 días
   const getDefaultValidUntil = () => {
@@ -610,6 +621,7 @@ export default function CotizadorPage() {
 
         // Precargar tipo de cotización
         setQuoteType(quote.quote_type === 'rental' ? 'rental' : 'sale');
+        setQuoteCurrency(quote.currency === 'ARS' ? 'ARS' : 'USD');
 
         // Precargar notas (nuevo formato tipado, o fallback a texto plano)
         const migrated = migrateNotesList(
@@ -628,6 +640,10 @@ export default function CotizadorPage() {
           (n) => n.type === 'group' && n.title === 'Lugar de entrega'
         ) as GroupNote | undefined;
         setDeliveryNote(existingDelivery ?? createDeliveryNote());
+        const existingAdditionalServices = migrated.find(
+          (n) => n.type === 'group' && n.title === 'Servicios adicionales'
+        ) as GroupNote | undefined;
+        setAdditionalServicesNote(existingAdditionalServices ?? createAdditionalServicesNote());
 
         // Precargar fecha de vencimiento
         if (quote.valid_until) {
@@ -906,10 +922,12 @@ export default function CotizadorPage() {
         client_phone: selectedClient.phone,
         client_email: selectedClient.email,
         quote_type: quoteType,
+        currency: quoteCurrency,
         notes_list: [
           ...freeNotes,
           ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
           ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
+          ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
         ],
         subtotal,
         total: finalTotal,
@@ -969,6 +987,7 @@ export default function CotizadorPage() {
             ...freeNotes,
             ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
             ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
+            ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
           ]}
           quoteType={quoteType}
           items={getPDFItems(quoteItems, subtotal, finalTotal)}
@@ -989,6 +1008,7 @@ export default function CotizadorPage() {
               : undefined
           }
           exchangeRate={exchangeRate ?? undefined}
+          currency={quoteCurrency}
         />
       ).toBlob();
 
@@ -1092,9 +1112,9 @@ export default function CotizadorPage() {
           >
             <div className="overflow-hidden">
               <CardContent className="space-y-4">
-                {/* Tipo de cotización */}
-                <div className="flex items-center gap-3">
-                  <Label className="text-xs shrink-0">Tipo</Label>
+                {/* Tipo de cotización + Moneda */}
+                <div className="flex items-center gap-3 sm:flex-wrap">
+                  <Label className="text-xs shrink-0 max-sm:hidden">Tipo</Label>
                   <div className="flex rounded-md border overflow-hidden">
                     <button
                       type="button"
@@ -1118,6 +1138,33 @@ export default function CotizadorPage() {
                     >
                       Alquiler
                     </button>
+                  </div>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Label className="text-xs shrink-0 max-sm:hidden">Moneda</Label>
+                    <div className="flex rounded-md border overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setQuoteCurrency('USD')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                          quoteCurrency === 'USD'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        USD
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuoteCurrency('ARS')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors border-l ${
+                          quoteCurrency === 'ARS'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-background text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        ARS
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1193,8 +1240,8 @@ export default function CotizadorPage() {
 
               {/* Notas libres */}
               <div className="space-y-2">
-                {/* Nota fija: precio de venta / dólar */}
-                {exchangeRate && (
+                {/* Nota fija: precio de venta / dólar (solo si cotiza en USD) */}
+                {exchangeRate && quoteCurrency === 'USD' && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground w-5">1.</span>
                     <input
@@ -1241,8 +1288,8 @@ export default function CotizadorPage() {
                 </Button>
               </div>
 
-              {/* Forma de pago + Lugar de entrega — 2 cols en desktop */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Forma de pago + Lugar de entrega + Servicios adicionales — 3 cols en desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Forma de pago */}
                 <div className="rounded border bg-muted/30 p-3 space-y-2">
                   <span className="text-xs font-semibold text-muted-foreground uppercase">
@@ -1323,6 +1370,37 @@ export default function CotizadorPage() {
                               {item.link.text}
                             </a>
                           )}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Servicios adicionales */}
+                <div className="rounded border bg-muted/30 p-3 space-y-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">
+                    {additionalServicesNote.title}
+                  </span>
+                  <div className="space-y-1.5 pl-1">
+                    {additionalServicesNote.items.map((item, idx) => (
+                      <label
+                        key={idx}
+                        className="flex items-start gap-2 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={item.checked}
+                          onCheckedChange={(checked) => {
+                            setAdditionalServicesNote((prev) => ({
+                              ...prev,
+                              items: prev.items.map((it, j) =>
+                                j === idx ? { ...it, checked: checked === true } : it
+                              ),
+                            }));
+                          }}
+                          className="mt-0.5"
+                        />
+                        <span className="text-xs text-muted-foreground leading-tight">
+                          {item.label}) {item.content}
                         </span>
                       </label>
                     ))}
@@ -1419,6 +1497,7 @@ export default function CotizadorPage() {
               finalTotal={finalTotal}
               finalTotalUSD={exchangeRate && exchangeRate.venta > 0 ? finalTotal / exchangeRate.venta : 0}
               exchangeRate={exchangeRate}
+              currency={quoteCurrency}
               generating={generating}
               selectedClient={selectedClient}
               savedQuote={savedQuote}
