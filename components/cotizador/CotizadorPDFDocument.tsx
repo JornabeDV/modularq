@@ -394,6 +394,7 @@ export interface CotizadorPDFProps {
     origen?: string;
     actualizado?: string;
   };
+  currency?: 'ARS' | 'USD';
 }
 
 function formatUSD(amountARS: number, rate: number): string {
@@ -404,6 +405,19 @@ function formatUSD(amountARS: number, rate: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(usd);
+}
+
+function formatARS(amount: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+function formatPrice(amount: number, currency: 'ARS' | 'USD', rate: number): string {
+  return currency === 'ARS' ? formatARS(amount) : formatUSD(amount, rate);
 }
 
 export function CotizadorPDFDocument({
@@ -419,6 +433,7 @@ export function CotizadorPDFDocument({
   discount,
   client,
   exchangeRate,
+  currency = 'USD',
 }: CotizadorPDFProps) {
   const rate = exchangeRate?.venta ?? 0;
   const standardItems = items.filter((i) => i.type === 'standard_module');
@@ -476,7 +491,7 @@ export function CotizadorPDFDocument({
                       <View style={styles.adicionalBullet} />
                       <Text style={styles.adicionalName}>{ad.name}</Text>
                     </View>
-                    <Text style={styles.adicionalPrice}>{formatUSD(ad.price, rate)}</Text>
+                    <Text style={styles.adicionalPrice}>{formatPrice(ad.price, currency, rate)}</Text>
                   </View>
                 ))}
               </View>
@@ -485,11 +500,11 @@ export function CotizadorPDFDocument({
           <View style={styles.modulePriceColumn}>
             {showQty && (
               <Text style={styles.moduleUnitPrice}>
-                {formatUSD(item.basePrice, rate)} c/u
+                {formatPrice(item.basePrice, currency, rate)} c/u
               </Text>
             )}
             <Text style={styles.moduleSubtotal}>
-              {formatUSD(itemTotal, rate)}
+              {formatPrice(itemTotal, currency, rate)}
             </Text>
           </View>
         </View>
@@ -527,7 +542,7 @@ export function CotizadorPDFDocument({
             {validUntil && (
               <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
             )}
-            {exchangeRate && exchangeRate.venta > 0 && (
+            {currency === 'USD' && exchangeRate && exchangeRate.venta > 0 && (
               <Text style={styles.quoteDate}>Dólar BNA Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
             )}
           </View>
@@ -600,7 +615,7 @@ export function CotizadorPDFDocument({
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>
-              {formatUSD(discountAmount > 0 ? computedTotal : displayTotal, rate)}
+              {formatPrice(discountAmount > 0 ? computedTotal : displayTotal, currency, rate)}
             </Text>
           </View>
           {discountAmount > 0 && (
@@ -608,13 +623,13 @@ export function CotizadorPDFDocument({
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Descuentos</Text>
                 <Text style={styles.totalValue}>
-                  {formatUSD(discountAmount, rate)}
+                  {formatPrice(discountAmount, currency, rate)}
                 </Text>
               </View>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Importe Gravado</Text>
                 <Text style={styles.totalValue}>
-                  {formatUSD(taxableAmount, rate)}
+                  {formatPrice(taxableAmount, currency, rate)}
                 </Text>
               </View>
             </>
@@ -622,19 +637,19 @@ export function CotizadorPDFDocument({
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Impuestos</Text>
             <Text style={styles.totalValue}>
-              {formatUSD(ivaAmount, rate)}
+              {formatPrice(ivaAmount, currency, rate)}
             </Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatUSD(totalAmount, rate)}</Text>
+            <Text style={styles.grandTotalValue}>{formatPrice(totalAmount, currency, rate)}</Text>
           </View>
         </View>
 
         {/* Notas */}
         {(() => {
           const displayNotes: NoteItem[] = [
-            ...(exchangeRate
+            ...(currency === 'USD' && exchangeRate
               ? [{
                   type: 'free' as const,
                   content: `Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.`,

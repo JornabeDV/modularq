@@ -101,12 +101,20 @@ export function QuoteRow({
     <TableRow className="hover:bg-muted/50">
       <TableCell className="font-medium tabular-nums">{quote.number}</TableCell>
       <TableCell>
-        <Badge
-          variant={quote.quote_type === "rental" ? "secondary" : "outline"}
-          className="text-xs"
-        >
-          {quote.quote_type === "rental" ? "Alquiler" : "Venta"}
-        </Badge>
+        <div className="flex gap-1.5">
+          <Badge
+            variant={quote.quote_type === "rental" ? "secondary" : "outline"}
+            className="text-xs"
+          >
+            {quote.quote_type === "rental" ? "Alquiler" : "Venta"}
+          </Badge>
+          <Badge
+            variant="outline"
+            className="text-xs"
+          >
+            {quote.currency === 'ARS' ? 'ARS' : 'USD'}
+          </Badge>
+        </div>
       </TableCell>
       <TableCell>
         <div className="flex flex-col">

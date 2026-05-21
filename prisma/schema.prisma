@@ -686,6 +686,7 @@ model Quote {
   client_email   String?
   subtotal       Float    @default(0)
   total          Float    @default(0)
+  currency       String   @default("USD")
   notes          String?
   notes_list     Json?     // array de notas ordenadas para el cotizador
   pdf_url        String?
