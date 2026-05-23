@@ -68,7 +68,7 @@ export function useQuotes(userId: string, role: string, statusFilter?: QuoteStat
       const params = new URLSearchParams({ userId, role })
       if (statusFilter) params.set('status', statusFilter)
       if (quoteTypeFilter) params.set('quoteType', quoteTypeFilter)
-      const res = await fetch(`/api/quotes?${params}`)
+      const res = await fetch(`/api/quotes?${params}`, { cache: 'no-store' })
       const data = await res.json()
       setQuotes(data.quotes ?? [])
     } finally {

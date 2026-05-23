@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -14,6 +14,7 @@ import {
   UserPlus,
   Calendar as CalendarIcon,
   Plus,
+  Save,
   X,
   ChevronDown,
 } from "lucide-react";
@@ -296,9 +297,11 @@ function ResumenCard({
   exchangeRate,
   currency,
   generating,
+  savingDraft,
   selectedClient,
   savedQuote,
   onGeneratePDF,
+  onSaveDraft,
   onUpdateFinalTotal,
 }: {
   quoteItems: QuoteItemState[];
@@ -308,9 +311,11 @@ function ResumenCard({
   exchangeRate: ExchangeRate | null;
   currency: 'ARS' | 'USD';
   generating: boolean;
+  savingDraft: boolean;
   selectedClient: Client | null;
   savedQuote: { id: string; number: string } | null;
   onGeneratePDF: () => void;
+  onSaveDraft: () => void;
   onUpdateFinalTotal: (value: number) => void;
 }) {
   const hasAdjustment = finalTotal !== subtotal;
@@ -458,11 +463,21 @@ function ResumenCard({
 
         <Button
           className="w-full cursor-pointer"
+          onClick={onSaveDraft}
+          disabled={savingDraft || generating || !selectedClient || quoteItems.length === 0}
+        >
+          <Save className="w-4 h-4 mr-2" />
+          {savingDraft ? "Guardando..." : "Guardar borrador"}
+        </Button>
+
+        <Button
+          className="w-full cursor-pointer"
+          variant="secondary"
           onClick={onGeneratePDF}
-          disabled={generating || !selectedClient || quoteItems.length === 0}
+          disabled={generating || !savedQuote || quoteItems.length === 0}
         >
           <Download className="w-4 h-4 mr-2" />
-          {generating ? "Generando PDF..." : "Descargar cotización PDF"}
+          {generating ? "Generando PDF..." : "Generar PDF"}
         </Button>
         {savedQuote && (
           <div className="rounded-lg border bg-muted/40 px-3 py-2.5 space-y-1.5">
@@ -549,11 +564,13 @@ export default function CotizadorPage() {
   const [additionalServicesNote, setAdditionalServicesNote] = useState<GroupNote>(createAdditionalServicesNote());
   const [quoteItems, setQuoteItems] = useState<QuoteItemState[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [savedQuote, setSavedQuote] = useState<{ id: string; number: string } | null>(null);
+  const [sourcePdfUrl, setSourcePdfUrl] = useState<string | null>(null);
   const [adicionales, setAdicionales] = useState<{ id: string; name: string; unit_price: number }[]>([]);
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
-  const [loadingDuplicate, setLoadingDuplicate] = useState(false);
+  const [loadingSource, setLoadingSource] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [editingItemKey, setEditingItemKey] = useState<string | null>(null);
   const [finalTotal, setFinalTotal] = useState(0);
@@ -605,7 +622,7 @@ export default function CotizadorPage() {
 
     if (!sourceId || !clients || clients.length === 0) return;
 
-    setLoadingDuplicate(true);
+    setLoadingSource(true);
     fetch(`/api/quotes/${sourceId}`)
       .then((r) => r.json())
       .then((data) => {
@@ -677,17 +694,19 @@ export default function CotizadorPage() {
         if (isEdit) {
           setEditingQuoteId(sourceId);
           setSavedQuote({ id: sourceId, number: quote.number });
-          toast({ title: `Editando borrador ${quote.number}` });
+          setSourcePdfUrl(quote.pdf_url ?? null);
+          // No mostrar toast al cargar para editar; el badge del header ya lo indica
         } else {
           setEditingQuoteId(null);
           setSavedQuote(null);
+          setSourcePdfUrl(null);
           toast({ title: `Cotización ${quote.number} duplicada` });
         }
       })
       .catch(() => {
         toast({ title: "Error al cargar cotización", variant: "destructive" });
       })
-      .finally(() => setLoadingDuplicate(false));
+      .finally(() => setLoadingSource(false));
   }, [searchParams, clients, toast]);
 
   const subtotal = quoteItems.reduce((acc, item) => {
@@ -702,6 +721,20 @@ export default function CotizadorPage() {
 
   useEffect(() => {
     getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
+
+  // Atajo Ctrl+S / Cmd+S para guardar borrador
+  const handleSaveDraftRef = useRef(handleSaveDraft);
+  handleSaveDraftRef.current = handleSaveDraft;
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveDraftRef.current();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   if (authLoading || !userProfile) {
@@ -881,6 +914,89 @@ export default function CotizadorPage() {
     );
   }
 
+  // ── Save draft ────────────────────────────────────────────────────────────
+  async function handleSaveDraft() {
+    if (!selectedClient) {
+      toast({ title: "Seleccioná un cliente", variant: "destructive" });
+      return;
+    }
+    if (quoteItems.length === 0) {
+      toast({ title: "Seleccioná al menos un ítem", variant: "destructive" });
+      return;
+    }
+
+    setSavingDraft(true);
+    try {
+      const quoteData = {
+        client_id: selectedClient.id,
+        client_name: selectedClient.companyName,
+        client_company: selectedClient.companyName,
+        client_phone: selectedClient.phone,
+        client_email: selectedClient.email,
+        quote_type: quoteType,
+        currency: quoteCurrency,
+        notes_list: [
+          ...freeNotes,
+          ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
+          ...(groupHasCheckedItems(deliveryNote) ? [deliveryNote] : []),
+          ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
+        ],
+        subtotal,
+        total: finalTotal,
+        valid_until: validUntilDate,
+        created_by: userProfile.id,
+        items: quoteItems.map((item, i) => ({
+          type: item.type,
+          standard_module_id: item.standardModuleId,
+          name: item.name,
+          description: item.description,
+          unit_price: item.unitPrice,
+          quantity: item.quantity,
+          subtotal: item.unitPrice * item.quantity + item.adicionales.reduce((a, ad) => a + ad.price, 0),
+          sort_order: i,
+          module_description: item.moduleDescriptionSections ?? null,
+          additionals: item.adicionales.map((ad) => ({
+            material_id: ad.id,
+            name: ad.name,
+            unit_price: ad.price,
+            quantity: 1,
+            subtotal: ad.price,
+          })),
+          attachments: item.attachments ?? [],
+        })),
+      };
+
+      const res = await fetch("/api/quotes/save-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quoteData, existingQuoteId: editingQuoteId ?? undefined }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Error al guardar el borrador");
+      }
+
+      const { quoteId, quoteNumber } = await res.json();
+      setSavedQuote({ id: quoteId, number: quoteNumber });
+      setEditingQuoteId(quoteId);
+      toast({ title: `Borrador ${quoteNumber} guardado` });
+
+      // Actualizar URL para que al refrescar se siga editando el mismo borrador
+      if (!editingQuoteId) {
+        router.replace(`/quoter?edit=${quoteId}`);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Error al guardar el borrador",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
   // ── PDF generation ────────────────────────────────────────────────────────
   async function handleGeneratePDF() {
     if (!selectedClient) {
@@ -889,6 +1005,10 @@ export default function CotizadorPage() {
     }
     if (quoteItems.length === 0) {
       toast({ title: "Seleccioná al menos un ítem", variant: "destructive" });
+      return;
+    }
+    if (!savedQuote) {
+      toast({ title: "Guardá el borrador primero", variant: "destructive" });
       return;
     }
 
@@ -954,29 +1074,10 @@ export default function CotizadorPage() {
         })),
       };
 
-      // ── Paso 1: reservar/cotizar para obtener el número ──
-      const reserveFormData = new FormData();
-      reserveFormData.append("quoteData", JSON.stringify(quoteData));
-      if (editingQuoteId) {
-        reserveFormData.append("existingQuoteId", editingQuoteId);
-      }
+      const quoteId = savedQuote.id;
+      const quoteNumber = savedQuote.number;
 
-      const reserveRes = await fetch("/api/cotizador/generate-pdf", {
-        method: "POST",
-        body: reserveFormData,
-      });
-
-      if (!reserveRes.ok) {
-        const data = await reserveRes.json();
-        throw new Error(data.error ?? "Error al guardar la cotización");
-      }
-
-      const { quoteId, quoteNumber } = await reserveRes.json();
-      if (quoteId && quoteNumber) {
-        setSavedQuote({ id: quoteId, number: quoteNumber });
-      }
-
-      // ── Paso 2: generar el PDF con el número ──
+      // ── Paso 1: generar el PDF con el número ──
       const { pdf } = await import("@react-pdf/renderer");
       const { CotizadorPDFDocument } = await import("@/components/cotizador/CotizadorPDFDocument");
 
@@ -1040,7 +1141,8 @@ export default function CotizadorPage() {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast({ title: quoteNumber ? `Cotización ${quoteNumber} guardada` : "PDF generado correctamente" });
+      setSourcePdfUrl('generated');
+      toast({ title: `PDF de ${quoteNumber} generado correctamente` });
     } catch (err) {
       toast({
         title: "Error",
@@ -1059,18 +1161,24 @@ export default function CotizadorPage() {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">Cotizador</h1>
-            {loadingDuplicate && (
+            {loadingSource && (
               <Badge variant="secondary" className="text-xs">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Cargando duplicado...
+                Cargando cotización...
               </Badge>
             )}
-            {searchParams.get("duplicate") && !loadingDuplicate && quoteItems.length > 0 && (
+            {searchParams.get("duplicate") && !loadingSource && quoteItems.length > 0 && (
               <Badge variant="outline" className="text-xs">
                 Cotización duplicada
               </Badge>
             )}
-            {editingQuoteId && !loadingDuplicate && (
+            {savedQuote && !loadingSource && (
+              <Badge variant="default" className="text-xs">
+                Borrador {savedQuote.number}
+                {sourcePdfUrl && <span className="opacity-75 ml-1">· PDF listo</span>}
+              </Badge>
+            )}
+            {editingQuoteId && !savedQuote && !loadingSource && (
               <Badge variant="default" className="text-xs">
                 Editando borrador
               </Badge>
@@ -1499,9 +1607,11 @@ export default function CotizadorPage() {
               exchangeRate={exchangeRate}
               currency={quoteCurrency}
               generating={generating}
+              savingDraft={savingDraft}
               selectedClient={selectedClient}
               savedQuote={savedQuote}
               onGeneratePDF={handleGeneratePDF}
+              onSaveDraft={handleSaveDraft}
               onUpdateFinalTotal={setFinalTotal}
             />
           </div>
