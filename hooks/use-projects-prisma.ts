@@ -13,6 +13,7 @@ export interface CreateProjectData {
   end_date?: Date
   client_id?: string
   created_by?: string
+  quote_id?: string
   // Especificaciones técnicas
   modulation?: string
   height?: number
@@ -69,6 +70,17 @@ export function useProjectsPrisma() {
         completedAt: project.completed_at ?? undefined,
         deliveredAt: project.delivered_at ?? undefined,
         clientId: project.client_id,
+        quoteId: project.quote_id || undefined,
+        quote: project.quote ? {
+          id: project.quote.id,
+          number: project.quote.number,
+          quoteType: project.quote.quote_type,
+          status: project.quote.status,
+          clientName: project.quote.client_name,
+          total: project.quote.total,
+          currency: project.quote.currency,
+          pdfUrl: project.quote.pdf_url
+        } : undefined,
         // Especificaciones técnicas
         modulation: project.modulation || 'standard',
         height: project.height || 2.0,
@@ -188,6 +200,7 @@ export function useProjectsPrisma() {
         end_date: projectData.end_date,
         client_id: projectData.client_id,
         created_by: projectData.created_by,
+        quote_id: projectData.quote_id,
         // Especificaciones técnicas
         modulation: projectData.modulation || 'standard',
         height: projectData.height || 2.0,
@@ -237,6 +250,7 @@ export function useProjectsPrisma() {
         width: project.width || 1.5,
         depth: project.depth || 0.8,
         moduleCount: project.module_count || 1,
+        quoteId: project.quote_id || undefined,
         projectTasks: [], // Se llenará cuando se haga fetchProjects
         projectOperarios: [] // Se llenará cuando se haga fetchProjects
       }

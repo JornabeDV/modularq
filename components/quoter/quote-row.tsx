@@ -22,6 +22,7 @@ import {
   Trash2,
   ChevronDown,
   FileX,
+  FolderPlus,
 } from "lucide-react";
 import Link from "next/link";
 import type { Quote, QuoteStatus } from "@/hooks/use-quotes";
@@ -248,6 +249,26 @@ export function QuoteRow({
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+            )}
+
+            {quote.status === 'approved' && !quote.has_project && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 cursor-pointer"
+                    asChild
+                  >
+                    <Link href={`/admin/projects?quoteId=${quote.id}`}>
+                      <FolderPlus className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Crear proyecto</p>
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {canDelete && (

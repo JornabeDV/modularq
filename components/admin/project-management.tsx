@@ -37,6 +37,7 @@ export function ProjectManagement() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justDeleted = searchParams.get("deleted") === "true";
+  const quoteIdFromUrl = searchParams.get("quoteId");
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
 
@@ -53,7 +54,7 @@ export function ProjectManagement() {
   } = useProjectsPrisma();
   const { operarios } = useOperariosPrisma();
   const { assignOperarioToProject } = useProjectOperariosPrisma();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(!!quoteIdFromUrl);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
@@ -85,6 +86,7 @@ export function ProjectManagement() {
           : new Date(),
         end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
         client_id: projectData.clientId || undefined,
+        quote_id: projectData.quoteId || undefined,
         created_by: user.id,
         modulation: projectData.modulation,
         height: projectData.height,
@@ -390,9 +392,15 @@ export function ProjectManagement() {
 
       <ProjectForm
         isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
+        onClose={() => {
+          setIsCreateDialogOpen(false);
+          if (quoteIdFromUrl) {
+            router.replace('/admin/projects');
+          }
+        }}
         onSubmit={handleCreateProject}
         isEditing={false}
+        preselectedQuoteId={quoteIdFromUrl ?? undefined}
       />
 
       <ProjectForm

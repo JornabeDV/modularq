@@ -200,6 +200,16 @@ export class PrismaTypedService {
             role,
             deleted_at
           )
+        ),
+        quote:quote_id (
+          id,
+          number,
+          quote_type,
+          status,
+          client_name,
+          total,
+          currency,
+          pdf_url
         )
       `)
       .order('project_order', { ascending: true, nullsFirst: false })
@@ -234,6 +244,7 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
+    quote_id?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('projects')
@@ -251,7 +262,8 @@ export class PrismaTypedService {
         height: projectData.height || 2.0,
         width: projectData.width || 1.5,
         depth: projectData.depth || 0.8,
-        module_count: projectData.module_count || 1
+        module_count: projectData.module_count || 1,
+        quote_id: projectData.quote_id || null
       })
       .select()
       .single()
@@ -3248,7 +3260,7 @@ export class PrismaTypedService {
   static async getQuotes(userId: string, role: string, status?: string, quoteType?: string) {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_name, client_company, client_phone, client_email, subtotal, total, currency, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
       .order('created_at', { ascending: false })
 
     // All authorized roles (admin, supervisor, vendedor) see all quotes
@@ -3262,7 +3274,45 @@ export class PrismaTypedService {
 
     const { data, error } = await query
     if (error) throw error
-    return data ?? []
+    
+    // Obtener qué cotizaciones ya tienen proyecto asociado
+    const quotes = data ?? []
+    if (quotes.length > 0) {
+      const { data: projectsData } = await supabase
+        .from('projects')
+        .select('quote_id')
+        .not('quote_id', 'is', null)
+      
+      const quoteIdsWithProject = new Set(projectsData?.map((p: any) => p.quote_id) ?? [])
+      return quotes.map((q: any) => ({ ...q, has_project: quoteIdsWithProject.has(q.id) }))
+    }
+    
+    return quotes
+  }
+
+  static async getApprovedQuotesWithoutProject(quoteType?: 'sale' | 'rental') {
+    let query = supabase
+      .from('quotes')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, pdf_url, valid_until, created_by, created_at')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+
+    if (quoteType) {
+      query = query.eq('quote_type', quoteType)
+    }
+
+    const { data: quotes, error } = await query
+    if (error) throw error
+    if (!quotes || quotes.length === 0) return []
+
+    // Obtener cotizaciones que ya tienen proyecto
+    const { data: projectsData } = await supabase
+      .from('projects')
+      .select('quote_id')
+      .not('quote_id', 'is', null)
+
+    const quoteIdsWithProject = new Set(projectsData?.map((p: any) => p.quote_id) ?? [])
+    return quotes.filter((q: any) => !quoteIdsWithProject.has(q.id))
   }
 
   static async getQuoteById(id: string) {
