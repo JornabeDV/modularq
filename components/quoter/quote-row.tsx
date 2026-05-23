@@ -21,6 +21,8 @@ import {
   Pencil,
   Trash2,
   ChevronDown,
+  FileX,
+  FolderPlus,
 } from "lucide-react";
 import Link from "next/link";
 import type { Quote, QuoteStatus } from "@/hooks/use-quotes";
@@ -122,8 +124,13 @@ export function QuoteRow({
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant={STATUS_VARIANTS[quote.status]} className="text-xs">
-          {STATUS_LABELS[quote.status]}
+        <Badge
+          variant={quote.status === 'draft' && quote.pdf_url ? 'default' : STATUS_VARIANTS[quote.status]}
+          className="text-xs"
+        >
+          {quote.status === 'draft'
+            ? (quote.pdf_url ? 'Borrador · PDF listo' : 'Borrador')
+            : STATUS_LABELS[quote.status]}
         </Badge>
       </TableCell>
       <TableCell className="tabular-nums font-semibold">
@@ -178,7 +185,7 @@ export function QuoteRow({
               </TooltipContent>
             </Tooltip>
 
-            {quote.pdf_url && (
+            {quote.pdf_url ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -198,6 +205,22 @@ export function QuoteRow({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Descargar PDF</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 cursor-not-allowed opacity-50"
+                    disabled
+                  >
+                    <FileX className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Sin PDF generado</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -226,6 +249,26 @@ export function QuoteRow({
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+            )}
+
+            {quote.status === 'approved' && !quote.has_project && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 cursor-pointer"
+                    asChild
+                  >
+                    <Link href={`/admin/projects?quoteId=${quote.id}`}>
+                      <FolderPlus className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Crear proyecto</p>
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {canDelete && (

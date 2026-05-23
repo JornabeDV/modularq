@@ -22,6 +22,15 @@ import type { Project } from "@/lib/types";
 import { useClientsPrisma } from "@/hooks/use-clients-prisma";
 import { DialogForm } from "@/components/ui/dialog-form";
 
+interface ApprovedQuote {
+  id: string;
+  number: string;
+  quote_type: 'sale' | 'rental';
+  client_name: string;
+  client_id?: string;
+  total: number;
+}
+
 interface ProjectFormData {
   name: string;
   description: string;
@@ -33,6 +42,7 @@ interface ProjectFormData {
   supervisor?: string;
   budget?: number;
   progress?: number;
+  quoteId?: string;
   // Especificaciones técnicas
   modulation: string;
   height: string;
@@ -53,6 +63,7 @@ interface ProjectSubmitData {
   startDate?: string;
   estimatedEndDate?: string;
   moduleCount: number;
+  quoteId?: string;
 }
 
 interface ProjectFormProps {
@@ -62,6 +73,7 @@ interface ProjectFormProps {
   isEditing: boolean;
   initialData?: Project | null;
   checklistComplete?: boolean;
+  preselectedQuoteId?: string;
 }
 
 const PROJECT_STATUSES = [
@@ -84,8 +96,11 @@ export function ProjectForm({
   isEditing,
   initialData,
   checklistComplete = false,
+  preselectedQuoteId,
 }: ProjectFormProps) {
   const { clients, loading: clientsLoading } = useClientsPrisma();
+  const [approvedQuotes, setApprovedQuotes] = useState<ApprovedQuote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -99,12 +114,58 @@ export function ProjectForm({
     startDate: "",
     endDate: "",
     clientId: "none",
+    quoteId: "none",
     modulation: "standard",
     height: "2.00",
     width: "1.50",
     depth: "0.80",
     moduleCount: 1,
   });
+
+  // Cargar cotizaciones aprobadas disponibles
+  useEffect(() => {
+    if (!isOpen || isEditing) return;
+    setQuotesLoading(true);
+    fetch('/api/quotes/approved')
+      .then((r) => r.json())
+      .then((data) => {
+        setApprovedQuotes(data.quotes ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setQuotesLoading(false));
+  }, [isOpen, isEditing]);
+
+  // Precargar cotización preseleccionada cuando ya tenemos cotizaciones y clientes cargados
+  useEffect(() => {
+    if (!isOpen || isEditing || !preselectedQuoteId || approvedQuotes.length === 0 || !clients || clients.length === 0) return;
+    const quote = approvedQuotes.find((q) => q.id === preselectedQuoteId);
+    if (quote && formData.quoteId !== preselectedQuoteId) {
+      handleQuoteSelect(quote);
+    }
+  }, [isOpen, isEditing, preselectedQuoteId, approvedQuotes, clients, formData.quoteId]);
+
+  const handleQuoteSelect = (quote: ApprovedQuote) => {
+    const matchedClient = clients?.find((c) => c.id === quote.client_id);
+    setFormData((prev) => ({
+      ...prev,
+      quoteId: quote.id,
+      name: `Proyecto ${quote.number}`,
+      clientId: matchedClient ? matchedClient.id : prev.clientId,
+      condition: quote.quote_type === 'rental' ? 'alquiler' : 'venta',
+      description: prev.description || `Proyecto derivado de cotización ${quote.number} - ${quote.client_name}`,
+    }));
+  };
+
+  const handleQuoteChange = (value: string) => {
+    if (value === "none") {
+      setFormData((prev) => ({ ...prev, quoteId: "none" }));
+      return;
+    }
+    const quote = approvedQuotes.find((q) => q.id === value);
+    if (quote) {
+      handleQuoteSelect(quote);
+    }
+  };
 
   useEffect(() => {
     if (isEditing && initialData) {
@@ -116,6 +177,7 @@ export function ProjectForm({
         startDate: initialData.startDate || "",
         endDate: initialData.endDate || "",
         clientId: initialData.clientId || "none",
+        quoteId: initialData.quoteId || "none",
         modulation: initialData.modulation || "standard",
         height: initialData.height?.toString() || "2.00",
         width: initialData.width?.toString() || "1.50",
@@ -131,6 +193,7 @@ export function ProjectForm({
         startDate: "",
         endDate: "",
         clientId: "none",
+        quoteId: "none",
         modulation: "standard",
         height: "2.00",
         width: "1.50",
@@ -158,6 +221,7 @@ export function ProjectForm({
       const submitData: ProjectSubmitData = {
         ...formData,
         clientId: formData.clientId === "none" ? undefined : formData.clientId,
+        quoteId: formData.quoteId === "none" ? undefined : formData.quoteId,
         height: parseDecimal(formData.height),
         width: parseDecimal(formData.width),
         depth: parseDecimal(formData.depth),
@@ -174,6 +238,7 @@ export function ProjectForm({
       const submitData: ProjectSubmitData = {
         ...formData,
         clientId: formData.clientId === "none" ? undefined : formData.clientId,
+        quoteId: formData.quoteId === "none" ? undefined : formData.quoteId,
         height: parseDecimal(formData.height),
         width: parseDecimal(formData.width),
         depth: parseDecimal(formData.depth),
@@ -260,6 +325,41 @@ export function ProjectForm({
               </Select>
             </div>
           </div>
+
+          {!isEditing && (
+            <div>
+              <Label htmlFor="quoteId" className="mb-2">
+                Cotización aprobada
+              </Label>
+              <Select
+                value={formData.quoteId}
+                onValueChange={handleQuoteChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar cotización aprobada (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin cotización</SelectItem>
+                  {quotesLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Cargando cotizaciones...
+                    </SelectItem>
+                  ) : (
+                    approvedQuotes.map((quote) => (
+                      <SelectItem key={quote.id} value={quote.id}>
+                        {quote.number} - {quote.client_name} ({quote.quote_type === 'rental' ? 'Alquiler' : 'Venta'})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {approvedQuotes.length === 0 && !quotesLoading && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  No hay cotizaciones aprobadas sin proyecto asociado.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

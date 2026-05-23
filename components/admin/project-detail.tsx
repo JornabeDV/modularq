@@ -23,6 +23,7 @@ import { useProjectDetail } from "@/hooks/use-project-detail";
 import { ProjectHeader } from "./project-detail/project-header";
 import { ProjectInfoCards } from "./project-detail/project-info-cards";
 import { ProjectSpecs } from "./project-detail/project-specs";
+import { ProjectQuoteCard } from "./project-detail/project-quote-card";
 import { EditTaskDialog } from "./project-detail/edit-task-dialog";
 import { ActivateProjectDialog } from "./project-detail/activate-project-dialog";
 import { PlanningChecklist } from "./planning-checklist";
@@ -228,6 +229,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         projectFilesCount={projectFiles.length}
         showFiles={showFiles}
       />
+
+      <ProjectQuoteCard quote={project.quote} />
 
       <ProjectSpecs project={project} />
 

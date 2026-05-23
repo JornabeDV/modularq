@@ -16,6 +16,17 @@ export interface Project {
   completedAt?: string
   deliveredAt?: string
   clientId?: string
+  quoteId?: string
+  quote?: {
+    id: string
+    number: string
+    quoteType: string
+    status: string
+    clientName: string
+    total: number
+    currency?: string
+    pdfUrl?: string
+  }
   client?: {
     id: string
     cuit: string
