@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Download, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { getExchangeRate, ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
 
 interface ProjectQuoteCardProps {
   quote?: {
@@ -19,15 +21,28 @@ interface ProjectQuoteCardProps {
   };
 }
 
-function formatCurrency(value: number, currency?: string) {
+function formatUSD(amount: number, rate: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: currency || "ARS",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
     minimumFractionDigits: 0,
-  }).format(value);
+  }).format(amount);
 }
 
 export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
+
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
   if (!quote) {
     return (
       <Card>
@@ -62,9 +77,16 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
               {quote.quoteType === "rental" ? "Alquiler" : "Venta"}
             </Badge>
           </div>
-          <span className="text-sm font-bold tabular-nums">
-            {formatCurrency(quote.total, quote.currency)}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-bold tabular-nums">
+              {exchangeRate ? formatUSD(quote.total, exchangeRate.venta) : "—"}
+            </span>
+            {exchangeRate && (
+              <span className="text-[10px] text-muted-foreground tabular-nums">
+                {formatARS(quote.total)}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="text-sm text-muted-foreground">

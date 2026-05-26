@@ -60,3 +60,13 @@ export function formatARS(amount: number): string {
 export function formatExchangeRate(rate: ExchangeRate): string {
   return `$${rate.venta.toLocaleString('es-AR')}`
 }
+
+export function arsToUsd(amountARS: number, rate: number): number {
+  if (!rate || rate <= 0) return 0
+  return amountARS / rate
+}
+
+export function usdToArs(amountUSD: number, rate: number): number {
+  if (!rate || rate <= 0) return 0
+  return amountUSD * rate
+}

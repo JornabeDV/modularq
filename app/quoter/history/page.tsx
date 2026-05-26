@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MainLayout } from "@/components/layout/main-layout";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import { useQuotes, Quote, QuoteStatus } from "@/hooks/use-quotes";
 import { Loader2, Plus } from "lucide-react";
 import { QuoteTable } from "@/components/quoter/quote-table";
 import { QuoteStats } from "@/components/quoter/quote-stats";
+import { getExchangeRate, ExchangeRate } from "@/lib/exchange-rate";
 
 
 const ALLOWED_ROLES = ["admin", "supervisor", "vendedor"];
@@ -28,6 +29,7 @@ export default function QuoteHistorialPage() {
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
 
   // Ordenamiento
   const [sortField, setSortField] = useState<SortField>("created_at");
@@ -99,6 +101,10 @@ export default function QuoteHistorialPage() {
   const pendingQuotes = quotes.filter(
     (q) => q.status === "draft" || q.status === "sent",
   ).length;
+
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
 
   if (authLoading || !userProfile) {
     return (
@@ -179,6 +185,7 @@ export default function QuoteHistorialPage() {
           approvedRate={approvedRate}
           totalApprovedAmount={totalApprovedAmount}
           pendingQuotes={pendingQuotes}
+          exchangeRate={exchangeRate}
         />
 
         <QuoteTable
@@ -202,6 +209,7 @@ export default function QuoteHistorialPage() {
           currentPage={currentPage}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
+          exchangeRate={exchangeRate}
         />
       </div>
     </MainLayout>

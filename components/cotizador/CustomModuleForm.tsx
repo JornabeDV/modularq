@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import type { QuoteItemAttachment } from "./QuoteItemCard";
+import { ExchangeRate, usdToArs } from "@/lib/exchange-rate";
 
 export interface ModuleDescriptionSection {
   section: string;
@@ -30,9 +31,10 @@ interface CustomModuleFormProps {
     quantity: number;
     attachments: QuoteItemAttachment[];
   }) => void;
+  exchangeRate: ExchangeRate | null;
 }
 
-export function CustomModuleForm({ onAdd }: CustomModuleFormProps) {
+export function CustomModuleForm({ onAdd, exchangeRate }: CustomModuleFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [sections, setSections] = useState<ModuleDescriptionSection[]>([]);
@@ -118,7 +120,7 @@ export function CustomModuleForm({ onAdd }: CustomModuleFormProps) {
       name: name.trim(),
       description: description.trim(),
       moduleDescriptionSections: validSections,
-      unitPrice,
+      unitPrice: exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
       quantity: qty,
       attachments,
     });
@@ -234,7 +236,7 @@ export function CustomModuleForm({ onAdd }: CustomModuleFormProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Precio unitario *</Label>
+          <Label className="text-xs">Precio unitario (USD) *</Label>
           <PriceInput
             placeholder="0"
             value={price}

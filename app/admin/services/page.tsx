@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { PriceInput } from "@/components/ui/price-input";
+import { getExchangeRate, ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
 
 interface Service {
   id: string;
@@ -65,7 +66,15 @@ interface ServiceForm {
 
 const ALLOWED_ROLES = ["admin", "supervisor"];
 
-function formatCurrency(amount: number) {
+function formatUSD(amount: number, rate: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
@@ -76,9 +85,11 @@ function formatCurrency(amount: number) {
 function ServiceFormFields({
   form,
   setForm,
+  exchangeRate,
 }: {
   form: ServiceForm;
   setForm: React.Dispatch<React.SetStateAction<ServiceForm>>;
+  exchangeRate: ExchangeRate | null;
 }) {
   return (
     <div className="space-y-4">
@@ -104,13 +115,18 @@ function ServiceFormFields({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="unit_price">Precio unitario ($) *</Label>
+          <Label htmlFor="unit_price">Precio unitario (USD) *</Label>
           <PriceInput
             id="unit_price"
             placeholder="0"
             value={form.unit_price}
             onChange={(val) => setForm((f) => ({ ...f, unit_price: val }))}
           />
+          {exchangeRate && form.unit_price && (
+            <p className="text-[10px] text-muted-foreground">
+              {formatARS(usdToArs(parseFloat(form.unit_price.replace(",", ".")), exchangeRate.venta))}
+            </p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="unit">Unidad</Label>
@@ -139,6 +155,7 @@ export default function ServicesAdminPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
 
   const [form, setForm] = useState<ServiceForm>({
     name: "",
@@ -177,6 +194,10 @@ export default function ServicesAdminPage() {
     }
   }, [userProfile, loadServices]);
 
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
+
   function resetForm() {
     setForm({
       name: "",
@@ -198,7 +219,9 @@ export default function ServicesAdminPage() {
     setForm({
       name: service.name,
       description: service.description ?? "",
-      unit_price: service.unit_price.toString().replace(".", ","),
+      unit_price: exchangeRate
+        ? arsToUsd(service.unit_price, exchangeRate.venta).toFixed(2).replace(".", ",")
+        : service.unit_price.toString().replace(".", ","),
       unit: service.unit,
       is_active: service.is_active,
     });
@@ -215,7 +238,9 @@ export default function ServicesAdminPage() {
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
-      unit_price: parseFloat(form.unit_price.replace(",", ".")) || 0,
+      unit_price: exchangeRate
+        ? usdToArs(parseFloat(form.unit_price.replace(",", ".")) || 0, exchangeRate.venta)
+        : parseFloat(form.unit_price.replace(",", ".")) || 0,
       unit: form.unit.trim() || "unidad",
       is_active: form.is_active,
     };
@@ -369,9 +394,16 @@ export default function ServicesAdminPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-bold tabular-nums text-sm mr-auto sm:mr-0">
-                        {formatCurrency(service.unit_price)}
-                      </span>
+                      <div className="flex flex-col items-end mr-auto sm:mr-0">
+                        <span className="font-bold tabular-nums text-sm">
+                          {exchangeRate ? formatUSD(service.unit_price, exchangeRate.venta) : "—"}
+                        </span>
+                        {exchangeRate && (
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {formatARS(service.unit_price)}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <TooltipProvider>
                           <Tooltip>
@@ -431,7 +463,7 @@ export default function ServicesAdminPage() {
               {editingService ? "Editar servicio" : "Nuevo servicio"}
             </DialogTitle>
           </DialogHeader>
-          <ServiceFormFields form={form} setForm={setForm} />
+          <ServiceFormFields form={form} setForm={setForm} exchangeRate={exchangeRate} />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar

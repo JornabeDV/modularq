@@ -40,6 +40,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { QuoteRow } from "./quote-row";
 import type { Quote, QuoteStatus } from "@/hooks/use-quotes";
+import { ExchangeRate } from "@/lib/exchange-rate";
 
 type SortField = "number" | "client_name" | "status" | "total" | "created_at";
 
@@ -64,6 +65,7 @@ interface QuoteTableProps {
   currentPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (value: number) => void;
+  exchangeRate: ExchangeRate | null;
 }
 
 export function QuoteTable({
@@ -87,6 +89,7 @@ export function QuoteTable({
   currentPage,
   onPageChange,
   onItemsPerPageChange,
+  exchangeRate,
 }: QuoteTableProps) {
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
 
@@ -226,6 +229,7 @@ export function QuoteTable({
                       onDeleteClick={setQuoteToDelete}
                       role={role}
                       userId={userId}
+                      exchangeRate={exchangeRate}
                     />
                   ))
                 )}

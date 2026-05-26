@@ -4,14 +4,24 @@ import { Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StandardModule } from "@/hooks/use-standard-modules";
+import { ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
 
 interface StandardModulesTabProps {
   modules: StandardModule[];
   loading: boolean;
   onAddModule: (mod: StandardModule) => void;
+  exchangeRate: ExchangeRate | null;
 }
 
-function formatCurrency(amount: number) {
+function formatUSD(amount: number, rate: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
@@ -19,7 +29,7 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-export function StandardModulesTab({ modules, loading, onAddModule }: StandardModulesTabProps) {
+export function StandardModulesTab({ modules, loading, onAddModule, exchangeRate }: StandardModulesTabProps) {
   if (loading) {
     return <p className="text-sm text-muted-foreground">Cargando módulos...</p>;
   }
@@ -54,9 +64,16 @@ export function StandardModulesTab({ modules, loading, onAddModule }: StandardMo
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm font-semibold tabular-nums">
-                  {formatCurrency(mod.base_price)}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-semibold tabular-nums">
+                    {exchangeRate ? formatUSD(mod.base_price, exchangeRate.venta) : "—"}
+                  </span>
+                  {exchangeRate && (
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {formatARS(mod.base_price)}
+                    </span>
+                  )}
+                </div>
                 <Button size="icon" variant="ghost" className="h-7 w-7 cursor-pointer">
                   <Plus className="w-4 h-4" />
                 </Button>
