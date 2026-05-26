@@ -244,10 +244,14 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 10,
+    color: "#4b5563",
     width: 200,
     textAlign: "right",
     paddingRight: 15,
-    color: "#4b5563",
+  },
+  totalLabelSmall: {
+    fontSize: 8,
+    color: "#9ca3af",
   },
   totalValue: {
     fontSize: 10,
@@ -272,9 +276,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     color: "#ffffff",
-    width: 140,
+    width: 240,
     textAlign: "right",
     paddingRight: 15,
+  },
+  grandTotalLabelSmall: {
+    fontSize: 9,
+    color: "#d1d5db",
   },
   grandTotalValue: {
     fontSize: 12,
@@ -613,7 +621,9 @@ export function CotizadorPDFDocument({
         {/* Totales */}
         <View style={styles.totalsBox}>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal</Text>
+            <Text style={styles.totalLabel}>
+              Subtotal <Text style={styles.totalLabelSmall}>(SIN IVA)</Text>
+            </Text>
             <Text style={styles.totalValue}>
               {formatPrice(discountAmount > 0 ? computedTotal : displayTotal, currency, rate)}
             </Text>
@@ -635,13 +645,17 @@ export function CotizadorPDFDocument({
             </>
           )}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Impuestos</Text>
+            <Text style={styles.totalLabel}>
+              Impuestos <Text style={styles.totalLabelSmall}>(IVA)</Text>
+            </Text>
             <Text style={styles.totalValue}>
               {formatPrice(ivaAmount, currency, rate)}
             </Text>
           </View>
           <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>TOTAL</Text>
+            <Text style={styles.grandTotalLabel}>
+              TOTAL <Text style={styles.grandTotalLabelSmall}>(SUBTOTAL + IVA)</Text>
+            </Text>
             <Text style={styles.grandTotalValue}>{formatPrice(totalAmount, currency, rate)}</Text>
           </View>
         </View>

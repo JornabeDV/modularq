@@ -21,6 +21,7 @@ import type {
   QuoteItemAttachment,
   ModuleDescriptionSection,
 } from "./QuoteItemCard";
+import { ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
 
 interface CustomModuleEditorProps {
   item: {
@@ -42,12 +43,14 @@ interface CustomModuleEditorProps {
     attachments: QuoteItemAttachment[];
   }) => void;
   onCancel: () => void;
+  exchangeRate: ExchangeRate | null;
 }
 
 export function CustomModuleEditor({
   item,
   onSave,
   onCancel,
+  exchangeRate,
 }: CustomModuleEditorProps) {
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
@@ -55,7 +58,9 @@ export function CustomModuleEditor({
     item.moduleDescriptionSections ?? [],
   );
   const [price, setPrice] = useState(
-    item.unitPrice.toString().replace(".", ","),
+    exchangeRate
+      ? arsToUsd(item.unitPrice, exchangeRate.venta).toFixed(2).replace(".", ",")
+      : item.unitPrice.toString().replace(".", ","),
   );
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [attachments, setAttachments] = useState<QuoteItemAttachment[]>(
@@ -148,7 +153,7 @@ export function CustomModuleEditor({
       name: name.trim(),
       description: description.trim(),
       moduleDescriptionSections: validSections,
-      unitPrice,
+      unitPrice: exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
       quantity: qty,
       attachments,
     });
@@ -215,7 +220,7 @@ export function CustomModuleEditor({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Precio unitario *</Label>
+                  <Label className="text-xs">Precio unitario (USD) *</Label>
                   <PriceInput
                     placeholder="0"
                     value={price}

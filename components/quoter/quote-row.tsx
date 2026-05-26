@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Quote, QuoteStatus } from "@/hooks/use-quotes";
+import { ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
 
 const STATUS_LABELS: Record<QuoteStatus, string> = {
   draft: "Borrador",
@@ -60,14 +61,23 @@ interface QuoteRowProps {
   onDeleteClick: (quote: Quote) => void;
   role: string;
   userId: string;
+  exchangeRate: ExchangeRate | null;
 }
 
-function formatCurrency(value: number) {
+function formatUSD(amount: number, rate: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
     minimumFractionDigits: 0,
-  }).format(value);
+  }).format(amount);
 }
 
 function formatDate(iso: string) {
@@ -84,6 +94,7 @@ export function QuoteRow({
   onDeleteClick,
   role,
   userId,
+  exchangeRate,
 }: QuoteRowProps) {
   const nextStatuses = NEXT_STATUSES[quote.status];
   const canChangeStatus =
@@ -133,8 +144,17 @@ export function QuoteRow({
             : STATUS_LABELS[quote.status]}
         </Badge>
       </TableCell>
-      <TableCell className="tabular-nums font-semibold">
-        {formatCurrency(quote.total)}
+      <TableCell>
+        <div className="flex flex-col">
+          <span className="tabular-nums font-semibold">
+            {exchangeRate ? formatUSD(quote.total, exchangeRate.venta) : "—"}
+          </span>
+          {exchangeRate && (
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {formatARS(quote.total)}
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-muted-foreground text-sm">
         {formatDate(quote.created_at)}

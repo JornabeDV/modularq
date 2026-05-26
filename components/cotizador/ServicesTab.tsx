@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PriceInput } from "@/components/ui/price-input";
 import { Textarea } from "@/components/ui/textarea";
+import { ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
 
 export interface ServiceCatalogItem {
   id: string;
@@ -29,9 +30,18 @@ interface ServicesTabProps {
     quantity: number;
     unit: string;
   }) => void;
+  exchangeRate: ExchangeRate | null;
 }
 
-function formatCurrency(amount: number) {
+function formatUSD(amount: number, rate: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
@@ -39,7 +49,7 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
-export function ServicesTab({ services, loading, onAddService, onAddCustomService }: ServicesTabProps) {
+export function ServicesTab({ services, loading, onAddService, onAddCustomService, exchangeRate }: ServicesTabProps) {
   const [showCustom, setShowCustom] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -55,7 +65,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
     onAddCustomService({
       name: name.trim(),
       description: description.trim(),
-      unitPrice,
+      unitPrice: exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
       quantity: qty,
       unit,
     });
@@ -102,9 +112,16 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-semibold tabular-nums">
-                      {formatCurrency(svc.unit_price)}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-sm font-semibold tabular-nums">
+                        {exchangeRate ? formatUSD(svc.unit_price, exchangeRate.venta) : "—"}
+                      </span>
+                      {exchangeRate && (
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {formatARS(svc.unit_price)}
+                        </span>
+                      )}
+                    </div>
                     <Button size="icon" variant="ghost" className="h-7 w-7 cursor-pointer">
                       <Plus className="w-4 h-4" />
                     </Button>
@@ -149,7 +166,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Precio *</Label>
+                <Label className="text-xs">Precio (USD) *</Label>
                 <PriceInput
                   placeholder="0"
                   value={price}

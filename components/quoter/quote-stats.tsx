@@ -2,12 +2,14 @@
 
 import { Card } from "@/components/ui/card";
 import { FileText, CheckCircle, DollarSign, Clock } from "lucide-react";
+import { ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
 
 interface QuoteStatsProps {
   totalQuotes: number;
   approvedRate: number;
   totalApprovedAmount: number;
   pendingQuotes: number;
+  exchangeRate: ExchangeRate | null;
 }
 
 export function QuoteStats({
@@ -15,6 +17,7 @@ export function QuoteStats({
   approvedRate,
   totalApprovedAmount,
   pendingQuotes,
+  exchangeRate,
 }: QuoteStatsProps) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
@@ -63,12 +66,23 @@ export function QuoteStats({
               Monto Total Aprobado
             </p>
             <p className="text-lg sm:text-xl font-bold">
-              $
-              {totalApprovedAmount.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {exchangeRate
+                ? new Intl.NumberFormat("es-AR", {
+                    style: "currency",
+                    currency: "USD",
+                    minimumFractionDigits: 2,
+                  }).format(arsToUsd(totalApprovedAmount, exchangeRate.venta))
+                : "—"}
             </p>
+            {exchangeRate && (
+              <p className="text-[10px] text-muted-foreground">
+                {new Intl.NumberFormat("es-AR", {
+                  style: "currency",
+                  currency: "ARS",
+                  minimumFractionDigits: 0,
+                }).format(totalApprovedAmount)}
+              </p>
+            )}
           </div>
           <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
         </div>

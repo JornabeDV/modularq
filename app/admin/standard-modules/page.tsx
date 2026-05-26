@@ -49,6 +49,7 @@ import {
 } from "@/hooks/use-standard-modules";
 import { StandardModuleDetail } from "@/components/cotizador/StandardModuleDetail";
 import { PriceInput } from "@/components/ui/price-input";
+import { getExchangeRate, ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
 
 interface ModuleForm {
   name: string;
@@ -57,12 +58,30 @@ interface ModuleForm {
   order: string;
 }
 
+function formatUSD(amount: number, rate: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
 function ModuleFormFields({
   form,
   setForm,
+  exchangeRate,
 }: {
   form: ModuleForm;
   setForm: React.Dispatch<React.SetStateAction<ModuleForm>>;
+  exchangeRate: ExchangeRate | null;
 }) {
   return (
     <div className="space-y-4">
@@ -90,13 +109,18 @@ function ModuleFormFields({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="base_price">Precio base ($)</Label>
+          <Label htmlFor="base_price">Precio base (USD)</Label>
           <PriceInput
             id="base_price"
             placeholder="0"
             value={form.base_price}
             onChange={(val) => setForm((f) => ({ ...f, base_price: val }))}
           />
+          {exchangeRate && form.base_price && (
+            <p className="text-[10px] text-muted-foreground">
+              {formatARS(usdToArs(parseFloat(form.base_price.replace(",", ".")), exchangeRate.venta))}
+            </p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="order">Orden de visualización</Label>
@@ -132,6 +156,7 @@ export default function StandardModulesPage() {
   const [editModule, setEditModule] = useState<StandardModule | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StandardModule | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -148,6 +173,10 @@ export default function StandardModulesPage() {
       router.push("/dashboard");
     }
   }, [authLoading, userProfile, router]);
+
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
 
   if (authLoading || !userProfile) {
     return (
@@ -174,7 +203,9 @@ export default function StandardModulesPage() {
     setForm({
       name: mod.name,
       description: mod.description ?? "",
-      base_price: mod.base_price.toString().replace(".", ","),
+      base_price: exchangeRate
+        ? arsToUsd(mod.base_price, exchangeRate.venta).toFixed(2).replace(".", ",")
+        : mod.base_price.toString().replace(".", ","),
       order: mod.order.toString(),
     });
     setEditModule(mod);
@@ -186,7 +217,9 @@ export default function StandardModulesPage() {
       await createModule({
         name: form.name,
         description: form.description || undefined,
-        base_price: parseFloat(form.base_price.replace(",", ".")) || 0,
+        base_price: exchangeRate
+          ? usdToArs(parseFloat(form.base_price.replace(",", ".")) || 0, exchangeRate.venta)
+          : parseFloat(form.base_price.replace(",", ".")) || 0,
         order: parseInt(form.order) || 0,
       });
       setCreateOpen(false);
@@ -209,7 +242,9 @@ export default function StandardModulesPage() {
       await updateModule(editModule.id, {
         name: form.name,
         description: form.description || undefined,
-        base_price: parseFloat(form.base_price.replace(",", ".")) || 0,
+        base_price: exchangeRate
+          ? usdToArs(parseFloat(form.base_price.replace(",", ".")) || 0, exchangeRate.venta)
+          : parseFloat(form.base_price.replace(",", ".")) || 0,
         order: parseInt(form.order) || 0,
       });
       setEditModule(null);
@@ -344,13 +379,16 @@ export default function StandardModulesPage() {
                       className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="text-sm font-semibold tabular-nums mr-auto sm:mr-0">
-                        {new Intl.NumberFormat("es-AR", {
-                          style: "currency",
-                          currency: "ARS",
-                          minimumFractionDigits: 0,
-                        }).format(mod.base_price)}
-                      </span>
+                      <div className="flex flex-col items-end mr-auto sm:mr-0">
+                        <span className="text-sm font-semibold tabular-nums">
+                          {exchangeRate ? formatUSD(mod.base_price, exchangeRate.venta) : "—"}
+                        </span>
+                        {exchangeRate && (
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {formatARS(mod.base_price)}
+                          </span>
+                        )}
+                      </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger className="items-center flex">
@@ -430,7 +468,7 @@ export default function StandardModulesPage() {
             <DialogHeader>
               <DialogTitle>Nuevo módulo estándar</DialogTitle>
             </DialogHeader>
-            <ModuleFormFields form={form} setForm={setForm} />
+            <ModuleFormFields form={form} setForm={setForm} exchangeRate={exchangeRate} />
             <DialogFooter>
               <Button
                 type="button"
@@ -463,7 +501,7 @@ export default function StandardModulesPage() {
             <DialogHeader>
               <DialogTitle>Editar módulo</DialogTitle>
             </DialogHeader>
-            <ModuleFormFields form={form} setForm={setForm} />
+            <ModuleFormFields form={form} setForm={setForm} exchangeRate={exchangeRate} />
             <DialogFooter className="max-md:gap-4">
               <Button
                 type="button"

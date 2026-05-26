@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PriceInput } from "@/components/ui/price-input";
+import { ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
 
 export type QuoteItemType = "standard_module" | "custom_module" | "service";
 
@@ -77,9 +78,18 @@ interface QuoteItemCardProps {
   onAddAttachment?: (itemKey: string, attachment: QuoteItemAttachment) => void;
   onRemoveAttachment?: (itemKey: string, storagePath: string) => void;
   onStartEdit?: (itemKey: string) => void;
+  exchangeRate: ExchangeRate | null;
 }
 
-function formatCurrency(amount: number) {
+function formatUSD(amount: number, rate: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(arsToUsd(amount, rate));
+}
+
+function formatARS(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
@@ -97,6 +107,7 @@ export function QuoteItemCard({
   onAddAttachment,
   onRemoveAttachment,
   onStartEdit,
+  exchangeRate,
 }: QuoteItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -169,8 +180,13 @@ export function QuoteItemCard({
                   x{item.quantity}
                 </span>
                 <span className="text-sm font-semibold tabular-nums">
-                  {formatCurrency(total)}
+                  {exchangeRate ? formatUSD(total, exchangeRate.venta) : "—"}
                 </span>
+                {exchangeRate && (
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {formatARS(total)}
+                  </span>
+                )}
                 {item.adicionales.length > 0 && (
                   <Badge
                     variant="outline"
@@ -276,19 +292,31 @@ export function QuoteItemCard({
               </div>
               <div className="flex-1">
                 <PriceInput
-                  value={item.unitPrice.toString().replace(".", ",")}
-                  onChange={(val) =>
+                  value={
+                    exchangeRate
+                      ? arsToUsd(item.unitPrice, exchangeRate.venta).toFixed(2).replace(".", ",")
+                      : item.unitPrice.toString().replace(".", ",")
+                  }
+                  onChange={(val) => {
+                    const parsedUSD = parseFloat(val.replace(",", ".")) || 0;
                     onUpdatePrice(
                       item.key,
-                      parseFloat(val.replace(",", ".")) || 0
-                    )
-                  }
+                      exchangeRate ? parsedUSD * exchangeRate.venta : parsedUSD
+                    );
+                  }}
                   className="w-full text-sm border rounded px-2 py-1 tabular-nums"
                 />
               </div>
-              <span className="text-sm font-semibold tabular-nums shrink-0">
-                {formatCurrency(itemSubtotal)}
-              </span>
+              <div className="flex flex-col items-end shrink-0">
+                <span className="text-sm font-semibold tabular-nums">
+                  {exchangeRate ? formatUSD(itemSubtotal, exchangeRate.venta) : "—"}
+                </span>
+                {exchangeRate && (
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {formatARS(itemSubtotal)}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Adicionales (solo módulos) */}
@@ -315,7 +343,7 @@ export function QuoteItemCard({
                       >
                         <span>{ad.name}</span>
                         <span className="tabular-nums font-medium">
-                          {formatCurrency(ad.unit_price)}
+                          {exchangeRate ? formatUSD(ad.unit_price, exchangeRate.venta) : "—"}
                         </span>
                       </button>
                     );
@@ -397,8 +425,13 @@ export function QuoteItemCard({
               <div className="text-xs text-right text-muted-foreground border-t pt-2">
                 Subtotal:{" "}
                 <span className="font-semibold tabular-nums text-foreground">
-                  {formatCurrency(total)}
+                  {exchangeRate ? formatUSD(total, exchangeRate.venta) : "—"}
                 </span>
+                {exchangeRate && (
+                  <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
+                    ({formatARS(total)})
+                  </span>
+                )}
               </div>
             )}
           </div>
