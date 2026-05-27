@@ -159,11 +159,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: 0.5,
   },
+  adicionalesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    gap: 10,
+  },
   adicionalItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 4,
+    flex: 1,
     gap: 6,
   },
   adicionalBullet: {
@@ -181,6 +186,8 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: "Courier",
     color: "#374151",
+    width: 100,
+    textAlign: "right",
   },
   clientBox: {
     marginBottom: 20,
@@ -490,20 +497,6 @@ export function CotizadorPDFDocument({
                 ))}
               </View>
             )}
-            {item.adicionales.length > 0 && (
-              <View style={styles.adicionalesSection}>
-                <Text style={styles.adicionalesLabel}>Incluye</Text>
-                {item.adicionales.map((ad) => (
-                  <View key={ad.id} style={styles.adicionalItem}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
-                      <View style={styles.adicionalBullet} />
-                      <Text style={styles.adicionalName}>{ad.name}</Text>
-                    </View>
-                    <Text style={styles.adicionalPrice}>{formatPrice(ad.price, currency, rate)}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
           </View>
           <View style={styles.modulePriceColumn}>
             {showQty && (
@@ -516,6 +509,25 @@ export function CotizadorPDFDocument({
             </Text>
           </View>
         </View>
+        {item.adicionales.length > 0 && (
+          <View style={styles.adicionalesSection}>
+            <View style={styles.adicionalesRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.adicionalesLabel}>Incluye</Text>
+              </View>
+              <View style={{ width: 100 }} />
+            </View>
+            {item.adicionales.map((ad) => (
+              <View key={ad.id} style={styles.adicionalesRow}>
+                <View style={styles.adicionalItem}>
+                  <View style={styles.adicionalBullet} />
+                  <Text style={styles.adicionalName}>{ad.name}</Text>
+                </View>
+                <Text style={styles.adicionalPrice}>{formatPrice(ad.price, currency, rate)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
     );
   };

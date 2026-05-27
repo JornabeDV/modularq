@@ -44,6 +44,7 @@ interface CustomModuleEditorProps {
   }) => void;
   onCancel: () => void;
   exchangeRate: ExchangeRate | null;
+  currency: 'ARS' | 'USD';
 }
 
 export function CustomModuleEditor({
@@ -51,6 +52,7 @@ export function CustomModuleEditor({
   onSave,
   onCancel,
   exchangeRate,
+  currency,
 }: CustomModuleEditorProps) {
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
@@ -58,7 +60,7 @@ export function CustomModuleEditor({
     item.moduleDescriptionSections ?? [],
   );
   const [price, setPrice] = useState(
-    exchangeRate
+    currency === 'USD' && exchangeRate
       ? arsToUsd(item.unitPrice, exchangeRate.venta).toFixed(2).replace(".", ",")
       : item.unitPrice.toString().replace(".", ","),
   );
@@ -153,7 +155,7 @@ export function CustomModuleEditor({
       name: name.trim(),
       description: description.trim(),
       moduleDescriptionSections: validSections,
-      unitPrice: exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
+      unitPrice: currency === 'USD' && exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
       quantity: qty,
       attachments,
     });
@@ -220,7 +222,7 @@ export function CustomModuleEditor({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Precio unitario (USD) *</Label>
+                  <Label className="text-xs">Precio unitario ({currency}) *</Label>
                   <PriceInput
                     placeholder="0"
                     value={price}

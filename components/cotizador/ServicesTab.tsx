@@ -31,6 +31,7 @@ interface ServicesTabProps {
     unit: string;
   }) => void;
   exchangeRate: ExchangeRate | null;
+  currency: 'ARS' | 'USD';
 }
 
 function formatUSD(amount: number, rate: number) {
@@ -49,7 +50,7 @@ function formatARS(amount: number) {
   }).format(amount);
 }
 
-export function ServicesTab({ services, loading, onAddService, onAddCustomService, exchangeRate }: ServicesTabProps) {
+export function ServicesTab({ services, loading, onAddService, onAddCustomService, exchangeRate, currency }: ServicesTabProps) {
   const [showCustom, setShowCustom] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -65,7 +66,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
     onAddCustomService({
       name: name.trim(),
       description: description.trim(),
-      unitPrice: exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
+      unitPrice: currency === 'USD' && exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
       quantity: qty,
       unit,
     });
@@ -113,11 +114,21 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="flex flex-col items-end">
-                      <span className="text-sm font-semibold tabular-nums">
-                        {exchangeRate ? formatUSD(svc.unit_price, exchangeRate.venta) : "—"}
-                      </span>
-                      {exchangeRate && (
-                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {exchangeRate ? (
+                        <>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {currency === 'USD'
+                              ? formatUSD(svc.unit_price, exchangeRate.venta)
+                              : formatARS(svc.unit_price)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {currency === 'USD'
+                              ? formatARS(svc.unit_price)
+                              : formatUSD(svc.unit_price, exchangeRate.venta)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm font-semibold tabular-nums">
                           {formatARS(svc.unit_price)}
                         </span>
                       )}
@@ -166,7 +177,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Precio (USD) *</Label>
+                <Label className="text-xs">Precio ({currency}) *</Label>
                 <PriceInput
                   placeholder="0"
                   value={price}

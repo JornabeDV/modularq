@@ -73,12 +73,13 @@ interface QuoteItemCardProps {
   onUpdatePrice: (key: string, price: number) => void;
   onToggleAdicional: (
     itemKey: string,
-    adicional: { id: string; name: string; unit_price: number }
+    adicional: { id: string; name: string; unit_price: number },
   ) => void;
   onAddAttachment?: (itemKey: string, attachment: QuoteItemAttachment) => void;
   onRemoveAttachment?: (itemKey: string, storagePath: string) => void;
   onStartEdit?: (itemKey: string) => void;
   exchangeRate: ExchangeRate | null;
+  currency: "ARS" | "USD";
 }
 
 function formatUSD(amount: number, rate: number) {
@@ -108,6 +109,7 @@ export function QuoteItemCard({
   onRemoveAttachment,
   onStartEdit,
   exchangeRate,
+  currency,
 }: QuoteItemCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -146,47 +148,94 @@ export function QuoteItemCard({
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [item.key, onAddAttachment]
+    [item.key, onAddAttachment],
   );
 
   return (
     <Card>
-      <CardContent className="py-3 px-4">
+      <CardContent className="py-0 px-4">
         {/* Header siempre visible */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-medium text-sm">{item.name}</p>
+        <div className="flex flex-col gap-2">
+          {/* Fila 1: nombre/badge + botones de acción */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <p className="font-medium text-sm truncate">{item.name}</p>
               <Badge
                 variant="secondary"
                 className={cn(
-                  "text-[10px] px-1.5 py-0",
-                  TYPE_BADGE_COLORS[item.type]
+                  "text-[10px] px-1.5 py-0 shrink-0",
+                  TYPE_BADGE_COLORS[item.type],
                 )}
               >
                 {TYPE_LABELS[item.type]}
               </Badge>
             </div>
-            {isExpanded && item.description && (
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                {item.description}
-              </p>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {canEdit && onStartEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => {
+                    onStartEdit(item.key);
+                  }}
+                  title="Editar módulo"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    isExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onRemove(item.key)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            {!isExpanded && (
-              <>
-                <span className="text-xs text-muted-foreground tabular-nums">
+
+          {/* Fila 2: precios + badges (solo cuando no expandido) */}
+          {!isExpanded && (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                   x{item.quantity}
                 </span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {exchangeRate ? formatUSD(total, exchangeRate.venta) : "—"}
-                </span>
-                {exchangeRate && (
-                  <span className="text-[10px] text-muted-foreground tabular-nums">
-                    {formatARS(total)}
-                  </span>
-                )}
+                <div className="flex flex-col items-start">
+                  {exchangeRate ? (
+                    <>
+                      <span className="text-sm font-semibold tabular-nums leading-tight">
+                        {currency === "USD"
+                          ? formatUSD(total, exchangeRate.venta)
+                          : formatARS(total)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums leading-tight">
+                        {currency === "USD"
+                          ? formatARS(total)
+                          : formatUSD(total, exchangeRate.venta)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatARS(total)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
                 {item.adicionales.length > 0 && (
                   <Badge
                     variant="outline"
@@ -203,42 +252,15 @@ export function QuoteItemCard({
                     {item.attachments.length}
                   </Badge>
                 )}
-              </>
-            )}
-            {canEdit && onStartEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => {
-                  onStartEdit(item.key);
-                }}
-                title="Editar módulo"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <ChevronDown
-                className={`w-4 h-4 transition-transform duration-200 ${
-                  isExpanded ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onRemove(item.key)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+              </div>
+            </div>
+          )}
+
+          {isExpanded && item.description && (
+            <p className="text-xs text-muted-foreground truncate">
+              {item.description}
+            </p>
+          )}
         </div>
 
         {/* Contenido expandible */}
@@ -293,26 +315,40 @@ export function QuoteItemCard({
               <div className="flex-1">
                 <PriceInput
                   value={
-                    exchangeRate
-                      ? arsToUsd(item.unitPrice, exchangeRate.venta).toFixed(2).replace(".", ",")
+                    currency === "USD" && exchangeRate
+                      ? arsToUsd(item.unitPrice, exchangeRate.venta)
+                          .toFixed(2)
+                          .replace(".", ",")
                       : item.unitPrice.toString().replace(".", ",")
                   }
                   onChange={(val) => {
-                    const parsedUSD = parseFloat(val.replace(",", ".")) || 0;
+                    const parsed = parseFloat(val.replace(",", ".")) || 0;
                     onUpdatePrice(
                       item.key,
-                      exchangeRate ? parsedUSD * exchangeRate.venta : parsedUSD
+                      currency === "USD" && exchangeRate
+                        ? parsed * exchangeRate.venta
+                        : parsed,
                     );
                   }}
                   className="w-full text-sm border rounded px-2 py-1 tabular-nums"
                 />
               </div>
               <div className="flex flex-col items-end shrink-0">
-                <span className="text-sm font-semibold tabular-nums">
-                  {exchangeRate ? formatUSD(itemSubtotal, exchangeRate.venta) : "—"}
-                </span>
-                {exchangeRate && (
-                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                {exchangeRate ? (
+                  <>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {currency === "USD"
+                        ? formatUSD(itemSubtotal, exchangeRate.venta)
+                        : formatARS(itemSubtotal)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {currency === "USD"
+                        ? formatARS(itemSubtotal)
+                        : formatUSD(itemSubtotal, exchangeRate.venta)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm font-semibold tabular-nums">
                     {formatARS(itemSubtotal)}
                   </span>
                 )}
@@ -328,7 +364,7 @@ export function QuoteItemCard({
                 <div className="space-y-1">
                   {adicionalesDisponibles.map((ad) => {
                     const selected = item.adicionales.some(
-                      (a) => a.id === ad.id
+                      (a) => a.id === ad.id,
                     );
                     return (
                       <button
@@ -343,8 +379,19 @@ export function QuoteItemCard({
                       >
                         <span>{ad.name}</span>
                         <span className="tabular-nums font-medium">
-                          {exchangeRate ? formatUSD(ad.unit_price, exchangeRate.venta) : "—"}
+                          {exchangeRate
+                            ? currency === "USD"
+                              ? formatUSD(ad.unit_price, exchangeRate.venta)
+                              : formatARS(ad.unit_price)
+                            : formatARS(ad.unit_price)}
                         </span>
+                        {exchangeRate && (
+                          <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
+                            {currency === "USD"
+                              ? formatARS(ad.unit_price)
+                              : formatUSD(ad.unit_price, exchangeRate.venta)}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -424,12 +471,24 @@ export function QuoteItemCard({
             {adicionalesTotal > 0 && (
               <div className="text-xs text-right text-muted-foreground border-t pt-2">
                 Subtotal:{" "}
-                <span className="font-semibold tabular-nums text-foreground">
-                  {exchangeRate ? formatUSD(total, exchangeRate.venta) : "—"}
-                </span>
-                {exchangeRate && (
-                  <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
-                    ({formatARS(total)})
+                {exchangeRate ? (
+                  <>
+                    <span className="font-semibold tabular-nums text-foreground">
+                      {currency === "USD"
+                        ? formatUSD(total, exchangeRate.venta)
+                        : formatARS(total)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
+                      (
+                      {currency === "USD"
+                        ? formatARS(total)
+                        : formatUSD(total, exchangeRate.venta)}
+                      )
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {formatARS(total)}
                   </span>
                 )}
               </div>

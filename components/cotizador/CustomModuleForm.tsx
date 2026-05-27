@@ -32,9 +32,10 @@ interface CustomModuleFormProps {
     attachments: QuoteItemAttachment[];
   }) => void;
   exchangeRate: ExchangeRate | null;
+  currency: 'ARS' | 'USD';
 }
 
-export function CustomModuleForm({ onAdd, exchangeRate }: CustomModuleFormProps) {
+export function CustomModuleForm({ onAdd, exchangeRate, currency }: CustomModuleFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [sections, setSections] = useState<ModuleDescriptionSection[]>([]);
@@ -120,7 +121,7 @@ export function CustomModuleForm({ onAdd, exchangeRate }: CustomModuleFormProps)
       name: name.trim(),
       description: description.trim(),
       moduleDescriptionSections: validSections,
-      unitPrice: exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
+      unitPrice: currency === 'USD' && exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
       quantity: qty,
       attachments,
     });
@@ -236,7 +237,7 @@ export function CustomModuleForm({ onAdd, exchangeRate }: CustomModuleFormProps)
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label className="text-xs">Precio unitario (USD) *</Label>
+          <Label className="text-xs">Precio unitario ({currency}) *</Label>
           <PriceInput
             placeholder="0"
             value={price}
