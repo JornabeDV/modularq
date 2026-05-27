@@ -11,6 +11,7 @@ interface StandardModulesTabProps {
   loading: boolean;
   onAddModule: (mod: StandardModule) => void;
   exchangeRate: ExchangeRate | null;
+  currency: 'ARS' | 'USD';
 }
 
 function formatUSD(amount: number, rate: number) {
@@ -29,7 +30,7 @@ function formatARS(amount: number) {
   }).format(amount);
 }
 
-export function StandardModulesTab({ modules, loading, onAddModule, exchangeRate }: StandardModulesTabProps) {
+export function StandardModulesTab({ modules, loading, onAddModule, exchangeRate, currency }: StandardModulesTabProps) {
   if (loading) {
     return <p className="text-sm text-muted-foreground">Cargando módulos...</p>;
   }
@@ -65,11 +66,21 @@ export function StandardModulesTab({ modules, loading, onAddModule, exchangeRate
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <div className="flex flex-col items-end">
-                  <span className="text-sm font-semibold tabular-nums">
-                    {exchangeRate ? formatUSD(mod.base_price, exchangeRate.venta) : "—"}
-                  </span>
-                  {exchangeRate && (
-                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {exchangeRate ? (
+                    <>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {currency === 'USD'
+                          ? formatUSD(mod.base_price, exchangeRate.venta)
+                          : formatARS(mod.base_price)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {currency === 'USD'
+                          ? formatARS(mod.base_price)
+                          : formatUSD(mod.base_price, exchangeRate.venta)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm font-semibold tabular-nums">
                       {formatARS(mod.base_price)}
                     </span>
                   )}

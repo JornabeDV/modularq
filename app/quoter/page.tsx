@@ -376,51 +376,59 @@ function ResumenCard({
         </div>
         <div className="flex justify-between items-center border-t pt-3">
           <span className="text-sm text-muted-foreground">Subtotal calculado</span>
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-medium tabular-nums">{fmtUSD(subtotal / (exchangeRate?.venta ?? 1))}</span>
-            <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(subtotal)}</span>
-          </div>
+          {currency === 'USD' && exchangeRate ? (
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-medium tabular-nums">{fmtUSD(subtotal / exchangeRate.venta)}</span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(subtotal)}</span>
+            </div>
+          ) : (
+            <span className="text-sm font-medium tabular-nums">{fmtARS(subtotal)}</span>
+          )}
         </div>
         {hasAdjustment && (
           <p className="text-xs text-muted-foreground text-right">
-            Diferencia: {fmtUSD((finalTotal - subtotal) / (exchangeRate?.venta ?? 1))}
+            Diferencia: {currency === 'USD' && exchangeRate
+              ? fmtUSD((finalTotal - subtotal) / exchangeRate.venta)
+              : fmtARS(finalTotal - subtotal)}
           </p>
         )}
 
         {/* Inputs editables: subtotal sin IVA */}
         <div className="space-y-2 border-t pt-3">
+          {currency === 'USD' && (
+            <div className="flex justify-between items-center gap-3">
+              <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA (USD)</span>
+              <div className="flex items-center gap-2">
+                <PriceInput
+                  className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 ${
+                    hasAdjustment ? "border-primary bg-primary/5" : ""
+                  }`}
+                  value={totalUSDInput}
+                  onChange={(val) => setTotalUSDInput(val)}
+                  onBlur={() => {
+                    const parsedUSD = parsePriceInput(totalUSDInput);
+                    const formatted = parsedUSD.toFixed(2).replace(".", ",");
+                    setTotalUSDInput(formatted);
+                    if (exchangeRate && exchangeRate.venta > 0) {
+                      onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
+                    }
+                  }}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
           <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA</span>
+            <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA {currency === 'USD' ? '(ARS)' : ''}</span>
             <div className="flex items-center gap-2">
               <PriceInput
                 className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
-                }`}
-                value={totalUSDInput}
-                onChange={(val) => setTotalUSDInput(val)}
-                onBlur={() => {
-                  const parsedUSD = parsePriceInput(totalUSDInput);
-                  const formatted = parsedUSD.toFixed(2).replace(".", ",");
-                  setTotalUSDInput(formatted);
-                  if (exchangeRate && exchangeRate.venta > 0) {
-                    onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
-                  }
-                }}
-                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold text-muted-foreground whitespace-nowrap text-sm">Subtotal sin IVA (ARS)</span>
-            <div className="flex items-center gap-2">
-              <PriceInput
-                className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 text-muted-foreground ${
-                  hasAdjustment ? "border-primary bg-primary/5" : ""
-                }`}
+                } ${currency === 'USD' ? "text-muted-foreground" : ""}`}
                 value={totalARSInput}
                 onChange={(val) => setTotalARSInput(val)}
                 onBlur={() => {
@@ -442,20 +450,28 @@ function ResumenCard({
         <div className="space-y-2 border-t pt-3">
           <div className="flex justify-between items-center gap-3">
             <span className="text-sm text-muted-foreground">IVA 21%</span>
-            <div className="flex flex-col items-end">
-              <span className="text-sm font-medium tabular-nums">{fmtUSD(ivaUSD)}</span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(iva)}</span>
-            </div>
+            {currency === 'USD' && exchangeRate ? (
+              <div className="flex flex-col items-end">
+                <span className="text-sm font-medium tabular-nums">{fmtUSD(ivaUSD)}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(iva)}</span>
+              </div>
+            ) : (
+              <span className="text-sm font-medium tabular-nums">{fmtARS(iva)}</span>
+            )}
           </div>
         </div>
 
         {/* Total con IVA */}
         <div className="flex justify-between items-center gap-3 bg-muted/40 rounded-lg px-3 py-2">
           <span className="font-bold whitespace-nowrap text-sm">Total con IVA</span>
-          <div className="flex flex-col items-end">
-            <span className="text-base font-bold tabular-nums">{fmtUSD(totalConIvaUSD)}</span>
-            <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(totalConIva)}</span>
-          </div>
+          {currency === 'USD' && exchangeRate ? (
+            <div className="flex flex-col items-end">
+              <span className="text-base font-bold tabular-nums">{fmtUSD(totalConIvaUSD)}</span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(totalConIva)}</span>
+            </div>
+          ) : (
+            <span className="text-base font-bold tabular-nums">{fmtARS(totalConIva)}</span>
+          )}
         </div>
 
         <Button
@@ -1528,6 +1544,7 @@ export default function CotizadorPage() {
                 onSave={handleSaveEdit}
                 onCancel={handleCancelEdit}
                 exchangeRate={exchangeRate}
+                currency={quoteCurrency}
               />
             ) : (
               <Tabs defaultValue="standard" className="w-full">
@@ -1542,10 +1559,11 @@ export default function CotizadorPage() {
                     loading={modulesLoading}
                     onAddModule={addStandardModule}
                     exchangeRate={exchangeRate}
+                    currency={quoteCurrency}
                   />
                 </TabsContent>
                 <TabsContent value="custom" className="mt-4">
-                  <CustomModuleForm onAdd={addCustomModule} exchangeRate={exchangeRate} />
+                  <CustomModuleForm onAdd={addCustomModule} exchangeRate={exchangeRate} currency={quoteCurrency} />
                 </TabsContent>
                 <TabsContent value="services" className="mt-4">
                   <ServicesTab
@@ -1554,6 +1572,7 @@ export default function CotizadorPage() {
                     onAddService={addService}
                     onAddCustomService={addCustomService}
                     exchangeRate={exchangeRate}
+                    currency={quoteCurrency}
                   />
                 </TabsContent>
               </Tabs>
@@ -1595,6 +1614,7 @@ export default function CotizadorPage() {
                     onRemoveAttachment={handleRemoveAttachment}
                     onStartEdit={handleStartEdit}
                     exchangeRate={exchangeRate}
+                    currency={quoteCurrency}
                   />
                 ))}
               </div>
