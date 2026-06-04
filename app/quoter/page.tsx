@@ -702,7 +702,18 @@ export default function CotizadorPage() {
         setQuoteItems(items);
 
         // Precargar total (si existe en la cotización original)
-        setFinalTotal(quote.total ?? quote.subtotal ?? 0);
+        if (quote.total_ars != null) {
+          // Nueva semántica: total está en moneda original
+          if (quote.currency === 'ARS') {
+            setFinalTotal(quote.total);
+          } else {
+            // USD: total_ars tiene el valor en ARS para seguir trabajando internamente
+            setFinalTotal(quote.total_ars);
+          }
+        } else {
+          // Vieja semántica: total está en ARS
+          setFinalTotal(quote.total ?? quote.subtotal ?? 0);
+        }
 
         if (isEdit) {
           setEditingQuoteId(sourceId);
@@ -955,7 +966,10 @@ export default function CotizadorPage() {
           ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
         ],
         subtotal,
-        total: finalTotal,
+        total: quoteCurrency === 'USD' && exchangeRate && exchangeRate.venta > 0
+          ? Number((finalTotal / exchangeRate.venta).toFixed(2))
+          : finalTotal,
+        total_ars: finalTotal,
         exchange_rate: exchangeRate?.venta ?? null,
         exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,
@@ -1065,7 +1079,10 @@ export default function CotizadorPage() {
           ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
         ],
         subtotal,
-        total: finalTotal,
+        total: quoteCurrency === 'USD' && exchangeRate && exchangeRate.venta > 0
+          ? Number((finalTotal / exchangeRate.venta).toFixed(2))
+          : finalTotal,
+        total_ars: finalTotal,
         exchange_rate: exchangeRate?.venta ?? null,
         exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,

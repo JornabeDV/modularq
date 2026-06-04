@@ -24,6 +24,7 @@ export interface Project {
     status: string
     clientName: string
     total: number
+    totalArs?: number | null
     currency?: string
     exchangeRate?: number
     pdfUrl?: string

@@ -110,8 +110,35 @@ export function QuoteRow({
 
   const canEdit = quote.status === "draft";
 
-  // Usar tasa histórica guardada; si no existe, fallback a la del día
-  const rate = quote.exchange_rate ?? exchangeRate?.venta ?? 0;
+  // Nueva semántica: si total_ars existe, total está en moneda original.
+  // Vieja semántica: si total_ars es null, total está en ARS.
+  const isNewSemantic = quote.total_ars != null;
+  const todayRate = exchangeRate?.venta ?? 0;
+
+  // Valor principal y secundario según semántica y moneda
+  let primaryDisplay: string;
+  let secondaryDisplay: string | null = null;
+
+  if (isNewSemantic) {
+    if (quote.currency === 'ARS') {
+      primaryDisplay = formatARS(quote.total);
+      secondaryDisplay = todayRate > 0 ? formatUSD(quote.total, todayRate) : null;
+    } else {
+      // USD (default)
+      primaryDisplay = formatUSD(quote.total, 1); // pasamos rate=1 porque ya está en USD
+      secondaryDisplay = todayRate > 0 ? formatARS(quote.total * todayRate) : null;
+    }
+  } else {
+    // Vieja semántica: total está en ARS
+    const rate = quote.exchange_rate ?? todayRate ?? 0;
+    if (rate > 0) {
+      primaryDisplay = formatUSD(quote.total, rate);
+      secondaryDisplay = formatARS(quote.total);
+    } else {
+      primaryDisplay = formatARS(quote.total);
+      secondaryDisplay = null;
+    }
+  }
 
   return (
     <TableRow className="hover:bg-muted/50">
@@ -150,11 +177,11 @@ export function QuoteRow({
       <TableCell>
         <div className="flex flex-col">
           <span className="tabular-nums font-semibold">
-            {rate > 0 ? formatUSD(quote.total, rate) : "—"}
+            {primaryDisplay}
           </span>
-          {rate > 0 && (
+          {secondaryDisplay && (
             <span className="text-[10px] text-muted-foreground tabular-nums">
-              {formatARS(quote.total)}
+              {secondaryDisplay}
             </span>
           )}
         </div>

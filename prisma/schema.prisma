@@ -690,6 +690,7 @@ model Quote {
   client_email   String?
   subtotal       Float    @default(0)
   total          Float    @default(0)
+  total_ars      Float?
   currency       String   @default("USD")
   exchange_rate  Float?
   exchange_rate_date DateTime?
