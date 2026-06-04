@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogHeader,
@@ -17,7 +17,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { Calendar, Check, ChevronsUpDown } from "lucide-react";
 import type { Project } from "@/lib/types";
 import { useClientsPrisma } from "@/hooks/use-clients-prisma";
 import { DialogForm } from "@/components/ui/dialog-form";
@@ -209,6 +223,9 @@ export function ProjectForm({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const clientTriggerRef = useRef<HTMLButtonElement>(null);
+  const [clientTriggerWidth, setClientTriggerWidth] = useState<number>();
   const parseDecimal = (value: string): number | undefined => {
     if (value === "") return undefined;
     return parseFloat(value);
@@ -301,28 +318,89 @@ export function ProjectForm({
               <Label htmlFor="clientId" className="mb-2">
                 Cliente
               </Label>
-              <Select
-                value={formData.clientId}
-                onValueChange={(value) => handleInputChange("clientId", value)}
+              <Popover
+                open={clientPopoverOpen}
+                onOpenChange={setClientPopoverOpen}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin cliente</SelectItem>
-                  {clientsLoading ? (
-                    <SelectItem value="loading" disabled>
-                      Cargando clientes...
-                    </SelectItem>
-                  ) : (
-                    clients?.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.companyName}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                <PopoverTrigger asChild>
+                  <Button
+                    ref={clientTriggerRef}
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={clientPopoverOpen}
+                    className="w-full justify-between font-normal"
+                    disabled={clientsLoading}
+                    onClick={() => {
+                      if (clientTriggerRef.current) {
+                        setClientTriggerWidth(clientTriggerRef.current.offsetWidth);
+                      }
+                    }}
+                  >
+                    <span className="truncate">
+                      {formData.clientId && formData.clientId !== "none"
+                        ? clients?.find((c) => c.id === formData.clientId)
+                            ?.companyName ?? "Seleccionar cliente"
+                        : "Seleccionar cliente"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="p-0"
+                  style={{ width: clientTriggerWidth }}
+                  align="start"
+                  onWheel={(e) => e.stopPropagation()}
+                >
+                  <Command>
+                    <CommandInput placeholder="Buscar cliente..." className="h-9" />
+                    <CommandList className="max-h-[260px]">
+                      <CommandEmpty>No se encontró el cliente.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="none"
+                          onSelect={() => {
+                            handleInputChange("clientId", "none");
+                            setClientPopoverOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4 shrink-0",
+                              formData.clientId === "none" || !formData.clientId
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          Sin cliente
+                        </CommandItem>
+                        {clients?.map((client) => (
+                          <CommandItem
+                            key={client.id}
+                            value={`${client.companyName} ${client.cuit}`}
+                            onSelect={() => {
+                              handleInputChange("clientId", client.id);
+                              setClientPopoverOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4 shrink-0",
+                                formData.clientId === client.id
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{client.companyName}</p>
+                              <p className="text-xs text-muted-foreground">{client.cuit}</p>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

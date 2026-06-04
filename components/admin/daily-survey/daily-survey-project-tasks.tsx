@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Search, Plus } from "lucide-react";
 import { getProgressColor } from "@/lib/utils/project-utils";
 import { REQUIRE_OPERARIO_FOR_TASK } from "@/lib/constants";
 import {
@@ -21,6 +22,9 @@ import {
 } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { DailySurveyTaskCard } from "./daily-survey-task-card";
+import { Input } from "@/components/ui/input";
+import { TaskForm } from "@/components/admin/task-form";
+import { useTasksPrisma } from "@/hooks/use-tasks-prisma";
 
 interface DailySurveyProjectTasksProps {
   projectId: string;
@@ -36,10 +40,13 @@ export function DailySurveyProjectTasks({
   const {
     projectTasks,
     updateProjectTask,
+    createProjectTask,
+    deleteProjectTask,
     loading: tasksLoading,
   } = useProjectTasksPrisma(projectId);
   const { projectOperarios, loading: operariosLoading } =
     useProjectOperariosPrisma(projectId);
+  const { createTask, updateTask } = useTasksPrisma();
 
   const project = projects.find((p) => p.id === projectId);
   const loading = projectsLoading || tasksLoading || operariosLoading;
@@ -202,6 +209,128 @@ export function DailySurveyProjectTasks({
 
   const handleCollaboratorsChange = () => {};
 
+  const handleCreateTask = async (taskData: any) => {
+    if (!user?.id || !projectId) return;
+    setIsCreatingTask(true);
+
+    const result = await createTask({
+      title: taskData.title,
+      description: taskData.description || "",
+      estimatedHours: taskData.estimatedHours,
+      category: taskData.category || "",
+      type: "custom",
+      createdBy: user.id,
+    });
+
+    if (result.success && result.taskId) {
+      const projectTaskResult = await createProjectTask({
+        projectId,
+        taskId: result.taskId,
+        status: "pending",
+      });
+
+      if (projectTaskResult.success) {
+        toast({
+          title: "✓ Tarea creada",
+          description: `"${taskData.title}" se agregó al proyecto`,
+        });
+        setIsCreateTaskOpen(false);
+      } else {
+        toast({
+          title: "Error al asignar tarea",
+          description:
+            projectTaskResult.error || "No se pudo asignar la tarea al proyecto",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Error al crear tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    }
+
+    setIsCreatingTask(false);
+  };
+
+  const handleEditTask = (task: ProjectTask) => {
+    setEditingTask(task);
+    setIsEditTaskOpen(true);
+  };
+
+  const handleUpdateTask = async (taskData: any) => {
+    if (!editingTask?.task?.id) return;
+    setIsUpdatingTask(true);
+
+    const result = await updateTask(editingTask.task.id, {
+      title: taskData.title,
+      description: taskData.description || "",
+      estimated_hours: taskData.estimatedHours,
+      category: taskData.category || "",
+      type: taskData.type || "custom",
+    });
+
+    if (result.success) {
+      toast({
+        title: "✓ Tarea actualizada",
+        description: `"${taskData.title}" se actualizó correctamente`,
+      });
+      setIsEditTaskOpen(false);
+      setEditingTask(null);
+    } else {
+      toast({
+        title: "Error al actualizar tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    }
+
+    setIsUpdatingTask(false);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    const result = await deleteProjectTask(taskId);
+    if (result.success) {
+      toast({
+        title: "✓ Tarea eliminada",
+        description: "La tarea se eliminó del proyecto",
+      });
+    } else {
+      toast({
+        title: "Error al eliminar tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sortedTasks = [...projectTasks].sort((a, b) => {
+    const statusOrder: Record<string, number> = {
+      in_progress: 0,
+      pending: 1,
+      completed: 2,
+      cancelled: 3,
+    };
+    return (statusOrder[a.status] ?? 999) - (statusOrder[b.status] ?? 999);
+  });
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+  const [isUpdatingTask, setIsUpdatingTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+
+  const filteredTasks = sortedTasks.filter((task) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    const nameMatch = task.task?.title?.toLowerCase().includes(query);
+    const descriptionMatch = task.task?.description?.toLowerCase().includes(query);
+    const statusMatch = task.status?.toLowerCase().includes(query);
+    return nameMatch || descriptionMatch || statusMatch;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -228,16 +357,6 @@ export function DailySurveyProjectTasks({
       </div>
     );
   }
-
-  const sortedTasks = [...projectTasks].sort((a, b) => {
-    const statusOrder: Record<string, number> = {
-      in_progress: 0,
-      pending: 1,
-      completed: 2,
-      cancelled: 3,
-    };
-    return (statusOrder[a.status] ?? 999) - (statusOrder[b.status] ?? 999);
-  });
 
   return (
     <div className="space-y-3 sm:space-y-6">
@@ -395,9 +514,32 @@ export function DailySurveyProjectTasks({
       </Card>
 
       <div className="space-y-2.5 sm:space-y-4">
-        <h2 className="text-base sm:text-xl font-semibold max-sm:mt-6">
-          Tareas del Proyecto
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+          <h2 className="text-base sm:text-xl font-semibold max-sm:mt-6">
+            Tareas del Proyecto
+          </h2>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Buscar tarea..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-full"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 cursor-pointer h-9"
+              onClick={() => setIsCreateTaskOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Agregar tarea</span>
+              <span className="sm:hidden">Nueva</span>
+            </Button>
+          </div>
+        </div>
         {sortedTasks.length === 0 ? (
           <Card className="p-2.5 sm:p-4">
             <CardContent className="py-8 sm:py-12 text-center p-0">
@@ -409,23 +551,60 @@ export function DailySurveyProjectTasks({
           </Card>
         ) : (
           <div className="space-y-2 sm:space-y-3">
-            {sortedTasks.map((task, index) => (
-              <DailySurveyTaskCard
-                key={task.id}
-                task={task}
-                taskNumber={index + 1}
-                projectOperarios={projectOperarios || []}
-                projectSubcontractors={(projectOperarios || []).filter(
-                  (operario) => operario.user?.role === "subcontratista",
-                )}
-                onStatusChange={handleStatusChange}
-                onAssignOperario={handleAssignOperario}
-                onCollaboratorsChange={handleCollaboratorsChange}
-              />
-            ))}
+            {filteredTasks.length === 0 ? (
+              <Card className="p-2.5 sm:p-4">
+                <CardContent className="py-6 sm:py-8 text-center p-0">
+                  <Search className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground mx-auto mb-2 sm:mb-3" />
+                  <p className="text-muted-foreground text-sm sm:text-base">
+                    No se encontraron tareas para "{searchQuery}"
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredTasks.map((task, index) => (
+                <DailySurveyTaskCard
+                  key={task.id}
+                  task={task}
+                  taskNumber={index + 1}
+                  projectOperarios={projectOperarios || []}
+                  projectSubcontractors={(projectOperarios || []).filter(
+                    (operario) => operario.user?.role === "subcontratista",
+                  )}
+                  onStatusChange={handleStatusChange}
+                  onAssignOperario={handleAssignOperario}
+                  onCollaboratorsChange={handleCollaboratorsChange}
+                  onEdit={handleEditTask}
+                  onDelete={handleDeleteTask}
+                />
+              ))
+            )}
           </div>
         )}
       </div>
+
+      <TaskForm
+        isOpen={isCreateTaskOpen}
+        onClose={() => setIsCreateTaskOpen(false)}
+        onSubmit={handleCreateTask}
+        isEditing={false}
+        projectId={projectId}
+        isLoading={isCreatingTask}
+      />
+
+      {editingTask && (
+        <TaskForm
+          isOpen={isEditTaskOpen}
+          onClose={() => {
+            setIsEditTaskOpen(false);
+            setEditingTask(null);
+          }}
+          onSubmit={handleUpdateTask}
+          isEditing={true}
+          initialData={editingTask.task || undefined}
+          projectId={projectId}
+          isLoading={isUpdatingTask}
+        />
+      )}
     </div>
   );
 }

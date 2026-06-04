@@ -19,13 +19,30 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Users, Crown, Save, X as XIcon } from "lucide-react";
+import { User, Users, Crown, Save, X as XIcon, Pencil, Trash2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTaskCollaborators } from "@/hooks/use-task-collaborators";
 import { useAuth } from "@/lib/auth-context";
 import type { ProjectTask, TaskCollaborator } from "@/lib/types";
 import { getStatusIcon, getStatusLabel } from "@/lib/utils/status-label";
 import { REQUIRE_OPERARIO_FOR_TASK } from "@/lib/constants";
 import { DialogForm } from "@/components/ui/dialog-form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface DailySurveyTaskCardProps {
   task: ProjectTask;
@@ -35,6 +52,8 @@ interface DailySurveyTaskCardProps {
   onStatusChange: (taskId: string, newStatus: string) => void;
   onAssignOperario: (taskId: string, operarioId: string) => void;
   onCollaboratorsChange?: () => void;
+  onEdit?: (task: ProjectTask) => void;
+  onDelete?: (taskId: string) => void;
 }
 
 export function DailySurveyTaskCard({
@@ -45,6 +64,8 @@ export function DailySurveyTaskCard({
   onStatusChange,
   onAssignOperario,
   onCollaboratorsChange,
+  onEdit,
+  onDelete,
 }: DailySurveyTaskCardProps) {
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [collaborators, setCollaborators] = useState<TaskCollaborator[]>([]);
@@ -229,19 +250,79 @@ export function DailySurveyTaskCard({
                 <h3 className="font-semibold text-base sm:text-lg truncate">
                   {task.task?.title || "Tarea sin título"}
                 </h3>
-                <Badge
-                  variant="outline"
-                  className={`flex-shrink-0 text-[10px] sm:text-xs ${getStatusColor(
-                    task.status,
-                  )}`}
-                >
-                  <span className="flex items-center gap-0.5 sm:gap-1">
-                    {getStatusIcon(task.status)}
-                    <span className="hidden sm:inline">
-                      {getStatusLabel(task.status)}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {onEdit && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 w-7 p-0 cursor-pointer"
+                            onClick={() => onEdit(task)}
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Editar tarea</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {onDelete && (
+                    <TooltipProvider>
+                      <AlertDialog>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 w-7 p-0 cursor-pointer"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Eliminar tarea</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar tarea?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción eliminará la tarea "{task.task?.title || 'Tarea sin título'}" del proyecto. No se puede deshacer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDelete(task.id)}
+                              className="cursor-pointer"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TooltipProvider>
+                  )}
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] sm:text-xs h-[28px] ${getStatusColor(
+                      task.status,
+                    )}`}
+                  >
+                    <span className="flex items-center gap-0.5 sm:gap-1">
+                      {getStatusIcon(task.status)}
+                      <span className="hidden sm:inline">
+                        {getStatusLabel(task.status)}
+                      </span>
                     </span>
-                  </span>
-                </Badge>
+                  </Badge>
+                </div>
               </div>
 
               {task.task?.description && (

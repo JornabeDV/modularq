@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PriceInput } from "@/components/ui/price-input";
-import { ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
+import { ExchangeRate } from "@/lib/exchange-rate";
 
 export type QuoteItemType = "standard_module" | "custom_module" | "service";
 
@@ -82,12 +82,12 @@ interface QuoteItemCardProps {
   currency: "ARS" | "USD";
 }
 
-function formatUSD(amount: number, rate: number) {
+function formatUSD(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(arsToUsd(amount, rate));
+  }).format(amount);
 }
 
 function formatARS(amount: number) {
@@ -219,13 +219,13 @@ export function QuoteItemCard({
                     <>
                       <span className="text-sm font-semibold tabular-nums leading-tight">
                         {currency === "USD"
-                          ? formatUSD(total, exchangeRate.venta)
+                          ? formatUSD(total)
                           : formatARS(total)}
                       </span>
                       <span className="text-[10px] text-muted-foreground tabular-nums leading-tight">
                         {currency === "USD"
-                          ? formatARS(total)
-                          : formatUSD(total, exchangeRate.venta)}
+                          ? formatARS(total * exchangeRate.venta)
+                          : formatUSD(total / exchangeRate.venta)}
                       </span>
                     </>
                   ) : (
@@ -314,21 +314,10 @@ export function QuoteItemCard({
               </div>
               <div className="flex-1">
                 <PriceInput
-                  value={
-                    currency === "USD" && exchangeRate
-                      ? arsToUsd(item.unitPrice, exchangeRate.venta)
-                          .toFixed(2)
-                          .replace(".", ",")
-                      : item.unitPrice.toString().replace(".", ",")
-                  }
+                  value={item.unitPrice.toFixed(2).replace(".", ",")}
                   onChange={(val) => {
                     const parsed = parseFloat(val.replace(",", ".")) || 0;
-                    onUpdatePrice(
-                      item.key,
-                      currency === "USD" && exchangeRate
-                        ? parsed * exchangeRate.venta
-                        : parsed,
-                    );
+                    onUpdatePrice(item.key, parsed);
                   }}
                   className="w-full text-sm border rounded px-2 py-1 tabular-nums"
                 />
@@ -338,18 +327,18 @@ export function QuoteItemCard({
                   <>
                     <span className="text-sm font-semibold tabular-nums">
                       {currency === "USD"
-                        ? formatUSD(itemSubtotal, exchangeRate.venta)
+                        ? formatUSD(itemSubtotal)
                         : formatARS(itemSubtotal)}
                     </span>
                     <span className="text-[10px] text-muted-foreground tabular-nums">
                       {currency === "USD"
-                        ? formatARS(itemSubtotal)
-                        : formatUSD(itemSubtotal, exchangeRate.venta)}
+                        ? formatARS(itemSubtotal * exchangeRate.venta)
+                        : formatUSD(itemSubtotal / exchangeRate.venta)}
                     </span>
                   </>
                 ) : (
                   <span className="text-sm font-semibold tabular-nums">
-                    {formatARS(itemSubtotal)}
+                    {currency === "USD" ? formatUSD(itemSubtotal) : formatARS(itemSubtotal)}
                   </span>
                 )}
               </div>
@@ -381,15 +370,15 @@ export function QuoteItemCard({
                         <span className="tabular-nums font-medium">
                           {exchangeRate
                             ? currency === "USD"
-                              ? formatUSD(ad.unit_price, exchangeRate.venta)
+                              ? formatUSD(ad.unit_price)
                               : formatARS(ad.unit_price)
                             : formatARS(ad.unit_price)}
                         </span>
                         {exchangeRate && (
                           <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
                             {currency === "USD"
-                              ? formatARS(ad.unit_price)
-                              : formatUSD(ad.unit_price, exchangeRate.venta)}
+                              ? formatARS(ad.unit_price * exchangeRate.venta)
+                              : formatUSD(ad.unit_price / exchangeRate.venta)}
                           </span>
                         )}
                       </button>
@@ -475,14 +464,14 @@ export function QuoteItemCard({
                   <>
                     <span className="font-semibold tabular-nums text-foreground">
                       {currency === "USD"
-                        ? formatUSD(total, exchangeRate.venta)
+                        ? formatUSD(total)
                         : formatARS(total)}
                     </span>
                     <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
                       (
                       {currency === "USD"
-                        ? formatARS(total)
-                        : formatUSD(total, exchangeRate.venta)}
+                        ? formatARS(total * exchangeRate.venta)
+                        : formatUSD(total / exchangeRate.venta)}
                       )
                     </span>
                   </>

@@ -21,7 +21,7 @@ import type {
   QuoteItemAttachment,
   ModuleDescriptionSection,
 } from "./QuoteItemCard";
-import { ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
+import { ExchangeRate } from "@/lib/exchange-rate";
 
 interface CustomModuleEditorProps {
   item: {
@@ -60,9 +60,7 @@ export function CustomModuleEditor({
     item.moduleDescriptionSections ?? [],
   );
   const [price, setPrice] = useState(
-    currency === 'USD' && exchangeRate
-      ? arsToUsd(item.unitPrice, exchangeRate.venta).toFixed(2).replace(".", ",")
-      : item.unitPrice.toString().replace(".", ","),
+    item.unitPrice.toFixed(2).replace(".", ","),
   );
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [attachments, setAttachments] = useState<QuoteItemAttachment[]>(
@@ -155,7 +153,7 @@ export function CustomModuleEditor({
       name: name.trim(),
       description: description.trim(),
       moduleDescriptionSections: validSections,
-      unitPrice: currency === 'USD' && exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
+      unitPrice,
       quantity: qty,
       attachments,
     });

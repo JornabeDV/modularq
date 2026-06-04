@@ -4,7 +4,7 @@ import { Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StandardModule } from "@/hooks/use-standard-modules";
-import { ExchangeRate, arsToUsd } from "@/lib/exchange-rate";
+import { ExchangeRate } from "@/lib/exchange-rate";
 
 interface StandardModulesTabProps {
   modules: StandardModule[];
@@ -14,12 +14,12 @@ interface StandardModulesTabProps {
   currency: 'ARS' | 'USD';
 }
 
-function formatUSD(amount: number, rate: number) {
+function formatUSD(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(arsToUsd(amount, rate));
+  }).format(amount);
 }
 
 function formatARS(amount: number) {
@@ -70,18 +70,18 @@ export function StandardModulesTab({ modules, loading, onAddModule, exchangeRate
                     <>
                       <span className="text-sm font-semibold tabular-nums">
                         {currency === 'USD'
-                          ? formatUSD(mod.base_price, exchangeRate.venta)
-                          : formatARS(mod.base_price)}
+                          ? formatUSD(mod.base_price)
+                          : formatARS(mod.base_price * exchangeRate.venta)}
                       </span>
                       <span className="text-[10px] text-muted-foreground tabular-nums">
                         {currency === 'USD'
-                          ? formatARS(mod.base_price)
-                          : formatUSD(mod.base_price, exchangeRate.venta)}
+                          ? formatARS(mod.base_price * exchangeRate.venta)
+                          : formatUSD(mod.base_price)}
                       </span>
                     </>
                   ) : (
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatARS(mod.base_price)}
+                      {formatUSD(mod.base_price)}
                     </span>
                   )}
                 </div>
