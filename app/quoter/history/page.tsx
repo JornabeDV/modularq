@@ -98,6 +98,12 @@ export default function QuoteHistorialPage() {
   const totalApprovedAmount = quotes
     .filter((q) => q.status === "approved")
     .reduce((sum, q) => sum + q.total, 0);
+  const totalApprovedAmountUSD = quotes
+    .filter((q) => q.status === "approved")
+    .reduce((sum, q) => {
+      const rate = q.exchange_rate ?? exchangeRate?.venta ?? 0;
+      return sum + (rate > 0 ? q.total / rate : 0);
+    }, 0);
   const pendingQuotes = quotes.filter(
     (q) => q.status === "draft" || q.status === "sent",
   ).length;
@@ -184,6 +190,7 @@ export default function QuoteHistorialPage() {
           totalQuotes={totalQuotes}
           approvedRate={approvedRate}
           totalApprovedAmount={totalApprovedAmount}
+          totalApprovedAmountUSD={totalApprovedAmountUSD}
           pendingQuotes={pendingQuotes}
           exchangeRate={exchangeRate}
         />

@@ -956,6 +956,8 @@ export default function CotizadorPage() {
         ],
         subtotal,
         total: finalTotal,
+        exchange_rate: exchangeRate?.venta ?? null,
+        exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,
         created_by: userProfile.id,
         items: quoteItems.map((item, i) => ({
@@ -1064,6 +1066,8 @@ export default function CotizadorPage() {
         ],
         subtotal,
         total: finalTotal,
+        exchange_rate: exchangeRate?.venta ?? null,
+        exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,
         created_by: userProfile.id,
         items: quoteItems.map((item, i) => ({

@@ -79,6 +79,7 @@ export function useProjectsPrisma() {
           clientName: project.quote.client_name,
           total: project.quote.total,
           currency: project.quote.currency,
+          exchangeRate: project.quote.exchange_rate,
           pdfUrl: project.quote.pdf_url
         } : undefined,
         // Especificaciones técnicas

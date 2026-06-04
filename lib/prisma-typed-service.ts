@@ -209,6 +209,7 @@ export class PrismaTypedService {
           client_name,
           total,
           currency,
+          exchange_rate,
           pdf_url
         )
       `)
@@ -2968,6 +2969,8 @@ export class PrismaTypedService {
     subtotal: number
     total: number
     currency?: string
+    exchange_rate?: number
+    exchange_rate_date?: string
     pdf_url?: string
     valid_until?: string
     created_by: string
@@ -3018,6 +3021,10 @@ export class PrismaTypedService {
         subtotal: input.subtotal,
         total: input.total,
         currency: input.currency ?? 'USD',
+        exchange_rate: input.exchange_rate ?? null,
+        exchange_rate_date: input.exchange_rate_date ?? null,
+        exchange_rate: input.exchange_rate ?? null,
+        exchange_rate_date: input.exchange_rate_date ?? null,
         pdf_url: input.pdf_url ?? null,
         valid_until: validUntil.toISOString().split('T')[0],
         created_by: input.created_by,
@@ -3121,6 +3128,8 @@ export class PrismaTypedService {
       subtotal: number
       total: number
       currency?: string
+      exchange_rate?: number
+      exchange_rate_date?: string
       valid_until?: string
       items: Array<{
         type: 'standard_module' | 'custom_module' | 'service'
@@ -3171,6 +3180,8 @@ export class PrismaTypedService {
       subtotal: input.subtotal,
       total: input.total,
       currency: input.currency ?? 'USD',
+      exchange_rate: input.exchange_rate ?? null,
+      exchange_rate_date: input.exchange_rate_date ?? null,
       updated_at: new Date().toISOString(),
     }
     if (input.valid_until) {
@@ -3260,7 +3271,7 @@ export class PrismaTypedService {
   static async getQuotes(userId: string, role: string, status?: string, quoteType?: string) {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
       .order('created_at', { ascending: false })
 
     // All authorized roles (admin, supervisor, vendedor) see all quotes
@@ -3293,7 +3304,7 @@ export class PrismaTypedService {
   static async getApprovedQuotesWithoutProject(quoteType?: 'sale' | 'rental') {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, pdf_url, valid_until, created_by, created_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at')
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
 

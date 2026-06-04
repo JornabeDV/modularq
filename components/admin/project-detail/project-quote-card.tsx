@@ -17,6 +17,7 @@ interface ProjectQuoteCardProps {
     clientName: string;
     total: number;
     currency?: string;
+    exchangeRate?: number;
     pdfUrl?: string;
   };
 }
@@ -43,6 +44,10 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
   useEffect(() => {
     getExchangeRate().then(setExchangeRate).catch(() => {});
   }, []);
+
+  // Usar tasa histórica guardada; si no existe, fallback a la del día
+  const rate = quote?.exchangeRate ?? exchangeRate?.venta ?? 0;
+
   if (!quote) {
     return (
       <Card>
@@ -79,9 +84,9 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
           </div>
           <div className="flex flex-col items-end">
             <span className="text-sm font-bold tabular-nums">
-              {exchangeRate ? formatUSD(quote.total, exchangeRate.venta) : "—"}
+              {rate > 0 ? formatUSD(quote.total, rate) : "—"}
             </span>
-            {exchangeRate && (
+            {rate > 0 && (
               <span className="text-[10px] text-muted-foreground tabular-nums">
                 {formatARS(quote.total)}
               </span>
