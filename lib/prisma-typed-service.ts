@@ -208,6 +208,7 @@ export class PrismaTypedService {
           status,
           client_name,
           total,
+          total_ars,
           currency,
           exchange_rate,
           pdf_url
