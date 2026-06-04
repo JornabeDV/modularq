@@ -10,7 +10,7 @@ import { useProjectOperariosPrisma } from "@/hooks/use-project-operarios-prisma"
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, AlertCircle, Search } from "lucide-react";
+import { ArrowLeft, AlertCircle, Search, Plus } from "lucide-react";
 import { getProgressColor } from "@/lib/utils/project-utils";
 import { REQUIRE_OPERARIO_FOR_TASK } from "@/lib/constants";
 import {
@@ -23,6 +23,8 @@ import {
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { DailySurveyTaskCard } from "./daily-survey-task-card";
 import { Input } from "@/components/ui/input";
+import { TaskForm } from "@/components/admin/task-form";
+import { useTasksPrisma } from "@/hooks/use-tasks-prisma";
 
 interface DailySurveyProjectTasksProps {
   projectId: string;
@@ -38,10 +40,13 @@ export function DailySurveyProjectTasks({
   const {
     projectTasks,
     updateProjectTask,
+    createProjectTask,
+    deleteProjectTask,
     loading: tasksLoading,
   } = useProjectTasksPrisma(projectId);
   const { projectOperarios, loading: operariosLoading } =
     useProjectOperariosPrisma(projectId);
+  const { createTask, updateTask } = useTasksPrisma();
 
   const project = projects.find((p) => p.id === projectId);
   const loading = projectsLoading || tasksLoading || operariosLoading;
@@ -204,6 +209,102 @@ export function DailySurveyProjectTasks({
 
   const handleCollaboratorsChange = () => {};
 
+  const handleCreateTask = async (taskData: any) => {
+    if (!user?.id || !projectId) return;
+    setIsCreatingTask(true);
+
+    const result = await createTask({
+      title: taskData.title,
+      description: taskData.description || "",
+      estimatedHours: taskData.estimatedHours,
+      category: taskData.category || "",
+      type: "custom",
+      createdBy: user.id,
+    });
+
+    if (result.success && result.taskId) {
+      const projectTaskResult = await createProjectTask({
+        projectId,
+        taskId: result.taskId,
+        status: "pending",
+      });
+
+      if (projectTaskResult.success) {
+        toast({
+          title: "✓ Tarea creada",
+          description: `"${taskData.title}" se agregó al proyecto`,
+        });
+        setIsCreateTaskOpen(false);
+      } else {
+        toast({
+          title: "Error al asignar tarea",
+          description:
+            projectTaskResult.error || "No se pudo asignar la tarea al proyecto",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Error al crear tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    }
+
+    setIsCreatingTask(false);
+  };
+
+  const handleEditTask = (task: ProjectTask) => {
+    setEditingTask(task);
+    setIsEditTaskOpen(true);
+  };
+
+  const handleUpdateTask = async (taskData: any) => {
+    if (!editingTask?.task?.id) return;
+    setIsUpdatingTask(true);
+
+    const result = await updateTask(editingTask.task.id, {
+      title: taskData.title,
+      description: taskData.description || "",
+      estimated_hours: taskData.estimatedHours,
+      category: taskData.category || "",
+      type: taskData.type || "custom",
+    });
+
+    if (result.success) {
+      toast({
+        title: "✓ Tarea actualizada",
+        description: `"${taskData.title}" se actualizó correctamente`,
+      });
+      setIsEditTaskOpen(false);
+      setEditingTask(null);
+    } else {
+      toast({
+        title: "Error al actualizar tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    }
+
+    setIsUpdatingTask(false);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    const result = await deleteProjectTask(taskId);
+    if (result.success) {
+      toast({
+        title: "✓ Tarea eliminada",
+        description: "La tarea se eliminó del proyecto",
+      });
+    } else {
+      toast({
+        title: "Error al eliminar tarea",
+        description: result.error || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    }
+  };
+
   const sortedTasks = [...projectTasks].sort((a, b) => {
     const statusOrder: Record<string, number> = {
       in_progress: 0,
@@ -215,6 +316,11 @@ export function DailySurveyProjectTasks({
   });
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+  const [isUpdatingTask, setIsUpdatingTask] = useState(false);
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
 
   const filteredTasks = sortedTasks.filter((task) => {
     const query = searchQuery.toLowerCase().trim();
@@ -412,14 +518,26 @@ export function DailySurveyProjectTasks({
           <h2 className="text-base sm:text-xl font-semibold max-sm:mt-6">
             Tareas del Proyecto
           </h2>
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Buscar tarea..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-full"
-            />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Buscar tarea..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-full"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 cursor-pointer h-9"
+              onClick={() => setIsCreateTaskOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Agregar tarea</span>
+              <span className="sm:hidden">Nueva</span>
+            </Button>
           </div>
         </div>
         {sortedTasks.length === 0 ? (
@@ -455,12 +573,38 @@ export function DailySurveyProjectTasks({
                   onStatusChange={handleStatusChange}
                   onAssignOperario={handleAssignOperario}
                   onCollaboratorsChange={handleCollaboratorsChange}
+                  onEdit={handleEditTask}
+                  onDelete={handleDeleteTask}
                 />
               ))
             )}
           </div>
         )}
       </div>
+
+      <TaskForm
+        isOpen={isCreateTaskOpen}
+        onClose={() => setIsCreateTaskOpen(false)}
+        onSubmit={handleCreateTask}
+        isEditing={false}
+        projectId={projectId}
+        isLoading={isCreatingTask}
+      />
+
+      {editingTask && (
+        <TaskForm
+          isOpen={isEditTaskOpen}
+          onClose={() => {
+            setIsEditTaskOpen(false);
+            setEditingTask(null);
+          }}
+          onSubmit={handleUpdateTask}
+          isEditing={true}
+          initialData={editingTask.task || undefined}
+          projectId={projectId}
+          isLoading={isUpdatingTask}
+        />
+      )}
     </div>
   );
 }

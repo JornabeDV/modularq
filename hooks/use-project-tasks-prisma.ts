@@ -29,9 +29,9 @@ export function useProjectTasksPrisma(projectId?: string) {
   const [error, setError] = useState<string | null>(null)
 
   // Cargar project_tasks
-  const fetchProjectTasks = useCallback(async (filterProjectId?: string) => {
+  const fetchProjectTasks = useCallback(async (filterProjectId?: string, silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
       setError(null)
       
       const tasks = await PrismaTypedService.getProjectTasks(filterProjectId)
@@ -110,7 +110,7 @@ export function useProjectTasksPrisma(projectId?: string) {
       console.error('Error fetching project tasks:', err)
       setError(err instanceof Error ? err.message : 'Error al cargar tareas del proyecto')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
@@ -149,8 +149,8 @@ export function useProjectTasksPrisma(projectId?: string) {
         notes: projectTaskData.notes
       })
 
-      // Actualizar estado local
-      await fetchProjectTasks(projectId)
+      // Actualizar estado local sin mostrar loading
+      await fetchProjectTasks(projectId, true)
       
       return { success: true }
     } catch (err) {
@@ -411,8 +411,8 @@ export function useProjectTasksPrisma(projectId?: string) {
       
       await PrismaTypedService.deleteProjectTask(projectTaskId)
 
-      // Actualizar estado local
-      await fetchProjectTasks(projectId)
+      // Actualizar estado local sin mostrar loading
+      await fetchProjectTasks(projectId, true)
       
       return { success: true }
     } catch (err) {
