@@ -78,6 +78,7 @@ export function useProjectsPrisma() {
           status: project.quote.status,
           clientName: project.quote.client_name,
           total: project.quote.total,
+          totalArs: project.quote.total_ars,
           currency: project.quote.currency,
           exchangeRate: project.quote.exchange_rate,
           pdfUrl: project.quote.pdf_url

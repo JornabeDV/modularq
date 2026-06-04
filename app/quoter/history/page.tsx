@@ -95,15 +95,30 @@ export default function QuoteHistorialPage() {
   const totalQuotes = quotes.length;
   const approvedCount = quotes.filter((q) => q.status === "approved").length;
   const approvedRate = totalQuotes > 0 ? (approvedCount / totalQuotes) * 100 : 0;
-  const totalApprovedAmount = quotes
-    .filter((q) => q.status === "approved")
-    .reduce((sum, q) => sum + q.total, 0);
-  const totalApprovedAmountUSD = quotes
-    .filter((q) => q.status === "approved")
-    .reduce((sum, q) => {
-      const rate = q.exchange_rate ?? exchangeRate?.venta ?? 0;
-      return sum + (rate > 0 ? q.total / rate : 0);
-    }, 0);
+  // Calcular montos aprobados considerando nueva/vieja semántica
+  const approvedQuotes = quotes.filter((q) => q.status === "approved");
+  const totalApprovedAmount = approvedQuotes.reduce((sum, q) => {
+    if (q.total_ars != null) {
+      // Nueva semántica: siempre sumar en ARS usando total_ars
+      return sum + q.total_ars;
+    }
+    // Vieja semántica: total está en ARS
+    return sum + q.total;
+  }, 0);
+  const totalApprovedAmountUSD = approvedQuotes.reduce((sum, q) => {
+    if (q.total_ars != null) {
+      // Nueva semántica
+      if (q.currency === 'ARS') {
+        const rate = exchangeRate?.venta ?? 0;
+        return sum + (rate > 0 ? q.total / rate : 0);
+      }
+      // USD: total ya está en USD
+      return sum + q.total;
+    }
+    // Vieja semántica: total está en ARS
+    const rate = q.exchange_rate ?? exchangeRate?.venta ?? 0;
+    return sum + (rate > 0 ? q.total / rate : 0);
+  }, 0);
   const pendingQuotes = quotes.filter(
     (q) => q.status === "draft" || q.status === "sent",
   ).length;

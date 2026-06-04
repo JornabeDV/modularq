@@ -2968,6 +2968,7 @@ export class PrismaTypedService {
     notes_list?: string[] | null
     subtotal: number
     total: number
+    total_ars?: number
     currency?: string
     exchange_rate?: number
     exchange_rate_date?: string
@@ -3020,6 +3021,7 @@ export class PrismaTypedService {
         notes_list: input.notes_list ?? null,
         subtotal: input.subtotal,
         total: input.total,
+        total_ars: input.total_ars ?? null,
         currency: input.currency ?? 'USD',
         exchange_rate: input.exchange_rate ?? null,
         exchange_rate_date: input.exchange_rate_date ?? null,
@@ -3127,6 +3129,7 @@ export class PrismaTypedService {
       notes_list?: string[] | null
       subtotal: number
       total: number
+      total_ars?: number
       currency?: string
       exchange_rate?: number
       exchange_rate_date?: string
@@ -3271,7 +3274,7 @@ export class PrismaTypedService {
   static async getQuotes(userId: string, role: string, status?: string, quoteType?: string) {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, total_ars, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
       .order('created_at', { ascending: false })
 
     // All authorized roles (admin, supervisor, vendedor) see all quotes
@@ -3304,7 +3307,7 @@ export class PrismaTypedService {
   static async getApprovedQuotesWithoutProject(quoteType?: 'sale' | 'rental') {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, total_ars, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at')
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
 

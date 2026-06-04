@@ -16,6 +16,7 @@ interface ProjectQuoteCardProps {
     status: string;
     clientName: string;
     total: number;
+    totalArs?: number | null;
     currency?: string;
     exchangeRate?: number;
     pdfUrl?: string;
@@ -45,8 +46,9 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
     getExchangeRate().then(setExchangeRate).catch(() => {});
   }, []);
 
-  // Usar tasa histórica guardada; si no existe, fallback a la del día
-  const rate = quote?.exchangeRate ?? exchangeRate?.venta ?? 0;
+  // Nueva semántica: si totalArs existe, total está en moneda original.
+  const todayRate = exchangeRate?.venta ?? 0;
+  const isNewSemantic = quote?.totalArs != null;
 
   if (!quote) {
     return (
@@ -83,14 +85,43 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
             </Badge>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-sm font-bold tabular-nums">
-              {rate > 0 ? formatUSD(quote.total, rate) : "—"}
-            </span>
-            {rate > 0 && (
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {formatARS(quote.total)}
-              </span>
-            )}
+            {(() => {
+              if (isNewSemantic) {
+                if (quote.currency === 'ARS') {
+                  return (
+                    <>
+                      <span className="text-sm font-bold tabular-nums">{formatARS(quote.total)}</span>
+                      {todayRate > 0 && (
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {formatUSD(quote.total, todayRate)}
+                        </span>
+                      )}
+                    </>
+                  );
+                }
+                return (
+                  <>
+                    <span className="text-sm font-bold tabular-nums">{formatUSD(quote.total, 1)}</span>
+                    {todayRate > 0 && (
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {formatARS(quote.total * todayRate)}
+                      </span>
+                    )}
+                  </>
+                );
+              }
+              // Vieja semántica
+              const rate = quote.exchangeRate ?? todayRate ?? 0;
+              if (rate > 0) {
+                return (
+                  <>
+                    <span className="text-sm font-bold tabular-nums">{formatUSD(quote.total, rate)}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">{formatARS(quote.total)}</span>
+                  </>
+                );
+              }
+              return <span className="text-sm font-bold tabular-nums">{formatARS(quote.total)}</span>;
+            })()}
           </div>
         </div>
 

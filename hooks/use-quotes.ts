@@ -16,6 +16,7 @@ export interface Quote {
   client_email?: string
   subtotal: number
   total: number
+  total_ars?: number | null
   currency?: string
   exchange_rate?: number
   exchange_rate_date?: string
