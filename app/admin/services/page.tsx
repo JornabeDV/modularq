@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { PriceInput } from "@/components/ui/price-input";
-import { getExchangeRate, ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
+import { getExchangeRate, ExchangeRate } from "@/lib/exchange-rate";
 
 interface Service {
   id: string;
@@ -66,12 +66,12 @@ interface ServiceForm {
 
 const ALLOWED_ROLES = ["admin", "supervisor"];
 
-function formatUSD(amount: number, rate: number) {
+function formatUSD(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(arsToUsd(amount, rate));
+  }).format(amount);
 }
 
 function formatARS(amount: number) {
@@ -123,8 +123,8 @@ function ServiceFormFields({
             onChange={(val) => setForm((f) => ({ ...f, unit_price: val }))}
           />
           {exchangeRate && form.unit_price && (
-            <p className="text-[10px] text-muted-foreground">
-              {formatARS(usdToArs(parseFloat(form.unit_price.replace(",", ".")), exchangeRate.venta))}
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              {formatARS((parseFloat(form.unit_price.replace(",", ".")) || 0) * exchangeRate.venta)}
             </p>
           )}
         </div>
@@ -219,9 +219,7 @@ export default function ServicesAdminPage() {
     setForm({
       name: service.name,
       description: service.description ?? "",
-      unit_price: exchangeRate
-        ? arsToUsd(service.unit_price, exchangeRate.venta).toFixed(2).replace(".", ",")
-        : service.unit_price.toString().replace(".", ","),
+      unit_price: service.unit_price.toFixed(2).replace(".", ","),
       unit: service.unit,
       is_active: service.is_active,
     });
@@ -238,9 +236,7 @@ export default function ServicesAdminPage() {
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
-      unit_price: exchangeRate
-        ? usdToArs(parseFloat(form.unit_price.replace(",", ".")) || 0, exchangeRate.venta)
-        : parseFloat(form.unit_price.replace(",", ".")) || 0,
+      unit_price: parseFloat(form.unit_price.replace(",", ".")) || 0,
       unit: form.unit.trim() || "unidad",
       is_active: form.is_active,
     };
@@ -396,11 +392,11 @@ export default function ServicesAdminPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="flex flex-col items-end mr-auto sm:mr-0">
                         <span className="font-bold tabular-nums text-sm">
-                          {exchangeRate ? formatUSD(service.unit_price, exchangeRate.venta) : "—"}
+                          {formatUSD(service.unit_price)}
                         </span>
                         {exchangeRate && (
                           <span className="text-[10px] text-muted-foreground tabular-nums">
-                            {formatARS(service.unit_price)}
+                            {formatARS(service.unit_price * exchangeRate.venta)}
                           </span>
                         )}
                       </div>

@@ -58,8 +58,6 @@ import {
   getExchangeRate,
   formatExchangeRate,
   ExchangeRate,
-  arsToUsd,
-  usdToArs,
 } from "@/lib/exchange-rate";
 import {
   useClientsPrisma,
@@ -295,7 +293,6 @@ function ResumenCard({
   quoteItems,
   subtotal,
   finalTotal,
-  finalTotalUSD,
   exchangeRate,
   currency,
   generating,
@@ -309,7 +306,6 @@ function ResumenCard({
   quoteItems: QuoteItemState[];
   subtotal: number;
   finalTotal: number;
-  finalTotalUSD: number;
   exchangeRate: ExchangeRate | null;
   currency: 'ARS' | 'USD';
   generating: boolean;
@@ -321,27 +317,24 @@ function ResumenCard({
   onUpdateFinalTotal: (value: number) => void;
 }) {
   const hasAdjustment = finalTotal !== subtotal;
-  const [totalUSDInput, setTotalUSDInput] = useState(
-    finalTotalUSD === 0 ? "" : finalTotalUSD.toFixed(2).replace(".", ","),
-  );
-  const [totalARSInput, setTotalARSInput] = useState(
-    finalTotal === 0 ? "" : finalTotal.toString().replace(".", ","),
+  const rate = exchangeRate?.venta ?? 0;
+
+  // finalTotal es la moneda principal
+  const primary = finalTotal;
+  const secondary = currency === 'USD' && rate > 0 ? primary * rate : currency === 'ARS' && rate > 0 ? primary / rate : 0;
+
+  const [primaryInput, setPrimaryInput] = useState(
+    primary === 0 ? "" : primary.toFixed(2).replace(".", ","),
   );
 
-  const iva = finalTotal * 0.21;
-  const totalConIva = finalTotal * 1.21;
-  const ivaUSD = finalTotalUSD * 0.21;
-  const totalConIvaUSD = finalTotalUSD * 1.21;
+  const ivaPrimary = primary * 0.21;
+  const totalConIvaPrimary = primary * 1.21;
+  const ivaSecondary = secondary * 0.21;
+  const totalConIvaSecondary = secondary * 1.21;
 
   useEffect(() => {
-    setTotalUSDInput(
-      finalTotalUSD === 0 ? "" : finalTotalUSD.toFixed(2).replace(".", ","),
-    );
-  }, [finalTotalUSD]);
-
-  useEffect(() => {
-    setTotalARSInput(finalTotal === 0 ? "" : finalTotal.toString().replace(".", ","));
-  }, [finalTotal]);
+    setPrimaryInput(primary === 0 ? "" : primary.toFixed(2).replace(".", ","));
+  }, [primary]);
 
   const fmtARS = (n: number) =>
     new Intl.NumberFormat("es-AR", {
@@ -357,10 +350,16 @@ function ResumenCard({
       minimumFractionDigits: 2,
     }).format(n);
 
+  const fmtPrimary = currency === 'USD' ? fmtUSD : fmtARS;
+  const fmtSecondary = currency === 'USD' ? fmtARS : fmtUSD;
+
+  const primaryLabel = currency === 'USD' ? 'USD' : 'ARS';
+  const secondaryLabel = currency === 'USD' ? 'ARS' : 'USD';
+
   return (
     <Card>
       <CardContent className="space-y-4">
-        {exchangeRate && currency === 'USD' && (
+        {exchangeRate && (
           <div className="flex justify-end">
             <Badge
               variant="outline"
@@ -376,65 +375,36 @@ function ResumenCard({
         </div>
         <div className="flex justify-between items-center border-t pt-3">
           <span className="text-sm text-muted-foreground">Subtotal calculado</span>
-          {currency === 'USD' && exchangeRate ? (
+          {rate > 0 ? (
             <div className="flex flex-col items-end">
-              <span className="text-sm font-medium tabular-nums">{fmtUSD(subtotal / exchangeRate.venta)}</span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(subtotal)}</span>
+              <span className="text-sm font-medium tabular-nums">{fmtPrimary(subtotal)}</span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtSecondary(currency === 'USD' ? subtotal * rate : subtotal / rate)}</span>
             </div>
           ) : (
-            <span className="text-sm font-medium tabular-nums">{fmtARS(subtotal)}</span>
+            <span className="text-sm font-medium tabular-nums">{fmtPrimary(subtotal)}</span>
           )}
         </div>
         {hasAdjustment && (
           <p className="text-xs text-muted-foreground text-right">
-            Diferencia: {currency === 'USD' && exchangeRate
-              ? fmtUSD((finalTotal - subtotal) / exchangeRate.venta)
-              : fmtARS(finalTotal - subtotal)}
+            Diferencia: {fmtPrimary(finalTotal - subtotal)}
           </p>
         )}
 
-        {/* Inputs editables: subtotal sin IVA */}
+        {/* Input editable: subtotal sin IVA en moneda principal */}
         <div className="space-y-2 border-t pt-3">
-          {currency === 'USD' && (
-            <div className="flex justify-between items-center gap-3">
-              <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA (USD)</span>
-              <div className="flex items-center gap-2">
-                <PriceInput
-                  className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 ${
-                    hasAdjustment ? "border-primary bg-primary/5" : ""
-                  }`}
-                  value={totalUSDInput}
-                  onChange={(val) => setTotalUSDInput(val)}
-                  onBlur={() => {
-                    const parsedUSD = parsePriceInput(totalUSDInput);
-                    const formatted = parsedUSD.toFixed(2).replace(".", ",");
-                    setTotalUSDInput(formatted);
-                    if (exchangeRate && exchangeRate.venta > 0) {
-                      onUpdateFinalTotal(parsedUSD * exchangeRate.venta);
-                    }
-                  }}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter") {
-                      e.currentTarget.blur();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          )}
           <div className="flex justify-between items-center gap-3">
-            <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA {currency === 'USD' ? '(ARS)' : ''}</span>
+            <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA ({primaryLabel})</span>
             <div className="flex items-center gap-2">
               <PriceInput
                 className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 ${
                   hasAdjustment ? "border-primary bg-primary/5" : ""
-                } ${currency === 'USD' ? "text-muted-foreground" : ""}`}
-                value={totalARSInput}
-                onChange={(val) => setTotalARSInput(val)}
+                }`}
+                value={primaryInput}
+                onChange={(val) => setPrimaryInput(val)}
                 onBlur={() => {
-                  const parsedARS = parsePriceInput(totalARSInput);
-                  setTotalARSInput(parsedARS === 0 ? "" : parsedARS.toFixed(2).replace(".", ","));
-                  onUpdateFinalTotal(parsedARS);
+                  const parsed = parsePriceInput(primaryInput);
+                  setPrimaryInput(parsed.toFixed(2).replace(".", ","));
+                  onUpdateFinalTotal(parsed);
                 }}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                   if (e.key === "Enter") {
@@ -444,19 +414,25 @@ function ResumenCard({
               />
             </div>
           </div>
+          {secondary > 0 && (
+            <div className="flex justify-between items-center gap-3">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Equivalente ({secondaryLabel})</span>
+              <span className="text-sm font-medium tabular-nums text-muted-foreground">{fmtSecondary(secondary)}</span>
+            </div>
+          )}
         </div>
 
         {/* Desglose IVA */}
         <div className="space-y-2 border-t pt-3">
           <div className="flex justify-between items-center gap-3">
             <span className="text-sm text-muted-foreground">IVA 21%</span>
-            {currency === 'USD' && exchangeRate ? (
+            {rate > 0 ? (
               <div className="flex flex-col items-end">
-                <span className="text-sm font-medium tabular-nums">{fmtUSD(ivaUSD)}</span>
-                <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(iva)}</span>
+                <span className="text-sm font-medium tabular-nums">{fmtPrimary(ivaPrimary)}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">{fmtSecondary(ivaSecondary)}</span>
               </div>
             ) : (
-              <span className="text-sm font-medium tabular-nums">{fmtARS(iva)}</span>
+              <span className="text-sm font-medium tabular-nums">{fmtPrimary(ivaPrimary)}</span>
             )}
           </div>
         </div>
@@ -464,13 +440,13 @@ function ResumenCard({
         {/* Total con IVA */}
         <div className="flex justify-between items-center gap-3 bg-muted/40 rounded-lg px-3 py-2">
           <span className="font-bold whitespace-nowrap text-sm">Total con IVA</span>
-          {currency === 'USD' && exchangeRate ? (
+          {rate > 0 ? (
             <div className="flex flex-col items-end">
-              <span className="text-base font-bold tabular-nums">{fmtUSD(totalConIvaUSD)}</span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtARS(totalConIva)}</span>
+              <span className="text-base font-bold tabular-nums">{fmtPrimary(totalConIvaPrimary)}</span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{fmtSecondary(totalConIvaSecondary)}</span>
             </div>
           ) : (
-            <span className="text-base font-bold tabular-nums">{fmtARS(totalConIva)}</span>
+            <span className="text-base font-bold tabular-nums">{fmtPrimary(totalConIvaPrimary)}</span>
           )}
         </div>
 
@@ -682,7 +658,11 @@ export default function CotizadorPage() {
           setValidUntilDate(getDefaultValidUntil());
         }
 
-        // Precargar items
+        // Precargar items. Si es vieja semántica USD, los precios estaban en ARS;
+        // convertirlos a USD para trabajar consistentemente en moneda principal.
+        const loadRate = quote.exchange_rate ?? exchangeRate?.venta ?? 0;
+        const isOldUSD = quote.total_ars == null && (quote.currency === 'USD' || !quote.currency) && loadRate > 0;
+
         const items: QuoteItemState[] = (quote.items ?? []).map((item: any) => ({
           key: `${item.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           type: item.type,
@@ -690,29 +670,28 @@ export default function CotizadorPage() {
           name: item.name,
           description: item.description ?? undefined,
           moduleDescriptionSections: item.module_description ?? undefined,
-          unitPrice: item.unit_price,
+          unitPrice: isOldUSD ? item.unit_price / loadRate : item.unit_price,
           quantity: item.quantity,
           adicionales: (item.additionals ?? []).map((ad: any) => ({
             id: ad.material_id ?? ad.id,
             name: ad.name,
-            price: ad.unit_price,
+            price: isOldUSD ? ad.unit_price / loadRate : ad.unit_price,
           })),
           attachments: item.attachments ?? [],
         }));
         setQuoteItems(items);
 
-        // Precargar total (si existe en la cotización original)
+        // Precargar total: nueva semántica usa moneda original directamente.
+        // Vieja semántica: total estaba en ARS, convertir a moneda original si es necesario.
         if (quote.total_ars != null) {
-          // Nueva semántica: total está en moneda original
-          if (quote.currency === 'ARS') {
-            setFinalTotal(quote.total);
-          } else {
-            // USD: total_ars tiene el valor en ARS para seguir trabajando internamente
-            setFinalTotal(quote.total_ars);
-          }
+          setFinalTotal(quote.total);
         } else {
-          // Vieja semántica: total está en ARS
-          setFinalTotal(quote.total ?? quote.subtotal ?? 0);
+          const rate = quote.exchange_rate ?? exchangeRate?.venta ?? 0;
+          if ((quote.currency === 'USD' || !quote.currency) && rate > 0) {
+            setFinalTotal(quote.total / rate);
+          } else {
+            setFinalTotal(quote.total ?? quote.subtotal ?? 0);
+          }
         }
 
         if (isEdit) {
@@ -775,6 +754,8 @@ export default function CotizadorPage() {
 
   function addStandardModule(mod: StandardModule) {
     const key = `${mod.id}-${Date.now()}`;
+    const rate = exchangeRate?.venta ?? 0;
+    const unitPrice = quoteCurrency === 'ARS' && rate > 0 ? mod.base_price * rate : mod.base_price;
     setQuoteItems((prev) => [
       ...prev,
       {
@@ -784,7 +765,7 @@ export default function CotizadorPage() {
         name: mod.name,
         description: mod.description ?? undefined,
         moduleDescriptionSections: mod.module_description ?? undefined,
-        unitPrice: mod.base_price,
+        unitPrice,
         quantity: 1,
         adicionales: [],
       },
@@ -811,6 +792,8 @@ export default function CotizadorPage() {
 
   function addService(svc: ServiceCatalogItem) {
     const key = `svc-${svc.id}-${Date.now()}`;
+    const rate = exchangeRate?.venta ?? 0;
+    const unitPrice = quoteCurrency === 'ARS' && rate > 0 ? svc.unit_price * rate : svc.unit_price;
     setQuoteItems((prev) => [
       ...prev,
       {
@@ -818,7 +801,7 @@ export default function CotizadorPage() {
         type: "service",
         name: svc.name,
         description: svc.description || undefined,
-        unitPrice: svc.unit_price,
+        unitPrice,
         quantity: 1,
         adicionales: [],
       },
@@ -966,10 +949,10 @@ export default function CotizadorPage() {
           ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
         ],
         subtotal,
-        total: quoteCurrency === 'USD' && exchangeRate && exchangeRate.venta > 0
-          ? Number((finalTotal / exchangeRate.venta).toFixed(2))
+        total: finalTotal,
+        total_ars: quoteCurrency === 'USD' && exchangeRate && exchangeRate.venta > 0
+          ? Number((finalTotal * exchangeRate.venta).toFixed(2))
           : finalTotal,
-        total_ars: finalTotal,
         exchange_rate: exchangeRate?.venta ?? null,
         exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,
@@ -1645,7 +1628,6 @@ export default function CotizadorPage() {
               quoteItems={quoteItems}
               subtotal={subtotal}
               finalTotal={finalTotal}
-              finalTotalUSD={exchangeRate && exchangeRate.venta > 0 ? finalTotal / exchangeRate.venta : 0}
               exchangeRate={exchangeRate}
               currency={quoteCurrency}
               generating={generating}

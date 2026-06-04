@@ -49,7 +49,7 @@ import {
 } from "@/hooks/use-standard-modules";
 import { StandardModuleDetail } from "@/components/cotizador/StandardModuleDetail";
 import { PriceInput } from "@/components/ui/price-input";
-import { getExchangeRate, ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
+import { getExchangeRate, ExchangeRate } from "@/lib/exchange-rate";
 
 interface ModuleForm {
   name: string;
@@ -58,12 +58,12 @@ interface ModuleForm {
   order: string;
 }
 
-function formatUSD(amount: number, rate: number) {
+function formatUSD(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(arsToUsd(amount, rate));
+  }).format(amount);
 }
 
 function formatARS(amount: number) {
@@ -117,8 +117,8 @@ function ModuleFormFields({
             onChange={(val) => setForm((f) => ({ ...f, base_price: val }))}
           />
           {exchangeRate && form.base_price && (
-            <p className="text-[10px] text-muted-foreground">
-              {formatARS(usdToArs(parseFloat(form.base_price.replace(",", ".")), exchangeRate.venta))}
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              {formatARS((parseFloat(form.base_price.replace(",", ".")) || 0) * exchangeRate.venta)}
             </p>
           )}
         </div>
@@ -203,9 +203,7 @@ export default function StandardModulesPage() {
     setForm({
       name: mod.name,
       description: mod.description ?? "",
-      base_price: exchangeRate
-        ? arsToUsd(mod.base_price, exchangeRate.venta).toFixed(2).replace(".", ",")
-        : mod.base_price.toString().replace(".", ","),
+      base_price: mod.base_price.toFixed(2).replace(".", ","),
       order: mod.order.toString(),
     });
     setEditModule(mod);
@@ -217,9 +215,7 @@ export default function StandardModulesPage() {
       await createModule({
         name: form.name,
         description: form.description || undefined,
-        base_price: exchangeRate
-          ? usdToArs(parseFloat(form.base_price.replace(",", ".")) || 0, exchangeRate.venta)
-          : parseFloat(form.base_price.replace(",", ".")) || 0,
+        base_price: parseFloat(form.base_price.replace(",", ".")) || 0,
         order: parseInt(form.order) || 0,
       });
       setCreateOpen(false);
@@ -242,9 +238,7 @@ export default function StandardModulesPage() {
       await updateModule(editModule.id, {
         name: form.name,
         description: form.description || undefined,
-        base_price: exchangeRate
-          ? usdToArs(parseFloat(form.base_price.replace(",", ".")) || 0, exchangeRate.venta)
-          : parseFloat(form.base_price.replace(",", ".")) || 0,
+        base_price: parseFloat(form.base_price.replace(",", ".")) || 0,
         order: parseInt(form.order) || 0,
       });
       setEditModule(null);
@@ -381,11 +375,11 @@ export default function StandardModulesPage() {
                     >
                       <div className="flex flex-col items-end mr-auto sm:mr-0">
                         <span className="text-sm font-semibold tabular-nums">
-                          {exchangeRate ? formatUSD(mod.base_price, exchangeRate.venta) : "—"}
+                          {formatUSD(mod.base_price)}
                         </span>
                         {exchangeRate && (
                           <span className="text-[10px] text-muted-foreground tabular-nums">
-                            {formatARS(mod.base_price)}
+                            {formatARS(mod.base_price * exchangeRate.venta)}
                           </span>
                         )}
                       </div>

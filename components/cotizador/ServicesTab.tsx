@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PriceInput } from "@/components/ui/price-input";
 import { Textarea } from "@/components/ui/textarea";
-import { ExchangeRate, arsToUsd, usdToArs } from "@/lib/exchange-rate";
+import { ExchangeRate } from "@/lib/exchange-rate";
 
 export interface ServiceCatalogItem {
   id: string;
@@ -34,12 +34,12 @@ interface ServicesTabProps {
   currency: 'ARS' | 'USD';
 }
 
-function formatUSD(amount: number, rate: number) {
+function formatUSD(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
-  }).format(arsToUsd(amount, rate));
+  }).format(amount);
 }
 
 function formatARS(amount: number) {
@@ -66,7 +66,7 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
     onAddCustomService({
       name: name.trim(),
       description: description.trim(),
-      unitPrice: currency === 'USD' && exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
+      unitPrice,
       quantity: qty,
       unit,
     });
@@ -118,18 +118,18 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
                         <>
                           <span className="text-sm font-semibold tabular-nums">
                             {currency === 'USD'
-                              ? formatUSD(svc.unit_price, exchangeRate.venta)
-                              : formatARS(svc.unit_price)}
+                              ? formatUSD(svc.unit_price)
+                              : formatARS(svc.unit_price * exchangeRate.venta)}
                           </span>
                           <span className="text-[10px] text-muted-foreground tabular-nums">
                             {currency === 'USD'
-                              ? formatARS(svc.unit_price)
-                              : formatUSD(svc.unit_price, exchangeRate.venta)}
+                              ? formatARS(svc.unit_price * exchangeRate.venta)
+                              : formatUSD(svc.unit_price)}
                           </span>
                         </>
                       ) : (
                         <span className="text-sm font-semibold tabular-nums">
-                          {formatARS(svc.unit_price)}
+                          {formatUSD(svc.unit_price)}
                         </span>
                       )}
                     </div>

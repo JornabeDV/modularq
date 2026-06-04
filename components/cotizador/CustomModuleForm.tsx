@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import type { QuoteItemAttachment } from "./QuoteItemCard";
-import { ExchangeRate, usdToArs } from "@/lib/exchange-rate";
+import { ExchangeRate } from "@/lib/exchange-rate";
 
 export interface ModuleDescriptionSection {
   section: string;
@@ -121,7 +121,7 @@ export function CustomModuleForm({ onAdd, exchangeRate, currency }: CustomModule
       name: name.trim(),
       description: description.trim(),
       moduleDescriptionSections: validSections,
-      unitPrice: currency === 'USD' && exchangeRate ? usdToArs(unitPrice, exchangeRate.venta) : unitPrice,
+      unitPrice,
       quantity: qty,
       attachments,
     });

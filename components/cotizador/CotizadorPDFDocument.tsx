@@ -412,14 +412,13 @@ export interface CotizadorPDFProps {
   currency?: 'ARS' | 'USD';
 }
 
-function formatUSD(amountARS: number, rate: number): string {
-  const usd = rate > 0 ? amountARS / rate : 0;
+function formatUSD(amount: number): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(usd);
+  }).format(amount);
 }
 
 function formatARS(amount: number): string {
@@ -431,8 +430,8 @@ function formatARS(amount: number): string {
   }).format(amount);
 }
 
-function formatPrice(amount: number, currency: 'ARS' | 'USD', rate: number): string {
-  return currency === 'ARS' ? formatARS(amount) : formatUSD(amount, rate);
+function formatPrice(amount: number, currency: 'ARS' | 'USD'): string {
+  return currency === 'ARS' ? formatARS(amount) : formatUSD(amount);
 }
 
 export function CotizadorPDFDocument({
@@ -501,11 +500,11 @@ export function CotizadorPDFDocument({
           <View style={styles.modulePriceColumn}>
             {showQty && (
               <Text style={styles.moduleUnitPrice}>
-                {formatPrice(item.basePrice, currency, rate)} c/u
+                {formatPrice(item.basePrice, currency)} c/u
               </Text>
             )}
             <Text style={styles.moduleSubtotal}>
-              {formatPrice(itemTotal, currency, rate)}
+              {formatPrice(itemTotal, currency)}
             </Text>
           </View>
         </View>
@@ -523,7 +522,7 @@ export function CotizadorPDFDocument({
                   <View style={styles.adicionalBullet} />
                   <Text style={styles.adicionalName}>{ad.name}</Text>
                 </View>
-                <Text style={styles.adicionalPrice}>{formatPrice(ad.price, currency, rate)}</Text>
+                <Text style={styles.adicionalPrice}>{formatPrice(ad.price, currency)}</Text>
               </View>
             ))}
           </View>
@@ -637,7 +636,7 @@ export function CotizadorPDFDocument({
               Subtotal <Text style={styles.totalLabelSmall}>(SIN IVA)</Text>
             </Text>
             <Text style={styles.totalValue}>
-              {formatPrice(discountAmount > 0 ? computedTotal : displayTotal, currency, rate)}
+              {formatPrice(discountAmount > 0 ? computedTotal : displayTotal, currency)}
             </Text>
           </View>
           {discountAmount > 0 && (
@@ -645,13 +644,13 @@ export function CotizadorPDFDocument({
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Descuentos</Text>
                 <Text style={styles.totalValue}>
-                  {formatPrice(discountAmount, currency, rate)}
+                  {formatPrice(discountAmount, currency)}
                 </Text>
               </View>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Importe Gravado</Text>
                 <Text style={styles.totalValue}>
-                  {formatPrice(taxableAmount, currency, rate)}
+                  {formatPrice(taxableAmount, currency)}
                 </Text>
               </View>
             </>
@@ -661,14 +660,14 @@ export function CotizadorPDFDocument({
               Impuestos <Text style={styles.totalLabelSmall}>(IVA)</Text>
             </Text>
             <Text style={styles.totalValue}>
-              {formatPrice(ivaAmount, currency, rate)}
+              {formatPrice(ivaAmount, currency)}
             </Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>
               TOTAL <Text style={styles.grandTotalLabelSmall}>(SUBTOTAL + IVA)</Text>
             </Text>
-            <Text style={styles.grandTotalValue}>{formatPrice(totalAmount, currency, rate)}</Text>
+            <Text style={styles.grandTotalValue}>{formatPrice(totalAmount, currency)}</Text>
           </View>
         </View>
 
