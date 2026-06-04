@@ -17,6 +17,8 @@ export interface Quote {
   subtotal: number
   total: number
   currency?: string
+  exchange_rate?: number
+  exchange_rate_date?: string
   notes?: string
   pdf_url?: string
   valid_until?: string

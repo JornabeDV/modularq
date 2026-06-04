@@ -25,6 +25,7 @@ export interface Project {
     clientName: string
     total: number
     currency?: string
+    exchangeRate?: number
     pdfUrl?: string
   }
   client?: {

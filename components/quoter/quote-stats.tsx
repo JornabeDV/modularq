@@ -8,6 +8,7 @@ interface QuoteStatsProps {
   totalQuotes: number;
   approvedRate: number;
   totalApprovedAmount: number;
+  totalApprovedAmountUSD?: number;
   pendingQuotes: number;
   exchangeRate: ExchangeRate | null;
 }
@@ -16,9 +17,16 @@ export function QuoteStats({
   totalQuotes,
   approvedRate,
   totalApprovedAmount,
+  totalApprovedAmountUSD,
   pendingQuotes,
   exchangeRate,
 }: QuoteStatsProps) {
+  const usdAmount =
+    totalApprovedAmountUSD !== undefined
+      ? totalApprovedAmountUSD
+      : exchangeRate
+        ? arsToUsd(totalApprovedAmount, exchangeRate.venta)
+        : 0;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
       <Card className="p-3 sm:p-4">
@@ -66,15 +74,15 @@ export function QuoteStats({
               Monto Total Aprobado
             </p>
             <p className="text-lg sm:text-xl font-bold">
-              {exchangeRate
+              {usdAmount > 0
                 ? new Intl.NumberFormat("es-AR", {
                     style: "currency",
                     currency: "USD",
                     minimumFractionDigits: 2,
-                  }).format(arsToUsd(totalApprovedAmount, exchangeRate.venta))
+                  }).format(usdAmount)
                 : "—"}
             </p>
-            {exchangeRate && (
+            {totalApprovedAmount > 0 && (
               <p className="text-[10px] text-muted-foreground">
                 {new Intl.NumberFormat("es-AR", {
                   style: "currency",

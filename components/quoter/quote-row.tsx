@@ -110,6 +110,9 @@ export function QuoteRow({
 
   const canEdit = quote.status === "draft";
 
+  // Usar tasa histórica guardada; si no existe, fallback a la del día
+  const rate = quote.exchange_rate ?? exchangeRate?.venta ?? 0;
+
   return (
     <TableRow className="hover:bg-muted/50">
       <TableCell className="font-medium tabular-nums">{quote.number}</TableCell>
@@ -147,9 +150,9 @@ export function QuoteRow({
       <TableCell>
         <div className="flex flex-col">
           <span className="tabular-nums font-semibold">
-            {exchangeRate ? formatUSD(quote.total, exchangeRate.venta) : "—"}
+            {rate > 0 ? formatUSD(quote.total, rate) : "—"}
           </span>
-          {exchangeRate && (
+          {rate > 0 && (
             <span className="text-[10px] text-muted-foreground tabular-nums">
               {formatARS(quote.total)}
             </span>
