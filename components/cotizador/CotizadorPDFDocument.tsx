@@ -397,6 +397,7 @@ export interface CotizadorPDFProps {
   generatorName?: string;
   finalTotal?: number;
   discount?: number;
+  taxPct?: number;
   client?: {
     name: string;
     cuit?: string;
@@ -445,6 +446,7 @@ export function CotizadorPDFDocument({
   generatorName,
   finalTotal,
   discount,
+  taxPct = 21,
   client,
   exchangeRate,
   currency = 'USD',
@@ -466,9 +468,10 @@ export function CotizadorPDFDocument({
   const computedTotal = subtotalStandard + subtotalCustom + subtotalServices;
   const displayTotal = finalTotal ?? computedTotal;
   const discountAmount = discount ?? 0;
+  const taxRate = (taxPct ?? 21) / 100;
   const taxableAmount = Math.max(0, discountAmount > 0 ? computedTotal - discountAmount : displayTotal);
-  const ivaAmount = taxableAmount * 0.21;
-  const totalAmount = taxableAmount * 1.21;
+  const ivaAmount = taxableAmount * taxRate;
+  const totalAmount = taxableAmount * (1 + taxRate);
 
   const renderItem = (item: CotizadorItem, idx: number) => {
     const showQty = item.quantity > 1;
@@ -657,7 +660,7 @@ export function CotizadorPDFDocument({
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>
-              Impuestos <Text style={styles.totalLabelSmall}>(IVA)</Text>
+              Impuestos <Text style={styles.totalLabelSmall}>(IVA {taxPct}%)</Text>
             </Text>
             <Text style={styles.totalValue}>
               {formatPrice(ivaAmount, currency)}

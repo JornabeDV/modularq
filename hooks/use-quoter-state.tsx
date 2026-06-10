@@ -53,6 +53,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   const [finalTotal, setFinalTotal] = useState(0);
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
   const [quoteCurrency, setQuoteCurrency] = useState<'ARS' | 'USD'>('USD');
+  const [taxPct, setTaxPct] = useState(21);
 
   const getDefaultValidUntil = () => {
     const d = new Date();
@@ -115,6 +116,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
 
         setQuoteType(quote.quote_type === 'rental' ? 'rental' : 'sale');
         setQuoteCurrency(quote.currency === 'ARS' ? 'ARS' : 'USD');
+        setTaxPct(quote.tax_pct ?? 21);
 
         const migrated = migrateNotesList(
           quote.notes_list && Array.isArray(quote.notes_list) && quote.notes_list.length > 0
@@ -428,6 +430,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         exchange_rate: exchangeRate?.venta ?? null,
         exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,
+        tax_pct: taxPct,
         created_by: userProfile!.id,
         items: quoteItems.map((item, i) => ({
           type: item.type,
@@ -540,6 +543,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         exchange_rate: exchangeRate?.venta ?? null,
         exchange_rate_date: exchangeRate?.actualizado ?? new Date().toISOString(),
         valid_until: validUntilDate,
+        tax_pct: taxPct,
         created_by: userProfile!.id,
         items: quoteItems.map((item, i) => ({
           type: item.type,
@@ -583,6 +587,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           validUntil={validUntil}
           generatorName={userProfile!.name ?? userProfile!.email ?? undefined}
           finalTotal={finalTotal}
+          taxPct={taxPct}
           discount={subtotal > finalTotal ? subtotal - finalTotal : undefined}
           client={
             selectedClient
@@ -644,6 +649,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     // Config
     quoteType, setQuoteType,
     quoteCurrency, setQuoteCurrency,
+    taxPct, setTaxPct,
     selectedClient, setSelectedClient,
     createClientOpen, setCreateClientOpen,
     validUntilDate, setValidUntilDate,
