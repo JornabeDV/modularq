@@ -497,6 +497,7 @@ export default function CotizadorPage() {
               finalTotal={q.finalTotal}
               exchangeRate={q.exchangeRate}
               currency={q.quoteCurrency}
+              taxPct={q.taxPct}
               generating={q.generating}
               savingDraft={q.savingDraft}
               selectedClient={q.selectedClient}
@@ -504,6 +505,7 @@ export default function CotizadorPage() {
               onGeneratePDF={q.handleGeneratePDF}
               onSaveDraft={q.handleSaveDraft}
               onUpdateFinalTotal={q.setFinalTotal}
+              onTaxPctChange={q.setTaxPct}
             />
           </div>
         </div>
