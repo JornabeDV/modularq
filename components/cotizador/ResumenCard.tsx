@@ -18,6 +18,7 @@ interface ResumenCardProps {
   finalTotal: number;
   exchangeRate: ExchangeRate | null;
   currency: 'ARS' | 'USD';
+  taxPct: number;
   generating: boolean;
   savingDraft: boolean;
   selectedClient: Client | null;
@@ -25,6 +26,7 @@ interface ResumenCardProps {
   onGeneratePDF: () => void;
   onSaveDraft: () => void;
   onUpdateFinalTotal: (value: number) => void;
+  onTaxPctChange: (value: number) => void;
 }
 
 export function ResumenCard({
@@ -33,6 +35,7 @@ export function ResumenCard({
   finalTotal,
   exchangeRate,
   currency,
+  taxPct,
   generating,
   savingDraft,
   selectedClient,
@@ -40,6 +43,7 @@ export function ResumenCard({
   onGeneratePDF,
   onSaveDraft,
   onUpdateFinalTotal,
+  onTaxPctChange,
 }: ResumenCardProps) {
   const hasAdjustment = finalTotal !== subtotal;
   const rate = exchangeRate?.venta ?? 0;
@@ -51,10 +55,11 @@ export function ResumenCard({
     primary === 0 ? "" : primary.toFixed(2).replace(".", ","),
   );
 
-  const ivaPrimary = primary * 0.21;
-  const totalConIvaPrimary = primary * 1.21;
-  const ivaSecondary = secondary * 0.21;
-  const totalConIvaSecondary = secondary * 1.21;
+  const taxRate = taxPct / 100;
+  const ivaPrimary = primary * taxRate;
+  const totalConIvaPrimary = primary * (1 + taxRate);
+  const ivaSecondary = secondary * taxRate;
+  const totalConIvaSecondary = secondary * (1 + taxRate);
 
   useEffect(() => {
     setPrimaryInput(primary === 0 ? "" : primary.toFixed(2).replace(".", ","));
@@ -147,7 +152,33 @@ export function ResumenCard({
 
         <div className="space-y-2 border-t pt-3">
           <div className="flex justify-between items-center gap-3">
-            <span className="text-sm text-muted-foreground">IVA 21%</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">IVA</span>
+              <div className="flex rounded-md border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => onTaxPctChange(21)}
+                  className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                    taxPct === 21
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  21%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTaxPctChange(10.5)}
+                  className={`px-2 py-0.5 text-[10px] font-medium transition-colors border-l ${
+                    taxPct === 10.5
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  10.5%
+                </button>
+              </div>
+            </div>
             {rate > 0 ? (
               <div className="flex flex-col items-end">
                 <span className="text-sm font-medium tabular-nums">{fmtPrimary(ivaPrimary)}</span>
