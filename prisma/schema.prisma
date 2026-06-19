@@ -23,6 +23,7 @@ enum ProjectStatus {
   paused
   completed
   delivered
+  rented
 }
 
 enum ProjectPriority {
@@ -106,6 +107,25 @@ enum BudgetStatus {
   rejected
 }
 
+enum RentalModuleStatus {
+  available
+  rented
+  maintenance
+  retired
+}
+
+enum RentalModuleLocation {
+  factory
+  destination
+}
+
+enum RentalContractStatus {
+  active
+  returned
+  overdue
+  cancelled
+}
+
 // Models
 model User {
   id          String   @id @default(cuid())
@@ -131,6 +151,7 @@ model User {
   started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")
   completed_project_tasks ProjectTask[] @relation("ProjectTaskCompletedBy")
   completed_planning_items ProjectPlanningChecklist[]
+  rental_contracts_created RentalContract[]
 
   @@map("users")
 }
@@ -153,14 +174,17 @@ model Project {
   width         Float           @default(1.5)
   depth         Float           @default(0.8)
   module_count  Int             @default(1)
-  
+
   // Relación con presupuesto (cuando se crea desde un presupuesto aprobado)
   budget        Budget?
-  
+
   // Relación con cotización aprobada
   quote_id      String?   @unique
   quote         Quote?    @relation(fields: [quote_id], references: [id])
-  
+
+  // Relación con módulo de alquiler (si aplica)
+  rental_module RentalModule?
+
   completed_at  DateTime?
   delivered_at  DateTime?
   created_at    DateTime        @default(now())
@@ -273,6 +297,7 @@ model Client {
 
   projects     Project[]
   contacts     ClientContact[]
+  rental_contracts RentalContract[]
 
   @@map("clients")
 }
@@ -707,6 +732,7 @@ model Quote {
 
   items QuoteItem[]
   project       Project?
+  rental_contract RentalContract?
 
   @@map("quotes")
 }
@@ -777,4 +803,68 @@ model ServiceCatalog {
   updated_at  DateTime @updatedAt
 
   @@map("service_catalogs")
+}
+
+model RentalModule {
+  id              String            @id @default(uuid()) @db.Uuid
+  code            String            @unique
+  name            String
+  description     String?
+
+  project_id      String?           @unique @db.Uuid
+  project         Project?          @relation(fields: [project_id], references: [id])
+
+  modulation      String            @default("standard")
+  height          Float             @default(2.0)
+  width           Float             @default(1.5)
+  depth           Float             @default(0.8)
+  module_count    Int               @default(1)
+
+  status          RentalModuleStatus @default(available)
+  location        RentalModuleLocation @default(factory)
+  condition       String?
+  notes           String?
+
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  contracts       RentalContract[]
+  current_contract RentalContract?  @relation("CurrentContract", fields: [current_contract_id], references: [id])
+  current_contract_id String?       @unique @db.Uuid
+
+  @@map("rental_modules")
+}
+
+model RentalContract {
+  id                String              @id @default(uuid()) @db.Uuid
+  rental_module_id  String              @db.Uuid
+  rental_module     RentalModule        @relation(fields: [rental_module_id], references: [id], onDelete: Cascade)
+
+  client_id         String
+  client            Client              @relation(fields: [client_id], references: [id])
+
+  quote_id          String?             @unique @db.Uuid
+  quote             Quote?              @relation(fields: [quote_id], references: [id])
+
+  start_date        DateTime
+  end_date          DateTime?
+  delivery_date     DateTime?
+  return_date       DateTime?
+
+  monthly_price     Float
+  deposit_amount    Float?
+  currency          String              @default("USD")
+
+  status            RentalContractStatus @default(active)
+  delivery_notes    String?
+  return_notes      String?
+
+  created_by        String              @db.Uuid
+  created_by_user   User                @relation(fields: [created_by], references: [id])
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+
+  current_for_module RentalModule?      @relation("CurrentContract")
+
+  @@map("rental_contracts")
 }

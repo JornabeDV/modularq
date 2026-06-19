@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
@@ -20,7 +20,8 @@ type ProjectStatus =
   | "active"
   | "paused"
   | "completed"
-  | "delivered";
+  | "delivered"
+  | "rented";
 
 type SortField =
   | "projectOrder"
@@ -58,6 +59,7 @@ export function ProjectManagement() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
+  const [conditionFilter, setConditionFilter] = useState<"all" | "venta" | "alquiler">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
 
@@ -171,6 +173,10 @@ export function ProjectManagement() {
       });
       setEditingProject(null);
 
+      if (projectData.status === "rented" && editingProject?.status !== "rented") {
+        await ensureRentalModuleExists(projectId);
+      }
+
     } else {
       toast({
         title: "Error al actualizar proyecto",
@@ -179,6 +185,38 @@ export function ProjectManagement() {
       });
     }
     
+  };
+
+  const ensureRentalModuleExists = async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/rental-modules?project_id=${projectId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.modules?.length > 0) return;
+
+      const project = projects?.find((p) => p.id === projectId);
+      if (!project) return;
+
+      await fetch("/api/rental-modules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: `ALQ-${project.id.slice(0, 8).toUpperCase()}`,
+          name: project.name,
+          description: project.description || undefined,
+          project_id: project.id,
+          modulation: project.modulation || "standard",
+          height: project.height || 2.0,
+          width: project.width || 1.5,
+          depth: project.depth || 0.8,
+          module_count: project.moduleCount || 1,
+          status: "available",
+          location: "factory",
+        }),
+      });
+    } catch (err) {
+      console.error("Error creando módulo de alquiler automático:", err);
+    }
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -201,6 +239,10 @@ export function ProjectManagement() {
     await updateProject(projectId, {
       status: newStatus as ProjectStatus,
     });
+
+    if (newStatus === "rented") {
+      await ensureRentalModuleExists(projectId);
+    }
   };
 
   const handleEditProject = (project: Project) => {
@@ -234,7 +276,10 @@ export function ProjectManagement() {
       const matchesStatus =
         statusFilter === "all" || project.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesCondition =
+        conditionFilter === "all" || project.condition === conditionFilter;
+
+      return matchesSearch && matchesStatus && matchesCondition;
     }) || [];
 
   // Ordenar proyectos
@@ -369,6 +414,25 @@ export function ProjectManagement() {
         planningProjects={planningProjects}
       />
 
+      <div className="flex gap-2 border-b">
+        {(["all", "venta", "alquiler"] as const).map((cond) => (
+          <button
+            key={cond}
+            onClick={() => {
+              setConditionFilter(cond);
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              conditionFilter === cond
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {cond === "all" ? "Todos" : cond === "venta" ? "Ventas" : "Alquileres"}
+          </button>
+        ))}
+      </div>
+
       <ProjectTable
         projects={paginatedProjects}
         totalItems={totalItems}
@@ -388,6 +452,7 @@ export function ProjectManagement() {
         sortField={sortField}
         sortOrder={sortOrder}
         onSort={handleSort}
+        showCondition={conditionFilter === "all"}
       />
 
       <ProjectForm

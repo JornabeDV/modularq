@@ -24,6 +24,7 @@ import { ProjectHeader } from "./project-detail/project-header";
 import { ProjectInfoCards } from "./project-detail/project-info-cards";
 import { ProjectSpecs } from "./project-detail/project-specs";
 import { ProjectQuoteCard } from "./project-detail/project-quote-card";
+import { ProjectRentalCard } from "@/components/rentals/project-rental-card";
 import { EditTaskDialog } from "./project-detail/edit-task-dialog";
 import { ActivateProjectDialog } from "./project-detail/activate-project-dialog";
 import { PlanningChecklist } from "./planning-checklist";
@@ -231,6 +232,8 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
       />
 
       <ProjectQuoteCard quote={project.quote} />
+
+      <ProjectRentalCard project={project} />
 
       <ProjectSpecs project={project} />
 

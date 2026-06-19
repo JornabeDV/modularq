@@ -2,7 +2,7 @@ export interface Project {
   id: string
   name: string
   description: string
-  status: "planning" | "active" | "paused" | "completed" | "delivered"
+  status: "planning" | "active" | "paused" | "completed" | "delivered" | "rented"
   condition: "alquiler" | "venta"
   startDate?: string
   endDate?: string
@@ -170,4 +170,80 @@ export interface Report {
   generatedAt: string
   parameters: Record<string, any>
   data: any
+}
+
+// ==================== RENTAL MODULES & CONTRACTS ====================
+
+export interface RentalModule {
+  id: string
+  code: string
+  name: string
+  description?: string
+  project_id?: string
+  project?: {
+    id: string
+    name: string
+    status?: string
+    client?: {
+      id: string
+      company_name: string
+    }
+  }
+  modulation: string
+  height: number
+  width: number
+  depth: number
+  module_count: number
+  status: "available" | "rented" | "maintenance" | "retired"
+  location: "factory" | "destination"
+  condition?: string
+  notes?: string
+  current_contract_id?: string
+  current_contract?: RentalContract
+  contracts?: RentalContract[]
+  created_at: string
+  updated_at: string
+}
+
+export interface RentalContract {
+  id: string
+  rental_module_id: string
+  rental_module?: {
+    id: string
+    code: string
+    name: string
+  }
+  client_id: string
+  client?: {
+    id: string
+    company_name: string
+    representative?: string
+    phone?: string
+    email?: string
+    cuit?: string
+  }
+  quote_id?: string
+  quote?: {
+    id: string
+    number: string
+    total: number
+    currency?: string
+  }
+  start_date: string
+  end_date?: string
+  delivery_date?: string
+  return_date?: string
+  monthly_price: number
+  deposit_amount?: number
+  currency: string
+  status: "active" | "returned" | "overdue" | "cancelled"
+  delivery_notes?: string
+  return_notes?: string
+  created_by: string
+  created_by_user?: {
+    id: string
+    name: string
+  }
+  created_at: string
+  updated_at: string
 }

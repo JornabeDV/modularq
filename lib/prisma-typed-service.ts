@@ -235,7 +235,7 @@ export class PrismaTypedService {
   static async createProject(projectData: {
     name: string
     description?: string
-    status: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+    status: 'planning' | 'active' | 'paused' | 'completed' | 'delivered' | 'rented'
     condition?: 'alquiler' | 'venta'
     start_date: Date
     end_date?: Date
@@ -277,7 +277,7 @@ export class PrismaTypedService {
   static async updateProject(id: string, projectData: {
     name?: string
     description?: string
-    status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered'
+    status?: 'planning' | 'active' | 'paused' | 'completed' | 'delivered' | 'rented'
     condition?: 'alquiler' | 'venta'
     start_date?: Date
     end_date?: Date
@@ -3028,8 +3028,6 @@ export class PrismaTypedService {
         currency: input.currency ?? 'USD',
         exchange_rate: input.exchange_rate ?? null,
         exchange_rate_date: input.exchange_rate_date ?? null,
-        exchange_rate: input.exchange_rate ?? null,
-        exchange_rate_date: input.exchange_rate_date ?? null,
         pdf_url: input.pdf_url ?? null,
         valid_until: validUntil.toISOString().split('T')[0],
         created_by: input.created_by,
@@ -3474,6 +3472,295 @@ export class PrismaTypedService {
   static async deleteServiceCatalog(id: string) {
     const { error } = await supabase.from('service_catalogs').delete().eq('id', id)
     if (error) throw error
+  }
+
+  // ==================== RENTAL MODULES ====================
+
+  static async getRentalModules(filters?: { status?: string; project_id?: string }) {
+    let query = supabase
+      .from('rental_modules')
+      .select(`
+        *,
+        project:projects(id, name),
+        current_contract:rental_contracts!rental_modules_current_contract_id_fkey(id, status, start_date, end_date, client:clients(id, company_name))
+      `)
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+    if (filters?.project_id) query = query.eq('project_id', filters.project_id)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getRentalModuleById(id: string) {
+    const { data, error } = await supabase
+      .from('rental_modules')
+      .select(`
+        *,
+        project:projects(id, name, status, client:clients(id, company_name)),
+        contracts:rental_contracts!rental_contracts_rental_module_id_fkey(
+          *,
+          client:clients(id, company_name, representative, phone, email),
+          quote:quotes(id, number, total)
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async createRentalModule(input: {
+    code: string
+    name: string
+    description?: string
+    project_id?: string
+    modulation?: string
+    height?: number
+    width?: number
+    depth?: number
+    module_count?: number
+    status?: string
+    location?: string
+    condition?: string
+    notes?: string
+  }) {
+    const now = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('rental_modules')
+      .insert({
+        code: input.code,
+        name: input.name,
+        description: input.description ?? null,
+        project_id: input.project_id ?? null,
+        modulation: input.modulation ?? 'standard',
+        height: input.height ?? 2.0,
+        width: input.width ?? 1.5,
+        depth: input.depth ?? 0.8,
+        module_count: input.module_count ?? 1,
+        status: input.status ?? 'available',
+        condition: input.condition ?? null,
+        notes: input.notes ?? null,
+        created_at: now,
+        updated_at: now,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateRentalModule(
+    id: string,
+    input: {
+      code?: string
+      name?: string
+      description?: string
+      project_id?: string | null
+      modulation?: string
+      height?: number
+      width?: number
+      depth?: number
+      module_count?: number
+      status?: string
+      location?: string
+      condition?: string
+      notes?: string
+      current_contract_id?: string | null
+    }
+  ) {
+    const updateData: any = { ...input, updated_at: new Date().toISOString() }
+    if (input.project_id === undefined) delete updateData.project_id
+    if (input.current_contract_id === undefined) delete updateData.current_contract_id
+
+    const { data, error } = await supabase
+      .from('rental_modules')
+      .update(updateData)
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  // ==================== RENTAL CONTRACTS ====================
+
+  static async getRentalContracts(filters?: { status?: string; rental_module_id?: string; client_id?: string }) {
+    let query = supabase
+      .from('rental_contracts')
+      .select(`
+        *,
+        rental_module:rental_modules!rental_contracts_rental_module_id_fkey(id, code, name),
+        client:clients(id, company_name, representative),
+        quote:quotes(id, number, total)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+    if (filters?.rental_module_id) query = query.eq('rental_module_id', filters.rental_module_id)
+    if (filters?.client_id) query = query.eq('client_id', filters.client_id)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getRentalContractById(id: string) {
+    const { data, error } = await supabase
+      .from('rental_contracts')
+      .select(`
+        *,
+        rental_module:rental_modules!rental_contracts_rental_module_id_fkey(id, code, name, project:projects(id, name)),
+        client:clients(id, company_name, representative, phone, email, cuit),
+        quote:quotes(id, number, total, currency),
+        created_by_user:users(id, name)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async createRentalContract(input: {
+    rental_module_id: string
+    client_id: string
+    quote_id?: string
+    start_date: Date
+    end_date?: Date
+    delivery_date?: Date
+    monthly_price: number
+    deposit_amount?: number
+    currency?: string
+    delivery_notes?: string
+    created_by: string
+  }) {
+    const now = new Date().toISOString()
+    const { data: contract, error: contractError } = await supabase
+      .from('rental_contracts')
+      .insert({
+        rental_module_id: input.rental_module_id,
+        client_id: input.client_id,
+        quote_id: input.quote_id ?? null,
+        start_date: input.start_date.toISOString(),
+        end_date: input.end_date ? input.end_date.toISOString() : null,
+        delivery_date: input.delivery_date ? input.delivery_date.toISOString() : null,
+        monthly_price: input.monthly_price,
+        deposit_amount: input.deposit_amount ?? null,
+        currency: input.currency ?? 'USD',
+        status: 'active',
+        delivery_notes: input.delivery_notes ?? null,
+        created_by: input.created_by,
+        created_at: now,
+        updated_at: now,
+      })
+      .select('*')
+      .single()
+
+    if (contractError) throw contractError
+
+    // Update module status to rented and link current contract
+    const { error: moduleError } = await supabase
+      .from('rental_modules')
+      .update({
+        status: 'rented',
+        current_contract_id: contract.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', input.rental_module_id)
+
+    if (moduleError) throw moduleError
+
+    return contract
+  }
+
+  static async updateRentalContract(
+    id: string,
+    input: {
+      client_id?: string
+      quote_id?: string | null
+      start_date?: Date
+      end_date?: Date | null
+      delivery_date?: Date | null
+      return_date?: Date | null
+      monthly_price?: number
+      deposit_amount?: number | null
+      currency?: string
+      status?: string
+      delivery_notes?: string
+      return_notes?: string
+    }
+  ) {
+    const updateData: any = { updated_at: new Date().toISOString() }
+    if (input.client_id !== undefined) updateData.client_id = input.client_id
+    if (input.quote_id !== undefined) updateData.quote_id = input.quote_id
+    if (input.start_date !== undefined) updateData.start_date = input.start_date.toISOString()
+    if (input.end_date !== undefined) updateData.end_date = input.end_date ? input.end_date.toISOString() : null
+    if (input.delivery_date !== undefined) updateData.delivery_date = input.delivery_date ? input.delivery_date.toISOString() : null
+    if (input.return_date !== undefined) updateData.return_date = input.return_date ? input.return_date.toISOString() : null
+    if (input.monthly_price !== undefined) updateData.monthly_price = input.monthly_price
+    if (input.deposit_amount !== undefined) updateData.deposit_amount = input.deposit_amount
+    if (input.currency !== undefined) updateData.currency = input.currency
+    if (input.status !== undefined) updateData.status = input.status
+    if (input.delivery_notes !== undefined) updateData.delivery_notes = input.delivery_notes
+    if (input.return_notes !== undefined) updateData.return_notes = input.return_notes
+
+    const { data, error } = await supabase
+      .from('rental_contracts')
+      .update(updateData)
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async returnRentalContract(id: string, input: { return_date: Date; return_notes?: string }) {
+    const now = new Date().toISOString()
+
+    // Get contract to find module
+    const { data: contract, error: fetchError } = await supabase
+      .from('rental_contracts')
+      .select('rental_module_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !contract) throw fetchError || new Error('Contrato no encontrado')
+
+    // Update contract
+    const { data: updatedContract, error: contractError } = await supabase
+      .from('rental_contracts')
+      .update({
+        status: 'returned',
+        return_date: input.return_date.toISOString(),
+        return_notes: input.return_notes ?? null,
+        updated_at: now,
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (contractError) throw contractError
+
+    // Free up module
+    const { error: moduleError } = await supabase
+      .from('rental_modules')
+      .update({
+        status: 'available',
+        current_contract_id: null,
+        updated_at: now,
+      })
+      .eq('id', contract.rental_module_id)
+
+    if (moduleError) throw moduleError
+
+    return updatedContract
   }
 }
 
