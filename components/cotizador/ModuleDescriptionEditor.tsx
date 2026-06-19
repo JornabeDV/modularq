@@ -15,7 +15,7 @@ import {
   Loader2,
   Edit2,
 } from "lucide-react";
-import { ModuleDescriptionSection } from "@/lib/types/budget";
+import type { ModuleDescriptionSection } from "@/lib/prisma-typed-service";
 
 interface ModuleDescriptionEditorProps {
   sections: ModuleDescriptionSection[];

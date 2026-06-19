@@ -25,6 +25,7 @@ import { DailySurveyTaskCard } from "./daily-survey-task-card";
 import { Input } from "@/components/ui/input";
 import { TaskForm } from "@/components/admin/task-form";
 import { useTasksPrisma } from "@/hooks/use-tasks-prisma";
+import type { ProjectTask } from "@/lib/types";
 
 interface DailySurveyProjectTasksProps {
   projectId: string;

@@ -136,24 +136,12 @@ export interface Operario {
   efficiency: number
 }
 
-export interface TimeEntry {
-  id: string
-  operarioId: string
-  taskId: string
-  projectId: string
-  startTime: string
-  endTime?: string
-  hours: number
-  description: string
-  date: string
-}
-
 export interface AuditLog {
   id: string
   userId: string
   userName: string
   action: string
-  entityType: "project" | "task" | "operario" | "time-entry"
+  entityType: "project" | "task" | "operario"
   entityId: string
   entityName: string
   changes?: Record<string, { from: any; to: any }>

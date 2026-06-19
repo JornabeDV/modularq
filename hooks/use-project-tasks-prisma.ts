@@ -209,44 +209,6 @@ export function useProjectTasksPrisma(projectId?: string) {
         updateData.completed_at = new Date().toISOString()
       }
       
-      // Si se está completando la tarea, cerrar todas las sesiones activas primero
-      if (projectTaskData.status === 'completed') {
-        try {
-          // Obtener información de la tarea para cerrar sesiones activas
-        const { data: projectTask, error: fetchError } = await supabase
-          .from('project_tasks')
-          .select('task_id, project_id')
-          .eq('id', projectTaskId)
-          .maybeSingle()
-
-          if (!fetchError && projectTask) {
-            const now = new Date()
-            const { data: activeEntries, error: entriesError } = await supabase
-              .from('time_entries')
-              .select('id, description')
-              .eq('task_id', projectTask.task_id)
-              .eq('project_id', projectTask.project_id)
-              .is('end_time', null)
-
-            if (!entriesError && activeEntries && activeEntries.length > 0) {
-              // Cerrar todas las sesiones activas sin calcular horas
-              for (const entry of activeEntries) {
-                await supabase
-                  .from('time_entries')
-                  .update({
-                    end_time: now.toISOString(),
-                    description: entry.description || 'Sesión cerrada al completar la tarea'
-                  })
-                  .eq('id', entry.id)
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error closing active sessions:', err)
-          // Continuar con la actualización de la tarea aunque haya error al cerrar sesiones
-        }
-      }
-      
       await PrismaTypedService.updateProjectTask(projectTaskId, updateData)
 
       // Verificar si todas las tareas están completadas y actualizar el proyecto

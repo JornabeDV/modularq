@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2 } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import type * as XLSXType from 'xlsx'
 import type { FileMetadata } from '@/lib/supabase-storage'
 import { SupabaseFileStorage } from '@/lib/supabase-storage'
 
@@ -42,7 +42,8 @@ export function ExcelViewer({ file, open, onOpenChange }: ExcelViewerProps) {
 
       const arrayBuffer = await response.arrayBuffer()
       
-      // Parsear el archivo Excel
+      // Parsear el archivo Excel (cargado bajo demanda)
+      const XLSX = await import('xlsx') as typeof XLSXType
       const workbook = XLSX.read(arrayBuffer, { type: 'array' })
       
       // Convertir cada hoja a datos

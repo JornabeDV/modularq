@@ -2,12 +2,10 @@ generator client {
   provider = "prisma-client-js"
   output   = "../lib/generated/prisma"
 }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 // Enums
 enum UserRole {
   admin
@@ -16,7 +14,6 @@ enum UserRole {
   subcontratista
   vendedor
 }
-
 enum ProjectStatus {
   planning
   active
@@ -25,52 +22,42 @@ enum ProjectStatus {
   delivered
   rented
 }
-
 enum ProjectPriority {
   low
   medium
   high
   critical
 }
-
 enum ProjectCondition {
   alquiler
   venta
 }
-
 enum TaskStatus {
   pending
   in_progress
   completed
   cancelled
 }
-
 enum TaskPriority {
   low
   medium
   high
   critical
 }
-
 enum TaskType {
   standard
   custom
 }
-
 enum EntityType {
   project
   task
   operario
-  time_entry
 }
-
 enum ReportType {
   productivity
-  time_tracking
   project_status
   operario_performance
 }
-
 enum MaterialCategory {
   estructura
   paneles
@@ -81,7 +68,6 @@ enum MaterialCategory {
   otros
   adicional
 }
-
 enum UnitType {
   unidad
   metro
@@ -90,7 +76,6 @@ enum UnitType {
   kilogramo
   litro
 }
-
 enum PlanningChecklistItem {
   requirements        // Requerimientos del cliente
   general_plan        // Plano general y de estructura
@@ -99,33 +84,22 @@ enum PlanningChecklistItem {
   materials           // Materiales necesarios para dar inicio
   carpentry_plans     // Planos de carpintería
 }
-
-enum BudgetStatus {
-  draft
-  sent
-  approved
-  rejected
-}
-
 enum RentalModuleStatus {
   available
   rented
   maintenance
   retired
 }
-
 enum RentalModuleLocation {
   factory
   destination
 }
-
 enum RentalContractStatus {
   active
   returned
   overdue
   cancelled
 }
-
 // Models
 model User {
   id          String   @id @default(cuid())
@@ -138,24 +112,19 @@ model User {
   deleted_at  DateTime?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
   supervised_projects Project[] @relation("ProjectSupervisor")
   assigned_tasks      Task[]    @relation("TaskAssignee")
-  time_entries        TimeEntry[]
   audit_logs          AuditLog[]
   assigned_projects    ProjectOperario[]
   reports_generated    Report[]
   assigned_project_tasks ProjectTask[] @relation("ProjectTaskAssignee")
   assigned_by_project_materials ProjectMaterial[] @relation("ProjectMaterialAssignedBy")
-
   started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")
   completed_project_tasks ProjectTask[] @relation("ProjectTaskCompletedBy")
   completed_planning_items ProjectPlanningChecklist[]
   rental_contracts_created RentalContract[]
-
   @@map("users")
 }
-
 model Project {
   id            String          @id @default(cuid())
   name          String
@@ -174,33 +143,23 @@ model Project {
   width         Float           @default(1.5)
   depth         Float           @default(0.8)
   module_count  Int             @default(1)
-
-  // Relación con presupuesto (cuando se crea desde un presupuesto aprobado)
-  budget        Budget?
-
   // Relación con cotización aprobada
   quote_id      String?   @unique
   quote         Quote?    @relation(fields: [quote_id], references: [id])
-
   // Relación con módulo de alquiler (si aplica)
   rental_module RentalModule?
-
   completed_at  DateTime?
   delivered_at  DateTime?
   created_at    DateTime        @default(now())
   updated_at    DateTime        @updatedAt
-
   supervisor     User?            @relation("ProjectSupervisor", fields: [supervisor_id], references: [id])
   client         Client?          @relation(fields: [client_id], references: [id])
-  time_entries   TimeEntry[]
   project_operarios ProjectOperario[]
   project_materials ProjectMaterial[]
   project_tasks  ProjectTask[]
   planning_checklist ProjectPlanningChecklist[]
-
   @@map("projects")
 }
-
 model Task {
   id               String       @id @default(cuid())
   title            String
@@ -212,34 +171,10 @@ model Task {
   created_by       String?
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
-
   assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
-  time_entries TimeEntry[]
   project_tasks ProjectTask[]
-
   @@map("tasks")
 }
-
-model TimeEntry {
-  id          String   @id @default(cuid())
-  user_id     String
-  task_id     String
-  project_id  String
-  start_time  DateTime
-  end_time    DateTime?
-  hours       Float    @default(0)
-  description String?
-  date        DateTime
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  user    User    @relation(fields: [user_id], references: [id])
-  task    Task    @relation(fields: [task_id], references: [id], onDelete: Cascade)
-  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
-
-  @@map("time_entries")
-}
-
 model AuditLog {
   id           String     @id @default(cuid())
   user_id      String
@@ -251,12 +186,9 @@ model AuditLog {
   changes      Json?
   ip_address   String?
   created_at   DateTime   @default(now())
-
   user User @relation(fields: [user_id], references: [id])
-
   @@map("audit_logs")
 }
-
 model Report {
   id           String     @id @default(cuid())
   name         String
@@ -266,25 +198,19 @@ model Report {
   parameters   Json?
   data         Json?
   created_at   DateTime   @default(now())
-
   generated_by_user User @relation(fields: [generated_by], references: [id])
-
   @@map("reports")
 }
-
 model ProjectOperario {
   id          String   @id @default(cuid())
   project_id  String
   user_id     String
   assigned_at DateTime @default(now())
-
   project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [user_id], references: [id])
-
   @@unique([project_id, user_id])
   @@map("project_operarios")
 }
-
 model Client {
   id           String   @id @default(cuid())
   cuit         String   @unique
@@ -294,14 +220,11 @@ model Client {
   phone        String?
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
-
   projects     Project[]
   contacts     ClientContact[]
   rental_contracts RentalContract[]
-
   @@map("clients")
 }
-
 model Material {
   id              String          @id @default(cuid())
   code            String          @unique
@@ -315,13 +238,10 @@ model Material {
   supplier        String?
   created_at      DateTime        @default(now())
   updated_at      DateTime        @updatedAt
-
   project_materials        ProjectMaterial[]
   standard_module_materials StandardModuleMaterial[]
-
   @@map("materials")
 }
-
 model ProjectMaterial {
   id              String   @id @default(cuid())
   project_id      String
@@ -331,15 +251,12 @@ model ProjectMaterial {
   notes           String?
   assigned_at     DateTime @default(now())
   assigned_by     String?
-
   project          Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
   material         Material   @relation(fields: [material_id], references: [id])
   assigned_by_user User?      @relation("ProjectMaterialAssignedBy", fields: [assigned_by], references: [id], onDelete: SetNull)
-
   @@unique([project_id, material_id])
   @@map("project_materials")
 }
-
 model ProjectTask {
   id                String     @id @default(cuid())
   project_id        String
@@ -361,17 +278,14 @@ model ProjectTask {
   completed_at      DateTime?
   created_at        DateTime   @default(now())
   updated_at        DateTime   @updatedAt
-
   // Relations
   project           Project    @relation(fields: [project_id], references: [id], onDelete: Cascade)
   task              Task       @relation(fields: [task_id], references: [id], onDelete: Cascade)
   assigned_user     User?      @relation("ProjectTaskAssignee", fields: [assigned_to], references: [id])
   started_by_user   User?      @relation("ProjectTaskStartedBy", fields: [started_by], references: [id])
   completed_by_user User?      @relation("ProjectTaskCompletedBy", fields: [completed_by], references: [id])
-
   @@map("project_tasks")
 }
-
 model ClientContact {
   id         String   @id @default(cuid())
   client_id  String
@@ -382,12 +296,9 @@ model ClientContact {
   is_primary Boolean  @default(false)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
   client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
-
   @@map("client_contacts")
 }
-
 model ProjectPlanningChecklist {
   id             String                @id @default(cuid())
   project_id     String
@@ -398,249 +309,19 @@ model ProjectPlanningChecklist {
   completed_by   String?
   created_at     DateTime              @default(now())
   updated_at     DateTime              @updatedAt
-
   project       Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
   completed_by_user User? @relation(fields: [completed_by], references: [id])
-
   @@unique([project_id, checklist_item])
   @@map("project_planning_checklist")
 }
-
-// ==================== MÓDULO DE PRESUPUESTOS ====================
-
 // Plantillas de ítems estándar para presupuestos
-model BudgetItemTemplate {
-  id          String   @id @default(cuid())
-  code        String   // Ej: "1.1", "2.1"
-  category    String   // Ej: "ESTRUCTURA METÁLICA", "PISO"
-  description String
-  unit        String   // kg, m2, un, etc.
-  is_standard Boolean  @default(true)  // Aparece por defecto
-  order       Int      @default(0)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  // Análisis template (copiado al crear ítems)
-  template_labors     Json?  // [{labor_concept_id, quantity_hours}]
-  template_materials  Json?  // [{material_id, quantity}]
-  template_equipments Json?  // [{name, quantity_hours, hourly_cost}]
-
-  @@map("budget_item_templates")
-}
-
-// Conceptos de mano de obra (precios referenciales)
-model LaborConcept {
-  id           String   @id @default(cuid())
-  code         String   @unique  // oficial-esp, oficial, ayudante
-  name         String   // "Oficial especializado"
-  category     String   // oficial_especializado, oficial, medio_oficial, ayudante
-  hourly_rate  Float    // $/hora
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-
-  @@map("labor_concepts")
-}
-
-// Presupuestos
-model Budget {
-  id          String       @id @default(cuid())
-  budget_code String       @unique  // PRES-2026-001
-  
-  // Datos del cliente/proyecto
-  client_id   String?
-  client_name String
-  location    String
-  description String?      // Descripción del módulo
-
-  status      BudgetStatus @default(draft)
-  
-  // Fechas
-  created_at  DateTime     @default(now())
-  updated_at  DateTime     @updatedAt
-  sent_at     DateTime?
-  approved_at DateTime?
-  rejected_at DateTime?
-  
-  // Referencia al proyecto creado (cuando se aprueba)
-  project_id  String?      @unique
-  project     Project?     @relation(fields: [project_id], references: [id])
-
-  // Porcentajes
-  financial_expenses_pct Float @default(0)
-  general_expenses_pct   Float @default(17)
-  benefit_pct            Float @default(40)
-  iva_pct                Float @default(10.5)
-  gross_income_pct       Float @default(0)
-
-  // Totales calculados
-  subtotal_direct_costs  Float // Suma de items
-  subtotal_with_expenses Float // + gastos generales
-  subtotal_with_benefit  Float // + beneficio
-  calculated_price       Float // + impuestos
-  final_price            Float // Precio final (editable)
-  
-  // Cotización del dólar al momento de aprobar (para referencia histórica)
-  exchange_rate          Float?   // Cotización USD/ARS (BNA venta)
-  exchange_rate_date     DateTime? // Fecha de la cotización
-
-  // Condiciones comerciales editables
-  validity_days     Int?     // Días de validez de la oferta
-  payment_terms     String?  // Condiciones de pago
-  delivery_terms    String?  // Términos de entrega
-  delivery_location String?  // Lugar de entrega
-  notes             String?  // Notas adicionales
-  
-  // Descripción comercial del módulo (array de secciones)
-  module_description Json?   // [{ "section": "Estructura", "description": "..." }, ...]
-
-  // Ítems del presupuesto
-  items BudgetItem[]
-
-  // Archivos adjuntos
-  attachments BudgetAttachment[]
-
-  @@map("budgets")
-}
-
-// Ítems de un presupuesto
-model BudgetItem {
-  id          String   @id @default(cuid())
-  budget_id   String
-  template_id String?  // Si viene de template
-
-  // Datos del ítem
-  code        String   // "1.1", "CUSTOM-1"
-  category    String   // Rubro
-  description String
-  unit        String
-  is_custom   Boolean  @default(false)
-  order       Int      @default(0)
-
-  // Cómputos (ingresado manualmente)
-  quantity    Float
-
-  // Costos calculados
-  unit_cost_labor     Float // Mano de obra unitaria
-  unit_cost_materials Float // Materiales unitario
-  unit_cost_equipment Float // Equipos unitario
-  unit_cost_total     Float // Total unitario
-  total_cost          Float // quantity × unit_cost_total
-
-  budget Budget @relation(fields: [budget_id], references: [id], onDelete: Cascade)
-  
-  // Análisis de precios específico de este ítem
-  price_analysis BudgetItemPriceAnalysis?
-
-  @@map("budget_items")
-}
-
-// Análisis de precios por ítem
-model BudgetItemPriceAnalysis {
-  id            String     @id @default(cuid())
-  budget_item_id String    @unique
-  budget_item   BudgetItem @relation(fields: [budget_item_id], references: [id], onDelete: Cascade)
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  // Desgloses
-  labors     BudgetItemLabor[]
-  materials  BudgetItemMaterial[]
-  equipments BudgetItemEquipment[]
-
-  @@map("budget_item_price_analyses")
-}
-
-// Desglose de mano de obra en análisis
-model BudgetItemLabor {
-  id          String   @id @default(cuid())
-  analysis_id String
-  
-  labor_concept_id String
-  quantity_hours   Float // Horas necesarias
-  
-  // Calculado
-  hourly_rate Float // Copia del concepto al momento
-  total_cost  Float // quantity_hours × hourly_rate
-
-  analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
-
-  @@map("budget_item_labors")
-}
-
-// Desglose de materiales en análisis
-model BudgetItemMaterial {
-  id          String   @id @default(cuid())
-  analysis_id String
-  
-  material_id String?
-  material_name String? // Si no está en catálogo
-  quantity    Float
-  
-  // Calculado
-  unit_price Float? // De materials o manual
-  total_cost Float // quantity × unit_price
-
-  analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
-
-  @@map("budget_item_materials")
-}
-
-// Desglose de equipos en análisis
-model BudgetItemEquipment {
-  id          String   @id @default(cuid())
-  analysis_id String
-  
-  name            String
-  quantity_hours  Float
-  hourly_cost     Float
-  total_cost      Float // quantity_hours × hourly_cost
-
-  analysis BudgetItemPriceAnalysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
-
-  @@map("budget_item_equipments")
-}
-
 // Tipos de documentos para archivos adjuntos
 enum DocumentType {
   project_image    // Imágenes de proyectos (muestran en grid)
   technical_plan   // Planos técnicos (muestran en hoja completa)
 }
-
 // Archivos adjuntos de presupuestos (imágenes y PDFs)
-model BudgetAttachment {
-  id          String   @id @default(cuid())
-  budget_id   String
-  
-  // Información del archivo
-  filename    String   // Nombre original del archivo
-  original_name String // Nombre original con extensión
-  mime_type   String   // image/jpeg, application/pdf, etc.
-  file_type   String   // "image" | "pdf"
-  document_type DocumentType @default(project_image) // Tipo de documento
-  size        Int      // Tamaño en bytes
-  
-  // URLs de Cloudinary
-  url         String   // URL completa del archivo
-  public_id   String   // ID público de Cloudinary para eliminar
-  thumbnail_url String? // URL de thumbnail (solo para imágenes)
-  
-  // Metadatos
-  description String?  // Descripción opcional del archivo
-  uploaded_by String?  // ID del usuario que subió el archivo
-  
-  // Timestamps
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  // Relaciones
-  budget      Budget   @relation(fields: [budget_id], references: [id], onDelete: Cascade)
-
-  @@map("budget_attachments")
-}
-
 // ==================== MÓDULO DE COTIZADOR ====================
-
 // Módulos estándar que se usan como base para cotizaciones rápidas
 model StandardModule {
   id          String   @id @default(cuid())
@@ -651,15 +332,11 @@ model StandardModule {
   order       Int      @default(0)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
   module_description Json?   // [{ "section": "...", "description": "..." }]
-
   materials   StandardModuleMaterial[]
   attachments StandardModuleAttachment[]
-
   @@map("standard_modules")
 }
-
 // Materiales que componen un módulo estándar
 model StandardModuleMaterial {
   id          String  @id @default(cuid())
@@ -667,14 +344,11 @@ model StandardModuleMaterial {
   material_id String
   quantity    Float   @default(1)
   notes       String?
-
   module   StandardModule @relation(fields: [module_id], references: [id], onDelete: Cascade)
   material Material       @relation(fields: [material_id], references: [id])
-
   @@unique([module_id, material_id])
   @@map("standard_module_materials")
 }
-
 // Archivos adjuntos de módulos estándar (PDFs que se incluyen en la cotización)
 model StandardModuleAttachment {
   id            String   @id @default(cuid())
@@ -688,20 +362,15 @@ model StandardModuleAttachment {
   description   String?
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-
   module StandardModule @relation(fields: [module_id], references: [id], onDelete: Cascade)
-
   @@map("standard_module_attachments")
 }
-
 // ==================== COTIZADOR UNIFICADO ====================
-
 enum QuoteItemType {
   standard_module
   custom_module
   service
 }
-
 // Cabecera de cotizaciones rápidas
 model Quote {
   id             String   @id @default(uuid()) @map("id")
@@ -729,14 +398,11 @@ model Quote {
   updated_at     DateTime @updatedAt
   sent_at        DateTime?
   closed_at      DateTime?
-
   items QuoteItem[]
   project       Project?
   rental_contract RentalContract?
-
   @@map("quotes")
 }
-
 // Líneas de una cotización (módulos estándar, personalizados o servicios)
 model QuoteItem {
   id                 String          @id @default(cuid())
@@ -750,14 +416,11 @@ model QuoteItem {
   subtotal           Float           @default(0)
   sort_order         Int             @default(0)
   module_description Json?           // snapshot de secciones descriptivas
-
   quote       Quote                 @relation(fields: [quote_id], references: [id], onDelete: Cascade)
   additionals QuoteItemAdditional[]
   attachments QuoteItemAttachment[]
-
   @@map("quote_items")
 }
-
 // Adicionales por línea de cotización
 model QuoteItemAdditional {
   id            String   @id @default(cuid())
@@ -767,12 +430,9 @@ model QuoteItemAdditional {
   unit_price    Float    @default(0)
   quantity      Int      @default(1)
   subtotal      Float    @default(0)
-
   quoteItem QuoteItem @relation(fields: [quote_item_id], references: [id], onDelete: Cascade)
-
   @@map("quote_item_additionals")
 }
-
 // Archivos adjuntos (PDFs) de líneas de cotización (módulos personalizados)
 model QuoteItemAttachment {
   id            String   @id @default(cuid())
@@ -785,12 +445,9 @@ model QuoteItemAttachment {
   storage_path  String
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-
   quoteItem QuoteItem @relation(fields: [quote_item_id], references: [id], onDelete: Cascade)
-
   @@map("quote_item_attachments")
 }
-
 // Catálogo de servicios para cotizaciones
 model ServiceCatalog {
   id          String   @id @default(cuid())
@@ -801,70 +458,53 @@ model ServiceCatalog {
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
-
   @@map("service_catalogs")
 }
-
 model RentalModule {
   id              String            @id @default(uuid()) @db.Uuid
   code            String            @unique
   name            String
   description     String?
-
   project_id      String?           @unique @db.Uuid
   project         Project?          @relation(fields: [project_id], references: [id])
-
   modulation      String            @default("standard")
   height          Float             @default(2.0)
   width           Float             @default(1.5)
   depth           Float             @default(0.8)
   module_count    Int               @default(1)
-
   status          RentalModuleStatus @default(available)
   location        RentalModuleLocation @default(factory)
   condition       String?
   notes           String?
-
   created_at      DateTime          @default(now())
   updated_at      DateTime          @updatedAt
-
   contracts       RentalContract[]
   current_contract RentalContract?  @relation("CurrentContract", fields: [current_contract_id], references: [id])
   current_contract_id String?       @unique @db.Uuid
-
   @@map("rental_modules")
 }
-
 model RentalContract {
   id                String              @id @default(uuid()) @db.Uuid
   rental_module_id  String              @db.Uuid
   rental_module     RentalModule        @relation(fields: [rental_module_id], references: [id], onDelete: Cascade)
-
   client_id         String
   client            Client              @relation(fields: [client_id], references: [id])
-
   quote_id          String?             @unique @db.Uuid
   quote             Quote?              @relation(fields: [quote_id], references: [id])
-
   start_date        DateTime
   end_date          DateTime?
   delivery_date     DateTime?
   return_date       DateTime?
-
   monthly_price     Float
   deposit_amount    Float?
   currency          String              @default("USD")
-
   status            RentalContractStatus @default(active)
   delivery_notes    String?
   return_notes      String?
-
   created_by        String              @db.Uuid
   created_by_user   User                @relation(fields: [created_by], references: [id])
   created_at        DateTime            @default(now())
   updated_at        DateTime            @updatedAt
-
   current_for_module RentalModule?      @relation("CurrentContract")
-
   @@map("rental_contracts")
 }

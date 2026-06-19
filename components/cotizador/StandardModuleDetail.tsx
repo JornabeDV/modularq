@@ -20,7 +20,7 @@ import {
   StandardModule,
   ModuleDescriptionSection,
 } from "@/hooks/use-standard-modules";
-import { ModuleDescriptionEditor } from "@/components/budgets/ModuleDescriptionEditor";
+import { ModuleDescriptionEditor } from "./ModuleDescriptionEditor";
 import { PrismaTypedService } from "@/lib/prisma-typed-service";
 
 interface RawMaterial {

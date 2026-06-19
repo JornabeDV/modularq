@@ -142,54 +142,13 @@ export interface Database {
           updated_at?: string
         }
       }
-      time_entries: {
-        Row: {
-          id: string
-          user_id: string
-          task_id: string
-          project_id: string
-          start_time: string
-          end_time: string | null
-          hours: number
-          description: string | null
-          date: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          task_id: string
-          project_id: string
-          start_time: string
-          end_time?: string | null
-          hours?: number
-          description?: string | null
-          date: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          task_id?: string
-          project_id?: string
-          start_time?: string
-          end_time?: string | null
-          hours?: number
-          description?: string | null
-          date?: string
-          created_at?: string
-          updated_at?: string
-        }
-      }
       audit_logs: {
         Row: {
           id: string
           user_id: string
           user_name: string
           action: string
-          entity_type: 'project' | 'task' | 'operario' | 'time-entry'
+          entity_type: 'project' | 'task' | 'operario'
           entity_id: string
           entity_name: string
           changes: any | null
@@ -201,7 +160,7 @@ export interface Database {
           user_id: string
           user_name: string
           action: string
-          entity_type: 'project' | 'task' | 'operario' | 'time-entry'
+          entity_type: 'project' | 'task' | 'operario'
           entity_id: string
           entity_name: string
           changes?: any | null

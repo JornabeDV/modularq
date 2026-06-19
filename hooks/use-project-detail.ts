@@ -283,39 +283,6 @@ export function useProjectDetail({
           ? task.actualHours
           : task.estimatedHours || task.task?.estimatedHours || 0;
 
-      // Close active time entries
-      if (task.taskId && projectId) {
-        try {
-          const now = new Date();
-          const { data: activeEntries } = await supabase
-            .from("time_entries")
-            .select("id, start_time, description")
-            .eq("task_id", task.taskId)
-            .eq("project_id", projectId)
-            .is("end_time", null);
-
-          if (activeEntries && activeEntries.length > 0) {
-            for (const entry of activeEntries) {
-              const startTime = new Date(entry.start_time);
-              const elapsedMs = now.getTime() - startTime.getTime();
-              const elapsedHours = elapsedMs / (1000 * 60 * 60);
-
-              await supabase
-                .from("time_entries")
-                .update({
-                  end_time: now.toISOString(),
-                  hours: elapsedHours,
-                  description:
-                    entry.description || "Sesión cerrada al completar la tarea",
-                })
-                .eq("id", entry.id);
-            }
-          }
-        } catch (err) {
-          console.error("Error closing active sessions:", err);
-        }
-      }
-
       const result = await updateProjectTask(task.id, {
         status: "completed",
         endDate: new Date().toISOString(),

@@ -40,7 +40,7 @@ User (Operarios)
 ├── role: admin | supervisor | operario | subcontratista
 ├── total_hours: Float
 ├── efficiency: Float
-└── Relaciones: supervised_projects, assigned_tasks, time_entries
+└── Relaciones: supervised_projects, assigned_tasks
 
 Project
 ├── status: planning | active | paused | completed | delivered
@@ -49,7 +49,7 @@ Project
 ├── start_date, end_date
 ├── progress: Float
 ├── modulation, height, width, depth, module_count
-└── Relaciones: client, project_operarios, project_tasks, time_entries
+└── Relaciones: client, project_operarios, project_tasks
 
 ProjectTask
 ├── status: pending | in_progress | completed | cancelled
@@ -57,11 +57,6 @@ ProjectTask
 ├── assigned_to, started_by, completed_by
 ├── start_date, end_date, assigned_at
 └── Relaciones: project, task, assigned_user
-
-TimeEntry
-├── user_id, task_id, project_id
-├── start_time, end_time, hours
-├── description, date
 
 Budget
 ├── status: draft | sent | approved | rejected
@@ -146,7 +141,7 @@ Organizadas por **valor para el negocio** y **facilidad de implementación**.
 |---------|---------|
 | **Definición** | Comparación entre costos reales y precio presupuestado |
 | **Fórmula** | `((Presupuesto Final - Costos Reales) / Presupuesto Final) × 100` |
-| **Fuentes** | `Budget.final_price` vs `TimeEntry.hours × LaborConcept.hourly_rate` + `ProjectMaterial` |
+| **Fuentes** | `ProjectTask.actual_hours` + `ProjectMaterial` |
 | **Frecuencia** | Por proyecto, Mensual |
 | **Valor** | Rentabilidad real de cada proyecto ejecutado |
 
@@ -196,8 +191,8 @@ Organizadas por **valor para el negocio** y **facilidad de implementación**.
 | Aspecto | Detalle |
 |---------|---------|
 | **Definición** | Total de horas registradas por operario/subcontratista |
-| **Fórmula** | `SUM(hours) FROM TimeEntry GROUP BY user_id, período` |
-| **Fuentes** | Tabla `TimeEntry` |
+| **Fórmula** | `SUM(actual_hours) FROM ProjectTask GROUP BY started_by, período` |
+| **Fuentes** | Tabla `ProjectTask` |
 | **Frecuencia** | Semanal, Mensual |
 | **Valor** | Control de capacidad productiva y planificación de recursos |
 

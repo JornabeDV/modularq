@@ -8,181 +8,84 @@ export async function POST(request: NextRequest) {
     // Verificar autorización del cron job
     const authHeader = request.headers.get('Authorization')
     const cronSecret = process.env.CRON_SECRET
-    
+
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       console.log('❌ [CRON] Unauthorized cron job request')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('🔍 [CRON] Checking for overdue tasks...')
-    
-    // Obtener sesiones activas de más de 1 hora
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    
-    const { data: activeSessions, error: sessionsError } = await supabase
-      .from('time_entries')
-      .select(`
-        id,
-        user_id,
-        task_id,
-        project_id,
-        start_time,
-        hours,
-        end_time
-      `)
-      .is('end_time', null)
-      .lt('start_time', oneHourAgo)
-      .order('start_time', { ascending: true })
+    console.log('🔍 [CRON] Checking for tasks exceeding estimated hours...')
 
-    if (sessionsError) {
-      console.error('Error fetching active sessions:', sessionsError)
-      return NextResponse.json({ error: 'Error fetching active sessions' }, { status: 500 })
+    // Obtener tareas en progreso que puedan haber excedido el límite
+    const { data: projectTasks, error: projectTasksError } = await supabase
+      .from('project_tasks')
+      .select('id, task_id, actual_hours, estimated_hours, status')
+      .eq('status', 'in_progress')
+
+    if (projectTasksError) {
+      console.error('Error fetching project tasks:', projectTasksError)
+      return NextResponse.json({ error: 'Error fetching project tasks' }, { status: 500 })
     }
 
-    if (!activeSessions || activeSessions.length === 0) {
-      console.log('✅ No potentially overdue sessions found')
-      return NextResponse.json({ 
-        message: 'No potentially overdue sessions found', 
+    if (!projectTasks || projectTasks.length === 0) {
+      console.log('✅ No in-progress tasks found')
+      return NextResponse.json({
+        message: 'No in-progress tasks found',
         exceededTasks: 0,
         timestamp: new Date().toISOString()
       })
     }
 
-    console.log(`📊 Found ${activeSessions.length} potentially overdue sessions`)
+    const exceededTasks: any[] = []
 
-    // Obtener información de tareas
-    const taskIds = [...new Set(activeSessions.map((s: any) => s.task_id))]
-    
-    const { data: tasks, error: tasksError } = await supabase
-      .from('tasks')
-      .select('id, title, estimated_hours')
-      .in('id', taskIds)
+    for (const projectTask of projectTasks) {
+      const actualHours = projectTask.actual_hours || 0
+      const estimatedHours = projectTask.estimated_hours || 0
+      const maxTotalHours = estimatedHours > 0
+        ? estimatedHours * (1 + MAX_EXTRA_PERCENTAGE)
+        : 2 // 2 horas por defecto si no hay tiempo estimado
 
-    if (tasksError) {
-      console.error('Error fetching tasks:', tasksError)
-      return NextResponse.json({ error: 'Error fetching task details' }, { status: 500 })
-    }
+      if (actualHours < maxTotalHours) continue
 
-    const { data: projectTasks, error: projectTasksError } = await supabase
-      .from('project_tasks')
-      .select('id, status, actual_hours, estimated_hours, task_id')
-      .in('task_id', taskIds)
+      const cutoffTime = new Date()
+      const cutoffDescription = `Corte automático: Tarea excedió límite de tiempo (${maxTotalHours.toFixed(2)}h). Trabajado: ${actualHours.toFixed(2)}h. Sistema completó automáticamente.`
 
-    if (projectTasksError) {
-      console.error('Error fetching project tasks:', projectTasksError)
-      return NextResponse.json({ error: 'Error fetching project task details' }, { status: 500 })
-    }
+      const { error: updateError } = await supabase
+        .from('project_tasks')
+        .update({
+          status: 'completed',
+          end_date: cutoffTime.toISOString(),
+          progress_percentage: 100,
+          notes: cutoffDescription,
+          updated_at: cutoffTime.toISOString()
+        })
+        .eq('id', projectTask.id)
 
-    // Crear mapas para acceso rápido
-    const tasksMap = new Map(tasks?.map((t: any) => [t.id, t]) || [])
-    const projectTasksMap = new Map(projectTasks?.map((pt: any) => [pt.task_id, pt]) || [])
-
-    let exceededTasksCount = 0
-    const exceededTasks = []
-
-    for (const session of activeSessions) {
-      try {
-        const task = tasksMap.get(session.task_id)
-        const projectTask = projectTasksMap.get(session.task_id)
-        
-        if (!task || (projectTask as any)?.status === 'completed') {
-          continue
-        }
-
-        const startTime = new Date(session.start_time)
-        const currentTime = new Date()
-        const sessionElapsedMs = currentTime.getTime() - startTime.getTime()
-        const sessionElapsedHours = sessionElapsedMs / (1000 * 60 * 60)
-
-        // Calcular tiempo total trabajado
-        const previousHours = (projectTask as any)?.actual_hours || 0
-        const totalWorkedHours = previousHours + sessionElapsedHours
-
-        // Determinar límite máximo (20% extra del tiempo estimado)
-        // Usar estimated_hours del projectTask (tiempo total del proyecto) en lugar del tiempo base de la tarea
-        let maxTotalHours = 2 // 2 horas por defecto si no hay tiempo estimado
-        
-        const estimatedHours = (projectTask as any)?.estimated_hours ?.estimated_hours || 0
-        if (estimatedHours > 0) {
-          maxTotalHours = estimatedHours * (1 + MAX_EXTRA_PERCENTAGE) // Tiempo estimado + 20%
-        }
-
-        // Verificar si excede el límite y hacer corte automático
-        if (totalWorkedHours >= maxTotalHours) {
-          exceededTasksCount++
-          
-          const exceededData = {
-            taskId: (task as any).id,
-            taskTitle: (task as any).title,
-            totalHours: totalWorkedHours,
-            maxHours: maxTotalHours,
-            sessionElapsedHours: sessionElapsedHours,
-            previousHours: previousHours,
-            sessionStartTime: session.start_time,
-            sessionId: session.id,
-            userId: session.user_id,
-            projectId: session.project_id,
-            excessHours: totalWorkedHours - maxTotalHours
-          }
-          
-          exceededTasks.push(exceededData)
-
-          // CORTE AUTOMÁTICO: Completar la tarea automáticamente
-          if (projectTask) {
-            const cutoffTime = new Date()
-            
-            // Actualizar project_task como completada
-            const { error: updateTaskError } = await supabase
-              .from('project_tasks')
-              .update({
-                status: 'completed',
-                end_date: cutoffTime.toISOString(),
-                actual_hours: totalWorkedHours,
-                progress_percentage: 100,
-                updated_at: cutoffTime.toISOString()
-              })
-              .eq('id', (projectTask as any).id)
-
-            if (updateTaskError) {
-              console.error('❌ [CRON] Error updating project task:', updateTaskError)
-              // Continuar con la siguiente tarea si hay error
-            } else {
-              console.log(`✅ [CRON] Project task ${(projectTask as any).id} marked as completed`)
-              
-              // Finalizar la sesión de tiempo con descripción del corte automático
-              const cutoffDescription = `Corte automático: Tarea excedió límite de tiempo (${maxTotalHours.toFixed(2)}h). Trabajado: ${totalWorkedHours.toFixed(2)}h. Sistema completó automáticamente.`
-              
-              const { error: updateSessionError } = await supabase
-                .from('time_entries')
-                .update({
-                  end_time: cutoffTime.toISOString(),
-                  description: cutoffDescription,
-                  updated_at: cutoffTime.toISOString()
-                })
-                .eq('id', session.id)
-
-              if (updateSessionError) {
-                console.error('❌ [CRON] Error updating time session:', updateSessionError)
-              } else {
-                console.log(`✅ [CRON] Time session ${session.id} terminated with cutoff description`)
-              }
-            }
-          }
-        }
-      } catch (taskError) {
-        console.error(`❌ [LIMIT] Error processing task ${session.task_id}:`, taskError)
+      if (updateError) {
+        console.error(`❌ [CRON] Error completing project task ${projectTask.id}:`, updateError)
         continue
       }
+
+      exceededTasks.push({
+        projectTaskId: projectTask.id,
+        taskId: projectTask.task_id,
+        actualHours,
+        maxHours: maxTotalHours,
+        excessHours: actualHours - maxTotalHours,
+        cutoffTime: cutoffTime.toISOString()
+      })
+
+      console.log(`✅ [CRON] Project task ${projectTask.id} marked as completed due to time limit`)
     }
 
-    console.log(`🎯 [CRON] Found ${exceededTasksCount} tasks exceeding limits (auto-completed)`)
+    console.log(`🎯 [CRON] Found ${exceededTasks.length} tasks exceeding limits (auto-completed)`)
 
     return NextResponse.json({
-      message: `Checked ${activeSessions.length} sessions for limit violations`,
-      exceededTasks: exceededTasksCount,
+      message: `Checked ${projectTasks.length} in-progress tasks for limit violations`,
+      exceededTasks: exceededTasks.length,
       exceededDetails: exceededTasks,
       timestamp: new Date().toISOString(),
-      note: 'Tasks exceeding limits are automatically completed and sessions are terminated'
+      note: 'Tasks exceeding estimated hours + 20% are automatically completed'
     })
 
   } catch (error) {
@@ -193,13 +96,11 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    console.log('🔍 [CRON] Checking for overdue tasks via GET...')
-    
-    // Por ahora, solo devolver un mensaje de prueba
+    console.log('🔍 [CRON] Check-limit-exceeded endpoint is reachable via GET')
+
     return NextResponse.json({
-      message: 'Cron job endpoint working via GET - Supabase integration pending',
+      message: 'Cron job endpoint working via GET',
       timestamp: new Date().toISOString(),
-      note: 'This is a simplified version without Supabase dependencies',
       method: 'GET'
     })
 

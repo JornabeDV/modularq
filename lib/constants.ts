@@ -49,17 +49,4 @@ export const UNIT_LABELS: Record<string, string> = {
   global: 'gl',
 }
 
-// Estados de presupuestos
-export const BUDGET_STATUS_LABELS: Record<string, string> = {
-  draft: 'Borrador',
-  sent: 'Enviado',
-  approved: 'Aprobado',
-  rejected: 'Rechazado',
-}
 
-export const BUDGET_STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-500',
-  sent: 'bg-blue-500',
-  approved: 'bg-green-500',
-  rejected: 'bg-red-500',
-}
