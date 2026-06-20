@@ -136,30 +136,6 @@ export interface Operario {
   efficiency: number
 }
 
-export interface AuditLog {
-  id: string
-  userId: string
-  userName: string
-  action: string
-  entityType: "project" | "task" | "operario"
-  entityId: string
-  entityName: string
-  changes?: Record<string, { from: any; to: any }>
-  timestamp: string
-  ipAddress?: string
-}
-
-export interface Report {
-  id: string
-  name: string
-  type: "productivity" | "time-tracking" | "project-status" | "operario-performance"
-  description: string
-  generatedBy: string
-  generatedAt: string
-  parameters: Record<string, any>
-  data: any
-}
-
 // ==================== RENTAL MODULES & CONTRACTS ====================
 
 export interface RentalModule {

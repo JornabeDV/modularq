@@ -2430,16 +2430,12 @@ export type {
   User,
   Project,
   Task,
-  AuditLog,
-  Report,
   ProjectOperario,
   UserRole,
   ProjectStatus,
   ProjectPriority,
   TaskStatus,
-  TaskPriority,
-  EntityType,
-  ReportType
+  TaskPriority
 } from './generated/prisma/index'
 
 // Re-exportar tipos del módulo de presupuestos

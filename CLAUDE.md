@@ -80,7 +80,6 @@ Uses `@react-pdf/renderer` (server-side) and `pdf-lib` for merging. See `lib/pdf
 - **Project** states: planning → active → paused → completed → delivered; condition: `alquiler` | `venta`
 - **Task** with time-tracking logs and operario assignments
 - **Material** inventory with categories and unit types
-- **AuditLog** — all operations are logged for compliance
 
 You are a senior full-stack engineer specialized in React and Next.js.
 

@@ -351,9 +351,7 @@ model User {
   // EXISTENTES...
   supervised_projects Project[] @relation("ProjectSupervisor")
   assigned_tasks      Task[]    @relation("TaskAssignee")
-  audit_logs          AuditLog[]
   assigned_projects    ProjectOperario[]
-  reports_generated    Report[]
   assigned_project_tasks ProjectTask[] @relation("ProjectTaskAssignee")
   assigned_by_project_materials ProjectMaterial[] @relation("ProjectMaterialAssignedBy")
   started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")

@@ -21,7 +21,7 @@ ModulArq es una aplicación web moderna para la gestión integral de operarios i
 | **Clientes** | CRM básico con contactos | CUIT, datos de contacto, proyectos asociados |
 | **Tareas** | Asignación y seguimiento de tareas a operarios | Estado, horas estimadas vs reales, asignaciones |
 | **Operarios** | Gestión de personal (operarios, subcontratistas, supervisores) | Rol, eficiencia, horas totales |
-| **Reportes** | Proyectos completados y análisis históricos | Histórico de métricas |
+| **Reportes** | Proyectos completados y análisis históricos | Generación dinámica de PDFs |
 
 ### Stack Tecnológico
 - **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Recharts
@@ -79,13 +79,6 @@ Material
 ├── stock_quantity, min_stock, unit_price
 └── Relaciones: project_materials
 
-AuditLog
-├── user_id, action, entity_type, entity_id
-├── changes, ip_address, created_at
-
-Report
-├── type: productivity | time_tracking | project_status | operario_performance
-├── generated_by, parameters, data, created_at
 ```
 
 ---
@@ -225,7 +218,7 @@ Organizadas por **valor para el negocio** y **facilidad de implementación**.
 |---------|---------|
 | **Definición** | Cuánto tiempo permanece un proyecto en cada estado (planning, active, paused) |
 | **Fórmula** | Tracking de transiciones de estado (requiere tabla de histórico o cálculo de diferencias) |
-| **Fuentes** | `Project.status` con `AuditLog` para tracking de cambios |
+| **Fuentes** | `Project.status` (requiere tabla de histórico de estados) |
 | **Frecuencia** | Por proyecto, Promedios mensuales |
 | **Valor** | Identificar cuellos de botella en el proceso |
 
@@ -368,8 +361,8 @@ Organizadas por **valor para el negocio** y **facilidad de implementación**.
 | Aspecto | Detalle |
 |---------|---------|
 | **Definición** | Número de acciones por tipo de entidad y período |
-| **Fórmula** | `COUNT(*) FROM AuditLog GROUP BY entity_type, DATE(created_at)` |
-| **Fuentes** | `AuditLog` |
+| **Fórmula** | No disponible (tabla de auditoría removida) |
+| **Fuentes** | Requiere implementar nuevo mecanismo de auditoría |
 | **Frecuencia** | Diaria, Semanal |
 | **Valor** | Adopción del sistema y detección de anomalías |
 

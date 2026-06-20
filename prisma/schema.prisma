@@ -48,16 +48,6 @@ enum TaskType {
   standard
   custom
 }
-enum EntityType {
-  project
-  task
-  operario
-}
-enum ReportType {
-  productivity
-  project_status
-  operario_performance
-}
 enum MaterialCategory {
   estructura
   paneles
@@ -114,9 +104,7 @@ model User {
   updated_at  DateTime @updatedAt
   supervised_projects Project[] @relation("ProjectSupervisor")
   assigned_tasks      Task[]    @relation("TaskAssignee")
-  audit_logs          AuditLog[]
   assigned_projects    ProjectOperario[]
-  reports_generated    Report[]
   assigned_project_tasks ProjectTask[] @relation("ProjectTaskAssignee")
   assigned_by_project_materials ProjectMaterial[] @relation("ProjectMaterialAssignedBy")
   started_project_tasks ProjectTask[] @relation("ProjectTaskStartedBy")
@@ -174,32 +162,6 @@ model Task {
   assigned_user User?       @relation("TaskAssignee", fields: [created_by], references: [id])
   project_tasks ProjectTask[]
   @@map("tasks")
-}
-model AuditLog {
-  id           String     @id @default(cuid())
-  user_id      String
-  user_name    String
-  action       String
-  entity_type  EntityType
-  entity_id    String
-  entity_name  String
-  changes      Json?
-  ip_address   String?
-  created_at   DateTime   @default(now())
-  user User @relation(fields: [user_id], references: [id])
-  @@map("audit_logs")
-}
-model Report {
-  id           String     @id @default(cuid())
-  name         String
-  type         ReportType
-  description  String?
-  generated_by String
-  parameters   Json?
-  data         Json?
-  created_at   DateTime   @default(now())
-  generated_by_user User @relation(fields: [generated_by], references: [id])
-  @@map("reports")
 }
 model ProjectOperario {
   id          String   @id @default(cuid())
