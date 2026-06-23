@@ -52,7 +52,7 @@ Next.js route handlers. Authentication is enforced at the middleware and route l
 All data fetching is done via custom hooks that call API routes or Prisma service. These hooks are the primary interface between UI components and data.
 
 **UI Components — `components/`**
-Organized by feature domain: `admin/`, `projects/`, `tasks/`, `budgets/`, `reports/`, `auth/`. Base UI primitives are in `components/ui/` (shadcn/ui built on Radix + Tailwind).
+Organized by feature domain: `admin/`, `projects/`, `tasks/`, `reports/`, `analytics/`, `auth/`. Base UI primitives are in `components/ui/` (shadcn/ui built on Radix + Tailwind).
 
 ### Page Routes
 
@@ -62,7 +62,6 @@ Organized by feature domain: `admin/`, `projects/`, `tasks/`, `budgets/`, `repor
 | `/admin/projects` | Project CRUD and management |
 | `/admin/tasks` | Task assignment and tracking |
 | `/admin/users` | Worker/user management |
-<!-- | `/admin/budgets` | Budget management with file attachments | -->
 | `/admin/stock` | Materials inventory |
 | `/projects` | Operario view of their assigned projects |
 | `/reports` | Report generation (PDF export) |
@@ -70,9 +69,7 @@ Organized by feature domain: `admin/`, `projects/`, `tasks/`, `budgets/`, `repor
 
 ### File Storage
 
-- **Supabase Storage** (`lib/supabase-storage.ts`) — primary file storage
-<!-- - **Cloudinary** (`lib/cloudinary.ts`) — image/media CDN
-- **Budget attachments** (`lib/attachment-storage.ts`) — separate abstraction for budget docs -->
+- **Supabase Storage** (`lib/supabase-storage.ts`, `lib/attachment-storage.ts`) — primary file and attachment storage
 
 ### PDF Generation
 
@@ -82,9 +79,7 @@ Uses `@react-pdf/renderer` (server-side) and `pdf-lib` for merging. See `lib/pdf
 
 - **Project** states: planning → active → paused → completed → delivered; condition: `alquiler` | `venta`
 - **Task** with time-tracking logs and operario assignments
-<!-- - **Budget** with cost items and file attachments -->
 - **Material** inventory with categories and unit types
-- **AuditLog** — all operations are logged for compliance
 
 You are a senior full-stack engineer specialized in React and Next.js.
 

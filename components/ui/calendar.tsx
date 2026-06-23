@@ -6,7 +6,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'lucide-react'
-import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
+import { DayButton, DayPicker, Dropdown, getDefaultClassNames } from 'react-day-picker'
 
 import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -155,6 +155,7 @@ function Calendar({
             <ChevronDownIcon className={cn('size-4', className)} {...props} />
           )
         },
+        Dropdown: CalendarDropdown,
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {
           return (
@@ -169,6 +170,95 @@ function Calendar({
       }}
       {...props}
     />
+  )
+}
+
+function CalendarDropdown({
+  value,
+  onChange,
+  options,
+}: React.ComponentProps<typeof Dropdown>) {
+  const [open, setOpen] = React.useState(false)
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const selected = options?.find((option) => option.value === value)
+
+  const handleChange = (newValue: string) => {
+    onChange?.({
+      target: { value: newValue },
+    } as React.ChangeEvent<HTMLSelectElement>)
+    setOpen(false)
+  }
+
+  React.useEffect(() => {
+    if (!open) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [open])
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen((prev) => !prev)}
+        className="h-(--cell-size) gap-1 px-2 text-sm font-medium focus-visible:ring-0 focus-visible:ring-offset-0 [&>svg]:size-3.5"
+        aria-label={selected?.label}
+        aria-expanded={open}
+      >
+        {selected?.label ?? value?.toString()}
+        <ChevronDownIcon
+          className={cn(
+            'size-3.5 opacity-50 transition-transform',
+            open && 'rotate-180'
+          )}
+        />
+      </Button>
+      {open && (
+        <div
+          className="absolute top-full left-0 z-50 mt-1 min-w-full max-h-72 overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          onWheel={(e) => {
+            e.stopPropagation()
+            e.currentTarget.scrollTop += e.deltaY
+          }}
+        >
+          {options?.map((option, index) => (
+            <Button
+              key={`${option.value}-${index}`}
+              type="button"
+              variant={option.value === value ? 'secondary' : 'ghost'}
+              size="sm"
+              disabled={option.disabled}
+              onClick={() => handleChange(option.value?.toString() ?? '')}
+              className="w-full justify-start px-2 py-1.5 text-sm font-normal"
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

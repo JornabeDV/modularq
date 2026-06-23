@@ -52,6 +52,7 @@ interface ProjectTableProps {
   sortField?: SortField;
   sortOrder?: "asc" | "desc";
   onSort?: (field: SortField) => void;
+  showCondition?: boolean;
 }
 
 export function ProjectTable({
@@ -73,6 +74,7 @@ export function ProjectTable({
   sortField,
   sortOrder,
   onSort,
+  showCondition = false,
 }: ProjectTableProps) {
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
   const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(
@@ -208,15 +210,12 @@ export function ProjectTable({
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </TableHead>
-                <TableHead
-                  className="cursor-pointer text-center min-w-[120px]"
-                  onClick={() => onSort?.("condition")}
-                >
-                  <div className="flex items-center justify-center gap-1">
+                {showCondition && (
+                  <TableHead className="text-center min-w-[100px]">
                     Condición
-                    <ArrowUpDown className="w-3 h-3" />
-                  </div>
-                </TableHead>
+                  </TableHead>
+                )}
+
                 <TableHead
                   className="cursor-pointer text-center min-w-[120px]"
                   onClick={() => onSort?.("startDate")}
@@ -253,7 +252,7 @@ export function ProjectTable({
               {projects.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={8 + (showCondition ? 1 : 0)}
                     className="text-center py-8 text-muted-foreground"
                   >
                     No se encontraron proyectos
@@ -278,6 +277,7 @@ export function ProjectTable({
                       onDragOver={handleDragOver}
                       onDrop={handleDrop}
                       isReadOnly={isReadOnly}
+                      showCondition={showCondition}
                     />
                   );
                 })

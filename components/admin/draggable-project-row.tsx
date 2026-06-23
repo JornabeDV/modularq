@@ -37,6 +37,7 @@ interface DraggableProjectRowProps {
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent, projectId: string) => void;
   isReadOnly?: boolean;
+  showCondition?: boolean;
 }
 
 export function DraggableProjectRow({
@@ -51,6 +52,7 @@ export function DraggableProjectRow({
   onDragOver,
   onDrop,
   isReadOnly = false,
+  showCondition = false,
 }: DraggableProjectRowProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -173,7 +175,11 @@ export function DraggableProjectRow({
               </SelectTrigger>
               <SelectContent data-status-select>
                 <SelectItem value="completed">Completado</SelectItem>
-                <SelectItem value="delivered">Entregado</SelectItem>
+                {project.condition === "alquiler" ? (
+                  <SelectItem value="rented">En Alquiler</SelectItem>
+                ) : (
+                  <SelectItem value="delivered">Entregado</SelectItem>
+                )}
               </SelectContent>
             </Select>
           ) : (
@@ -182,13 +188,14 @@ export function DraggableProjectRow({
             </Badge>
           )}
         </TableCell>
-        <TableCell className="text-center">
-          <Badge
-            variant={project.condition === "alquiler" ? "default" : "outline"}
-          >
-            {project.condition === "alquiler" ? "Alquiler" : "Venta"}
-          </Badge>
-        </TableCell>
+        {showCondition && (
+          <TableCell className="text-center">
+            <Badge variant={project.condition === "alquiler" ? "default" : "outline"}>
+              {project.condition === "alquiler" ? "Alquiler" : "Venta"}
+            </Badge>
+          </TableCell>
+        )}
+
         <TableCell className="text-center">
           <div className="text-sm">
             <div className="font-medium">{formatDate(project.startDate)}</div>

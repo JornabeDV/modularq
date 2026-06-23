@@ -44,7 +44,7 @@ export function ProjectHeader({
             Volver
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">{project.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">{project.name}</h1>
             <p className="text-muted-foreground">{project.description}</p>
           </div>
         </div>

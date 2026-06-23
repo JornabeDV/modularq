@@ -370,7 +370,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
       )
     );
     setEditingItemKey(null);
-    toast({ title: "Módulo personalizado actualizado" });
+    toast({ title: "Ítem actualizado" });
   }
 
   function handleCancelEdit() {

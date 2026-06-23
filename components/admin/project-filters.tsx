@@ -18,6 +18,7 @@ const PROJECT_STATUSES = [
   { value: 'paused', label: 'En Pausa' },
   { value: 'completed', label: 'Completado' },
   { value: 'delivered', label: 'Entregado' },
+  { value: 'rented', label: 'En Alquiler' },
   { value: 'cancelled', label: 'Cancelado' }
 ]
 

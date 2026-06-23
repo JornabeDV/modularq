@@ -6,6 +6,7 @@ export const PROJECT_STATUS_CONFIG = {
   paused: { label: "En Pausa", color: "destructive" as const },
   completed: { label: "Completado", color: "default" as const },
   delivered: { label: "Entregado", color: "default" as const },
+  rented: { label: "En Alquiler", color: "info" as const },
   cancelled: { label: "Cancelado", color: "destructive" as const },
 } as const;
 

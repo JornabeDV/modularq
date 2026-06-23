@@ -14,7 +14,6 @@ interface TaskDetailsProps {
       estimatedHours?: number;
     };
     actualHours: number;
-    totalHoursWithActive?: number;
     startDate?: string;
     endDate?: string;
     progressPercentage: number;
@@ -89,6 +88,15 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-6">
+          <div>
+            <Label className="text-base font-semibold text-muted-foreground">
+              Horas Reales / Estimadas
+            </Label>
+            <p className="text-lg">
+              {(task.actualHours || 0).toFixed(1)}hs / {(task.task?.estimatedHours || 0).toFixed(1)}hs
+            </p>
+          </div>
+
           <div>
             <Label className="text-base font-semibold text-muted-foreground">
               Fecha de Inicio

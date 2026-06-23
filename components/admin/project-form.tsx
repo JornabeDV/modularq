@@ -48,7 +48,7 @@ interface ApprovedQuote {
 interface ProjectFormData {
   name: string;
   description: string;
-  status: "planning" | "active" | "paused" | "completed" | "delivered";
+  status: "planning" | "active" | "paused" | "completed" | "delivered" | "rented";
   condition: "alquiler" | "venta";
   startDate?: string;
   endDate?: string;
@@ -72,7 +72,7 @@ interface ProjectSubmitData {
   height?: number;
   width?: number;
   depth?: number;
-  status: "planning" | "active" | "paused" | "completed" | "delivered";
+  status: "planning" | "active" | "paused" | "completed" | "delivered" | "rented";
   priority?: "low" | "medium" | "high";
   startDate?: string;
   estimatedEndDate?: string;
@@ -90,12 +90,20 @@ interface ProjectFormProps {
   preselectedQuoteId?: string;
 }
 
-const PROJECT_STATUSES = [
+const SALE_STATUSES = [
   { value: "planning", label: "Planificación" },
   { value: "active", label: "Activo" },
   { value: "paused", label: "En Pausa" },
   { value: "completed", label: "Completado" },
   { value: "delivered", label: "Entregado" },
+];
+
+const RENTAL_STATUSES = [
+  { value: "planning", label: "Planificación" },
+  { value: "active", label: "Activo" },
+  { value: "paused", label: "En Pausa" },
+  { value: "completed", label: "Completado" },
+  { value: "rented", label: "En Alquiler" },
 ];
 
 const PROJECT_CONDITIONS = [
@@ -123,7 +131,8 @@ export function ProjectForm({
       | "active"
       | "paused"
       | "completed"
-      | "delivered",
+      | "delivered"
+      | "rented",
     condition: "venta" as "alquiler" | "venta",
     startDate: "",
     endDate: "",
@@ -441,36 +450,6 @@ export function ProjectForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="status" className="mb-2">
-                Estado
-              </Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleInputChange("status", value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROJECT_STATUSES.map((status) => {
-                    if (
-                      isEditing &&
-                      initialData?.status === "planning" &&
-                      status.value === "active" &&
-                      !checklistComplete
-                    ) {
-                      return null;
-                    }
-                    return (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label htmlFor="condition" className="mb-2">
                 Condición
               </Label>
@@ -490,6 +469,37 @@ export function ProjectForm({
                 </SelectContent>
               </Select>
             </div>
+            {isEditing && (
+              <div>
+                <Label htmlFor="status" className="mb-2">
+                  Estado
+                </Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleInputChange("status", value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(formData.condition === "alquiler" ? RENTAL_STATUSES : SALE_STATUSES).map((status) => {
+                      if (
+                        initialData?.status === "planning" &&
+                        status.value === "active" &&
+                        !checklistComplete
+                      ) {
+                        return null;
+                      }
+                      return (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div>

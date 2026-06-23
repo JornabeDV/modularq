@@ -23,6 +23,7 @@ import {
   History,
   ChevronLeft,
   ChevronRight,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -42,12 +43,23 @@ const adminNavigation = [
   { name: "Gestión del Personal", href: "/admin/users", icon: Shield },
   { name: "Gestión de Tareas", href: "/admin/tasks", icon: CheckSquare },
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
+  { name: "Gestión de Alquileres", href: "/rentals/modules", icon: Truck },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
   { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
   { name: "Cotizaciones", href: "/quoter/history", icon: History },
-  { name: "Módulos Estándar", href: "/admin/standard-modules", icon: Package, adminOnly: true },
-  { name: "Catálogo de Servicios", href: "/admin/services", icon: ShoppingCart, adminOnly: true },
+  {
+    name: "Módulos Estándar",
+    href: "/admin/standard-modules",
+    icon: Package,
+    adminOnly: true,
+  },
+  {
+    name: "Catálogo de Servicios",
+    href: "/admin/services",
+    icon: ShoppingCart,
+    adminOnly: true,
+  },
   { name: "Reportes", href: "/reports", icon: FileText },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
 ];

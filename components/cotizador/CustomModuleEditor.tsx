@@ -45,6 +45,8 @@ interface CustomModuleEditorProps {
   onCancel: () => void;
   exchangeRate: ExchangeRate | null;
   currency: 'ARS' | 'USD';
+  allowAttachments?: boolean;
+  subtitle?: string;
 }
 
 export function CustomModuleEditor({
@@ -53,6 +55,8 @@ export function CustomModuleEditor({
   onCancel,
   exchangeRate,
   currency,
+  allowAttachments = true,
+  subtitle,
 }: CustomModuleEditorProps) {
   const [name, setName] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
@@ -174,9 +178,16 @@ export function CustomModuleEditor({
             <span className="hidden sm:inline">Volver al catálogo</span>
             <span className="sm:hidden">Volver</span>
           </Button>
-          <span className="text-sm text-muted-foreground truncate">
-            Editando módulo
-          </span>
+          <div className="flex flex-col">
+            <span className="text-sm text-muted-foreground truncate">
+              Editando módulo
+            </span>
+            {subtitle && (
+              <span className="text-[11px] text-muted-foreground/80 truncate">
+                {subtitle}
+              </span>
+            )}
+          </div>
         </div>
         <Button
           size="sm"
@@ -323,7 +334,7 @@ export function CustomModuleEditor({
           </Card>
 
           {/* Archivos adjuntos */}
-          <Card>
+          {allowAttachments && <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Archivos adjuntos</CardTitle>
             </CardHeader>
@@ -385,6 +396,7 @@ export function CustomModuleEditor({
               </div>
             </CardContent>
           </Card>
+          }
         </div>
       </div>
     </div>

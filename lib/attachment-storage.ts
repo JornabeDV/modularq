@@ -1,5 +1,5 @@
-import { uploadBudgetPdf, deleteBudgetPdf } from "./budget-storage";
 import { v2 as cloudinary } from "cloudinary";
+import { supabase } from "./supabase";
 
 // Configuración de Cloudinary (para imágenes)
 cloudinary.config({
@@ -103,19 +103,43 @@ export async function uploadImageToCloudinary(
   });
 }
 
+const ATTACHMENTS_BUCKET = "project-files";
+
 /**
- * Sube un PDF a Supabase Storage (usa budget-storage.ts)
+ * Sube un PDF a Supabase Storage
  */
 export async function uploadPdfToSupabase(
   fileBuffer: Buffer,
-  budgetId: string,
+  folderPrefix: string,
   filename: string,
   mimeType: string
 ): Promise<{
   url: string;
   path: string;
 }> {
-  return uploadBudgetPdf(fileBuffer, budgetId, filename, mimeType);
+  const timestamp = Date.now();
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_").substring(0, 100);
+  const filePath = `attachments/${folderPrefix}/${timestamp}_${sanitizedFilename}`;
+
+  const { data, error } = await supabase.storage
+    .from(ATTACHMENTS_BUCKET)
+    .upload(filePath, fileBuffer, {
+      contentType: mimeType,
+      upsert: false,
+    });
+
+  if (error || !data) {
+    throw new Error(`Error al subir PDF: ${error?.message ?? "desconocido"}`);
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from(ATTACHMENTS_BUCKET)
+    .getPublicUrl(data.path);
+
+  return {
+    url: publicUrlData.publicUrl,
+    path: data.path,
+  };
 }
 
 /**
@@ -141,18 +165,35 @@ export async function deleteImageFromCloudinary(
 }
 
 /**
- * Elimina un PDF de Supabase Storage (usa budget-storage.ts)
+ * Elimina un PDF de Supabase Storage
  */
 export async function deletePdfFromSupabase(
   filePath: string
 ): Promise<{ success: boolean; error?: string }> {
-  return deleteBudgetPdf(filePath);
+  try {
+    const { error } = await supabase.storage
+      .from(ATTACHMENTS_BUCKET)
+      .remove([filePath]);
+
+    if (error) {
+      console.error("Error deleting PDF from Supabase:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Unexpected error deleting PDF from Supabase:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Error desconocido",
+    };
+  }
 }
 
 /**
  * Crea los buckets necesarios en Supabase
  */
 export async function setupStorageBuckets(): Promise<void> {
-  // El bucket se maneja en budget-storage.ts
-  console.log("Buckets configurados en budget-storage.ts");
+  // El bucket project-files ya está configurado en Supabase
+  console.log("Buckets configurados");
 }
