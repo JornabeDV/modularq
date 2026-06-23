@@ -121,7 +121,8 @@ export function QuoteItemCard({
   const canHaveAdicionales =
     item.type === "standard_module" || item.type === "custom_module";
   const canHaveAttachments = item.type === "custom_module";
-  const canEdit = item.type === "custom_module";
+  const canEdit =
+    item.type === "custom_module" || item.type === "standard_module";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
@@ -179,7 +180,7 @@ export function QuoteItemCard({
                   onClick={() => {
                     onStartEdit(item.key);
                   }}
-                  title="Editar módulo"
+                  title="Editar información del ítem"
                 >
                   <Edit2 className="w-4 h-4" />
                 </Button>
