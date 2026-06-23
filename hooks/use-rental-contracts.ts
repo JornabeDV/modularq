@@ -1,17 +1,21 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { RentalContract } from '@/lib/types'
 
 export function useRentalContracts() {
   const [contracts, setContracts] = useState<RentalContract[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
   const fetchContracts = useCallback(async (filters?: { status?: string; rental_module_id?: string; client_id?: string }) => {
+    const requestId = ++requestIdRef.current
     try {
-      setLoading(true)
-      setError(null)
+      if (requestIdRef.current === requestId) {
+        setLoading(true)
+        setError(null)
+      }
       const query = new URLSearchParams()
       if (filters?.status) query.set('status', filters.status)
       if (filters?.rental_module_id) query.set('rental_module_id', filters.rental_module_id)
@@ -20,11 +24,17 @@ export function useRentalContracts() {
       const res = await fetch(`/api/rental-contracts?${query.toString()}`)
       if (!res.ok) throw new Error('Error al cargar contratos')
       const data = await res.json()
-      setContracts(data.contracts || [])
+      if (requestIdRef.current === requestId) {
+        setContracts(data.contracts || [])
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
+      if (requestIdRef.current === requestId) {
+        setError(err instanceof Error ? err.message : 'Error desconocido')
+      }
     } finally {
-      setLoading(false)
+      if (requestIdRef.current === requestId) {
+        setLoading(false)
+      }
     }
   }, [])
 

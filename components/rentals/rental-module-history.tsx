@@ -81,7 +81,7 @@ export function RentalModuleHistory({ moduleId }: { moduleId: string }) {
                   {contracts.map((c) => (
                     <TableRow
                       key={c.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-muted/50"
                       onClick={() => router.push(`/rentals/contracts/${c.id}`)}
                     >
                       <TableCell>{c.client?.company_name || "—"}</TableCell>
@@ -99,12 +99,17 @@ export function RentalModuleHistory({ moduleId }: { moduleId: string }) {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 cursor-pointer">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 cursor-pointer"
+                                onClick={() => router.push(`/rentals/contracts/${c.id}`)}
+                              >
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Ver</p>
+                              <p>Ver contrato</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
