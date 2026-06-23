@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
-import { ArrowLeft, Wrench, CheckCircle, Truck, RotateCcw, Phone, Mail, CalendarIcon } from "lucide-react"
+import { ArrowLeft, Wrench, CheckCircle, Truck, RotateCcw, Phone, Mail, CalendarIcon, PackageOpen } from "lucide-react"
 import { formatProjectDate } from "@/lib/utils/project-utils"
 import { RentalContractForm } from "./rental-contract-form"
 import { useRouter } from "next/navigation"
@@ -237,13 +237,17 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
               <CardTitle className="text-sm font-medium">Sin Contrato Activo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Este módulo no tiene un alquiler activo.</p>
-              {(module.status === "available" || module.status === "maintenance") && (
-                <Button className="w-full" onClick={() => setShowContractForm(true)}>
-                  <Truck className="h-4 w-4 mr-2" />
-                  Nuevo Alquiler
-                </Button>
-              )}
+              <div className="flex flex-col items-center text-center py-6">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <PackageOpen className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium">Este módulo está libre</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+                  {module.status === "available" || module.status === "maintenance"
+                    ? "Podés iniciar un nuevo alquiler desde el botón superior."
+                    : "El módulo no está disponible para alquilar en este momento."}
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
