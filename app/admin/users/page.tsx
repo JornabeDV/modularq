@@ -1,7 +1,7 @@
 "use client"
 
 import { MainLayout } from '@/components/layout/main-layout'
-import { UserManagement } from '@/components/admin/user-management'
+import { UserManagement } from '@/components/admin/users/user-management'
 import { AdminOnly } from '@/components/auth/route-guard'
 
 export default function AdminUsersPage() {

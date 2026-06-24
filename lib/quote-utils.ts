@@ -27,6 +27,7 @@ export function getPDFItems(
     moduleDescriptionSections: item.moduleDescriptionSections,
     basePrice: item.unitPrice,
     quantity: item.quantity,
+    isOptional: item.isOptional,
     adicionales: item.adicionales,
   }));
 

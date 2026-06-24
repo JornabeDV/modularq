@@ -89,6 +89,28 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e5e7eb",
     paddingBottom: 3,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    paddingBottom: 3,
+  },
+  sectionTitleInline: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#374151",
+    textTransform: "uppercase",
+  },
+  sectionSubtitle: {
+    fontSize: 8,
+    color: "#6b7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    paddingBottom: 1,
+  },
   moduleCard: {
     marginBottom: 10,
     padding: 10,
@@ -379,6 +401,7 @@ export interface CotizadorItem {
   moduleDescriptionSections?: CotizadorDescriptionSection[];
   basePrice: number;
   quantity: number;
+  isOptional?: boolean;
   adicionales: Array<{
     id: string;
     name: string;
@@ -455,11 +478,12 @@ export function CotizadorPDFDocument({
   const standardItems = items.filter((i) => i.type === 'standard_module');
   const customItems = items.filter((i) => i.type === 'custom_module');
   const serviceItems = items.filter((i) => i.type === 'service');
+  const includedServiceItems = serviceItems.filter((i) => !i.isOptional);
+  const optionalServiceItems = serviceItems.filter((i) => i.isOptional);
 
   const calculateItemTotal = (item: CotizadorItem) => {
-    const base = item.basePrice * item.quantity;
-    const adds = item.adicionales.reduce((a, ad) => a + ad.price, 0);
-    return base + adds;
+    if (item.type === 'service' && item.isOptional) return 0;
+    return item.basePrice * item.quantity;
   };
 
   const subtotalStandard = standardItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
@@ -475,7 +499,7 @@ export function CotizadorPDFDocument({
 
   const renderItem = (item: CotizadorItem, idx: number) => {
     const showQty = item.quantity > 1;
-    const itemTotal = calculateItemTotal(item);
+    const itemTotal = item.basePrice * item.quantity;
     return (
       <View key={`${item.moduleId}-${idx}`} style={styles.moduleCard}>
         <View style={styles.moduleRow}>
@@ -515,7 +539,7 @@ export function CotizadorPDFDocument({
           <View style={styles.adicionalesSection}>
             <View style={styles.adicionalesRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.adicionalesLabel}>Opcionales</Text>
+                <Text style={styles.adicionalesLabel}>Adicionales (no incluidos en el total)</Text>
               </View>
               <View style={{ width: 100 }} />
             </View>
@@ -624,11 +648,22 @@ export function CotizadorPDFDocument({
           </View>
         )}
 
-        {/* Servicios */}
-        {serviceItems.length > 0 && (
+        {/* Servicios incluidos */}
+        {includedServiceItems.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Servicios</Text>
-            {serviceItems.map((item, idx) => renderItem(item, idx))}
+            {includedServiceItems.map((item, idx) => renderItem(item, idx))}
+          </View>
+        )}
+
+        {/* Servicios opcionales (no incluidos en el total) */}
+        {optionalServiceItems.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitleInline}>Servicios opcionales</Text>
+              <Text style={styles.sectionSubtitle}>(no incluidos en el total)</Text>
+            </View>
+            {optionalServiceItems.map((item, idx) => renderItem(item, idx))}
           </View>
         )}
 

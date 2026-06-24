@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { PriceInput } from "@/components/ui/price-input";
 import { ExchangeRate } from "@/lib/exchange-rate";
@@ -49,6 +50,7 @@ export interface QuoteItemState {
   moduleDescriptionSections?: ModuleDescriptionSection[];
   unitPrice: number;
   quantity: number;
+  isOptional?: boolean; // para servicios: si es true, no suma al total
   adicionales: SelectedAdicional[];
   attachments?: QuoteItemAttachment[];
 }
@@ -75,6 +77,7 @@ interface QuoteItemCardProps {
     itemKey: string,
     adicional: { id: string; name: string; unit_price: number },
   ) => void;
+  onToggleOptional?: (key: string) => void;
   onAddAttachment?: (itemKey: string, attachment: QuoteItemAttachment) => void;
   onRemoveAttachment?: (itemKey: string, storagePath: string) => void;
   onStartEdit?: (itemKey: string) => void;
@@ -105,6 +108,7 @@ export function QuoteItemCard({
   onUpdateQuantity,
   onUpdatePrice,
   onToggleAdicional,
+  onToggleOptional,
   onAddAttachment,
   onRemoveAttachment,
   onStartEdit,
@@ -116,7 +120,6 @@ export function QuoteItemCard({
 
   const itemSubtotal = item.unitPrice * item.quantity;
   const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
-  const total = itemSubtotal + adicionalesTotal;
 
   const canHaveAdicionales =
     item.type === "standard_module" || item.type === "custom_module";
@@ -171,6 +174,14 @@ export function QuoteItemCard({
               >
                 {TYPE_LABELS[item.type]}
               </Badge>
+              {item.type === "service" && item.isOptional && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 shrink-0 text-amber-600 border-amber-200 bg-amber-50"
+                >
+                  Opcional
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {canEdit && onStartEdit && (
@@ -221,23 +232,39 @@ export function QuoteItemCard({
                     <>
                       <span className="text-sm font-semibold tabular-nums leading-tight">
                         {currency === "USD"
-                          ? formatUSD(total)
-                          : formatARS(total)}
+                          ? formatUSD(itemSubtotal)
+                          : formatARS(itemSubtotal)}
                       </span>
                       <span className="text-[10px] text-muted-foreground tabular-nums leading-tight">
                         {currency === "USD"
-                          ? formatARS(total * exchangeRate.venta)
-                          : formatUSD(total / exchangeRate.venta)}
+                          ? formatARS(itemSubtotal * exchangeRate.venta)
+                          : formatUSD(itemSubtotal / exchangeRate.venta)}
                       </span>
                     </>
                   ) : (
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatARS(total)}
+                      {formatARS(itemSubtotal)}
                     </span>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                {item.type === "service" && onToggleOptional && (
+                  <div className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox
+                      id={`optional-${item.key}`}
+                      checked={!item.isOptional}
+                      onCheckedChange={() => onToggleOptional(item.key)}
+                      className="h-3.5 w-3.5 cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`optional-${item.key}`}
+                      className="text-[10px] sm:text-xs text-muted-foreground cursor-pointer select-none"
+                    >
+                      Incluir
+                    </label>
+                  </div>
+                )}
                 {item.adicionales.length > 0 && (
                   <Badge
                     variant="outline"
@@ -473,28 +500,28 @@ export function QuoteItemCard({
               </div>
             )}
 
-            {/* Total con adicionales */}
+            {/* Total de adicionales (no suma al ítem) */}
             {adicionalesTotal > 0 && (
               <div className="text-xs text-right text-muted-foreground border-t pt-2">
-                Subtotal:{" "}
+                Adicionales (no incluidos):{" "}
                 {exchangeRate ? (
                   <>
                     <span className="font-semibold tabular-nums text-foreground">
                       {currency === "USD"
-                        ? formatUSD(total)
-                        : formatARS(total)}
+                        ? formatUSD(adicionalesTotal)
+                        : formatARS(adicionalesTotal)}
                     </span>
                     <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
                       (
                       {currency === "USD"
-                        ? formatARS(total * exchangeRate.venta)
-                        : formatUSD(total / exchangeRate.venta)}
+                        ? formatARS(adicionalesTotal * exchangeRate.venta)
+                        : formatUSD(adicionalesTotal / exchangeRate.venta)}
                       )
                     </span>
                   </>
                 ) : (
                   <span className="font-semibold tabular-nums text-foreground">
-                    {formatARS(total)}
+                    {formatARS(adicionalesTotal)}
                   </span>
                 )}
               </div>

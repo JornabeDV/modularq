@@ -23,7 +23,7 @@ import {
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { DailySurveyTaskCard } from "./daily-survey-task-card";
 import { Input } from "@/components/ui/input";
-import { TaskForm } from "@/components/admin/task-form";
+import { TaskForm } from "@/components/admin/tasks/task-form";
 import { useTasksPrisma } from "@/hooks/use-tasks-prisma";
 import type { ProjectTask } from "@/lib/types";
 

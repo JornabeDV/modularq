@@ -17,8 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MaterialFilters } from "@/components/admin/material-filters";
-import { MaterialRow } from "@/components/admin/material-row";
+import { MaterialFilters } from "@/components/admin/materials/material-filters";
+import { MaterialRow } from "@/components/admin/materials/material-row";
 import type { Material } from "@/hooks/use-materials-prisma";
 
 type SortField =

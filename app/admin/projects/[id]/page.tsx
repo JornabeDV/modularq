@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { MainLayout } from '@/components/layout/main-layout'
-import { ProjectDetail } from '@/components/admin/project-detail'
+import { ProjectDetail } from '@/components/admin/projects/project-detail'
 
 export default function ProjectDetailPage() {
   const params = useParams()
