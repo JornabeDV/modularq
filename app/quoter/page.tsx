@@ -416,7 +416,10 @@ export default function CotizadorPage() {
                 onCancel={q.handleCancelEdit}
                 exchangeRate={q.exchangeRate}
                 currency={q.quoteCurrency}
-                allowAttachments={q.editingItem.type === "custom_module"}
+                allowAttachments={
+                  q.editingItem.type === "custom_module" ||
+                  q.editingItem.type === "standard_module"
+                }
                 subtitle={
                   q.editingItem.type === "standard_module"
                     ? "Estos cambios solo afectan esta cotización, no el módulo del catálogo."

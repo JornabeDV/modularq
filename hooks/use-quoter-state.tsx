@@ -77,10 +77,23 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch("/api/cotizador/adicionales")
-      .then((r) => r.json())
-      .then((d) => setAdicionales(d.adicionales ?? []))
-      .catch(() => {});
+    const loadAdicionales = () => {
+      fetch("/api/cotizador/adicionales", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => setAdicionales(d.adicionales ?? []))
+        .catch(() => {});
+    };
+
+    loadAdicionales();
+
+    // Recargar al volver a la pestaña para reflejar cambios desde gestión de stock
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadAdicionales();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
   }, []);
 
   useEffect(() => {
@@ -242,6 +255,14 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         unitPrice,
         quantity: 1,
         adicionales: [],
+        attachments: (mod.attachments ?? []).map((att) => ({
+          filename: att.filename,
+          original_name: att.original_name,
+          mime_type: att.mime_type,
+          size: att.size,
+          url: att.url,
+          storage_path: att.storage_path,
+        })),
       },
     ]);
   }
@@ -381,6 +402,14 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     itemKey: string,
     adicional: { id: string; name: string; unit_price: number }
   ) {
+    // Los adicionales se guardan en pesos (ARS) en stock. Al agregarlos a una
+    // cotización, convertimos al valor equivalente en la moneda de la cotización.
+    const rate = exchangeRate?.venta ?? 0;
+    const priceInQuoteCurrency =
+      quoteCurrency === "ARS" || rate <= 0
+        ? adicional.unit_price
+        : adicional.unit_price / rate;
+
     setQuoteItems((prev) =>
       prev.map((item) => {
         if (item.key !== itemKey) return item;
@@ -389,7 +418,10 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           ...item,
           adicionales: exists
             ? item.adicionales.filter((a) => a.id !== adicional.id)
-            : [...item.adicionales, { id: adicional.id, name: adicional.name, price: adicional.unit_price }],
+            : [
+                ...item.adicionales,
+                { id: adicional.id, name: adicional.name, price: priceInQuoteCurrency },
+              ],
         };
       })
     );

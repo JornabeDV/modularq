@@ -120,7 +120,8 @@ export function QuoteItemCard({
 
   const canHaveAdicionales =
     item.type === "standard_module" || item.type === "custom_module";
-  const canHaveAttachments = item.type === "custom_module";
+  const canHaveAttachments =
+    item.type === "custom_module" || item.type === "standard_module";
   const canEdit =
     item.type === "custom_module" || item.type === "standard_module";
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -176,7 +177,7 @@ export function QuoteItemCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-7 w-7 cursor-pointer"
                   onClick={() => {
                     onStartEdit(item.key);
                   }}
@@ -188,7 +189,7 @@ export function QuoteItemCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-7 w-7 cursor-pointer"
                 onClick={() => setIsExpanded(!isExpanded)}
               >
                 <ChevronDown
@@ -200,7 +201,7 @@ export function QuoteItemCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-7 w-7 cursor-pointer"
                 onClick={() => onRemove(item.key)}
               >
                 <X className="w-4 h-4" />
@@ -351,6 +352,19 @@ export function QuoteItemCard({
                 <p className="text-xs font-medium text-muted-foreground mb-1.5">
                   Adicionales
                 </p>
+                <div className="flex items-center justify-between px-2.5 pb-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <span className="truncate">Adicional</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="min-w-[80px] text-right">
+                      {exchangeRate ? (currency === "USD" ? "USD" : "ARS") : "ARS"}
+                    </span>
+                    {exchangeRate && (
+                      <span className="min-w-[70px] text-right">
+                        {currency === "USD" ? "ARS" : "USD"}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <div className="space-y-1">
                   {adicionalesDisponibles.map((ad) => {
                     const selected = item.adicionales.some(
@@ -367,21 +381,23 @@ export function QuoteItemCard({
                             : "bg-background text-foreground border-border hover:bg-muted"
                         }`}
                       >
-                        <span>{ad.name}</span>
-                        <span className="tabular-nums font-medium">
-                          {exchangeRate
-                            ? currency === "USD"
-                              ? formatUSD(ad.unit_price)
-                              : formatARS(ad.unit_price)
-                            : formatARS(ad.unit_price)}
-                        </span>
-                        {exchangeRate && (
-                          <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
-                            {currency === "USD"
-                              ? formatARS(ad.unit_price * exchangeRate.venta)
-                              : formatUSD(ad.unit_price / exchangeRate.venta)}
+                        <span className="truncate">{ad.name}</span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="tabular-nums font-medium min-w-[80px] text-right">
+                            {exchangeRate
+                              ? currency === "USD"
+                                ? formatUSD(ad.unit_price / exchangeRate.venta)
+                                : formatARS(ad.unit_price)
+                              : formatARS(ad.unit_price)}
                           </span>
-                        )}
+                          {exchangeRate && (
+                            <span className="text-[10px] text-muted-foreground tabular-nums min-w-[70px] text-right">
+                              {currency === "USD"
+                                ? formatARS(ad.unit_price)
+                                : formatUSD(ad.unit_price / exchangeRate.venta)}
+                            </span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
