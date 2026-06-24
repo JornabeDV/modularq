@@ -61,44 +61,62 @@ export async function POST(request: NextRequest) {
 
     const moduleIds: string[] = moduleIdsRaw ? JSON.parse(moduleIdsRaw) : []
 
-    // Recopilar PDFs adjuntos de los módulos estándar
-    const attachmentUrls: string[] = []
-    for (const moduleId of moduleIds) {
-      try {
-        const attachments = await PrismaTypedService.getStandardModuleAttachments(moduleId)
-        for (const att of attachments) {
-          if (att.mime_type === 'application/pdf') {
-            attachmentUrls.push(att.url)
-          }
-        }
-      } catch {
-        // continuar sin los adjuntos de este módulo
-      }
-    }
+    // Recopilar PDFs adjuntos de los ítems de la cotización.
+    // Los attachments guardados en el quote_item tienen prioridad sobre los del
+    // catálogo de módulos estándar, permitiendo reemplazarlos desde el cotizador.
+    const attachmentUrls = new Set<string>()
 
-    // Recopilar PDFs adjuntos de los módulos personalizados desde quoteData
     if (quoteDataRaw) {
       try {
         const quoteData = JSON.parse(quoteDataRaw)
         for (const item of quoteData.items ?? []) {
-          if (item.type === 'custom_module' && item.attachments) {
+          if (item.attachments && item.attachments.length > 0) {
             for (const att of item.attachments) {
               if (att.mime_type === 'application/pdf') {
-                attachmentUrls.push(att.url)
+                attachmentUrls.add(att.url)
               }
+            }
+          } else if (item.type === 'standard_module' && item.standard_module_id) {
+            try {
+              const attachments = await PrismaTypedService.getStandardModuleAttachments(item.standard_module_id)
+              for (const att of attachments) {
+                if (att.mime_type === 'application/pdf') {
+                  attachmentUrls.add(att.url)
+                }
+              }
+            } catch {
+              // continuar sin los adjuntos de este módulo
             }
           }
         }
       } catch {
-        // continuar sin los adjuntos de custom modules
+        // continuar sin los adjuntos de los ítems
+      }
+    }
+
+    // Fallback legacy: si no hay quoteData, usar los moduleIds recibidos
+    if (attachmentUrls.size === 0 && moduleIds.length > 0) {
+      for (const moduleId of moduleIds) {
+        try {
+          const attachments = await PrismaTypedService.getStandardModuleAttachments(moduleId)
+          for (const att of attachments) {
+            if (att.mime_type === 'application/pdf') {
+              attachmentUrls.add(att.url)
+            }
+          }
+        } catch {
+          // continuar sin los adjuntos de este módulo
+        }
       }
     }
 
     const pdfBuffer = await pdfFile.arrayBuffer()
 
+    const pdfAttachmentUrls = Array.from(attachmentUrls)
+
     let finalBytes: Uint8Array
-    if (attachmentUrls.length > 0) {
-      finalBytes = await mergePdfs(pdfBuffer, attachmentUrls)
+    if (pdfAttachmentUrls.length > 0) {
+      finalBytes = await mergePdfs(pdfBuffer, pdfAttachmentUrls)
     } else {
       finalBytes = new Uint8Array(pdfBuffer)
     }

@@ -515,7 +515,7 @@ export function CotizadorPDFDocument({
           <View style={styles.adicionalesSection}>
             <View style={styles.adicionalesRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.adicionalesLabel}>Incluye</Text>
+                <Text style={styles.adicionalesLabel}>Opcionales</Text>
               </View>
               <View style={{ width: 100 }} />
             </View>
