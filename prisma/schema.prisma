@@ -376,6 +376,7 @@ model QuoteItem {
   unit_price         Float           @default(0)
   quantity           Int             @default(1)
   subtotal           Float           @default(0)
+  is_optional        Boolean         @default(false) // solo para servicios: no suma al total
   sort_order         Int             @default(0)
   module_description Json?           // snapshot de secciones descriptivas
   quote       Quote                 @relation(fields: [quote_id], references: [id], onDelete: Cascade)

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { PriceInput } from "@/components/ui/price-input";
 import { ExchangeRate } from "@/lib/exchange-rate";
@@ -49,6 +50,7 @@ export interface QuoteItemState {
   moduleDescriptionSections?: ModuleDescriptionSection[];
   unitPrice: number;
   quantity: number;
+  isOptional?: boolean; // para servicios: si es true, no suma al total
   adicionales: SelectedAdicional[];
   attachments?: QuoteItemAttachment[];
 }
@@ -75,6 +77,7 @@ interface QuoteItemCardProps {
     itemKey: string,
     adicional: { id: string; name: string; unit_price: number },
   ) => void;
+  onToggleOptional?: (key: string) => void;
   onAddAttachment?: (itemKey: string, attachment: QuoteItemAttachment) => void;
   onRemoveAttachment?: (itemKey: string, storagePath: string) => void;
   onStartEdit?: (itemKey: string) => void;
@@ -105,6 +108,7 @@ export function QuoteItemCard({
   onUpdateQuantity,
   onUpdatePrice,
   onToggleAdicional,
+  onToggleOptional,
   onAddAttachment,
   onRemoveAttachment,
   onStartEdit,
@@ -170,6 +174,14 @@ export function QuoteItemCard({
               >
                 {TYPE_LABELS[item.type]}
               </Badge>
+              {item.type === "service" && item.isOptional && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 shrink-0 text-amber-600 border-amber-200 bg-amber-50"
+                >
+                  Opcional
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {canEdit && onStartEdit && (
@@ -236,7 +248,23 @@ export function QuoteItemCard({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                {item.type === "service" && onToggleOptional && (
+                  <div className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox
+                      id={`optional-${item.key}`}
+                      checked={!item.isOptional}
+                      onCheckedChange={() => onToggleOptional(item.key)}
+                      className="h-3.5 w-3.5 cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`optional-${item.key}`}
+                      className="text-[10px] sm:text-xs text-muted-foreground cursor-pointer select-none"
+                    >
+                      Incluir
+                    </label>
+                  </div>
+                )}
                 {item.adicionales.length > 0 && (
                   <Badge
                     variant="outline"

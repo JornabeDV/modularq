@@ -1647,6 +1647,7 @@ export class PrismaTypedService {
       unit_price: number
       quantity: number
       subtotal: number
+      is_optional?: boolean
       sort_order: number
       module_description?: { section: string; description: string }[] | null
       additionals: Array<{
@@ -1709,6 +1710,7 @@ export class PrismaTypedService {
         unit_price: item.unit_price,
         quantity: item.quantity,
         subtotal: item.subtotal,
+        is_optional: item.is_optional ?? false,
         sort_order: item.sort_order,
         module_description: item.module_description ?? null,
       }
@@ -1806,6 +1808,7 @@ export class PrismaTypedService {
         unit_price: number
         quantity: number
         subtotal: number
+        is_optional?: boolean
         sort_order: number
         module_description?: { section: string; description: string }[] | null
         additionals: Array<{
@@ -1879,6 +1882,7 @@ export class PrismaTypedService {
         unit_price: item.unit_price,
         quantity: item.quantity,
         subtotal: item.subtotal,
+        is_optional: item.is_optional ?? false,
         sort_order: item.sort_order,
         module_description: item.module_description ?? null,
       }

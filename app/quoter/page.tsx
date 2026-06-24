@@ -490,6 +490,7 @@ export default function CotizadorPage() {
                     onUpdateQuantity={q.updateQuantity}
                     onUpdatePrice={q.updatePrice}
                     onToggleAdicional={q.toggleAdicional}
+                    onToggleOptional={q.toggleItemOptional}
                     onAddAttachment={q.handleAddAttachment}
                     onRemoveAttachment={q.handleRemoveAttachment}
                     onStartEdit={q.handleStartEdit}

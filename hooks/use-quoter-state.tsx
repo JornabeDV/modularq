@@ -170,6 +170,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           moduleDescriptionSections: item.module_description ?? undefined,
           unitPrice: isOldUSD ? item.unit_price / loadRate : item.unit_price,
           quantity: item.quantity,
+          isOptional: item.is_optional ?? false,
           adicionales: (item.additionals ?? []).map((ad: any) => ({
             id: ad.material_id ?? ad.id,
             name: ad.name,
@@ -210,6 +211,8 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   // ── Derived state ──────────────────────────────────────────────────────────
   const subtotal = useMemo(() => {
     return quoteItems.reduce((acc, item) => {
+      // Los servicios marcados como opcionales no suman al total del presupuesto
+      if (item.type === 'service' && item.isOptional) return acc;
       return acc + item.unitPrice * item.quantity;
     }, 0);
   }, [quoteItems]);
@@ -296,6 +299,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         description: svc.description || undefined,
         unitPrice,
         quantity: 1,
+        isOptional: false,
         adicionales: [],
       },
     ]);
@@ -312,6 +316,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         description: item.description || undefined,
         unitPrice: item.unitPrice,
         quantity: item.quantity,
+        isOptional: false,
         adicionales: [],
       },
     ]);
@@ -324,6 +329,14 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   function updateQuantity(key: string, quantity: number) {
     setQuoteItems((prev) =>
       prev.map((item) => (item.key === key ? { ...item, quantity } : item))
+    );
+  }
+
+  function toggleItemOptional(key: string) {
+    setQuoteItems((prev) =>
+      prev.map((item) =>
+        item.key === key ? { ...item, isOptional: !item.isOptional } : item
+      )
     );
   }
 
@@ -469,6 +482,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           description: item.description,
           unit_price: item.unitPrice,
           quantity: item.quantity,
+          is_optional: item.isOptional ?? false,
           subtotal: item.unitPrice * item.quantity,
           sort_order: i,
           module_description: item.moduleDescriptionSections ?? null,
@@ -582,6 +596,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           description: item.description,
           unit_price: item.unitPrice,
           quantity: item.quantity,
+          is_optional: item.isOptional ?? false,
           subtotal: item.unitPrice * item.quantity,
           sort_order: i,
           module_description: item.moduleDescriptionSections ?? null,
@@ -713,6 +728,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     addCustomService,
     removeItem,
     updateQuantity,
+    toggleItemOptional,
     updatePrice,
     handleAddAttachment,
     handleRemoveAttachment,
