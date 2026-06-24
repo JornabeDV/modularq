@@ -12,9 +12,8 @@ export async function GET() {
 
   try {
     const adicionales = await PrismaTypedService.getAdicionales()
-    console.log(`[adicionales] fetched ${adicionales?.length ?? 0} items at ${new Date().toISOString()}`)
     return NextResponse.json(
-      { adicionales, fetchedAt: new Date().toISOString() },
+      { adicionales },
       {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',

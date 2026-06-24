@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    console.log('❌ [REPORT] Unauthorized request')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -39,8 +38,6 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request body. Expected: { period: "week" | "month", periodKey?: string }' }, { status: 400 })
   }
-
-  console.log(`📊 [REPORT] Generating ${period} report...`)
 
   const { data: rawProjects, error } = await supabase
     .from('projects')
@@ -255,16 +252,12 @@ export async function POST(request: NextRequest) {
     periodActivity: getPeriodActivityStats(projectsWithStatus, period, periodKey),
   }
 
-  console.log(`📄 [REPORT] Rendering PDF for period: ${periodLabel}`)
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buffer = await renderToBuffer(
     React.createElement(AnalyticsPdfDocument, { data: pdfData }) as any,
   )
 
   const fileName = `Reporte_${period === 'week' ? 'Semanal' : 'Mensual'}_${periodLabel.replace(/\s/g, '_')}.pdf`
-
-  console.log(`✅ [REPORT] PDF generated successfully: ${fileName} (${buffer.length} bytes)`)
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
