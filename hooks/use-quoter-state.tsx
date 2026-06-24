@@ -78,7 +78,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     const loadAdicionales = () => {
-      fetch("/api/cotizador/adicionales", { cache: "no-store" })
+      fetch(`/api/cotizador/adicionales?_t=${Date.now()}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => setAdicionales(d.adicionales ?? []))
         .catch(() => {});
