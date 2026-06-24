@@ -11,8 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataPagination } from "@/components/ui/data-pagination";
-import { ClientFilters } from "@/components/admin/client-filters";
-import { ClientRow } from "@/components/admin/client-row";
+import { ClientFilters } from "@/components/admin/clients/client-filters";
+import { ClientRow } from "@/components/admin/clients/client-row";
 import type { Client } from "@/hooks/use-clients-prisma";
 
 type SortField = "cuit" | "companyName" | "representative" | "email" | "phone";

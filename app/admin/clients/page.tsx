@@ -1,7 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
-import { ClientManagement } from "@/components/admin/client-management"
+import { ClientManagement } from "@/components/admin/clients/client-management"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 
 export default function AdminClientsPage() {

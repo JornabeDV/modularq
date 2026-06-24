@@ -1,7 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
-import { ProjectManagement } from "@/components/admin/project-management"
+import { ProjectManagement } from "@/components/admin/projects/project-management"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 
 export default function AdminProjectsPage() {

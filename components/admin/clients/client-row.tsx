@@ -3,7 +3,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Eye } from "lucide-react";
-import { DeleteClientButton } from "@/components/admin/delete-client-button";
+import { DeleteClientButton } from "@/components/admin/clients/delete-client-button";
 import {
   Tooltip,
   TooltipContent,

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowLeft, Edit, Zap, ClipboardList } from "lucide-react";
-import { DeleteProjectButton } from "../delete-project-button";
+import { DeleteProjectButton } from "../projects/delete-project-button";
 import type { Project } from "@/lib/types";
 
 interface ProjectHeaderProps {

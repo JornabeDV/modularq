@@ -1,7 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
-import { StockManagement } from "@/components/admin/stock-management"
+import { StockManagement } from "@/components/admin/materials/stock-management"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 
 export default function AdminStockPage() {

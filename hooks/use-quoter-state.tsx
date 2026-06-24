@@ -78,7 +78,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     const loadAdicionales = () => {
-      fetch("/api/cotizador/adicionales", { cache: "no-store" })
+      fetch(`/api/cotizador/adicionales?_t=${Date.now()}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => setAdicionales(d.adicionales ?? []))
         .catch(() => {});
@@ -210,9 +210,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   // ── Derived state ──────────────────────────────────────────────────────────
   const subtotal = useMemo(() => {
     return quoteItems.reduce((acc, item) => {
-      const itemTotal = item.unitPrice * item.quantity;
-      const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
-      return acc + itemTotal + adicionalesTotal;
+      return acc + item.unitPrice * item.quantity;
     }, 0);
   }, [quoteItems]);
 
@@ -471,7 +469,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           description: item.description,
           unit_price: item.unitPrice,
           quantity: item.quantity,
-          subtotal: item.unitPrice * item.quantity + item.adicionales.reduce((a, ad) => a + ad.price, 0),
+          subtotal: item.unitPrice * item.quantity,
           sort_order: i,
           module_description: item.moduleDescriptionSections ?? null,
           additionals: item.adicionales.map((ad) => ({
@@ -584,7 +582,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           description: item.description,
           unit_price: item.unitPrice,
           quantity: item.quantity,
-          subtotal: item.unitPrice * item.quantity + item.adicionales.reduce((a, ad) => a + ad.price, 0),
+          subtotal: item.unitPrice * item.quantity,
           sort_order: i,
           module_description: item.moduleDescriptionSections ?? null,
           additionals: item.adicionales.map((ad) => ({

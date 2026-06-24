@@ -1,7 +1,7 @@
 "use client"
 
 import { MainLayout } from "@/components/layout/main-layout"
-import { TaskManagement } from "@/components/admin/task-management"
+import { TaskManagement } from "@/components/admin/tasks/task-management"
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard"
 
 export default function AdminTasksPage() {

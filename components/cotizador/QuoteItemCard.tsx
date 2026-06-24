@@ -116,7 +116,6 @@ export function QuoteItemCard({
 
   const itemSubtotal = item.unitPrice * item.quantity;
   const adicionalesTotal = item.adicionales.reduce((a, ad) => a + ad.price, 0);
-  const total = itemSubtotal + adicionalesTotal;
 
   const canHaveAdicionales =
     item.type === "standard_module" || item.type === "custom_module";
@@ -221,18 +220,18 @@ export function QuoteItemCard({
                     <>
                       <span className="text-sm font-semibold tabular-nums leading-tight">
                         {currency === "USD"
-                          ? formatUSD(total)
-                          : formatARS(total)}
+                          ? formatUSD(itemSubtotal)
+                          : formatARS(itemSubtotal)}
                       </span>
                       <span className="text-[10px] text-muted-foreground tabular-nums leading-tight">
                         {currency === "USD"
-                          ? formatARS(total * exchangeRate.venta)
-                          : formatUSD(total / exchangeRate.venta)}
+                          ? formatARS(itemSubtotal * exchangeRate.venta)
+                          : formatUSD(itemSubtotal / exchangeRate.venta)}
                       </span>
                     </>
                   ) : (
                     <span className="text-sm font-semibold tabular-nums">
-                      {formatARS(total)}
+                      {formatARS(itemSubtotal)}
                     </span>
                   )}
                 </div>
@@ -473,28 +472,28 @@ export function QuoteItemCard({
               </div>
             )}
 
-            {/* Total con adicionales */}
+            {/* Total de adicionales (no suma al ítem) */}
             {adicionalesTotal > 0 && (
               <div className="text-xs text-right text-muted-foreground border-t pt-2">
-                Subtotal:{" "}
+                Adicionales (no incluidos):{" "}
                 {exchangeRate ? (
                   <>
                     <span className="font-semibold tabular-nums text-foreground">
                       {currency === "USD"
-                        ? formatUSD(total)
-                        : formatARS(total)}
+                        ? formatUSD(adicionalesTotal)
+                        : formatARS(adicionalesTotal)}
                     </span>
                     <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
                       (
                       {currency === "USD"
-                        ? formatARS(total * exchangeRate.venta)
-                        : formatUSD(total / exchangeRate.venta)}
+                        ? formatARS(adicionalesTotal * exchangeRate.venta)
+                        : formatUSD(adicionalesTotal / exchangeRate.venta)}
                       )
                     </span>
                   </>
                 ) : (
                   <span className="font-semibold tabular-nums text-foreground">
-                    {formatARS(total)}
+                    {formatARS(adicionalesTotal)}
                   </span>
                 )}
               </div>

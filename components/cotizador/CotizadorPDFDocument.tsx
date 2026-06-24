@@ -457,9 +457,7 @@ export function CotizadorPDFDocument({
   const serviceItems = items.filter((i) => i.type === 'service');
 
   const calculateItemTotal = (item: CotizadorItem) => {
-    const base = item.basePrice * item.quantity;
-    const adds = item.adicionales.reduce((a, ad) => a + ad.price, 0);
-    return base + adds;
+    return item.basePrice * item.quantity;
   };
 
   const subtotalStandard = standardItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
@@ -515,7 +513,7 @@ export function CotizadorPDFDocument({
           <View style={styles.adicionalesSection}>
             <View style={styles.adicionalesRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.adicionalesLabel}>Opcionales</Text>
+                <Text style={styles.adicionalesLabel}>Adicionales (no incluidos en el total)</Text>
               </View>
               <View style={{ width: 100 }} />
             </View>
