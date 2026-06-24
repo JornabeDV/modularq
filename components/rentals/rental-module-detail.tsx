@@ -100,8 +100,8 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => router.push("/rentals/modules")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => router.push("/rentals/modules")}>
+            <ArrowLeft className="h-4 w-4" />
             Volver
           </Button>
           <div>
@@ -111,7 +111,7 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
         </div>
         <div className="flex items-center gap-2 sm:ml-auto">
           <Link href={`/rentals/modules/${moduleId}/history`}>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" className="cursor-pointer">
               Ver Historial
             </Button>
           </Link>
@@ -222,7 +222,7 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
                 </div>
               )}
               <Button
-                className="w-full"
+                className="w-full cursor-pointer"
                 variant="outline"
                 onClick={() => setShowReturnDialog(true)}
               >
@@ -316,10 +316,10 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowReturnDialog(false)} disabled={returning}>
+              <Button variant="outline" className="cursor-pointer" onClick={() => setShowReturnDialog(false)} disabled={returning}>
                 Cancelar
               </Button>
-              <Button onClick={handleReturn} disabled={returning}>
+              <Button onClick={handleReturn} disabled={returning} className="cursor-pointer">
                 {returning ? "Procesando..." : "Confirmar Devolución"}
               </Button>
             </div>
