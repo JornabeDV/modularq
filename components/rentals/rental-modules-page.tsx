@@ -83,7 +83,7 @@ export function RentalModulesPage() {
           <h1 className="text-2xl font-bold">Módulos de Alquiler</h1>
           <p className="text-muted-foreground">Gestión de activos en alquiler</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => router.push("/rentals/contracts")}>
+        <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => router.push("/rentals/contracts")}>
           <History className="h-4 w-4 mr-2" />
           Historial de Contratos
         </Button>
