@@ -128,7 +128,7 @@ export function DraggableTaskCard({
             )}
 
             <div className="flex-1 min-w-0">
-              <h5 className="font-medium text-sm sm:text-base truncate">
+              <h5 className="font-medium text-sm sm:text-base break-words">
                 {projectTask.task?.title}
               </h5>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -161,47 +161,47 @@ export function DraggableTaskCard({
             </div>
           </div>
 
-          {canEditUnassigned && (
-            <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
-              <Button
-                size="sm"
-                variant="default"
-                className="cursor-pointer flex items-center gap-1"
-                onClick={handleEditClick}
-              >
-                <Edit className="h-3 w-3" />
-                Editar
-              </Button>
-            </div>
-          )}
-          {canDeleteTask && (
-            <div className="flex justify-end sm:justify-start sm:flex-shrink-0">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="cursor-pointer"
-                  >
-                    {deleteButtonLabel}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Eliminar tarea?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta acción elimina la tarea del proyecto. ¿Seguro que
-                      querés continuar?
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteClick}>
+          {(canEditUnassigned || canDeleteTask) && (
+            <div className="flex flex-row gap-2">
+              {canEditUnassigned && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="cursor-pointer flex items-center gap-1 flex-1 sm:flex-initial"
+                  onClick={handleEditClick}
+                >
+                  <Edit className="h-3 w-3" />
+                  Editar
+                </Button>
+              )}
+              {canDeleteTask && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="cursor-pointer flex-1 sm:flex-initial"
+                    >
                       {deleteButtonLabel}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Eliminar tarea?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción elimina la tarea del proyecto. ¿Seguro que
+                        querés continuar?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteClick}>
+                        {deleteButtonLabel}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           )}
         </div>

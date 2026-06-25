@@ -256,7 +256,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       {/* Toggle sidebar */}
-      <div className={cn("p-2 border-t", collapsed && "flex justify-center")}>
+      <div className={cn("p-2 max-sm:hidden border-t", collapsed && "flex justify-center")}>
         {collapsed ? (
           <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>

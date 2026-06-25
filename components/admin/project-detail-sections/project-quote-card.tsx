@@ -101,9 +101,9 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
                 }
                 return (
                   <>
-                    <span className="text-sm font-bold tabular-nums">{formatUSD(quote.total, 1)}</span>
+                    <span className="text-sm sm:text-base font-bold tabular-nums">{formatUSD(quote.total, 1)}</span>
                     {todayRate > 0 && (
-                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                      <span className="text-xs sm:text-sm text-muted-foreground tabular-nums">
                         {formatARS(quote.total * todayRate)}
                       </span>
                     )}
@@ -115,8 +115,8 @@ export function ProjectQuoteCard({ quote }: ProjectQuoteCardProps) {
               if (rate > 0) {
                 return (
                   <>
-                    <span className="text-sm font-bold tabular-nums">{formatUSD(quote.total, rate)}</span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">{formatARS(quote.total)}</span>
+                    <span className="text-sm sm:text-base font-bold tabular-nums">{formatUSD(quote.total, rate)}</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground tabular-nums">{formatARS(quote.total)}</span>
                   </>
                 );
               }
