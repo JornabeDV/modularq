@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PriceInput } from "@/components/ui/price-input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
@@ -88,7 +88,7 @@ export function RentalContractForm({ rentalModuleId, onClose, onSuccess, prefill
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg h-full sm:h-auto max-h-screen sm:max-h-[calc(100vh-4rem)] rounded-none sm:rounded-lg top-0 sm:top-[50%] translate-y-0 sm:translate-y-[-50%]">
         <DialogHeader>
           <DialogTitle>Nuevo Contrato de Alquiler</DialogTitle>
         </DialogHeader>
@@ -96,7 +96,7 @@ export function RentalContractForm({ rentalModuleId, onClose, onSuccess, prefill
           <div className="space-y-2">
             <Label>Cliente *</Label>
             <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar cliente" />
               </SelectTrigger>
               <SelectContent>
@@ -109,7 +109,7 @@ export function RentalContractForm({ rentalModuleId, onClose, onSuccess, prefill
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Fecha de Inicio *</Label>
               <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
@@ -220,7 +220,7 @@ export function RentalContractForm({ rentalModuleId, onClose, onSuccess, prefill
             <div className="space-y-2">
               <Label>Moneda</Label>
               <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,14 +236,14 @@ export function RentalContractForm({ rentalModuleId, onClose, onSuccess, prefill
             <Input value={formData.delivery_notes} onChange={(e) => setFormData({ ...formData, delivery_notes: e.target.value })} />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+          <DialogFooter className="pt-2 flex">
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto max-sm:order-2">
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto max-sm:order-1">
               {loading ? "Guardando..." : "Crear Contrato"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

@@ -14,15 +14,16 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Trash2 } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 
 interface DeleteProjectButtonProps {
   projectId: string
   projectName: string
   onDelete: (projectId: string) => void
+  className?: string
 }
 
-export function DeleteProjectButton({ projectId, projectName, onDelete }: DeleteProjectButtonProps) {
+export function DeleteProjectButton({ projectId, projectName, onDelete, className }: DeleteProjectButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
@@ -35,21 +36,14 @@ export function DeleteProjectButton({ projectId, projectName, onDelete }: Delete
   }
 
   return (
-    <TooltipProvider>
-      <AlertDialog>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={isDeleting} className="cursor-pointer">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Eliminar proyecto</p>
-          </TooltipContent>
-        </Tooltip>
-        <AlertDialogContent>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" disabled={isDeleting} className={cn("cursor-pointer", className)}>
+          <Trash2 className="h-4 w-4" />
+          <span className="ml-2">Eliminar</span>
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar proyecto?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -68,7 +62,6 @@ export function DeleteProjectButton({ projectId, projectName, onDelete }: Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
-    </TooltipProvider>
+    </AlertDialog>
   )
 }

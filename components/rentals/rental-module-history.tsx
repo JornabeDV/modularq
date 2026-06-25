@@ -42,14 +42,14 @@ export function RentalModuleHistory({ moduleId }: { moduleId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" onClick={() => router.push(`/rentals/modules/${moduleId}`)} className="cursor-pointer">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <Button variant="outline" size="sm" onClick={() => router.push(`/rentals/modules/${moduleId}`)} className="cursor-pointer self-start">
           <ArrowLeft className="h-4 w-4" />
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Historial de Alquileres</h1>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Historial de Alquileres</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             {module.code} — {module.name}
           </p>
         </div>
