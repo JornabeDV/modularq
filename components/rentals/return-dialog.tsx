@@ -109,11 +109,11 @@ export function ReturnDialog({ contractId, moduleName, onClose, onSuccess }: Ret
             <Label>Notas de Devolución</Label>
             <Input value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} placeholder="Estado del módulo, observaciones..." />
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+          <div className="flex max-sm:flex-col justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" className="cursor-pointer max-sm:flex-1" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="cursor-pointer max-sm:flex-1">
               {loading ? "Procesando..." : "Confirmar Devolución"}
             </Button>
           </div>
