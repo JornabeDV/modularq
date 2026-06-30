@@ -47,9 +47,9 @@ export function PurchaseOrderPDFButton({
     <Button
       type="button"
       variant={variant}
-      size={size}
       onClick={handleDownload}
       disabled={isGenerating}
+      className="cursor-pointer"
     >
       {isGenerating ? (
         <Loader2 className="h-4 w-4 animate-spin mr-1" />

@@ -2243,7 +2243,12 @@ export class PrismaTypedService {
     const { data, error } = await supabase
       .from('purchase_orders')
       .select(
-        '*, supplier:suppliers(*), items:purchase_order_items(*, material:materials(id, code, name, unit)), attachments:purchase_order_attachments(*)'
+        `*,
+        supplier:suppliers(*),
+        purchase_request:purchase_requests(id, request_number, status),
+        items:purchase_order_items(*, material:materials(id, code, name, unit)),
+        attachments:purchase_order_attachments(*),
+        receipts:purchase_order_receipts(*, items:purchase_order_receipt_items(*, material:materials(id, code, name, unit)))`
       )
       .eq('id', id)
       .single()
@@ -2277,6 +2282,7 @@ export class PrismaTypedService {
   static async createPurchaseOrder(input: {
     order_number: string
     supplier_id: string
+    purchase_request_id?: string
     status?: string
     subtotal?: number
     tax_pct?: number
@@ -2303,6 +2309,7 @@ export class PrismaTypedService {
       .insert({
         order_number: orderData.order_number,
         supplier_id: orderData.supplier_id,
+        purchase_request_id: orderData.purchase_request_id ?? null,
         status: orderData.status ?? 'draft',
         subtotal: orderData.subtotal ?? 0,
         tax_pct: orderData.tax_pct ?? 21,
@@ -2341,6 +2348,7 @@ export class PrismaTypedService {
     id: string,
     input: {
       supplier_id?: string
+      purchase_request_id?: string | null
       status?: string
       subtotal?: number
       tax_pct?: number
@@ -2363,12 +2371,17 @@ export class PrismaTypedService {
   ) {
     const { items, ...orderData } = input
 
+    const updatePayload: Record<string, unknown> = {
+      ...orderData,
+      updated_at: new Date().toISOString(),
+    }
+    if (orderData.purchase_request_id === null) {
+      updatePayload.purchase_request_id = null
+    }
+
     const { error: orderError } = await supabase
       .from('purchase_orders')
-      .update({
-        ...orderData,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', id)
 
     if (orderError) throw orderError
@@ -2408,48 +2421,470 @@ export class PrismaTypedService {
 
   static async updatePurchaseOrderStatus(
     id: string,
-    status: 'draft' | 'pending' | 'approved' | 'received' | 'cancelled'
+    status: 'draft' | 'pending' | 'approved' | 'partial_received' | 'received' | 'cancelled'
   ) {
     const now = new Date().toISOString()
     const updateData: Record<string, unknown> = { status, updated_at: now }
 
     if (status === 'received') {
       updateData.received_at = now
-
-      // Obtener items con material_id para actualizar stock
-      const { data: items, error: itemsError } = await supabase
-        .from('purchase_order_items')
-        .select('material_id, quantity')
-        .eq('purchase_order_id', id)
-        .not('material_id', 'is', null)
-
-      if (itemsError) throw itemsError
-
-      if (items && items.length > 0) {
-        for (const item of items) {
-          const { data: material, error: materialError } = await supabase
-            .from('materials')
-            .select('stock_quantity')
-            .eq('id', item.material_id)
-            .single()
-
-          if (materialError) throw materialError
-
-          const newStock = (material.stock_quantity ?? 0) + (item.quantity ?? 0)
-          const { error: updateError } = await supabase
-            .from('materials')
-            .update({ stock_quantity: newStock })
-            .eq('id', item.material_id)
-
-          if (updateError) throw updateError
-        }
-      }
     }
 
     const { error } = await supabase
       .from('purchase_orders')
       .update(updateData)
       .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE REQUESTS ====================
+
+  static async getAllPurchaseRequests(filters?: { status?: string; search?: string }) {
+    let query = supabase
+      .from('purchase_requests')
+      .select(
+        `*,
+        items:purchase_request_items(*, material:materials(id, code, name, unit)),
+        supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name)),
+        purchase_orders:purchase_orders(id, order_number, status, total)`
+      )
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+
+    const { data, error } = await query
+    if (error) throw error
+
+    if (filters?.search && data) {
+      const term = filters.search.toLowerCase()
+      return data.filter((r: any) =>
+        r.request_number?.toLowerCase().includes(term) ||
+        r.notes?.toLowerCase().includes(term)
+      )
+    }
+
+    return data ?? []
+  }
+
+  static async getPurchaseRequestById(id: string) {
+    const { data, error } = await supabase
+      .from('purchase_requests')
+      .select(
+        `*,
+        items:purchase_request_items(*, material:materials(id, code, name, unit)),
+        supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name, contact_name)),
+        purchase_orders:purchase_orders(id, order_number, status, total, supplier:suppliers(id, name))`
+      )
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async getNextPurchaseRequestNumber(): Promise<string> {
+    const year = new Date().getFullYear()
+    const prefix = `PED-${year}-`
+
+    const { data, error } = await supabase
+      .from('purchase_requests')
+      .select('request_number')
+      .ilike('request_number', `${prefix}%`)
+      .order('request_number', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const last = data[0].request_number as string
+      const match = last.match(/-(\d+)$/)
+      if (match) nextNum = parseInt(match[1], 10) + 1
+    }
+
+    return `${prefix}${String(nextNum).padStart(4, '0')}`
+  }
+
+  static async createPurchaseRequest(input: {
+    request_number?: string
+    status?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      material_id?: string
+      description: string
+      quantity: number
+      unit: string
+    }>
+  }) {
+    const { items, ...requestData } = input
+    const requestNumber = requestData.request_number ?? (await this.getNextPurchaseRequestNumber())
+
+    const { data: request, error: requestError } = await supabase
+      .from('purchase_requests')
+      .insert({
+        request_number: requestNumber,
+        status: requestData.status ?? 'draft',
+        notes: requestData.notes ?? null,
+        created_by: requestData.created_by ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (requestError) throw requestError
+
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_request_items').insert(
+        items.map((item) => ({
+          purchase_request_id: request.id,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+        }))
+      )
+      if (itemsError) throw itemsError
+    }
+
+    return this.getPurchaseRequestById(request.id)
+  }
+
+  static async updatePurchaseRequest(
+    id: string,
+    input: {
+      status?: string
+      notes?: string
+      items?: Array<{
+        id?: string
+        material_id?: string
+        description: string
+        quantity: number
+        unit: string
+      }>
+    }
+  ) {
+    const { items, ...requestData } = input
+
+    const { error: requestError } = await supabase
+      .from('purchase_requests')
+      .update({
+        ...requestData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (requestError) throw requestError
+
+    if (items) {
+      const { error: deleteError } = await supabase
+        .from('purchase_request_items')
+        .delete()
+        .eq('purchase_request_id', id)
+      if (deleteError) throw deleteError
+
+      if (items.length > 0) {
+        const { error: itemsError } = await supabase.from('purchase_request_items').insert(
+          items.map((item) => ({
+            purchase_request_id: id,
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+          }))
+        )
+        if (itemsError) throw itemsError
+      }
+    }
+
+    return this.getPurchaseRequestById(id)
+  }
+
+  static async deletePurchaseRequest(id: string) {
+    const { error } = await supabase.from('purchase_requests').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== SUPPLIER QUOTES ====================
+
+  static async getSupplierQuotesByPurchaseRequest(purchaseRequestId: string) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .select('*, supplier:suppliers(*)')
+      .eq('purchase_request_id', purchaseRequestId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getSupplierQuoteById(id: string) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .select('*, supplier:suppliers(*), purchase_request:purchase_requests(id, request_number)')
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async createSupplierQuote(input: {
+    purchase_request_id: string
+    supplier_id: string
+    total?: number
+    quote_date?: string
+    valid_until?: string
+    file_url?: string
+    file_name?: string
+    status?: string
+    notes?: string
+  }) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .insert({
+        purchase_request_id: input.purchase_request_id,
+        supplier_id: input.supplier_id,
+        total: input.total ?? 0,
+        quote_date: input.quote_date ?? null,
+        valid_until: input.valid_until ?? null,
+        file_url: input.file_url ?? null,
+        file_name: input.file_name ?? null,
+        status: input.status ?? 'draft',
+        notes: input.notes ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return this.getSupplierQuoteById(data.id)
+  }
+
+  static async updateSupplierQuote(
+    id: string,
+    input: {
+      supplier_id?: string
+      total?: number
+      quote_date?: string
+      valid_until?: string
+      file_url?: string
+      file_name?: string
+      status?: string
+      notes?: string
+    }
+  ) {
+    const updateData: Record<string, unknown> = {
+      ...input,
+      updated_at: new Date().toISOString(),
+    }
+    if (input.file_url === null) updateData.file_url = null
+    if (input.file_name === null) updateData.file_name = null
+
+    const { error } = await supabase
+      .from('supplier_quotes')
+      .update(updateData)
+      .eq('id', id)
+
+    if (error) throw error
+    return this.getSupplierQuoteById(id)
+  }
+
+  static async deleteSupplierQuote(id: string) {
+    const { error } = await supabase.from('supplier_quotes').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE ORDER RECEIPTS ====================
+
+  static async getPurchaseOrderReceipts(purchaseOrderId: string) {
+    const { data, error } = await supabase
+      .from('purchase_order_receipts')
+      .select(
+        `*,
+        items:purchase_order_receipt_items(*, material:materials(id, code, name, unit), purchase_order_item:purchase_order_items(id, description, quantity))`
+      )
+      .eq('purchase_order_id', purchaseOrderId)
+      .order('received_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async createPurchaseOrderReceipt(input: {
+    purchase_order_id: string
+    receipt_number?: string
+    remito_number?: string
+    remito_file_url?: string
+    remito_file_name?: string
+    notes?: string
+    items: Array<{
+      purchase_order_item_id: string
+      material_id?: string
+      description: string
+      quantity_received: number
+    }>
+  }) {
+    const { items, ...receiptData } = input
+
+    const { data: receipt, error: receiptError } = await supabase
+      .from('purchase_order_receipts')
+      .insert({
+        purchase_order_id: receiptData.purchase_order_id,
+        receipt_number: receiptData.receipt_number ?? null,
+        remito_number: receiptData.remito_number ?? null,
+        remito_file_url: receiptData.remito_file_url ?? null,
+        remito_file_name: receiptData.remito_file_name ?? null,
+        notes: receiptData.notes ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (receiptError) throw receiptError
+
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_order_receipt_items').insert(
+        items.map((item) => ({
+          receipt_id: receipt.id,
+          purchase_order_item_id: item.purchase_order_item_id,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity_received: item.quantity_received,
+        }))
+      )
+      if (itemsError) throw itemsError
+
+      // Actualizar stock por cada ítem con material_id
+      for (const item of items) {
+        if (!item.material_id) continue
+
+        const { data: material, error: materialError } = await supabase
+          .from('materials')
+          .select('stock_quantity')
+          .eq('id', item.material_id)
+          .single()
+
+        if (materialError) throw materialError
+
+        const newStock = (material.stock_quantity ?? 0) + (item.quantity_received ?? 0)
+        const { error: updateError } = await supabase
+          .from('materials')
+          .update({ stock_quantity: newStock })
+          .eq('id', item.material_id)
+
+        if (updateError) throw updateError
+      }
+    }
+
+    // Recalcular estado de la orden según cantidades recibidas
+    await this.recalculatePurchaseOrderStatus(receiptData.purchase_order_id)
+
+    return this.getPurchaseOrderReceiptById(receipt.id)
+  }
+
+  static async getPurchaseOrderReceiptById(id: string) {
+    const { data, error } = await supabase
+      .from('purchase_order_receipts')
+      .select(
+        `*,
+        items:purchase_order_receipt_items(*, material:materials(id, code, name, unit), purchase_order_item:purchase_order_items(id, description, quantity))`
+      )
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async deletePurchaseOrderReceipt(id: string) {
+    // Obtener ítems para ajustar stock (restar lo recibido)
+    const { data: receipt, error: fetchError } = await supabase
+      .from('purchase_order_receipts')
+      .select('purchase_order_id, items:purchase_order_receipt_items(material_id, quantity_received)')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    if (receipt?.items) {
+      for (const item of receipt.items as any[]) {
+        if (!item.material_id) continue
+
+        const { data: material, error: materialError } = await supabase
+          .from('materials')
+          .select('stock_quantity')
+          .eq('id', item.material_id)
+          .single()
+
+        if (materialError) throw materialError
+
+        const newStock = Math.max(0, (material.stock_quantity ?? 0) - (item.quantity_received ?? 0))
+        const { error: updateError } = await supabase
+          .from('materials')
+          .update({ stock_quantity: newStock })
+          .eq('id', item.material_id)
+
+        if (updateError) throw updateError
+      }
+    }
+
+    const purchaseOrderId = receipt.purchase_order_id
+    const { error } = await supabase.from('purchase_order_receipts').delete().eq('id', id)
+    if (error) throw error
+
+    await this.recalculatePurchaseOrderStatus(purchaseOrderId)
+  }
+
+  static async recalculatePurchaseOrderStatus(purchaseOrderId: string) {
+    // Obtener ítems de la orden con cantidad pedida
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('purchase_order_items')
+      .select('id, quantity')
+      .eq('purchase_order_id', purchaseOrderId)
+
+    if (itemsError) throw itemsError
+    if (!orderItems || orderItems.length === 0) return
+
+    const itemIds = orderItems.map((i: any) => i.id)
+
+    // Obtener cantidades recibidas por ítem
+    const { data: receivedItems, error: receivedError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('purchase_order_item_id, quantity_received')
+      .in('purchase_order_item_id', itemIds)
+
+    if (receivedError) throw receivedError
+
+    const receivedByItem: Record<string, number> = {}
+    for (const ri of receivedItems || []) {
+      receivedByItem[ri.purchase_order_item_id] =
+        (receivedByItem[ri.purchase_order_item_id] || 0) + (ri.quantity_received ?? 0)
+    }
+
+    const totalOrdered = orderItems.reduce((sum: number, i: any) => sum + (i.quantity ?? 0), 0)
+    const totalReceived = Object.values(receivedByItem).reduce((sum: number, q: number) => sum + q, 0)
+
+    let newStatus: string | null = null
+    if (totalReceived === 0) {
+      newStatus = 'approved'
+    } else if (totalReceived >= totalOrdered) {
+      newStatus = 'received'
+    } else {
+      newStatus = 'partial_received'
+    }
+
+    const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() }
+    if (newStatus === 'received') {
+      const { data: current } = await supabase
+        .from('purchase_orders')
+        .select('received_at')
+        .eq('id', purchaseOrderId)
+        .single()
+      if (!current?.received_at) {
+        updateData.received_at = new Date().toISOString()
+      }
+    } else {
+      updateData.received_at = null
+    }
+
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update(updateData)
+      .eq('id', purchaseOrderId)
 
     if (error) throw error
   }
@@ -2759,6 +3194,12 @@ export type {
   PurchaseOrderItem,
   PurchaseOrderAttachment,
   PurchaseOrderStatus,
+  PurchaseRequest,
+  PurchaseRequestItem,
+  PurchaseRequestStatus,
+  SupplierQuote,
+  PurchaseOrderReceipt,
+  PurchaseOrderReceiptItem,
 } from './generated/prisma/index'
 
 // Re-exportar tipos del módulo de presupuestos

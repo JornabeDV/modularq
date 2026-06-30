@@ -32,7 +32,7 @@ export function QuoteStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Total Cotizaciones</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Total Cotizaciones</p>
             <p className="text-lg sm:text-xl font-bold">{totalQuotes}</p>
           </div>
           <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
@@ -42,7 +42,7 @@ export function QuoteStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Tasa de Aprobación</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Tasa de Aprobación</p>
             <p
               className={`text-lg sm:text-xl font-bold ${
                 approvedRate >= 50
@@ -70,7 +70,7 @@ export function QuoteStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Monto Total Aprobado
             </p>
             <p className="text-lg sm:text-xl font-bold">
@@ -99,7 +99,7 @@ export function QuoteStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Cotizaciones Pendientes
             </p>
             <p

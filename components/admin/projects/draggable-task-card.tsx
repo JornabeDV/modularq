@@ -151,7 +151,7 @@ export function DraggableTaskCard({
                 ) : (
                   <Badge
                     variant="outline"
-                    className="text-xs text-muted-foreground"
+                    className="text-xs sm:text-sm text-muted-foreground"
                   >
                     <User className="h-3 w-3 mr-1" />
                     Sin asignar

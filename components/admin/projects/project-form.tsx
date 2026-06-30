@@ -401,7 +401,7 @@ export function ProjectForm({
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{client.companyName}</p>
-                              <p className="text-xs text-muted-foreground">{client.cuit}</p>
+                              <p className="text-xs sm:text-sm text-muted-foreground">{client.cuit}</p>
                             </div>
                           </CommandItem>
                         ))}
@@ -441,7 +441,7 @@ export function ProjectForm({
                 </SelectContent>
               </Select>
               {approvedQuotes.length === 0 && !quotesLoading && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   No hay cotizaciones aprobadas sin proyecto asociado.
                 </p>
               )}

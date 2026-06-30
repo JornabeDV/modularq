@@ -452,7 +452,7 @@ export function DailySurveyTaskCard({
                     <div className="flex items-center justify-between w-full">
                       <span>En Progreso</span>
                       {REQUIRE_OPERARIO_FOR_TASK && !hasOperario && (
-                        <span className="text-xs text-muted-foreground ml-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                           (Requiere operario)
                         </span>
                       )}
@@ -468,7 +468,7 @@ export function DailySurveyTaskCard({
                     <div className="flex items-center justify-between w-full">
                       <span>Completada</span>
                       {REQUIRE_OPERARIO_FOR_TASK && !hasOperario && (
-                        <span className="text-xs text-muted-foreground ml-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                           (Requiere operario)
                         </span>
                       )}

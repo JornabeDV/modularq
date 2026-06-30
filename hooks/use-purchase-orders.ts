@@ -27,14 +27,48 @@ export interface PurchaseOrderAttachment {
   uploaded_at: string
 }
 
+export interface PurchaseOrderReceiptItem {
+  id: string
+  receipt_id: string
+  purchase_order_item_id: string
+  material_id?: string
+  material?: {
+    id: string
+    code: string
+    name: string
+    unit: string
+  } | null
+  description: string
+  quantity_received: number
+}
+
+export interface PurchaseOrderReceipt {
+  id: string
+  purchase_order_id: string
+  receipt_number?: string
+  remito_number?: string
+  remito_file_url?: string
+  remito_file_name?: string
+  notes?: string
+  received_at: string
+  items: PurchaseOrderReceiptItem[]
+}
+
 export interface PurchaseOrder {
   id: string
   order_number: string
   supplier_id: string
   supplier: Supplier
-  status: 'draft' | 'pending' | 'approved' | 'received' | 'cancelled'
+  purchase_request_id?: string
+  purchase_request?: {
+    id: string
+    request_number: string
+    status: string
+  } | null
+  status: 'draft' | 'pending' | 'approved' | 'partial_received' | 'received' | 'cancelled'
   items: PurchaseOrderItem[]
   attachments: PurchaseOrderAttachment[]
+  receipts: PurchaseOrderReceipt[]
   subtotal: number
   tax_pct: number
   tax_amount: number
@@ -51,6 +85,7 @@ export interface PurchaseOrder {
 
 export interface CreatePurchaseOrderData {
   supplier_id: string
+  purchase_request_id?: string
   status?: string
   subtotal?: number
   tax_pct?: number
@@ -73,6 +108,7 @@ export interface CreatePurchaseOrderData {
 
 export interface UpdatePurchaseOrderData {
   supplier_id?: string
+  purchase_request_id?: string | null
   status?: string
   subtotal?: number
   tax_pct?: number
@@ -90,6 +126,20 @@ export interface UpdatePurchaseOrderData {
     unit: string
     unit_price: number
     total_price: number
+  }>
+}
+
+export interface CreateReceiptData {
+  receipt_number?: string
+  remito_number?: string
+  remito_file_url?: string
+  remito_file_name?: string
+  notes?: string
+  items: Array<{
+    purchase_order_item_id: string
+    material_id?: string
+    description: string
+    quantity_received: number
   }>
 }
 
@@ -189,6 +239,43 @@ export function usePurchaseOrders() {
     await fetchPurchaseOrders(undefined, true)
   }
 
+  const fetchReceipts = async (orderId: string): Promise<PurchaseOrderReceipt[]> => {
+    const response = await fetch(`/api/purchase-orders/${orderId}/receipts`)
+    if (!response.ok) throw new Error('Error al cargar recepciones')
+    const data = await response.json()
+    return data.receipts ?? []
+  }
+
+  const createReceipt = async (orderId: string, data: CreateReceiptData): Promise<PurchaseOrderReceipt> => {
+    const response = await fetch(`/api/purchase-orders/${orderId}/receipts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Error al crear recepción')
+    }
+
+    const result = await response.json()
+    await fetchPurchaseOrders(undefined, true)
+    return result.receipt
+  }
+
+  const deleteReceipt = async (orderId: string, receiptId: string): Promise<void> => {
+    const response = await fetch(`/api/purchase-orders/${orderId}/receipts/${receiptId}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Error al eliminar recepción')
+    }
+
+    await fetchPurchaseOrders(undefined, true)
+  }
+
   useEffect(() => {
     fetchPurchaseOrders()
   }, [])
@@ -203,5 +290,8 @@ export function usePurchaseOrders() {
     updatePurchaseOrder,
     deletePurchaseOrder,
     updatePurchaseOrderStatus,
+    fetchReceipts,
+    createReceipt,
+    deleteReceipt,
   }
 }

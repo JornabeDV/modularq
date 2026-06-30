@@ -30,6 +30,7 @@ export async function PUT(
 
     const purchaseOrder = await PrismaTypedService.updatePurchaseOrder(id, {
       supplier_id: body.supplier_id,
+      purchase_request_id: body.purchase_request_id,
       status: body.status,
       subtotal: body.subtotal,
       tax_pct: body.tax_pct,

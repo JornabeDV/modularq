@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     const purchaseOrder = await PrismaTypedService.createPurchaseOrder({
       order_number: orderNumber,
       supplier_id: body.supplier_id,
+      purchase_request_id: body.purchase_request_id,
       status: body.status ?? 'draft',
       subtotal: body.subtotal ?? 0,
       tax_pct: body.tax_pct ?? 21,

@@ -480,7 +480,7 @@ export function MaterialForm({
                 </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               {isEditing
                 ? "Código único del material (no editable)"
                 : "Código generado automáticamente según categoría"}
@@ -519,7 +519,7 @@ export function MaterialForm({
               nameInputFocused &&
               similarMaterials.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white dark:bg-card border rounded-md shadow-lg max-h-48 overflow-auto">
-                  <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                  <div className="px-3 py-2 text-xs sm:text-sm text-muted-foreground border-b">
                     Materiales similares encontrados:
                   </div>
                   {similarMaterials.map((material) => (
@@ -531,7 +531,7 @@ export function MaterialForm({
                     >
                       <div>
                         <span className="font-medium">{material.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                           ({material.code})
                         </span>
                       </div>
@@ -657,7 +657,7 @@ export function MaterialForm({
                 }}
                 placeholder="0"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Alerta cuando el stock esté por debajo
               </p>
             </div>

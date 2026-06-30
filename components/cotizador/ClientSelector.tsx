@@ -80,7 +80,7 @@ export function ClientSelector({
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{client.companyName}</p>
-                    <p className="text-xs text-muted-foreground">{client.cuit}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{client.cuit}</p>
                   </div>
                 </CommandItem>
               ))}

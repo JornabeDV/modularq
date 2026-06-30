@@ -249,7 +249,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
         {localMaterials.length > 0 && (
           <table className="w-full text-sm mb-4">
             <thead>
-              <tr className="text-xs text-muted-foreground border-b">
+              <tr className="text-xs sm:text-sm text-muted-foreground border-b">
                 <th className="text-left py-1 font-medium">Material</th>
                 <th className="text-left py-1 font-medium hidden sm:table-cell">
                   Categoría
@@ -264,7 +264,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                 <tr key={item.id} className="border-b last:border-0">
                   <td className="py-1.5">
                     <span className="font-medium">{item.material.name}</span>
-                    <span className="text-xs text-muted-foreground ml-1">
+                    <span className="text-xs sm:text-sm text-muted-foreground ml-1">
                       ({item.material.code})
                     </span>
                   </td>
@@ -338,7 +338,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                             <span className="flex-1 truncate">
                               {m.code} - {m.name}
                             </span>
-                            <span className="ml-2 text-xs text-muted-foreground capitalize shrink-0">
+                            <span className="ml-2 text-xs sm:text-sm text-muted-foreground capitalize shrink-0">
                               {m.category}
                             </span>
                           </CommandItem>
@@ -393,7 +393,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                 >
                   {att.original_name}
                 </a>
-                <span className="text-xs text-muted-foreground shrink-0">
+                <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
                   {(att.size / 1024).toFixed(0)} KB
                 </span>
                 <Button
@@ -442,7 +442,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
               <p className="text-sm font-medium">
                 Arrastrá un PDF o hacé clic para seleccionar
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Solo archivos PDF · Máximo 10MB
               </p>
             </>

@@ -47,8 +47,7 @@ const adminNavigation = [
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
   { name: "Gestión de Proveedores", href: "/admin/suppliers", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
-  { name: "Órdenes de Compra", href: "/admin/purchase-orders", icon: ShoppingCart },
-  { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
+  { name: "Gestión de Compra", href: "/admin/purchase-management", icon: ShoppingCart },  { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
   { name: "Cotizaciones", href: "/quoter/history", icon: History },
   {
     name: "Módulos Estándar",
@@ -174,7 +173,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <p className="text-sm font-medium truncate">
                 {userProfile?.name || user?.email || "Usuario"}
               </p>
-              <p className="text-xs text-muted-foreground capitalize">
+              <p className="text-xs sm:text-sm text-muted-foreground capitalize">
                 {userProfile?.role || "Sin rol"}
               </p>
             </div>

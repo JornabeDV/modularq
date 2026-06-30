@@ -240,7 +240,6 @@ export function QuoteRow({
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
                     className="h-8 w-8 p-0 cursor-pointer"
                     asChild
                   >

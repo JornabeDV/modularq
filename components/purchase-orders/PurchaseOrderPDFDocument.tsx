@@ -270,6 +270,7 @@ const STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
   pending: "Pendiente",
   approved: "Aprobada",
+  partial_received: "Recibida parcial",
   received: "Recibida",
   cancelled: "Cancelada",
 }

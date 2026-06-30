@@ -76,7 +76,7 @@ export function MaterialRow({
               {UNIT_LABELS[material.unit] || material.unit}
             </span>
             {material.minStock > 0 && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 Mín: {material.minStock}
               </span>
             )}

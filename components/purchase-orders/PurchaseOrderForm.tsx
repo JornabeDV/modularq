@@ -8,12 +8,24 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { SupplierSelect } from "./SupplierSelect"
 import { CreateSupplierDialog } from "./CreateSupplierDialog"
 import { PurchaseOrderItemsTable, PurchaseOrderItemInput } from "./PurchaseOrderItemsTable"
 import { PurchaseOrderPDFButton } from "./PurchaseOrderPDFButton"
-import { Loader2, Save, ArrowLeft } from "lucide-react"
+import { PurchaseRequestSelect } from "@/components/purchase-management/PurchaseRequestSelect"
+import { PurchaseOrderReceiptsPanel } from "@/components/purchase-management/PurchaseOrderReceiptsPanel"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Loader2, Save, ArrowLeft, Package, CalendarIcon } from "lucide-react"
 
 interface PurchaseOrderFormProps {
   mode: "create" | "edit"
@@ -21,8 +33,16 @@ interface PurchaseOrderFormProps {
     id: string
     order_number: string
     supplier_id: string
+    purchase_request_id?: string
     status: string
-    items: PurchaseOrderItemInput[]
+    items: (PurchaseOrderItemInput & {
+      material?: {
+        id: string
+        code: string
+        name: string
+        unit: string
+      } | null
+    })[]
     subtotal: number
     tax_pct: number
     tax_amount: number
@@ -39,10 +59,16 @@ interface PurchaseOrderFormProps {
       address?: string
       cuit?: string
     }
+    purchase_request?: {
+      id: string
+      request_number: string
+    } | null
+    receipts?: Array<any>
     created_at: string
   }
   onSubmit: (data: {
     supplier_id: string
+    purchase_request_id?: string
     status: string
     subtotal: number
     tax_pct: number
@@ -62,13 +88,28 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const { toast } = useToast()
 
   const [supplierId, setSupplierId] = useState(initialData?.supplier_id || "")
+  const [purchaseRequestId, setPurchaseRequestId] = useState(initialData?.purchase_request_id || "")
   const [status, setStatus] = useState(initialData?.status || "draft")
   const [items, setItems] = useState<PurchaseOrderItemInput[]>(initialData?.items || [])
   const [taxPct, setTaxPct] = useState<number>(initialData?.tax_pct ?? 21)
   const [paymentTerms, setPaymentTerms] = useState(initialData?.payment_terms || "")
   const [deliveryTerms, setDeliveryTerms] = useState(initialData?.delivery_terms || "")
   const [deliveryDate, setDeliveryDate] = useState(initialData?.delivery_date || "")
+  const [deliveryDateOpen, setDeliveryDateOpen] = useState(false)
   const [notes, setNotes] = useState(initialData?.notes || "")
+
+  const currentYear = new Date().getFullYear()
+  const calendarStartMonth = new Date(currentYear, 0, 1)
+  const calendarEndMonth = new Date(currentYear + 10, 11, 31)
+
+  const formatDateLabel = (dateString: string) => {
+    if (!dateString) return null
+    return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+  }
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.total_price || 0), 0)
@@ -108,6 +149,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
 
     await onSubmit({
       supplier_id: supplierId,
+      purchase_request_id: purchaseRequestId || undefined,
       status,
       subtotal,
       tax_pct: taxPct,
@@ -148,25 +190,26 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header con acciones */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="flex flex-col items-start gap-3">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
+            className="cursor-pointer"
             size="sm"
-            onClick={() => router.push("/admin/purchase-orders")}
+            onClick={() => router.push("/admin/purchase-management?tab=orders")}
           >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Volver
+            <ArrowLeft className="h-4 w-4" /> Volver
           </Button>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             {mode === "create" ? "Nueva Orden de Compra" : `Orden ${initialData?.order_number}`}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          {pdfData && (
-            <PurchaseOrderPDFButton purchaseOrder={pdfData} />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {mode === "edit" && pdfData && (
+            <PurchaseOrderPDFButton purchaseOrder={pdfData} className="w-full sm:w-auto" />
           )}
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto cursor-pointer">
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
             ) : (
@@ -177,28 +220,40 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         </div>
       </div>
 
-      {/* Proveedor */}
-      <Card>
+      {/* Proveedor y pedido */}
+      <Card className="p-4 sm:p-6">
         <CardHeader>
-          <CardTitle className="text-base">Proveedor</CardTitle>
+          <CardTitle className="text-base">Proveedor y pedido</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
-              <Label htmlFor="supplier">Proveedor *</Label>
-              <SupplierSelect
-                value={supplierId}
-                onChange={setSupplierId}
-                placeholder="Seleccionar proveedor..."
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="supplier" className="mb-2">Proveedor *</Label>
+              <div className="flex flex-col sm:flex-row sm:items-end gap-2">
+                <div className="flex-1">
+                  <SupplierSelect
+                    value={supplierId}
+                    onChange={setSupplierId}
+                    placeholder="Seleccionar proveedor..."
+                  />
+                </div>
+                <CreateSupplierDialog onCreated={(id) => setSupplierId(id)} />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="purchase_request" className="mb-2">Pedido de materiales (opcional)</Label>
+              <PurchaseRequestSelect
+                value={purchaseRequestId}
+                onChange={setPurchaseRequestId}
+                placeholder="Seleccionar pedido..."
               />
             </div>
-            <CreateSupplierDialog onCreated={(id) => setSupplierId(id)} />
           </div>
         </CardContent>
       </Card>
 
       {/* Ítems */}
-      <Card>
+      <Card className="p-4 sm:p-6">
         <CardHeader>
           <CardTitle className="text-base">Ítems de la orden</CardTitle>
         </CardHeader>
@@ -208,14 +263,14 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       </Card>
 
       {/* Totales */}
-      <Card>
+      <Card className="p-4 sm:p-6">
         <CardHeader>
           <CardTitle className="text-base">Totales</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="tax_pct">IVA (%)</Label>
+              <Label htmlFor="tax_pct" className="mb-2">IVA (%)</Label>
               <Input
                 id="tax_pct"
                 type="number"
@@ -252,15 +307,42 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         </CardContent>
       </Card>
 
+      {/* Estado */}
+      <Card className="p-4 sm:p-6">
+        <CardHeader >
+          <CardTitle className="text-base">Estado de la orden</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="status" className="mb-2">Estado</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Borrador</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="approved">Aprobada</SelectItem>
+                  <SelectItem value="partial_received">Recibida parcial</SelectItem>
+                  <SelectItem value="received">Recibida</SelectItem>
+                  <SelectItem value="cancelled">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Condiciones */}
-      <Card>
+      <Card className="p-4 sm:p-6">
         <CardHeader>
           <CardTitle className="text-base">Condiciones comerciales</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="payment_terms">Condiciones de pago</Label>
+              <Label htmlFor="payment_terms" className="mb-2">Condiciones de pago</Label>
               <Input
                 id="payment_terms"
                 value={paymentTerms}
@@ -269,7 +351,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
               />
             </div>
             <div>
-              <Label htmlFor="delivery_terms">Términos de entrega</Label>
+              <Label htmlFor="delivery_terms" className="mb-2">Términos de entrega</Label>
               <Input
                 id="delivery_terms"
                 value={deliveryTerms}
@@ -278,16 +360,40 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
               />
             </div>
             <div>
-              <Label htmlFor="delivery_date">Fecha estimada de entrega</Label>
-              <Input
-                id="delivery_date"
-                type="date"
-                value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
-              />
+              <Label className="mb-2">Fecha estimada de entrega</Label>
+              <Popover open={deliveryDateOpen} onOpenChange={setDeliveryDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !deliveryDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formatDateLabel(deliveryDate) || "Seleccionar fecha"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    captionLayout="dropdown-years"
+                    startMonth={calendarStartMonth}
+                    endMonth={calendarEndMonth}
+                    selected={deliveryDate ? new Date(deliveryDate + "T00:00:00") : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDeliveryDate(date.toISOString().split("T")[0])
+                        setDeliveryDateOpen(false)
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="md:col-span-2">
-              <Label htmlFor="notes">Notas</Label>
+              <Label htmlFor="notes" className="mb-2">Notas</Label>
               <Textarea
                 id="notes"
                 value={notes}
@@ -299,6 +405,22 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           </div>
         </CardContent>
       </Card>
+
+      {/* Recepciones (solo edición) */}
+      {mode === "edit" && initialData && (
+        <PurchaseOrderReceiptsPanel
+          orderId={initialData.id}
+          items={initialData.items.map((item) => ({
+            id: item.id || "",
+            material_id: item.material_id,
+            material: item.material,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+          }))}
+          receipts={initialData.receipts || []}
+        />
+      )}
     </form>
   )
 }

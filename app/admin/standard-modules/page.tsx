@@ -117,7 +117,7 @@ function ModuleFormFields({
             onChange={(val) => setForm((f) => ({ ...f, base_price: val }))}
           />
           {exchangeRate && form.base_price && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs sm:text-sm text-muted-foreground">
               {formatARS((parseFloat(form.base_price.replace(",", ".")) || 0) * exchangeRate.venta)}
             </p>
           )}
@@ -355,7 +355,7 @@ export default function StandardModulesPage() {
                           >
                             {mod.is_active ? "Activo" : "Inactivo"}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs sm:text-sm text-muted-foreground">
                             {mod.materials.length} materiales ·{" "}
                             {mod.attachments.length} adjuntos
                           </span>

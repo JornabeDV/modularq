@@ -132,17 +132,17 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[520px] sm:min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[40px]"></TableHead>
               <TableHead>Material</TableHead>
               <TableHead>Descripción</TableHead>
-              <TableHead className="w-[100px]">Cantidad</TableHead>
-              <TableHead className="w-[110px]">Unidad</TableHead>
-              <TableHead className="w-[120px]">Precio Unit.</TableHead>
-              <TableHead className="w-[120px] text-right">Total</TableHead>
+              <TableHead className="w-[70px] sm:w-[100px]">Cantidad</TableHead>
+              <TableHead className="w-[80px] sm:w-[110px]">Unidad</TableHead>
+              <TableHead className="w-[100px] sm:w-[120px]">Precio Unit.</TableHead>
+              <TableHead className="w-[100px] sm:w-[120px] text-right">Total</TableHead>
               <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -166,7 +166,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                         handleUpdateItem(index, "material_id", value === "custom" ? undefined : value)
                       }
                     >
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full sm:w-[180px]">
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -180,7 +180,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                             <SelectItem key={m.id} value={m.id}>
                               <div className="flex items-center justify-between w-full gap-2">
                                 <span className="truncate">{m.code} - {m.name}</span>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                                   Stock: {m.stockQuantity}
                                 </span>
                               </div>
@@ -210,7 +210,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                       }}
                       onFocus={(e) => e.target.select()}
                       onBlur={() => handleQuantityBlur(index)}
-                      className="w-[90px]"
+                      className="w-full sm:w-[70px]"
                     />
                   </TableCell>
                   <TableCell>
@@ -218,7 +218,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                       value={item.unit}
                       onValueChange={(value) => handleUpdateItem(index, "unit", value)}
                     >
-                      <SelectTrigger className="w-[100px]">
+                      <SelectTrigger className="w-full sm:w-[100px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -243,7 +243,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                       }}
                       onFocus={(e) => e.target.select()}
                       onBlur={() => handlePriceBlur(index)}
-                      className="w-[100px]"
+                      className="w-full sm:w-[100px]"
                     />
                   </TableCell>
                   <TableCell className="text-right font-mono">
@@ -267,7 +267,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
         </Table>
       </div>
 
-      <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+      <Button type="button" variant="outline" className="cursor-pointer" onClick={handleAddItem}>
         <Plus className="h-4 w-4 mr-1" /> Agregar ítem
       </Button>
     </div>

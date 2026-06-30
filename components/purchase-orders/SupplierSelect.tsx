@@ -40,7 +40,7 @@ export function SupplierSelect({
             <SelectItem key={supplier.id} value={supplier.id}>
               {supplier.name}
               {supplier.contact_name && (
-                <span className="text-xs text-muted-foreground ml-1">
+                <span className="text-xs sm:text-sm text-muted-foreground ml-1">
                   ({supplier.contact_name})
                 </span>
               )}

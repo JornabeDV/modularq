@@ -81,21 +81,21 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
+        <Button type="button" variant="outline" className="cursor-pointer">
           <Plus className="h-4 w-4 mr-1" /> Nuevo
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
+      <DialogContent className="max-w-lg max-sm:w-[100dvw] max-sm:h-[100dvh] max-sm:!max-w-none max-sm:rounded-none max-sm:overflow-hidden max-sm:flex max-sm:flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col max-sm:h-full">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Nuevo Proveedor</DialogTitle>
             <DialogDescription>
               Complete los datos del proveedor. Solo el nombre es obligatorio.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 py-4 max-sm:flex-1 max-sm:overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
@@ -116,7 +116,7 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -138,7 +138,7 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cuit">CUIT</Label>
                 <Input
@@ -170,11 +170,20 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <DialogFooter className="shrink-0 flex-col max-sm:gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="max-sm:w-full max-sm:order-1"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="max-sm:w-full max-sm:order-2"
+            >
               {isSubmitting ? "Creando..." : "Crear Proveedor"}
             </Button>
           </DialogFooter>

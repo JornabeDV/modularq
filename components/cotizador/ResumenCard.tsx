@@ -114,7 +114,7 @@ export function ResumenCard({
           )}
         </div>
         {hasAdjustment && (
-          <p className="text-xs text-muted-foreground text-right">
+          <p className="text-xs sm:text-sm text-muted-foreground text-right">
             Diferencia: {fmtPrimary(finalTotal - subtotal)}
           </p>
         )}
@@ -223,7 +223,7 @@ export function ResumenCard({
         {savedQuote && (
           <div className="rounded-lg border bg-muted/40 px-3 py-2.5 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Guardada como</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Guardada como</span>
               <Badge variant="secondary">{savedQuote.number}</Badge>
             </div>
             <Link
