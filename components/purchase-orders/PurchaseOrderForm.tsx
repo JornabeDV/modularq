@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -82,9 +82,10 @@ interface PurchaseOrderFormProps {
     items: PurchaseOrderItemInput[]
   }) => Promise<void>
   isSubmitting?: boolean
+  onOrderChange?: (order: any) => void
 }
 
-export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = false }: PurchaseOrderFormProps) {
+export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = false, onOrderChange }: PurchaseOrderFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { getPurchaseOrder } = usePurchaseOrders()
@@ -93,6 +94,12 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const [purchaseRequestId, setPurchaseRequestId] = useState(initialData?.purchase_request_id || "")
   const [status, setStatus] = useState(initialData?.status || "draft")
   const [items, setItems] = useState<PurchaseOrderItemInput[]>(initialData?.items || [])
+
+  useEffect(() => {
+    if (initialData?.status) {
+      setStatus(initialData.status)
+    }
+  }, [initialData?.status])
   const [paymentTerms, setPaymentTerms] = useState(initialData?.payment_terms || "")
   const [deliveryTerms, setDeliveryTerms] = useState(initialData?.delivery_terms || "")
   const [deliveryDate, setDeliveryDate] = useState(initialData?.delivery_date || "")
@@ -361,18 +368,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
 
       {/* Recepciones (solo edición) */}
       {mode === "edit" && initialData && (
-        <PurchaseOrderReceiptsPanel
-          orderId={initialData.id}
-          items={initialData.items.map((item) => ({
-            id: item.id || "",
-            material_id: item.material_id,
-            material: item.material,
-            description: item.description,
-            quantity: item.quantity,
-            unit: item.unit,
-          }))}
-          receipts={initialData.receipts || []}
-        />
+        <PurchaseOrderReceiptsPanel orderId={initialData.id} onOrderChange={onOrderChange} />
       )}
 
       {/* Acciones al final del formulario */}

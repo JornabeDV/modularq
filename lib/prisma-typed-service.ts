@@ -2250,11 +2250,35 @@ export class PrismaTypedService {
         purchase_request:purchase_requests(id, request_number, status),
         items:purchase_order_items(*, material:materials(id, code, name, unit)),
         attachments:purchase_order_attachments(*),
-        receipts:purchase_order_receipts(*, items:purchase_order_receipt_items(*, material:materials(id, code, name, unit)))`
+        receipts:purchase_order_receipts(id, purchase_order_id, receipt_number, remito_number, remito_file_url, remito_file_name, notes, received_at)`
       )
       .eq('id', id)
       .single()
+
     if (error) throw error
+
+    // Cargar ítems de recepciones por separado para evitar problemas de join
+    if (data?.receipts && data.receipts.length > 0) {
+      const receiptIds = data.receipts.map((r: any) => r.id)
+      const { data: receiptItems, error: itemsError } = await supabase
+        .from('purchase_order_receipt_items')
+        .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+        .in('receipt_id', receiptIds)
+
+      if (itemsError) throw itemsError
+
+      const itemsByReceipt: Record<string, any[]> = {}
+      for (const item of receiptItems || []) {
+        if (!itemsByReceipt[item.receipt_id]) itemsByReceipt[item.receipt_id] = []
+        itemsByReceipt[item.receipt_id].push(item)
+      }
+
+      data.receipts = data.receipts.map((r: any) => ({
+        ...r,
+        items: itemsByReceipt[r.id] || [],
+      }))
+    }
+
     return data
   }
 
@@ -2389,16 +2413,40 @@ export class PrismaTypedService {
     if (orderError) throw orderError
 
     if (items) {
-      // Eliminar items existentes y recrear
-      const { error: deleteError } = await supabase
+      // Obtener items actuales para hacer upsert y preservar recepciones
+      const { data: existingItems, error: fetchError } = await supabase
         .from('purchase_order_items')
-        .delete()
+        .select('id')
         .eq('purchase_order_id', id)
-      if (deleteError) throw deleteError
 
-      if (items.length > 0) {
+      if (fetchError) throw fetchError
+
+      const existingIds = new Set((existingItems || []).map((i: any) => i.id))
+      const sentIds = new Set(items.map((item) => item.id).filter(Boolean) as string[])
+
+      // Actualizar items existentes
+      const itemsToUpdate = items.filter((item) => item.id && existingIds.has(item.id))
+      for (const item of itemsToUpdate) {
+        const { error: updateError } = await supabase
+          .from('purchase_order_items')
+          .update({
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          })
+          .eq('id', item.id)
+
+        if (updateError) throw updateError
+      }
+
+      // Insertar items nuevos
+      const itemsToInsert = items.filter((item) => !item.id || !existingIds.has(item.id))
+      if (itemsToInsert.length > 0) {
         const { error: itemsError } = await supabase.from('purchase_order_items').insert(
-          items.map((item) => ({
+          itemsToInsert.map((item) => ({
             purchase_order_id: id,
             material_id: item.material_id ?? null,
             description: item.description,
@@ -2409,6 +2457,31 @@ export class PrismaTypedService {
           }))
         )
         if (itemsError) throw itemsError
+      }
+
+      // Borrar items que ya no están en la lista, SOLO si no tienen recepciones asociadas
+      const itemsToDelete = (existingItems || []).filter((i: any) => !sentIds.has(i.id))
+      if (itemsToDelete.length > 0) {
+        const itemIdsToDelete = itemsToDelete.map((i: any) => i.id)
+
+        const { data: receiptItems, error: riError } = await supabase
+          .from('purchase_order_receipt_items')
+          .select('purchase_order_item_id')
+          .in('purchase_order_item_id', itemIdsToDelete)
+
+        if (riError) throw riError
+
+        const idsWithReceipts = new Set((receiptItems || []).map((ri: any) => ri.purchase_order_item_id))
+        const deletableIds = itemIdsToDelete.filter((id: string) => !idsWithReceipts.has(id))
+
+        if (deletableIds.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('purchase_order_items')
+            .delete()
+            .in('id', deletableIds)
+
+          if (deleteError) throw deleteError
+        }
       }
     }
 
@@ -2696,16 +2769,33 @@ export class PrismaTypedService {
   // ==================== PURCHASE ORDER RECEIPTS ====================
 
   static async getPurchaseOrderReceipts(purchaseOrderId: string) {
-    const { data, error } = await supabase
+    const { data: receipts, error } = await supabase
       .from('purchase_order_receipts')
-      .select(
-        `*,
-        items:purchase_order_receipt_items(*, material:materials(id, code, name, unit), purchase_order_item:purchase_order_items(id, description, quantity))`
-      )
+      .select('*')
       .eq('purchase_order_id', purchaseOrderId)
       .order('received_at', { ascending: false })
+
     if (error) throw error
-    return data ?? []
+    if (!receipts || receipts.length === 0) return []
+
+    const receiptIds = receipts.map((r: any) => r.id)
+    const { data: receiptItems, error: itemsError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+      .in('receipt_id', receiptIds)
+
+    if (itemsError) throw itemsError
+
+    const itemsByReceipt: Record<string, any[]> = {}
+    for (const item of receiptItems || []) {
+      if (!itemsByReceipt[item.receipt_id]) itemsByReceipt[item.receipt_id] = []
+      itemsByReceipt[item.receipt_id].push(item)
+    }
+
+    return receipts.map((r: any) => ({
+      ...r,
+      items: itemsByReceipt[r.id] || [],
+    }))
   }
 
   static async createPurchaseOrderReceipt(input: {
@@ -2724,6 +2814,8 @@ export class PrismaTypedService {
   }) {
     const { items, ...receiptData } = input
 
+    console.log('[createPurchaseOrderReceipt] input:', JSON.stringify(input, null, 2))
+
     const { data: receipt, error: receiptError } = await supabase
       .from('purchase_order_receipts')
       .insert({
@@ -2737,19 +2829,56 @@ export class PrismaTypedService {
       .select('*')
       .single()
 
+    console.log('[createPurchaseOrderReceipt] receipt insert result:', { receipt, receiptError })
+
     if (receiptError) throw receiptError
+    if (!receipt) throw new Error('No se pudo crear la recepción')
 
     if (items.length > 0) {
-      const { error: itemsError } = await supabase.from('purchase_order_receipt_items').insert(
-        items.map((item) => ({
+      // Buscar ítems actuales de la orden para resolver IDs correctos
+      const { data: currentOrderItems, error: orderItemsError } = await supabase
+        .from('purchase_order_items')
+        .select('id, material_id, description, quantity')
+        .eq('purchase_order_id', receiptData.purchase_order_id)
+
+      if (orderItemsError) throw orderItemsError
+
+      console.log('[createPurchaseOrderReceipt] currentOrderItems:', JSON.stringify(currentOrderItems, null, 2))
+
+      const receiptItemsPayload = items.map((item) => {
+        // Intentar encontrar el ítem actual por material_id + description
+        const matchingItem = currentOrderItems?.find(
+          (oi: any) =>
+            oi.material_id === (item.material_id ?? null) &&
+            oi.description === item.description
+        )
+
+        const resolvedPurchaseOrderItemId = matchingItem?.id || item.purchase_order_item_id
+
+        return {
           receipt_id: receipt.id,
-          purchase_order_item_id: item.purchase_order_item_id,
+          purchase_order_item_id: resolvedPurchaseOrderItemId,
           material_id: item.material_id ?? null,
           description: item.description,
           quantity_received: item.quantity_received,
-        }))
-      )
-      if (itemsError) throw itemsError
+        }
+      })
+
+      console.log('[createPurchaseOrderReceipt] receiptItemsPayload:', JSON.stringify(receiptItemsPayload, null, 2))
+
+      const { data: insertedItems, error: itemsError } = await supabase
+        .from('purchase_order_receipt_items')
+        .insert(receiptItemsPayload)
+        .select()
+
+      console.log('[createPurchaseOrderReceipt] receipt items insert result:', { insertedItems, itemsError })
+
+      if (itemsError) {
+        // Si falla la inserción de ítems, borrar la recepción huérfana
+        console.error('[createPurchaseOrderReceipt] items insert failed, deleting orphan receipt:', receipt.id)
+        await supabase.from('purchase_order_receipts').delete().eq('id', receipt.id)
+        throw itemsError
+      }
 
       // Actualizar stock por cada ítem con material_id
       for (const item of items) {
@@ -2776,20 +2905,33 @@ export class PrismaTypedService {
     // Recalcular estado de la orden según cantidades recibidas
     await this.recalculatePurchaseOrderStatus(receiptData.purchase_order_id)
 
-    return this.getPurchaseOrderReceiptById(receipt.id)
+    const finalReceipt = await this.getPurchaseOrderReceiptById(receipt.id)
+    console.log('[createPurchaseOrderReceipt] final receipt:', JSON.stringify(finalReceipt, null, 2))
+
+    return finalReceipt
   }
 
   static async getPurchaseOrderReceiptById(id: string) {
-    const { data, error } = await supabase
+    // Traer recepción e ítems por separado para evitar problemas de join
+    const { data: receipt, error: receiptError } = await supabase
       .from('purchase_order_receipts')
-      .select(
-        `*,
-        items:purchase_order_receipt_items(*, material:materials(id, code, name, unit), purchase_order_item:purchase_order_items(id, description, quantity))`
-      )
+      .select('*')
       .eq('id', id)
       .single()
-    if (error) throw error
-    return data
+
+    if (receiptError) throw receiptError
+
+    const { data: receiptItems, error: itemsError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+      .eq('receipt_id', id)
+
+    if (itemsError) throw itemsError
+
+    return {
+      ...receipt,
+      items: receiptItems || [],
+    }
   }
 
   static async deletePurchaseOrderReceipt(id: string) {
@@ -2841,29 +2983,44 @@ export class PrismaTypedService {
     if (itemsError) throw itemsError
     if (!orderItems || orderItems.length === 0) return
 
-    const itemIds = orderItems.map((i: any) => i.id)
+    // Obtener TODAS las recepciones de la orden para sumar correctamente
+    // incluso si los IDs de ítems cambiaron por ediciones previas
+    const { data: receipts, error: receiptsError } = await supabase
+      .from('purchase_order_receipts')
+      .select('id')
+      .eq('purchase_order_id', purchaseOrderId)
 
-    // Obtener cantidades recibidas por ítem
-    const { data: receivedItems, error: receivedError } = await supabase
-      .from('purchase_order_receipt_items')
-      .select('purchase_order_item_id, quantity_received')
-      .in('purchase_order_item_id', itemIds)
+    if (receiptsError) throw receiptsError
 
-    if (receivedError) throw receivedError
+    let totalReceived = 0
+    if (receipts && receipts.length > 0) {
+      const receiptIds = receipts.map((r: any) => r.id)
+      const { data: receivedItems, error: receivedError } = await supabase
+        .from('purchase_order_receipt_items')
+        .select('quantity_received')
+        .in('receipt_id', receiptIds)
 
-    const receivedByItem: Record<string, number> = {}
-    for (const ri of receivedItems || []) {
-      receivedByItem[ri.purchase_order_item_id] =
-        (receivedByItem[ri.purchase_order_item_id] || 0) + (ri.quantity_received ?? 0)
+      if (receivedError) throw receivedError
+
+      totalReceived = (receivedItems || []).reduce(
+        (sum: number, ri: any) => sum + (ri.quantity_received ?? 0),
+        0
+      )
     }
 
     const totalOrdered = orderItems.reduce((sum: number, i: any) => sum + (i.quantity ?? 0), 0)
-    const totalReceived = Object.values(receivedByItem).reduce((sum: number, q: number) => sum + q, 0)
+
+    // Redondear para evitar problemas de punto flotante
+    const round4 = (n: number) => Math.round(n * 10000) / 10000
+    const orderedRounded = round4(totalOrdered)
+    const receivedRounded = round4(totalReceived)
+
+    console.log('[recalculatePurchaseOrderStatus]', { purchaseOrderId, orderedRounded, receivedRounded })
 
     let newStatus: string | null = null
-    if (totalReceived === 0) {
+    if (receivedRounded <= 0) {
       newStatus = 'approved'
-    } else if (totalReceived >= totalOrdered) {
+    } else if (receivedRounded >= orderedRounded) {
       newStatus = 'received'
     } else {
       newStatus = 'partial_received'

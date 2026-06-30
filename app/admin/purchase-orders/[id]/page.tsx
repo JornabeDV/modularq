@@ -60,11 +60,12 @@ export default function EditPurchaseOrderPage() {
     setIsSubmitting(true)
     try {
       await updatePurchaseOrder(id, data)
+      const updatedOrder = await getPurchaseOrder(id)
+      setOrder(updatedOrder)
       toast({
         title: "Orden actualizada",
         description: "La orden de compra fue actualizada exitosamente.",
       })
-      router.push("/admin/purchase-management?tab=orders")
     } catch (error) {
       toast({
         title: "Error",
@@ -140,6 +141,7 @@ export default function EditPurchaseOrderPage() {
             }}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
+            onOrderChange={setOrder}
           />
         </div>
       </MainLayout>

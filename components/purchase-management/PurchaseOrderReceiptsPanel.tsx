@@ -29,26 +29,61 @@ import { Package, Plus, Trash2, Loader2, ExternalLink, FileText, Upload, X } fro
 
 interface PurchaseOrderReceiptsPanelProps {
   orderId: string
-  items: Array<{
-    id: string
-    material_id?: string
-    material?: {
-      id: string
-      code: string
-      name: string
-      unit: string
-    } | null
-    description: string
-    quantity: number
-    unit: string
-  }>
-  receipts: Array<any>
+  onOrderChange?: (order: any) => void
 }
 
-export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: PurchaseOrderReceiptsPanelProps) {
+interface ReceiptItem {
+  id: string
+  material_id?: string
+  material?: {
+    id: string
+    code: string
+    name: string
+    unit: string
+  } | null
+  description: string
+  quantity: number
+  unit: string
+}
+
+export function PurchaseOrderReceiptsPanel({ orderId, onOrderChange }: PurchaseOrderReceiptsPanelProps) {
   const { toast } = useToast()
-  const { createReceipt, deleteReceipt } = usePurchaseOrders()
-  const [localReceipts, setLocalReceipts] = useState(receipts)
+  const { createReceipt, deleteReceipt, getPurchaseOrder } = usePurchaseOrders()
+  const [items, setItems] = useState<ReceiptItem[]>([])
+  const [localReceipts, setLocalReceipts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  const loadOrder = async () => {
+    try {
+      setIsLoading(true)
+      const order = await getPurchaseOrder(orderId)
+      setItems(
+        order.items.map((item) => ({
+          id: item.id || "",
+          material_id: item.material_id,
+          material: item.material,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+        }))
+      )
+      setLocalReceipts(order.receipts || [])
+    } catch (error) {
+      console.error("Error loading order:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los datos de la orden",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadOrder()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId])
 
   const [formOpen, setFormOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,10 +95,6 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
   const [quantities, setQuantities] = useState<Record<string, string>>({})
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    setLocalReceipts(receipts)
-  }, [receipts])
 
   const orderedByItem = items.reduce((acc, item) => {
     acc[item.id] = item.quantity
@@ -77,6 +108,9 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
     return acc
   }, {} as Record<string, number>)
 
+  console.log('[PurchaseOrderReceiptsPanel] localReceipts:', JSON.stringify(localReceipts, null, 2))
+  console.log('[PurchaseOrderReceiptsPanel] receivedByItem:', receivedByItem)
+
   const handleQuantityChange = (itemId: string, value: string) => {
     setQuantities((prev) => ({ ...prev, [itemId]: value }))
   }
@@ -84,9 +118,32 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const receiptItems = items
+    // Recargar la orden para obtener los IDs actuales de los ítems
+    // (pueden haber cambiado si el usuario guardó la orden con el modal abierto)
+    let currentItems = items
+    try {
+      const refreshedOrder = await getPurchaseOrder(orderId)
+      currentItems = refreshedOrder.items.map((item) => ({
+        id: item.id || "",
+        material_id: item.material_id,
+        material: item.material,
+        description: item.description,
+        quantity: item.quantity,
+        unit: item.unit,
+      }))
+      setItems(currentItems)
+      setLocalReceipts(refreshedOrder.receipts || [])
+    } catch (error) {
+      console.error("Error refreshing order before receipt:", error)
+    }
+
+    // Mapear cantidades ingresadas por descripción a los ítems actuales
+    const receiptItems = currentItems
       .map((item) => {
-        const raw = quantities[item.id]
+        // Buscar la cantidad ingresada por descripción (fallback al ID anterior)
+        const raw = quantities[item.id] || quantities[Object.keys(quantities).find(
+          (key) => currentItems.find((i) => i.id === key)?.description === item.description
+        ) || ""]
         if (!raw || raw.trim() === "") return null
         const qty = parseFloat(raw.replace(",", "."))
         if (isNaN(qty) || qty <= 0) return null
@@ -120,8 +177,18 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
         items: receiptItems,
       })
 
-      setLocalReceipts((prev) => [newReceipt, ...prev])
-      toast({ title: "Recepción registrada", description: "El stock fue actualizado correctamente." })
+      // Recargar desde el servidor para asegurar datos consistentes
+      await loadOrder()
+
+      if (!newReceipt.items || newReceipt.items.length === 0) {
+        toast({
+          title: "Advertencia",
+          description: "La recepción se creó pero no se encontraron ítems asociados.",
+          variant: "destructive",
+        })
+      } else {
+        toast({ title: "Recepción registrada", description: "El stock fue actualizado correctamente." })
+      }
       setFormOpen(false)
       resetForm()
     } catch (error) {
@@ -209,9 +276,9 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
   const handleDelete = async (receiptId: string) => {
     try {
       await deleteReceipt(orderId, receiptId)
-      setLocalReceipts((prev) => prev.filter((r) => r.id !== receiptId))
+      await loadOrder()
       toast({ title: "Recepción eliminada", description: "El stock fue ajustado correctamente." })
-    } catch (error) {
+    } catch (error){
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Error al eliminar recepción",
@@ -227,7 +294,15 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
           <Package className="h-4 w-4" />
           Recepciones y remitos
         </CardTitle>
-        <Button type="button" variant="outline" className="cursor-pointer" onClick={() => setFormOpen(true)}>
+        <Button
+          type="button"
+          variant="outline"
+          className="cursor-pointer"
+          onClick={async () => {
+            await loadOrder()
+            setFormOpen(true)
+          }}
+        >
           <Plus className="h-4 w-4 mr-1" /> Registrar recepción
         </Button>
       </CardHeader>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -20,7 +20,7 @@ export function PurchaseOrderManagement() {
   const { toast } = useToast()
   const isReadOnly = userProfile?.role === "supervisor"
 
-  const { purchaseOrders, loading, error, deletePurchaseOrder } = usePurchaseOrders()
+  const { purchaseOrders, loading, error, deletePurchaseOrder, fetchPurchaseOrders } = usePurchaseOrders()
   const { suppliers } = useSuppliers()
 
   const [searchTerm, setSearchTerm] = useState("")
@@ -32,6 +32,16 @@ export function PurchaseOrderManagement() {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(20)
+
+  // Recargar datos cuando la ventana recupera el foco (por si volvió de editar una orden)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchPurchaseOrders(undefined, true)
+    }
+    window.addEventListener("focus", handleFocus)
+    return () => window.removeEventListener("focus", handleFocus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
