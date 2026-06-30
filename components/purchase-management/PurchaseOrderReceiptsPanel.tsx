@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { usePurchaseOrders } from "@/hooks/use-purchase-orders"
 import { Badge } from "@/components/ui/badge"
-import { Package, Plus, Trash2, Loader2, ExternalLink, FileText } from "lucide-react"
+import { Package, Plus, Trash2, Loader2, ExternalLink, FileText, Upload, X } from "lucide-react"
 
 interface PurchaseOrderReceiptsPanelProps {
   orderId: string
@@ -48,6 +48,7 @@ interface PurchaseOrderReceiptsPanelProps {
 export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: PurchaseOrderReceiptsPanelProps) {
   const { toast } = useToast()
   const { createReceipt, deleteReceipt } = usePurchaseOrders()
+  const [localReceipts, setLocalReceipts] = useState(receipts)
 
   const [formOpen, setFormOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -57,13 +58,19 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
   const [remitoFileName, setRemitoFileName] = useState("")
   const [notes, setNotes] = useState("")
   const [quantities, setQuantities] = useState<Record<string, string>>({})
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setLocalReceipts(receipts)
+  }, [receipts])
 
   const orderedByItem = items.reduce((acc, item) => {
     acc[item.id] = item.quantity
     return acc
   }, {} as Record<string, number>)
 
-  const receivedByItem = receipts.reduce((acc, receipt) => {
+  const receivedByItem = localReceipts.reduce((acc, receipt) => {
     for (const ri of receipt.items || []) {
       acc[ri.purchase_order_item_id] = (acc[ri.purchase_order_item_id] || 0) + (ri.quantity_received || 0)
     }
@@ -104,7 +111,7 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
 
     setIsSubmitting(true)
     try {
-      await createReceipt(orderId, {
+      const newReceipt = await createReceipt(orderId, {
         receipt_number: receiptNumber || undefined,
         remito_number: remitoNumber || undefined,
         remito_file_url: remitoFileUrl || undefined,
@@ -113,6 +120,7 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
         items: receiptItems,
       })
 
+      setLocalReceipts((prev) => [newReceipt, ...prev])
       toast({ title: "Recepción registrada", description: "El stock fue actualizado correctamente." })
       setFormOpen(false)
       resetForm()
@@ -136,10 +144,7 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
     setQuantities({})
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const handleFileChange = async (file: File) => {
     if (file.type !== "application/pdf") {
       toast({ title: "Error", description: "Solo se permiten archivos PDF", variant: "destructive" })
       return
@@ -169,9 +174,42 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
     }
   }
 
+  const handleInputFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleFileChange(file)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) await handleFileChange(file)
+  }
+
+  const clearFile = () => {
+    setRemitoFileUrl("")
+    setRemitoFileName("")
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
   const handleDelete = async (receiptId: string) => {
     try {
       await deleteReceipt(orderId, receiptId)
+      setLocalReceipts((prev) => prev.filter((r) => r.id !== receiptId))
       toast({ title: "Recepción eliminada", description: "El stock fue ajustado correctamente." })
     } catch (error) {
       toast({
@@ -189,7 +227,7 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
           <Package className="h-4 w-4" />
           Recepciones y remitos
         </CardTitle>
-        <Button size="sm" variant="outline" onClick={() => setFormOpen(true)}>
+        <Button type="button" variant="outline" className="cursor-pointer" onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> Registrar recepción
         </Button>
       </CardHeader>
@@ -233,13 +271,13 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
         </div>
 
         {/* Historial de recepciones */}
-        {receipts.length === 0 ? (
+        {localReceipts.length === 0 ? (
           <div className="text-center text-muted-foreground py-6">
             No hay recepciones registradas.
           </div>
         ) : (
           <div className="space-y-3">
-            {receipts.map((receipt) => (
+            {localReceipts.map((receipt) => (
               <div key={receipt.id} className="rounded-md border p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -265,6 +303,7 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
                       </a>
                     )}
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-destructive"
@@ -294,8 +333,8 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
 
       {/* Form dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <form onSubmit={handleSubmit}>
+        <DialogContent className="w-full max-w-full sm:max-w-2xl h-full max-h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto rounded-none sm:rounded-lg min-w-0">
+          <form onSubmit={handleSubmit} className="min-w-0">
             <DialogHeader>
               <DialogTitle>Registrar recepción</DialogTitle>
               <DialogDescription>
@@ -326,41 +365,84 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
               </div>
 
               <div>
-                <Label htmlFor="remito_file" className="mb-2">Adjuntar remito (PDF)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="remito_file"
-                    type="file"
-                    accept="application/pdf"
-                    onChange={handleFileChange}
-                    className="flex-1"
-                  />
-                  {remitoFileUrl && (
-                    <a
-                      href={remitoFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
+                <Label className="mb-2">Adjuntar remito (PDF)</Label>
+                {!remitoFileUrl ? (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`
+                      border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 cursor-pointer
+                      ${isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30"}
+                    `}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleInputFileChange}
+                      className="hidden"
+                    />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="p-3 rounded-full bg-primary/10 text-primary">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Arrastrá un PDF o hacé clic para seleccionar</p>
+                        <p className="text-xs text-muted-foreground mt-1">Solo archivos PDF · Máximo 10MB</p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" className="mt-2 gap-1 cursor-pointer">
+                        <Plus className="w-3 h-3" />
+                        Seleccionar archivo
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{remitoFileName || "Archivo adjunto"}</p>
+                        <a
+                          href={remitoFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Ver PDF
+                        </a>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearFile()
+                      }}
                     >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-                {remitoFileName && (
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">{remitoFileName}</p>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
 
               <div>
                 <Label className="mb-2">Cantidades recibidas por ítem</Label>
-                <div className="rounded-md border mt-2">
-                  <Table>
+                <div className="rounded-md border mt-2 w-full min-w-0 overflow-x-auto">
+                  <Table className="min-w-[500px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Ítem</TableHead>
                         <TableHead className="text-right">Pedido</TableHead>
                         <TableHead className="text-right">Pendiente</TableHead>
-                        <TableHead className="w-[140px] text-right">Recibir</TableHead>
+                        <TableHead className="w-[140px] text-right">Recibido</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -411,10 +493,10 @@ export function PurchaseOrderReceiptsPanel({ orderId, items, receipts }: Purchas
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)} className="max-sm:order-2 cursor-pointer">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="max-sm:order-1 cursor-pointer">
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (

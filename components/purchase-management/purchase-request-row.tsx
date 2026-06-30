@@ -4,13 +4,14 @@ import { useState } from "react"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Eye, ShoppingCart } from "lucide-react"
+import { Edit, Trash2, Eye, ShoppingCart, FileDown } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { PurchaseRequestPDFButton } from "./PurchaseRequestPDFButton"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,16 +62,19 @@ export function PurchaseRequestRow({
 
   return (
     <>
-      <TableRow>
-        <TableCell className="font-mono text-xs">{request.request_number}</TableCell>
+      <TableRow
+        onClick={() => onView(request)}
+        className="cursor-pointer hover:bg-muted/50"
+      >
+        <TableCell className="font-medium tabular-nums">{request.request_number}</TableCell>
         <TableCell>
           <Badge variant="outline" className={`text-xs font-medium ${STATUS_COLORS[request.status]}`}>
             {STATUS_LABELS[request.status] || request.status}
           </Badge>
         </TableCell>
-        <TableCell>{request.items?.length || 0}</TableCell>
-        <TableCell>{request.supplier_quotes?.length || 0}</TableCell>
-        <TableCell>{request.purchase_orders?.length || 0}</TableCell>
+        <TableCell className="tabular-nums">{request.items?.length || 0}</TableCell>
+        <TableCell className="tabular-nums">{request.supplier_quotes?.length || 0}</TableCell>
+        <TableCell className="tabular-nums">{request.purchase_orders?.length || 0}</TableCell>
         <TableCell className="text-muted-foreground text-sm">
           {new Date(request.created_at).toLocaleDateString("es-AR")}
         </TableCell>
@@ -83,7 +87,10 @@ export function PurchaseRequestRow({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onView(request)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onView(request)
+                      }}
                       className="cursor-pointer"
                     >
                       <Eye className="h-4 w-4" />
@@ -95,10 +102,44 @@ export function PurchaseRequestRow({
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <PurchaseRequestPDFButton
+                      purchaseRequest={{
+                        request_number: request.request_number,
+                        status: request.status,
+                        notes: request.notes,
+                        created_at: request.created_at,
+                        items: request.items.map((item: any) => ({
+                          description: item.description,
+                          quantity: item.quantity,
+                          unit: item.unit,
+                          material: item.material
+                            ? {
+                                id: item.material.id,
+                                code: item.material.code,
+                                name: item.material.name,
+                                brand: item.material.brand,
+                              }
+                            : null,
+                        })),
+                      }}
+                      size="sm"
+                      label=""
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Descargar PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onEdit(request)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit(request)
+                      }}
                       className="cursor-pointer"
                     >
                       <Edit className="h-4 w-4" />
@@ -113,7 +154,10 @@ export function PurchaseRequestRow({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onCreateOrder(request)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onCreateOrder(request)
+                      }}
                       className="cursor-pointer"
                     >
                       <ShoppingCart className="h-4 w-4" />
@@ -128,7 +172,10 @@ export function PurchaseRequestRow({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowDeleteDialog(true)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowDeleteDialog(true)
+                      }}
                       className="cursor-pointer"
                     >
                       <Trash2 className="h-4 w-4" />

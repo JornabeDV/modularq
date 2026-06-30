@@ -950,6 +950,7 @@ export class PrismaTypedService {
     min_stock?: number
     unit_price?: number
     supplier?: string
+    brand?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('materials')
@@ -976,6 +977,7 @@ export class PrismaTypedService {
     min_stock?: number
     unit_price?: number
     supplier?: string
+    brand?: string
   }): Promise<any> {
     const { data, error } = await supabase
       .from('materials')
@@ -2445,7 +2447,7 @@ export class PrismaTypedService {
       .from('purchase_requests')
       .select(
         `*,
-        items:purchase_request_items(*, material:materials(id, code, name, unit)),
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand)),
         supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name)),
         purchase_orders:purchase_orders(id, order_number, status, total)`
       )
@@ -2472,7 +2474,7 @@ export class PrismaTypedService {
       .from('purchase_requests')
       .select(
         `*,
-        items:purchase_request_items(*, material:materials(id, code, name, unit)),
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand)),
         supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name, contact_name)),
         purchase_orders:purchase_orders(id, order_number, status, total, supplier:suppliers(id, name))`
       )

@@ -21,7 +21,8 @@ type SortField =
   | "category"
   | "stockQuantity"
   | "unitPrice"
-  | "supplier";
+  | "supplier"
+  | "brand";
 type SortOrder = "asc" | "desc";
 
 export function StockManagement() {

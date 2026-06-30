@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { X, ShoppingCart } from "lucide-react"
+import { PurchaseRequestPDFButton } from "./PurchaseRequestPDFButton"
 
 type SortField = "request_number" | "status" | "created_at"
 type SortOrder = "asc" | "desc"
@@ -265,7 +266,7 @@ export function PurchaseRequestManagement() {
 
       {/* View Dialog */}
       <Dialog open={!!viewingRequest} onOpenChange={() => setViewingRequest(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-7xl w-[95vw] max-h-[90vh] overflow-y-auto">
           {viewingRequest && (
             <>
               <DialogHeader>
@@ -344,10 +345,33 @@ export function PurchaseRequestManagement() {
                 )}
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setViewingRequest(null)}>
+                  <Button variant="outline" onClick={() => setViewingRequest(null)} className="cursor-pointer">
                     <X className="h-4 w-4 mr-2" /> Cerrar
                   </Button>
-                  <Button onClick={() => handleCreateOrder(viewingRequest)}>
+                  <PurchaseRequestPDFButton
+                    purchaseRequest={{
+                      request_number: viewingRequest.request_number,
+                      status: viewingRequest.status,
+                      notes: viewingRequest.notes,
+                      created_at: viewingRequest.created_at,
+                      items: viewingRequest.items.map((item: any) => ({
+                        description: item.description,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        material: item.material
+                          ? {
+                              id: item.material.id,
+                              code: item.material.code,
+                              name: item.material.name,
+                              brand: item.material.brand,
+                            }
+                          : null,
+                      })),
+                    }}
+                    variant="outline"
+                    label="Descargar PDF"
+                  />
+                  <Button onClick={() => handleCreateOrder(viewingRequest)} className="cursor-pointer">
                     <ShoppingCart className="h-4 w-4 mr-2" /> Crear Orden de Compra
                   </Button>
                 </div>

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table"
 import { Trash2, Plus, Loader2 } from "lucide-react"
 import { useMaterialsPrisma } from "@/hooks/use-materials-prisma"
+import { PriceInput } from "@/components/ui/price-input"
 
 export interface PurchaseOrderItemInput {
   id?: string
@@ -119,7 +120,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
   const handlePriceBlur = (index: number) => {
     const raw = editingPrices[index]
     if (raw === undefined) return
-    const num = parseFloat(raw.replace(",", "."))
+    const num = parseFloat(raw.replace(/\./g, "").replace(",", "."))
     if (!isNaN(num) && num >= 0) {
       handleUpdateItem(index, "unit_price", num)
     }
@@ -156,7 +157,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
             ) : (
               items.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-muted-foreground text-xs sm:text-sm text-center">
                     {index + 1}
                   </TableCell>
                   <TableCell>
@@ -166,7 +167,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                         handleUpdateItem(index, "material_id", value === "custom" ? undefined : value)
                       }
                     >
-                      <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccionar..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -210,7 +211,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                       }}
                       onFocus={(e) => e.target.select()}
                       onBlur={() => handleQuantityBlur(index)}
-                      className="w-full sm:w-[70px]"
+                      className="w-full tabular-nums"
                     />
                   </TableCell>
                   <TableCell>
@@ -231,30 +232,23 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={editingPrices[index] ?? item.unit_price}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(",", ".")
-                        if (val === "" || /^\d*\.?\d*$/.test(val)) {
-                          handlePriceChange(index, val)
-                        }
-                      }}
+                    <PriceInput
+                      value={editingPrices[index] ?? item.unit_price.toString()}
+                      onChange={(raw) => handlePriceChange(index, raw)}
                       onFocus={(e) => e.target.select()}
                       onBlur={() => handlePriceBlur(index)}
-                      className="w-full sm:w-[100px]"
+                      className="w-full sm:w-[100px] tabular-nums"
                     />
                   </TableCell>
-                  <TableCell className="text-right font-mono">
+                  <TableCell className="text-right tabular-nums">
                     ${item.total_price.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
-                      className="h-8 w-8 text-destructive"
+                      className="h-8 w-8 cursor-pointer"
                       onClick={() => handleRemoveItem(index)}
                     >
                       <Trash2 className="h-4 w-4" />

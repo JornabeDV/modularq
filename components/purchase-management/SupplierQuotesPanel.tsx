@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,6 +22,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,11 +35,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { useToast } from "@/hooks/use-toast"
 import { useSupplierQuotes } from "@/hooks/use-supplier-quotes"
 import { useSuppliers } from "@/hooks/use-suppliers"
 import { SupplierSelect } from "@/components/purchase-orders/SupplierSelect"
-import { FileText, Plus, Trash2, ExternalLink, Loader2, FileUp } from "lucide-react"
+import { FileText, Plus, Trash2, ExternalLink, Loader2, FileUp, CalendarIcon, Upload, X } from "lucide-react"
 
 interface SupplierQuotesPanelProps {
   purchaseRequestId: string
@@ -46,6 +54,14 @@ const STATUS_OPTIONS = [
   { value: "approved", label: "Aprobado" },
   { value: "rejected", label: "Rechazado" },
 ]
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  sent: "Enviado",
+  received: "Recibido",
+  approved: "Aprobado",
+  rejected: "Rechazado",
+}
 
 export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelProps) {
   const { toast } = useToast()
@@ -66,6 +82,10 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
   const [formFileName, setFormFileName] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [quoteDateOpen, setQuoteDateOpen] = useState(false)
+  const [validUntilOpen, setValidUntilOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const openCreate = () => {
     setFormMode("create")
@@ -155,10 +175,16 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
     }
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const formatDateLabel = (dateString: string) => {
+    if (!dateString) return null
+    return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+  }
 
+  const uploadFile = async (file: File) => {
     if (file.type !== "application/pdf") {
       toast({ title: "Error", description: "Solo se permiten archivos PDF", variant: "destructive" })
       return
@@ -188,6 +214,37 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
     }
   }
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await uploadFile(file)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) await uploadFile(file)
+  }
+
+  const clearFile = () => {
+    setFormFileUrl("")
+    setFormFileName("")
+  }
+
   const getSupplierName = (id: string) => {
     return suppliers.find((s) => s.id === id)?.name || "—"
   }
@@ -199,7 +256,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
           <FileText className="h-4 w-4" />
           Presupuestos de proveedores
         </CardTitle>
-        <Button size="sm" variant="outline" onClick={openCreate}>
+        <Button size="sm" variant="outline" className="cursor-pointer" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" /> Agregar
         </Button>
       </CardHeader>
@@ -227,7 +284,11 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
               </TableHeader>
               <TableBody>
                 {supplierQuotes.map((quote) => (
-                  <TableRow key={quote.id}>
+                  <TableRow
+                    key={quote.id}
+                    className="cursor-pointer"
+                    onClick={() => openEdit(quote)}
+                  >
                     <TableCell>{getSupplierName(quote.supplier_id)}</TableCell>
                     <TableCell className="font-mono">
                       ${quote.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
@@ -239,7 +300,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                     </TableCell>
                     <TableCell>
                       <span className="text-xs capitalize bg-muted px-2 py-1 rounded">
-                        {quote.status}
+                        {STATUS_LABELS[quote.status] || quote.status}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -249,6 +310,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <FileText className="h-4 w-4" />
                           {quote.file_name || "Ver PDF"}
@@ -258,24 +320,46 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => openEdit(quote)}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => setDeleteId(quote.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openEdit(quote)
+                                }}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Editar presupuesto</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setDeleteId(quote.id)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar presupuesto</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -287,7 +371,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
 
       {/* Form dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-sm:h-screen max-sm:max-h-screen overflow-y-auto rounded-none sm:rounded-lg">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>
@@ -298,8 +382,8 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
-              <div>
+            <div className="space-y-5 py-4">
+              <div className="space-y-2">
                 <Label htmlFor="supplier">Proveedor *</Label>
                 <SupplierSelect
                   value={formSupplierId}
@@ -308,8 +392,8 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="total">Total</Label>
                   <Input
                     id="total"
@@ -320,10 +404,10 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                     placeholder="0.00"
                   />
                 </div>
-                <div>
+                <div className="space-y-2 w-full">
                   <Label htmlFor="status">Estado</Label>
                   <Select value={formStatus} onValueChange={setFormStatus}>
-                    <SelectTrigger id="status">
+                    <SelectTrigger id="status" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -337,54 +421,135 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="quote_date">Fecha de presupuesto</Label>
-                  <Input
-                    id="quote_date"
-                    type="date"
-                    value={formQuoteDate}
-                    onChange={(e) => setFormQuoteDate(e.target.value)}
-                  />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Fecha de presupuesto</Label>
+                  <Popover open={quoteDateOpen} onOpenChange={setQuoteDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formatDateLabel(formQuoteDate) || "Seleccionar fecha"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        captionLayout="dropdown-years"
+                        startMonth={new Date(new Date().getFullYear() - 5, 0, 1)}
+                        endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
+                        selected={formQuoteDate ? new Date(formQuoteDate + "T00:00:00") : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setFormQuoteDate(date.toISOString().split("T")[0])
+                            setQuoteDateOpen(false)
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                <div>
-                  <Label htmlFor="valid_until">Válido hasta</Label>
-                  <Input
-                    id="valid_until"
-                    type="date"
-                    value={formValidUntil}
-                    onChange={(e) => setFormValidUntil(e.target.value)}
-                  />
+                <div className="space-y-2">
+                  <Label>Válido hasta</Label>
+                  <Popover open={validUntilOpen} onOpenChange={setValidUntilOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formatDateLabel(formValidUntil) || "Seleccionar fecha"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        captionLayout="dropdown-years"
+                        startMonth={new Date(new Date().getFullYear() - 5, 0, 1)}
+                        endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
+                        selected={formValidUntil ? new Date(formValidUntil + "T00:00:00") : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setFormValidUntil(date.toISOString().split("T")[0])
+                            setValidUntilOpen(false)
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="file">Adjunto PDF</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="file"
-                    type="file"
-                    accept="application/pdf"
-                    onChange={handleFileChange}
-                    className="flex-1"
-                  />
-                  {formFileUrl && (
-                    <a
-                      href={formFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
+              <div className="space-y-2">
+                <Label>Adjunto PDF</Label>
+                {!formFileUrl ? (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`
+                      border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 cursor-pointer
+                      ${isDragging ? "border-primary bg-primary/5 scale-[1.02]" : "border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/30"}
+                    `}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="p-3 rounded-full bg-primary/10 text-primary">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Arrastrá un PDF o hacé clic para seleccionar</p>
+                        <p className="text-xs text-muted-foreground mt-1">Solo archivos PDF · Máximo 10MB</p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" className="mt-2 gap-1 cursor-pointer">
+                        <Plus className="w-3 h-3" />
+                        Seleccionar archivo
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{formFileName || "Archivo adjunto"}</p>
+                        <a
+                          href={formFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Ver PDF
+                        </a>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 cursor-pointer"
+                      onClick={clearFile}
                     >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
-                </div>
-                {formFileName && (
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">{formFileName}</p>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="notes">Notas</Label>
                 <Textarea
                   id="notes"
@@ -397,10 +562,10 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>
+              <Button type="button" variant="outline" className="cursor-pointer max-sm:order-1" onClick={() => setFormOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (

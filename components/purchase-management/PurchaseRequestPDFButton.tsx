@@ -1,39 +1,50 @@
 "use client"
 
+import * as React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { pdf } from "@react-pdf/renderer"
 import { FileDown, Loader2 } from "lucide-react"
-import { PurchaseOrderPDFDocument } from "./PurchaseOrderPDFDocument"
+import { PurchaseRequestPDFDocument } from "./PurchaseRequestPDFDocument"
 
-interface PurchaseOrderPDFButtonProps {
-  purchaseOrder: Parameters<typeof PurchaseOrderPDFDocument>[0]["purchaseOrder"]
+interface PurchaseRequestPDFButtonProps
+  extends Omit<React.ComponentProps<"button">, "ref" | "type" | "className"> {
+  purchaseRequest: Parameters<typeof PurchaseRequestPDFDocument>[0]["purchaseRequest"]
   label?: string
   variant?: "default" | "outline" | "ghost"
   size?: "default" | "sm" | "lg" | "icon"
   className?: string
 }
 
-export function PurchaseOrderPDFButton({
-  purchaseOrder,
-  label = "Descargar PDF",
-  variant = "outline",
-  size = "sm",
-  className,
-}: PurchaseOrderPDFButtonProps) {
+export const PurchaseRequestPDFButton = React.forwardRef<
+  HTMLButtonElement,
+  PurchaseRequestPDFButtonProps
+>(function PurchaseRequestPDFButton(
+  {
+    purchaseRequest,
+    label = "Descargar PDF",
+    variant = "outline",
+    size = "default",
+    className,
+    onClick,
+    ...props
+  },
+  ref
+) {
   const [isGenerating, setIsGenerating] = useState(false)
+  const iconClass = label ? "h-4 w-4 mr-1" : "h-4 w-4"
 
   const handleDownload = async () => {
     setIsGenerating(true)
     try {
       const blob = await pdf(
-        <PurchaseOrderPDFDocument purchaseOrder={purchaseOrder} />
+        <PurchaseRequestPDFDocument purchaseRequest={purchaseRequest} />
       ).toBlob()
 
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `${purchaseOrder.order_number}.pdf`
+      link.download = `${purchaseRequest.request_number}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -47,18 +58,24 @@ export function PurchaseOrderPDFButton({
 
   return (
     <Button
+      ref={ref}
       type="button"
       variant={variant}
-      onClick={handleDownload}
+      size={size}
+      onClick={(e) => {
+        onClick?.(e)
+        handleDownload()
+      }}
       disabled={isGenerating}
       className={`cursor-pointer ${className || ""}`}
+      {...props}
     >
       {isGenerating ? (
-        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+        <Loader2 className={`${iconClass} animate-spin`} />
       ) : (
-        <FileDown className="h-4 w-4 mr-1" />
+        <FileDown className={iconClass} />
       )}
       {label}
     </Button>
   )
-}
+})

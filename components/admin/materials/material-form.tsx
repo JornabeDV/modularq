@@ -51,6 +51,7 @@ interface MaterialFormData {
   min_stock: number;
   unit_price: number;
   supplier: string;
+  brand: string;
 }
 
 interface MaterialFormProps {
@@ -193,6 +194,7 @@ export function MaterialForm({
     min_stock: 0,
     unit_price: 0,
     supplier: "",
+    brand: "",
   });
 
   // Estado para sugerencias de autocompletado
@@ -225,6 +227,7 @@ export function MaterialForm({
         min_stock: initialData.minStock || 0,
         unit_price: initialData.unitPrice || 0,
         supplier: initialData.supplier || "",
+        brand: initialData.brand || "",
       });
       setUnitPriceInput(initialData.unitPrice?.toString().replace(".", ",") || "");
     } else {
@@ -238,6 +241,7 @@ export function MaterialForm({
         min_stock: 0,
         unit_price: 0,
         supplier: "",
+        brand: "",
       });
       setUnitPriceInput("");
     }
@@ -338,6 +342,7 @@ export function MaterialForm({
       unit: material.unit,
       unit_price: material.unitPrice || 0,
       supplier: material.supplier || "",
+      brand: material.brand || "",
     }));
     setShowSuggestions(false);
   };
@@ -404,6 +409,7 @@ export function MaterialForm({
       min_stock: formData.min_stock,
       unit_price: formData.unit_price > 0 ? formData.unit_price : undefined,
       supplier: formData.supplier || undefined,
+      brand: formData.brand || undefined,
     };
     onSubmit(submitData);
     setShowDuplicateWarning(false);
@@ -694,6 +700,18 @@ export function MaterialForm({
               value={formData.supplier}
               onChange={(e) => handleInputChange("supplier", e.target.value)}
               placeholder="Ej: Proveedor ABC S.A."
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="brand" className="mb-2">
+              Marca
+            </Label>
+            <Input
+              id="brand"
+              value={formData.brand}
+              onChange={(e) => handleInputChange("brand", e.target.value)}
+              placeholder="Ej: 3M, IMSA, JELUZ"
             />
           </div>
 

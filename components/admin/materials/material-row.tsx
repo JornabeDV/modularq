@@ -101,6 +101,12 @@ export function MaterialRow({
         >
           {material.supplier || "-"}
         </TableCell>
+        <TableCell
+          className="max-w-[120px] truncate"
+          title={material.brand || ""}
+        >
+          {material.brand || "-"}
+        </TableCell>
         {!isReadOnly && (
           <TableCell className="text-right">
             <div className="flex justify-end gap-2">

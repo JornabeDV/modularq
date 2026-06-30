@@ -27,7 +27,8 @@ type SortField =
   | "category"
   | "stockQuantity"
   | "unitPrice"
-  | "supplier";
+  | "supplier"
+  | "brand";
 
 interface MaterialTableProps {
   materials: Material[];
@@ -147,6 +148,15 @@ export function MaterialTable({
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </TableHead>
+                <TableHead
+                  className="cursor-pointer min-w-[120px]"
+                  onClick={() => onSort?.("brand")}
+                >
+                  <div className="flex items-center gap-1">
+                    Marca
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </TableHead>
                 {!isReadOnly && (
                   <TableHead className="text-right">Acciones</TableHead>
                 )}
@@ -156,7 +166,7 @@ export function MaterialTable({
               {materials.length === 0 ? (
                 <TableRow>
                   <td
-                    colSpan={isReadOnly ? 6 : 7}
+                    colSpan={isReadOnly ? 7 : 8}
                     className="text-center py-8 text-muted-foreground"
                   >
                     {searchTerm || categoryFilter !== "all" || lowStockOnly

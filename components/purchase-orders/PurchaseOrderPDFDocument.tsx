@@ -80,34 +80,30 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#6b7280",
   },
+  companyContact: {
+    fontSize: 8,
+    color: "#6b7280",
+    marginTop: 2,
+  },
   orderTitle: {
     textAlign: "right",
   },
   orderTitleText: {
-    fontSize: 24,
+    fontSize: 14,
     fontWeight: "bold",
+    color: "#1f2937",
   },
   orderCode: {
     fontSize: 10,
-    fontFamily: "Helvetica-Oblique",
     color: "#6b7280",
+    marginTop: 3,
   },
   orderDate: {
     fontSize: 9,
     color: "#6b7280",
     marginTop: 4,
   },
-  contactInfo: {
-    flexDirection: "row",
-    gap: 20,
-    marginBottom: 12,
-    fontSize: 9,
-    color: "#4b5563",
-  },
-  contactItem: {
-    flexDirection: "row",
-    gap: 4,
-  },
+
   section: {
     marginBottom: 10,
   },
@@ -257,8 +253,8 @@ function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
     return date.toLocaleDateString("es-AR", {
-      day: "2-digit",
-      month: "2-digit",
+      day: "numeric",
+      month: "long",
       year: "numeric",
     })
   } catch {
@@ -290,25 +286,16 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
             <View>
               <Text style={styles.companyName}>{COMPANY.name}</Text>
               <Text style={styles.companySlogan}>{COMPANY.tagline}</Text>
+              <Text style={styles.companyContact}>{COMPANY.address}</Text>
+              <Text style={styles.companyContact}>
+                {COMPANY.phone} · {COMPANY.email}
+              </Text>
             </View>
           </View>
           <View style={styles.orderTitle}>
-            <Text style={styles.orderTitleText}>ORDEN DE COMPRA</Text>
-            <Text style={styles.orderCode}>{purchaseOrder.order_number}</Text>
-            <Text style={styles.orderDate}>{formatDate(purchaseOrder.created_at)}</Text>
-          </View>
-        </View>
-
-        {/* Contacto empresa */}
-        <View style={styles.contactInfo}>
-          <View style={styles.contactItem}>
-            <Text>{COMPANY.address}</Text>
-          </View>
-          <View style={styles.contactItem}>
-            <Text>{COMPANY.phone}</Text>
-          </View>
-          <View style={styles.contactItem}>
-            <Text>{COMPANY.email}</Text>
+            <Text style={styles.orderTitleText}>Orden de Compra</Text>
+            <Text style={styles.orderCode}>N°: {purchaseOrder.order_number}</Text>
+            <Text style={styles.orderDate}>Emisión: {formatDate(purchaseOrder.created_at)}</Text>
           </View>
         </View>
 
@@ -355,14 +342,6 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
           </View>
         </View>
 
-        {/* Estado */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Estado</Text>
-          <Text style={styles.value}>
-            {STATUS_LABELS[purchaseOrder.status] || purchaseOrder.status}
-          </Text>
-        </View>
-
         {/* Ítems */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Detalle de ítems</Text>
@@ -394,17 +373,9 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
 
         {/* Totales */}
         <View style={styles.totalsBox}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>IVA ({purchaseOrder.tax_pct}%)</Text>
-            <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount)}</Text>
-          </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.total)}</Text>
+            <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
           </View>
         </View>
 

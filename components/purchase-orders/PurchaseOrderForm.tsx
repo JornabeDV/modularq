@@ -1,17 +1,18 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { usePurchaseOrders } from "@/hooks/use-purchase-orders"
 import { SupplierSelect } from "./SupplierSelect"
 import { CreateSupplierDialog } from "./CreateSupplierDialog"
 import { PurchaseOrderItemsTable, PurchaseOrderItemInput } from "./PurchaseOrderItemsTable"
@@ -86,12 +87,12 @@ interface PurchaseOrderFormProps {
 export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = false }: PurchaseOrderFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { getPurchaseOrder } = usePurchaseOrders()
 
   const [supplierId, setSupplierId] = useState(initialData?.supplier_id || "")
   const [purchaseRequestId, setPurchaseRequestId] = useState(initialData?.purchase_request_id || "")
   const [status, setStatus] = useState(initialData?.status || "draft")
   const [items, setItems] = useState<PurchaseOrderItemInput[]>(initialData?.items || [])
-  const [taxPct, setTaxPct] = useState<number>(initialData?.tax_pct ?? 21)
   const [paymentTerms, setPaymentTerms] = useState(initialData?.payment_terms || "")
   const [deliveryTerms, setDeliveryTerms] = useState(initialData?.delivery_terms || "")
   const [deliveryDate, setDeliveryDate] = useState(initialData?.delivery_date || "")
@@ -114,19 +115,6 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.total_price || 0), 0)
   }, [items])
-
-  const taxAmount = useMemo(() => {
-    return subtotal * (taxPct / 100)
-  }, [subtotal, taxPct])
-
-  const total = useMemo(() => {
-    return subtotal + taxAmount
-  }, [subtotal, taxAmount])
-
-  // Actualizar totales cuando cambian los items o el porcentaje de IVA
-  useEffect(() => {
-    // Los totales se recalculan automáticamente por los useMemo
-  }, [subtotal, taxAmount, total])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,15 +140,32 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       purchase_request_id: purchaseRequestId || undefined,
       status,
       subtotal,
-      tax_pct: taxPct,
-      tax_amount: taxAmount,
-      total,
+      tax_pct: 0,
+      tax_amount: 0,
+      total: subtotal,
       payment_terms: paymentTerms || undefined,
       delivery_terms: deliveryTerms || undefined,
       delivery_date: deliveryDate || undefined,
       notes: notes || undefined,
       items,
     })
+
+    // Refrescar datos si estamos editando para obtener los nuevos IDs de ítems
+    // (el backend elimina y recrea los ítems al actualizar)
+    if (mode === "edit" && initialData?.id) {
+      const refreshedOrder = await getPurchaseOrder(initialData.id)
+      setItems(
+        refreshedOrder.items.map((item) => ({
+          id: item.id,
+          material_id: item.material_id,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }))
+      )
+    }
   }
 
   const pdfData = initialData
@@ -176,8 +181,8 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           total_price: item.total_price,
         })),
         subtotal: initialData.subtotal,
-        tax_pct: initialData.tax_pct,
-        tax_amount: initialData.tax_amount,
+        tax_pct: 0,
+        tax_amount: 0,
         total: initialData.total,
         payment_terms: initialData.payment_terms,
         delivery_terms: initialData.delivery_terms,
@@ -189,35 +194,20 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Header con acciones */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="flex flex-col items-start gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="cursor-pointer"
-            size="sm"
-            onClick={() => router.push("/admin/purchase-management?tab=orders")}
-          >
-            <ArrowLeft className="h-4 w-4" /> Volver
-          </Button>
-          <h1 className="text-xl sm:text-2xl font-bold">
-            {mode === "create" ? "Nueva Orden de Compra" : `Orden ${initialData?.order_number}`}
-          </h1>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {mode === "edit" && pdfData && (
-            <PurchaseOrderPDFButton purchaseOrder={pdfData} className="w-full sm:w-auto" />
-          )}
-          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto cursor-pointer">
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
-            ) : (
-              <Save className="h-4 w-4 mr-1" />
-            )}
-            {mode === "create" ? "Crear Orden" : "Guardar Cambios"}
-          </Button>
-        </div>
+      {/* Header */}
+      <div className="flex flex-col items-start gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="cursor-pointer"
+          size="sm"
+          onClick={() => router.push("/admin/purchase-management?tab=orders")}
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver
+        </Button>
+        <h1 className="text-xl sm:text-2xl font-bold">
+          {mode === "create" ? "Nueva Orden de Compra" : `Orden ${initialData?.order_number}`}
+        </h1>
       </div>
 
       {/* Proveedor y pedido */}
@@ -257,51 +247,14 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         <CardHeader>
           <CardTitle className="text-base">Ítems de la orden</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <PurchaseOrderItemsTable items={items} onChange={setItems} />
-        </CardContent>
-      </Card>
-
-      {/* Totales */}
-      <Card className="p-4 sm:p-6">
-        <CardHeader>
-          <CardTitle className="text-base">Totales</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="tax_pct" className="mb-2">IVA (%)</Label>
-              <Input
-                id="tax_pct"
-                type="number"
-                min={0}
-                max={100}
-                step={0.01}
-                value={taxPct}
-                onChange={(e) => setTaxPct(parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <div className="flex justify-end gap-8 text-sm">
-                <div className="text-right">
-                  <p className="text-muted-foreground">Subtotal</p>
-                  <p className="font-mono text-lg font-medium">
-                    ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-muted-foreground">IVA ({taxPct}%)</p>
-                  <p className="font-mono text-lg font-medium">
-                    ${taxAmount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-muted-foreground font-semibold">TOTAL</p>
-                  <p className="font-mono text-xl font-bold">
-                    ${total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
+          <div className="flex justify-end pt-4 border-t">
+            <div className="text-right">
+              <p className="text-muted-foreground text-sm">Total</p>
+              <p className="tabular-nums text-xl font-bold">
+                ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -421,6 +374,21 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           receipts={initialData.receipts || []}
         />
       )}
+
+      {/* Acciones al final del formulario */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-4 border-t">
+        {mode === "edit" && pdfData && (
+          <PurchaseOrderPDFButton purchaseOrder={pdfData} className="w-full sm:w-auto" />
+        )}
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto cursor-pointer">
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <Save className="h-4 w-4 mr-1" />
+          )}
+          {mode === "create" ? "Crear Orden" : "Guardar Cambios"}
+        </Button>
+      </div>
     </form>
   )
 }

@@ -14,6 +14,7 @@ export interface Material {
   minStock: number
   unitPrice?: number
   supplier?: string
+  brand?: string
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +29,7 @@ export interface CreateMaterialData {
   min_stock?: number
   unit_price?: number
   supplier?: string
+  brand?: string
 }
 
 export interface UpdateMaterialData {
@@ -40,6 +42,7 @@ export interface UpdateMaterialData {
   min_stock?: number
   unit_price?: number
   supplier?: string
+  brand?: string
 }
 
 export function useMaterialsPrisma() {
@@ -67,6 +70,7 @@ export function useMaterialsPrisma() {
         minStock: material.min_stock ?? 0,
         unitPrice: material.unit_price,
         supplier: material.supplier,
+        brand: material.brand,
         createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
         updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
       }))
@@ -99,6 +103,7 @@ export function useMaterialsPrisma() {
         minStock: material.min_stock ?? 0,
         unitPrice: material.unit_price,
         supplier: material.supplier,
+        brand: material.brand,
         createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
         updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
       }
