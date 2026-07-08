@@ -146,4 +146,37 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  /* Scrollbar sútil estilo macOS para la sidebar */
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  .scrollbar-subtle:hover {
+    scrollbar-color: hsl(var(--sidebar-border) / 0.4) transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+
+  .scrollbar-subtle:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--sidebar-border) / 0.4);
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--sidebar-border) / 0.6);
+  }
 }

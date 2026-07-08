@@ -93,14 +93,14 @@ export function PurchaseRequestForm({
         }
       }}
     >
-      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] w-[95vw] !max-w-6xl max-sm:!max-w-none max-h-[700px] max-sm:h-[100dvh] overflow-y-auto max-sm:overflow-hidden rounded-none md:rounded-lg">
-        <DialogHeader className="shrink-0">
+      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] w-[95vw] !max-w-6xl max-sm:!max-w-none max-h-[700px] max-sm:h-[100dvh] overflow-y-auto rounded-none md:rounded-lg">
+        <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Pedido de Materiales" : "Crear Nuevo Pedido"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 max-sm:flex-1 max-sm:overflow-y-auto min-w-0">
+        <div className="space-y-4 min-w-0">
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 items-start">
             <div>
               <Label htmlFor="status" className="mb-2">Estado</Label>
@@ -135,7 +135,7 @@ export function PurchaseRequestForm({
           </div>
         </div>
 
-        <div className="flex max-sm:flex-col max-sm:gap-2 justify-end sm:space-x-2 pt-4 shrink-0">
+        <div className="flex max-sm:flex-col max-sm:gap-2 justify-end sm:space-x-2 pt-4">
           <Button
             type="button"
             variant="outline"

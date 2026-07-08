@@ -951,12 +951,14 @@ export class PrismaTypedService {
     unit_price?: number
     supplier?: string
     brand?: string
+    created_by?: string
   }): Promise<any> {
+    const stockQuantity = materialData.stock_quantity ?? 0
     const { data, error } = await supabase
       .from('materials')
       .insert({
         ...materialData,
-        stock_quantity: materialData.stock_quantity ?? 0,
+        stock_quantity: stockQuantity,
         min_stock: materialData.min_stock ?? 0,
         updated_at: new Date().toISOString()
       })
@@ -964,6 +966,20 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (stockQuantity > 0) {
+      await this.createStockMovement({
+        material_id: data.id,
+        type: 'in',
+        quantity: stockQuantity,
+        stock_after: stockQuantity,
+        source_type: 'initial_stock',
+        reference: 'Stock inicial',
+        notes: 'Stock inicial al crear el material',
+        created_by: materialData.created_by
+      })
+    }
+
     return data
   }
 
@@ -978,7 +994,11 @@ export class PrismaTypedService {
     unit_price?: number
     supplier?: string
     brand?: string
+    created_by?: string
   }): Promise<any> {
+    const currentMaterial = await this.getMaterialById(id)
+    if (!currentMaterial) throw new Error('Material no encontrado')
+
     const { data, error } = await supabase
       .from('materials')
       .update({
@@ -990,6 +1010,26 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (materialData.stock_quantity !== undefined) {
+      const currentStock = currentMaterial.stock_quantity ?? 0
+      const newStock = materialData.stock_quantity
+      const difference = newStock - currentStock
+
+      if (Math.abs(difference) >= 0.0001) {
+        await this.createStockMovement({
+          material_id: id,
+          type: difference > 0 ? 'in' : 'out',
+          quantity: Math.abs(difference),
+          stock_after: newStock,
+          source_type: 'manual_adjustment',
+          reference: 'Ajuste manual de stock',
+          notes: `Stock actualizado desde ${currentStock} a ${newStock}`,
+          created_by: materialData.created_by
+        })
+      }
+    }
+
     return data
   }
 
@@ -1011,6 +1051,95 @@ export class PrismaTypedService {
       .eq('id', id)
     
     if (error) throw error
+  }
+
+  // Stock movements helpers
+  private static async createStockMovement(movement: {
+    material_id: string
+    type: 'in' | 'out' | 'adjustment'
+    quantity: number
+    stock_after: number
+    source_type: 'purchase_receipt' | 'project_assignment' | 'project_removal' | 'project_update' | 'manual_adjustment' | 'initial_stock'
+    source_id?: string
+    reference?: string
+    notes?: string
+    created_by?: string
+  }): Promise<void> {
+    const { error } = await supabase.from('stock_movements').insert({
+      material_id: movement.material_id,
+      type: movement.type,
+      quantity: movement.quantity,
+      stock_after: movement.stock_after,
+      source_type: movement.source_type,
+      source_id: movement.source_id ?? null,
+      reference: movement.reference ?? null,
+      notes: movement.notes ?? null,
+      created_by: movement.created_by ?? null,
+      created_at: new Date().toISOString()
+    })
+
+    if (error) throw error
+  }
+
+  static async getStockMovementsByMaterial(materialId: string, options?: { limit?: number; offset?: number }): Promise<any[]> {
+    let query = supabase
+      .from('stock_movements')
+      .select('*')
+      .eq('material_id', materialId)
+      .order('created_at', { ascending: false })
+
+    if (options?.limit) {
+      query = query.limit(options.limit)
+    }
+    if (options?.offset) {
+      query = query.range(options.offset, options.offset + (options.limit ?? 50) - 1)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async adjustMaterialStock(
+    materialId: string,
+    newStock: number,
+    reason: string,
+    createdBy?: string
+  ): Promise<any> {
+    const material = await this.getMaterialById(materialId)
+    if (!material) throw new Error('Material no encontrado')
+
+    const currentStock = material.stock_quantity ?? 0
+    const difference = newStock - currentStock
+
+    if (Math.abs(difference) < 0.0001) {
+      return material
+    }
+
+    const { data, error } = await supabase
+      .from('materials')
+      .update({
+        stock_quantity: newStock,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', materialId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    await this.createStockMovement({
+      material_id: materialId,
+      type: difference > 0 ? 'in' : 'out',
+      quantity: Math.abs(difference),
+      stock_after: newStock,
+      source_type: 'manual_adjustment',
+      reference: 'Ajuste manual de stock',
+      notes: reason,
+      created_by: createdBy
+    })
+
+    return data
   }
 
   // Project Materials (relación entre proyectos y materiales)
@@ -1045,6 +1174,7 @@ export class PrismaTypedService {
     unit_price?: number
     notes?: string
     assigned_by?: string
+    created_by?: string
   }): Promise<any> {
     const material = await this.getMaterialById(materialData.material_id)
     if (!material) {
@@ -1095,6 +1225,24 @@ export class PrismaTypedService {
         .eq('id', materialData.material_id)
       throw error
     }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single()
+
+    await this.createStockMovement({
+      material_id: materialData.material_id,
+      type: 'out',
+      quantity: materialData.quantity,
+      stock_after: newStock,
+      source_type: 'project_assignment',
+      source_id: data.id,
+      reference: project?.name ? `Asignación a proyecto: ${project.name}` : 'Asignación a proyecto',
+      notes: materialData.notes,
+      created_by: materialData.created_by
+    })
     
     return data
   }
@@ -1103,7 +1251,10 @@ export class PrismaTypedService {
     quantity?: number
     unit_price?: number
     notes?: string
+    created_by?: string
   }): Promise<any> {
+    let stockMovement: { material_id: string; type: 'in' | 'out'; quantity: number; stock_after: number; reference: string } | null = null
+
     if (materialData.quantity !== undefined) {
       const { data: currentData, error: fetchError } = await supabase
         .from('project_materials')
@@ -1144,6 +1295,14 @@ export class PrismaTypedService {
           if (updateStockError) {
             throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
           }
+
+          stockMovement = {
+            material_id: material.id,
+            type: 'out',
+            quantity: Math.abs(difference),
+            stock_after: newStock,
+            reference: `Ajuste de cantidad en proyecto: ${currentQuantity} → ${newQuantity}`
+          }
         }
         else if (difference < 0) {
           const newStock = currentStock + Math.abs(difference)
@@ -1157,6 +1316,14 @@ export class PrismaTypedService {
           
           if (updateStockError) {
             throw new Error(`Error al devolver stock: ${updateStockError.message}`)
+          }
+
+          stockMovement = {
+            material_id: material.id,
+            type: 'in',
+            quantity: Math.abs(difference),
+            stock_after: newStock,
+            reference: `Ajuste de cantidad en proyecto: ${currentQuantity} → ${newQuantity}`
           }
         }
       }
@@ -1173,10 +1340,21 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (stockMovement) {
+      await this.createStockMovement({
+        ...stockMovement,
+        source_type: 'project_update',
+        source_id: data.id,
+        notes: materialData.notes,
+        created_by: materialData.created_by
+      })
+    }
+
     return data
   }
 
-  static async removeMaterialFromProject(id: string): Promise<void> {
+  static async removeMaterialFromProject(id: string, createdBy?: string): Promise<void> {
     const { data: projectMaterial, error: fetchError } = await supabase
       .from('project_materials')
       .select(`
@@ -1209,6 +1387,17 @@ export class PrismaTypedService {
       if (updateStockError) {
         throw new Error(`Error al devolver stock: ${updateStockError.message}`)
       }
+
+      await this.createStockMovement({
+        material_id: material.id,
+        type: 'in',
+        quantity: quantityToReturn,
+        stock_after: newStock,
+        source_type: 'project_removal',
+        source_id: id,
+        reference: `Devolución desde proyecto: ${projectMaterial.project_id}`,
+        created_by: createdBy
+      })
     }
     
     const { error } = await supabase
@@ -2805,6 +2994,7 @@ export class PrismaTypedService {
     remito_file_url?: string
     remito_file_name?: string
     notes?: string
+    created_by?: string
     items: Array<{
       purchase_order_item_id: string
       material_id?: string
@@ -2815,6 +3005,14 @@ export class PrismaTypedService {
     const { items, ...receiptData } = input
 
     console.log('[createPurchaseOrderReceipt] input:', JSON.stringify(input, null, 2))
+
+    const { data: purchaseOrder, error: purchaseOrderError } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .eq('id', receiptData.purchase_order_id)
+      .single()
+
+    if (purchaseOrderError) throw purchaseOrderError
 
     const { data: receipt, error: receiptError } = await supabase
       .from('purchase_order_receipts')
@@ -2880,7 +3078,7 @@ export class PrismaTypedService {
         throw itemsError
       }
 
-      // Actualizar stock por cada ítem con material_id
+      // Actualizar stock y registrar movimientos por cada ítem con material_id
       for (const item of items) {
         if (!item.material_id) continue
 
@@ -2899,6 +3097,18 @@ export class PrismaTypedService {
           .eq('id', item.material_id)
 
         if (updateError) throw updateError
+
+        await this.createStockMovement({
+          material_id: item.material_id,
+          type: 'in',
+          quantity: item.quantity_received ?? 0,
+          stock_after: newStock,
+          source_type: 'purchase_receipt',
+          source_id: receipt.id,
+          reference: `Recepción ${purchaseOrder?.order_number || ''}`.trim(),
+          notes: receiptData.notes,
+          created_by: input.created_by
+        })
       }
     }
 
@@ -2934,7 +3144,7 @@ export class PrismaTypedService {
     }
   }
 
-  static async deletePurchaseOrderReceipt(id: string) {
+  static async deletePurchaseOrderReceipt(id: string, createdBy?: string) {
     // Obtener ítems para ajustar stock (restar lo recibido)
     const { data: receipt, error: fetchError } = await supabase
       .from('purchase_order_receipts')
@@ -2943,6 +3153,12 @@ export class PrismaTypedService {
       .single()
 
     if (fetchError) throw fetchError
+
+    const { data: purchaseOrder } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .eq('id', receipt.purchase_order_id)
+      .single()
 
     if (receipt?.items) {
       for (const item of receipt.items as any[]) {
@@ -2963,6 +3179,17 @@ export class PrismaTypedService {
           .eq('id', item.material_id)
 
         if (updateError) throw updateError
+
+        await this.createStockMovement({
+          material_id: item.material_id,
+          type: 'out',
+          quantity: item.quantity_received ?? 0,
+          stock_after: newStock,
+          source_type: 'purchase_receipt',
+          source_id: id,
+          reference: `Anulación de recepción ${purchaseOrder?.order_number || ''}`.trim(),
+          created_by: createdBy
+        })
       }
     }
 

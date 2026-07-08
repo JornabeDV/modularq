@@ -40,6 +40,7 @@ interface MaterialTableProps {
   onLowStockOnlyChange?: (value: boolean) => void;
   onEditMaterial: (material: Material) => void;
   onDeleteMaterial: (materialId: string) => void;
+  onStockAdjusted?: () => void;
   isReadOnly?: boolean;
   sortField?: SortField;
   sortOrder?: "asc" | "desc";
@@ -61,6 +62,7 @@ export function MaterialTable({
   onLowStockOnlyChange,
   onEditMaterial,
   onDeleteMaterial,
+  onStockAdjusted,
   isReadOnly = false,
   sortField,
   sortOrder,
@@ -181,6 +183,7 @@ export function MaterialTable({
                     material={material}
                     onEdit={onEditMaterial}
                     onDelete={onDeleteMaterial}
+                    onStockAdjusted={onStockAdjusted}
                     isReadOnly={isReadOnly}
                   />
                 ))

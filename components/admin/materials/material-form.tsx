@@ -424,7 +424,7 @@ export function MaterialForm({
         }
       }}
     >
-      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] overflow-y-auto md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] sm:h-[90dvh] overflow-y-auto md:max-w-4xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Material" : "Crear Nuevo Material"}

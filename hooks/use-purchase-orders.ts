@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth-context'
 import type { Supplier } from './use-suppliers'
 
 export interface PurchaseOrderItem {
@@ -135,6 +136,7 @@ export interface CreateReceiptData {
   remito_file_url?: string
   remito_file_name?: string
   notes?: string
+  created_by?: string
   items: Array<{
     purchase_order_item_id: string
     material_id?: string
@@ -144,6 +146,7 @@ export interface CreateReceiptData {
 }
 
 export function usePurchaseOrders() {
+  const { userProfile } = useAuth()
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -250,7 +253,7 @@ export function usePurchaseOrders() {
     const response = await fetch(`/api/purchase-orders/${orderId}/receipts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, created_by: userProfile?.id }),
     })
 
     if (!response.ok) {
@@ -266,6 +269,8 @@ export function usePurchaseOrders() {
   const deleteReceipt = async (orderId: string, receiptId: string): Promise<void> => {
     const response = await fetch(`/api/purchase-orders/${orderId}/receipts/${receiptId}`, {
       method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ created_by: userProfile?.id }),
     })
 
     if (!response.ok) {

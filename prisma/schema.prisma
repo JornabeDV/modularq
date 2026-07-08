@@ -100,6 +100,21 @@ enum PurchaseOrderStatus {
   cancelled
 }
 
+enum StockMovementType {
+  in
+  out
+  adjustment
+}
+
+enum StockMovementSource {
+  purchase_receipt
+  project_assignment
+  project_removal
+  project_update
+  manual_adjustment
+  initial_stock
+}
+
 enum PurchaseRequestStatus {
   draft
   pending
@@ -225,6 +240,7 @@ model Material {
   purchase_order_items     PurchaseOrderItem[]
   purchase_request_items   PurchaseRequestItem[]
   purchase_order_receipt_items PurchaseOrderReceiptItem[]
+  stock_movements          StockMovement[]
 
   @@map("materials")
 }
@@ -641,6 +657,28 @@ model PurchaseOrderReceiptItem {
   quantity_received      Float
 
   @@map("purchase_order_receipt_items")
+}
+
+model StockMovement {
+  id              String   @id @default(cuid())
+  material_id     String
+  material        Material @relation(fields: [material_id], references: [id], onDelete: Cascade)
+
+  type            StockMovementType
+  quantity        Float
+  stock_after     Float
+
+  source_type     StockMovementSource
+  source_id       String?
+  reference       String?
+
+  notes           String?
+  created_by      String?
+  created_at      DateTime @default(now())
+
+  @@index([material_id, created_at])
+  @@index([source_type, source_id])
+  @@map("stock_movements")
 }
 
 model PurchaseOrderAttachment {

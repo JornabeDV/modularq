@@ -42,6 +42,7 @@ export async function POST(
       remito_file_url: body.remito_file_url,
       remito_file_name: body.remito_file_name,
       notes: body.notes,
+      created_by: body.created_by,
       items: body.items,
     })
 

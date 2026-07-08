@@ -85,16 +85,13 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
           <Plus className="h-4 w-4 mr-1" /> Nuevo
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-sm:w-[100dvw] max-sm:h-[100dvh] max-sm:!max-w-none max-sm:rounded-none max-sm:overflow-hidden max-sm:flex max-sm:flex-col">
-        <form onSubmit={handleSubmit} className="flex flex-col max-sm:h-full">
-          <DialogHeader className="shrink-0">
+      <DialogContent className="max-w-lg max-sm:w-[100dvw] max-sm:h-[100dvh] max-sm:!max-w-none max-sm:rounded-none max-sm:overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
             <DialogTitle>Nuevo Proveedor</DialogTitle>
-            <DialogDescription>
-              Complete los datos del proveedor. Solo el nombre es obligatorio.
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4 max-sm:flex-1 max-sm:overflow-y-auto">
+          <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre *</Label>
@@ -170,7 +167,7 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 flex-col gap-2 sm:flex-row">
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button
               type="button"
               variant="outline"

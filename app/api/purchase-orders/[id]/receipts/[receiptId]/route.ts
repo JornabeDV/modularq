@@ -8,7 +8,8 @@ export async function DELETE(
 ) {
   try {
     const { receiptId } = await params
-    await PrismaTypedService.deletePurchaseOrderReceipt(receiptId)
+    const body = await request.json().catch(() => ({}))
+    await PrismaTypedService.deletePurchaseOrderReceipt(receiptId, body.created_by)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting purchase order receipt:', error)
