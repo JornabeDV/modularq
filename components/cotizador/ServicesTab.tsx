@@ -104,11 +104,11 @@ export function ServicesTab({ services, loading, onAddService, onAddCustomServic
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{svc.name}</p>
                     {svc.description && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
                         {svc.description}
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                       Unidad: {svc.unit}
                     </p>
                   </div>

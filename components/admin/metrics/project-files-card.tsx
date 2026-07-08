@@ -67,13 +67,13 @@ export function ProjectFilesCard({ projectFiles, filesLoading }: Props) {
                     <p className="font-medium text-sm truncate">
                       {file.file_name}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                       <span>{formatFileSize(file.file_size)}</span>
                       <span>{formatDate(file.uploaded_at)}</span>
                       <span className="capitalize">{file.file_type}</span>
                     </div>
                     {file.description && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
                         {file.description}
                       </p>
                     )}

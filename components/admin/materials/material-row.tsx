@@ -2,7 +2,7 @@
 
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Edit, Trash2, AlertTriangle, Eye, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Material } from "@/hooks/use-materials-prisma";
 import {
@@ -16,12 +16,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { MaterialStockAdjustDialog } from "./material-stock-adjust-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MaterialRowProps {
   material: Material;
   onEdit: (material: Material) => void;
   onDelete: (materialId: string) => void;
   isReadOnly?: boolean;
+  onStockAdjusted?: () => void;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -48,13 +56,19 @@ export function MaterialRow({
   onEdit,
   onDelete,
   isReadOnly = false,
+  onStockAdjusted,
 }: MaterialRowProps) {
+  const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
   const isLowStock = material.stockQuantity <= material.minStock;
 
   return (
     <>
-      <TableRow>
+      <TableRow
+        className="cursor-pointer hover:bg-accent/50"
+        onClick={() => router.push(`/admin/stock/${material.id}`)}
+      >
         <TableCell className="font-mono text-xs">{material.code}</TableCell>
         <TableCell>
           <div className="flex items-center gap-2">
@@ -76,7 +90,7 @@ export function MaterialRow({
               {UNIT_LABELS[material.unit] || material.unit}
             </span>
             {material.minStock > 0 && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 Mín: {material.minStock}
               </span>
             )}
@@ -101,25 +115,87 @@ export function MaterialRow({
         >
           {material.supplier || "-"}
         </TableCell>
+        <TableCell
+          className="max-w-[120px] truncate"
+          title={material.brand || ""}
+        >
+          {material.brand || "-"}
+        </TableCell>
         {!isReadOnly && (
           <TableCell className="text-right">
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(material)}
-                className="cursor-pointer"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDeleteDialog(true)}
-                className="cursor-pointer"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/admin/stock/${material.id}`);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ver detalle e historial</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAdjustDialog(true);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ajustar stock</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(material);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Editar producto</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Eliminar producto</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </TableCell>
         )}
@@ -151,6 +227,13 @@ export function MaterialRow({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MaterialStockAdjustDialog
+        material={material}
+        open={showAdjustDialog}
+        onOpenChange={setShowAdjustDialog}
+        onSuccess={onStockAdjusted}
+      />
     </>
   );
 }

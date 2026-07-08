@@ -104,7 +104,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
             <p className="text-lg">
               {startedAt ? formatDate(startedAt) : "Sin fecha"}
               {isEstimatedStart && (
-                <span className="ml-2 text-xs text-muted-foreground">
+                <span className="ml-2 text-xs sm:text-sm text-muted-foreground">
                   (estimada)
                 </span>
               )}
@@ -169,7 +169,7 @@ export function TaskDetails({ task, onComplete }: TaskDetailsProps) {
                     <p className="text-sm font-medium">
                       {collaborator.user?.name || "Usuario"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Agregado por {collaborator.addedByUser?.name || "Sistema"}
                     </p>
                   </div>

@@ -207,7 +207,7 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
                         <SelectItem key={material.id} value={material.id}>
                           <div className="flex items-center justify-between w-full">
                             <span>{material.code} - {material.name}</span>
-                            <span className="text-xs text-muted-foreground ml-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                               Stock: {material.stockQuantity}
                             </span>
                           </div>
@@ -257,7 +257,7 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
                 placeholder="0"
               />
               {selectedMaterial && !isEditing && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Disponible: {stockAvailable} {UNIT_LABELS[selectedMaterial.unit] || selectedMaterial.unit}
                 </p>
               )}
@@ -286,7 +286,7 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
                 }}
                 placeholder="0.00"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Si no se especifica, se usará el precio actual del material
               </p>
             </div>

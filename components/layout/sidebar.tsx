@@ -45,8 +45,9 @@ const adminNavigation = [
   { name: "Gestión de Proyectos", href: "/admin/projects", icon: FolderKanban },
   { name: "Gestión de Alquileres", href: "/rentals/modules", icon: Truck },
   { name: "Gestión de Clientes", href: "/admin/clients", icon: Building2 },
+  { name: "Gestión de Proveedores", href: "/admin/suppliers", icon: Building2 },
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
-  { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
+  { name: "Gestión de Compra", href: "/admin/purchase-management", icon: ShoppingCart },  { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
   { name: "Cotizaciones", href: "/quoter/history", icon: History },
   {
     name: "Módulos Estándar",
@@ -172,7 +173,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <p className="text-sm font-medium truncate">
                 {userProfile?.name || user?.email || "Usuario"}
               </p>
-              <p className="text-xs text-muted-foreground capitalize">
+              <p className="text-xs sm:text-sm text-muted-foreground capitalize">
                 {userProfile?.role || "Sin rol"}
               </p>
             </div>
@@ -181,8 +182,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navegación */}
-      <nav className="flex-1 p-2 overflow-y-auto">
-        <ul className="space-y-1">
+      <nav className="flex-1 p-2 overflow-y-auto scrollbar-subtle">
+        <ul className="space-y-0.5">
           {userProfile?.role === "operario" &&
             navigation.map((item) => (
               <li key={item.name}>

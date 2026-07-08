@@ -317,7 +317,7 @@ export function FileUpload({
                         ? uploadProgressText || "Subiendo..."
                         : "Arrastra archivos aquí"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       {uploading
                         ? "Por favor espera"
                         : "PDF, Excel, imágenes. Máx. 50MB por archivo."}
@@ -364,7 +364,7 @@ export function FileUpload({
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">Subiendo documento...</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Por favor espera
                   </p>
                 </div>

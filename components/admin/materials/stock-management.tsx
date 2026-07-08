@@ -21,7 +21,8 @@ type SortField =
   | "category"
   | "stockQuantity"
   | "unitPrice"
-  | "supplier";
+  | "supplier"
+  | "brand";
 type SortOrder = "asc" | "desc";
 
 export function StockManagement() {
@@ -38,6 +39,7 @@ export function StockManagement() {
     createMaterial,
     updateMaterial,
     deleteMaterial,
+    refetch,
   } = useMaterialsPrisma();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
@@ -306,6 +308,7 @@ export function StockManagement() {
         onLowStockOnlyChange={handleLowStockOnlyChange}
         onEditMaterial={handleEditMaterial}
         onDeleteMaterial={handleDeleteMaterial}
+        onStockAdjusted={() => refetch(true)}
         isReadOnly={isReadOnly}
         sortField={sortField}
         sortOrder={sortOrder}

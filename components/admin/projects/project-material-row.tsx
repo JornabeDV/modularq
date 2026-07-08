@@ -59,7 +59,7 @@ export function ProjectMaterialRow({ projectMaterial, onEdit, onDelete, isReadOn
           <div>
             <span className="font-medium">{material.name}</span>
             {material.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-1" title={material.description}>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-1" title={material.description}>
                 {material.description}
               </p>
             )}
@@ -73,7 +73,7 @@ export function ProjectMaterialRow({ projectMaterial, onEdit, onDelete, isReadOn
             <span className="font-medium">
               {projectMaterial.quantity} {UNIT_LABELS[material.unit] || material.unit}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               Stock: {material.stock_quantity} {UNIT_LABELS[material.unit] || material.unit}
             </span>
           </div>

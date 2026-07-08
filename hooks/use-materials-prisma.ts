@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth-context'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
 
 export interface Material {
@@ -14,6 +15,7 @@ export interface Material {
   minStock: number
   unitPrice?: number
   supplier?: string
+  brand?: string
   createdAt: string
   updatedAt: string
 }
@@ -28,6 +30,7 @@ export interface CreateMaterialData {
   min_stock?: number
   unit_price?: number
   supplier?: string
+  brand?: string
 }
 
 export interface UpdateMaterialData {
@@ -40,9 +43,11 @@ export interface UpdateMaterialData {
   min_stock?: number
   unit_price?: number
   supplier?: string
+  brand?: string
 }
 
 export function useMaterialsPrisma() {
+  const { userProfile } = useAuth()
   const [materials, setMaterials] = useState<Material[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -67,6 +72,7 @@ export function useMaterialsPrisma() {
         minStock: material.min_stock ?? 0,
         unitPrice: material.unit_price,
         supplier: material.supplier,
+        brand: material.brand,
         createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
         updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
       }))
@@ -85,7 +91,10 @@ export function useMaterialsPrisma() {
     try {
       setError(null)
       
-      const material = await PrismaTypedService.createMaterial(materialData)
+      const material = await PrismaTypedService.createMaterial({
+        ...materialData,
+        created_by: userProfile?.id
+      })
 
       // Convertir el material al formato Material personalizado
       const formattedMaterial: Material = {
@@ -99,6 +108,7 @@ export function useMaterialsPrisma() {
         minStock: material.min_stock ?? 0,
         unitPrice: material.unit_price,
         supplier: material.supplier,
+        brand: material.brand,
         createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
         updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
       }
@@ -123,7 +133,10 @@ export function useMaterialsPrisma() {
     try {
       setError(null)
       
-      await PrismaTypedService.updateMaterial(materialId, materialData)
+      await PrismaTypedService.updateMaterial(materialId, {
+        ...materialData,
+        created_by: userProfile?.id
+      })
 
       // Refrescar datos en segundo plano sin mostrar loading
       fetchMaterials(true).catch(console.error)
@@ -159,9 +172,36 @@ export function useMaterialsPrisma() {
     }
   }
 
-  // Obtener material por ID
+  // Obtener material por ID del estado local
   const getMaterialById = (materialId: string): Material | undefined => {
     return materials.find(m => m.id === materialId)
+  }
+
+  // Obtener material por ID desde el servidor
+  const getMaterialByIdFromServer = async (materialId: string): Promise<Material | null> => {
+    try {
+      const material = await PrismaTypedService.getMaterialById(materialId)
+      if (!material) return null
+
+      return {
+        id: material.id,
+        code: material.code,
+        name: material.name,
+        description: material.description,
+        category: material.category,
+        unit: material.unit,
+        stockQuantity: material.stock_quantity ?? 0,
+        minStock: material.min_stock ?? 0,
+        unitPrice: material.unit_price,
+        supplier: material.supplier,
+        brand: material.brand,
+        createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
+        updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
+      }
+    } catch (err) {
+      console.error('Error fetching material by id:', err)
+      return null
+    }
   }
 
   // Obtener materiales con stock bajo
@@ -199,6 +239,7 @@ export function useMaterialsPrisma() {
     updateMaterial,
     deleteMaterial,
     getMaterialById,
+    getMaterialByIdFromServer,
     getLowStockMaterials,
     getNextCode,
     refetch: fetchMaterials

@@ -247,7 +247,7 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-xs text-muted-foreground">Cliente</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Cliente</p>
                 <p className="text-base font-semibold">
                   {activeContract.client?.company_name || "—"}
                 </p>
@@ -271,27 +271,27 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Inicio</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Inicio</p>
                   <p className="text-sm">
                     {formatProjectDate(activeContract.start_date)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Finalización</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Finalización</p>
                   <p className="text-sm">
                     {formatProjectDate(activeContract.end_date) || "Sin fecha"}
                   </p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Precio Mensual</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Precio Mensual</p>
                 <p className="text-sm font-medium">
                   ${activeContract.monthly_price} {activeContract.currency}
                 </p>
               </div>
               {activeContract.delivery_notes && (
                 <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Notas de entrega
                   </p>
                   <p className="text-sm mt-1">
@@ -322,7 +322,7 @@ export function RentalModuleDetail({ moduleId }: { moduleId: string }) {
                   <PackageOpen className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium">Este módulo está libre</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-[220px]">
                   {module.status === "available" ||
                   module.status === "maintenance"
                     ? "Podés iniciar un nuevo alquiler desde el botón superior."

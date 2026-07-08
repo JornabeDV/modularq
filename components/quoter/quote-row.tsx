@@ -23,6 +23,7 @@ import {
   ChevronDown,
   FileX,
   FolderPlus,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import type { Quote, QuoteStatus } from "@/hooks/use-quotes";
@@ -236,27 +237,48 @@ export function QuoteRow({
             </Tooltip>
 
             {quote.pdf_url ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 w-8 p-0 cursor-pointer"
-                    asChild
-                  >
-                    <a
-                      href={quote.pdf_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-8 w-8 p-0 cursor-pointer"
+                      asChild
                     >
-                      <Download className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Descargar PDF</p>
-                </TooltipContent>
-              </Tooltip>
+                      <a
+                        href={quote.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Ver PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-8 w-8 p-0 cursor-pointer"
+                      asChild
+                    >
+                      <a
+                        href={quote.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Descargar PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>

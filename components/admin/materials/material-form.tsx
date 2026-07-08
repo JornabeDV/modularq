@@ -51,6 +51,7 @@ interface MaterialFormData {
   min_stock: number;
   unit_price: number;
   supplier: string;
+  brand: string;
 }
 
 interface MaterialFormProps {
@@ -193,6 +194,7 @@ export function MaterialForm({
     min_stock: 0,
     unit_price: 0,
     supplier: "",
+    brand: "",
   });
 
   // Estado para sugerencias de autocompletado
@@ -225,6 +227,7 @@ export function MaterialForm({
         min_stock: initialData.minStock || 0,
         unit_price: initialData.unitPrice || 0,
         supplier: initialData.supplier || "",
+        brand: initialData.brand || "",
       });
       setUnitPriceInput(initialData.unitPrice?.toString().replace(".", ",") || "");
     } else {
@@ -238,6 +241,7 @@ export function MaterialForm({
         min_stock: 0,
         unit_price: 0,
         supplier: "",
+        brand: "",
       });
       setUnitPriceInput("");
     }
@@ -338,6 +342,7 @@ export function MaterialForm({
       unit: material.unit,
       unit_price: material.unitPrice || 0,
       supplier: material.supplier || "",
+      brand: material.brand || "",
     }));
     setShowSuggestions(false);
   };
@@ -404,6 +409,7 @@ export function MaterialForm({
       min_stock: formData.min_stock,
       unit_price: formData.unit_price > 0 ? formData.unit_price : undefined,
       supplier: formData.supplier || undefined,
+      brand: formData.brand || undefined,
     };
     onSubmit(submitData);
     setShowDuplicateWarning(false);
@@ -418,7 +424,7 @@ export function MaterialForm({
         }
       }}
     >
-      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] overflow-y-auto md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] sm:h-[90dvh] overflow-y-auto md:max-w-4xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Material" : "Crear Nuevo Material"}
@@ -480,7 +486,7 @@ export function MaterialForm({
                 </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               {isEditing
                 ? "Código único del material (no editable)"
                 : "Código generado automáticamente según categoría"}
@@ -519,7 +525,7 @@ export function MaterialForm({
               nameInputFocused &&
               similarMaterials.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white dark:bg-card border rounded-md shadow-lg max-h-48 overflow-auto">
-                  <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                  <div className="px-3 py-2 text-xs sm:text-sm text-muted-foreground border-b">
                     Materiales similares encontrados:
                   </div>
                   {similarMaterials.map((material) => (
@@ -531,7 +537,7 @@ export function MaterialForm({
                     >
                       <div>
                         <span className="font-medium">{material.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                           ({material.code})
                         </span>
                       </div>
@@ -657,7 +663,7 @@ export function MaterialForm({
                 }}
                 placeholder="0"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Alerta cuando el stock esté por debajo
               </p>
             </div>
@@ -694,6 +700,18 @@ export function MaterialForm({
               value={formData.supplier}
               onChange={(e) => handleInputChange("supplier", e.target.value)}
               placeholder="Ej: Proveedor ABC S.A."
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="brand" className="mb-2">
+              Marca
+            </Label>
+            <Input
+              id="brand"
+              value={formData.brand}
+              onChange={(e) => handleInputChange("brand", e.target.value)}
+              placeholder="Ej: 3M, IMSA, JELUZ"
             />
           </div>
 

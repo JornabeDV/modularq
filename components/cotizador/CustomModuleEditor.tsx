@@ -258,7 +258,7 @@ export function CustomModuleEditor({
             </CardHeader>
             <CardContent className="space-y-3">
               {sections.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Agregá secciones con título y descripción para mostrar en el
                   presupuesto.
                 </p>
@@ -384,11 +384,11 @@ export function CustomModuleEditor({
                   }}
                 />
                 {uploading ? (
-                  <p className="text-xs text-muted-foreground">Subiendo...</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Subiendo...</p>
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Hacé clic para subir un PDF
                     </p>
                   </>

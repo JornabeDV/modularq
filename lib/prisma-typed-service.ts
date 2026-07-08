@@ -950,12 +950,15 @@ export class PrismaTypedService {
     min_stock?: number
     unit_price?: number
     supplier?: string
+    brand?: string
+    created_by?: string
   }): Promise<any> {
+    const stockQuantity = materialData.stock_quantity ?? 0
     const { data, error } = await supabase
       .from('materials')
       .insert({
         ...materialData,
-        stock_quantity: materialData.stock_quantity ?? 0,
+        stock_quantity: stockQuantity,
         min_stock: materialData.min_stock ?? 0,
         updated_at: new Date().toISOString()
       })
@@ -963,6 +966,20 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (stockQuantity > 0) {
+      await this.createStockMovement({
+        material_id: data.id,
+        type: 'in',
+        quantity: stockQuantity,
+        stock_after: stockQuantity,
+        source_type: 'initial_stock',
+        reference: 'Stock inicial',
+        notes: 'Stock inicial al crear el material',
+        created_by: materialData.created_by
+      })
+    }
+
     return data
   }
 
@@ -976,7 +993,12 @@ export class PrismaTypedService {
     min_stock?: number
     unit_price?: number
     supplier?: string
+    brand?: string
+    created_by?: string
   }): Promise<any> {
+    const currentMaterial = await this.getMaterialById(id)
+    if (!currentMaterial) throw new Error('Material no encontrado')
+
     const { data, error } = await supabase
       .from('materials')
       .update({
@@ -988,6 +1010,26 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (materialData.stock_quantity !== undefined) {
+      const currentStock = currentMaterial.stock_quantity ?? 0
+      const newStock = materialData.stock_quantity
+      const difference = newStock - currentStock
+
+      if (Math.abs(difference) >= 0.0001) {
+        await this.createStockMovement({
+          material_id: id,
+          type: difference > 0 ? 'in' : 'out',
+          quantity: Math.abs(difference),
+          stock_after: newStock,
+          source_type: 'manual_adjustment',
+          reference: 'Ajuste manual de stock',
+          notes: `Stock actualizado desde ${currentStock} a ${newStock}`,
+          created_by: materialData.created_by
+        })
+      }
+    }
+
     return data
   }
 
@@ -1009,6 +1051,95 @@ export class PrismaTypedService {
       .eq('id', id)
     
     if (error) throw error
+  }
+
+  // Stock movements helpers
+  private static async createStockMovement(movement: {
+    material_id: string
+    type: 'in' | 'out' | 'adjustment'
+    quantity: number
+    stock_after: number
+    source_type: 'purchase_receipt' | 'project_assignment' | 'project_removal' | 'project_update' | 'manual_adjustment' | 'initial_stock'
+    source_id?: string
+    reference?: string
+    notes?: string
+    created_by?: string
+  }): Promise<void> {
+    const { error } = await supabase.from('stock_movements').insert({
+      material_id: movement.material_id,
+      type: movement.type,
+      quantity: movement.quantity,
+      stock_after: movement.stock_after,
+      source_type: movement.source_type,
+      source_id: movement.source_id ?? null,
+      reference: movement.reference ?? null,
+      notes: movement.notes ?? null,
+      created_by: movement.created_by ?? null,
+      created_at: new Date().toISOString()
+    })
+
+    if (error) throw error
+  }
+
+  static async getStockMovementsByMaterial(materialId: string, options?: { limit?: number; offset?: number }): Promise<any[]> {
+    let query = supabase
+      .from('stock_movements')
+      .select('*')
+      .eq('material_id', materialId)
+      .order('created_at', { ascending: false })
+
+    if (options?.limit) {
+      query = query.limit(options.limit)
+    }
+    if (options?.offset) {
+      query = query.range(options.offset, options.offset + (options.limit ?? 50) - 1)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async adjustMaterialStock(
+    materialId: string,
+    newStock: number,
+    reason: string,
+    createdBy?: string
+  ): Promise<any> {
+    const material = await this.getMaterialById(materialId)
+    if (!material) throw new Error('Material no encontrado')
+
+    const currentStock = material.stock_quantity ?? 0
+    const difference = newStock - currentStock
+
+    if (Math.abs(difference) < 0.0001) {
+      return material
+    }
+
+    const { data, error } = await supabase
+      .from('materials')
+      .update({
+        stock_quantity: newStock,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', materialId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    await this.createStockMovement({
+      material_id: materialId,
+      type: difference > 0 ? 'in' : 'out',
+      quantity: Math.abs(difference),
+      stock_after: newStock,
+      source_type: 'manual_adjustment',
+      reference: 'Ajuste manual de stock',
+      notes: reason,
+      created_by: createdBy
+    })
+
+    return data
   }
 
   // Project Materials (relación entre proyectos y materiales)
@@ -1043,6 +1174,7 @@ export class PrismaTypedService {
     unit_price?: number
     notes?: string
     assigned_by?: string
+    created_by?: string
   }): Promise<any> {
     const material = await this.getMaterialById(materialData.material_id)
     if (!material) {
@@ -1093,6 +1225,24 @@ export class PrismaTypedService {
         .eq('id', materialData.material_id)
       throw error
     }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single()
+
+    await this.createStockMovement({
+      material_id: materialData.material_id,
+      type: 'out',
+      quantity: materialData.quantity,
+      stock_after: newStock,
+      source_type: 'project_assignment',
+      source_id: data.id,
+      reference: project?.name ? `Asignación a proyecto: ${project.name}` : 'Asignación a proyecto',
+      notes: materialData.notes,
+      created_by: materialData.created_by
+    })
     
     return data
   }
@@ -1101,7 +1251,10 @@ export class PrismaTypedService {
     quantity?: number
     unit_price?: number
     notes?: string
+    created_by?: string
   }): Promise<any> {
+    let stockMovement: { material_id: string; type: 'in' | 'out'; quantity: number; stock_after: number; reference: string } | null = null
+
     if (materialData.quantity !== undefined) {
       const { data: currentData, error: fetchError } = await supabase
         .from('project_materials')
@@ -1142,6 +1295,14 @@ export class PrismaTypedService {
           if (updateStockError) {
             throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
           }
+
+          stockMovement = {
+            material_id: material.id,
+            type: 'out',
+            quantity: Math.abs(difference),
+            stock_after: newStock,
+            reference: `Ajuste de cantidad en proyecto: ${currentQuantity} → ${newQuantity}`
+          }
         }
         else if (difference < 0) {
           const newStock = currentStock + Math.abs(difference)
@@ -1155,6 +1316,14 @@ export class PrismaTypedService {
           
           if (updateStockError) {
             throw new Error(`Error al devolver stock: ${updateStockError.message}`)
+          }
+
+          stockMovement = {
+            material_id: material.id,
+            type: 'in',
+            quantity: Math.abs(difference),
+            stock_after: newStock,
+            reference: `Ajuste de cantidad en proyecto: ${currentQuantity} → ${newQuantity}`
           }
         }
       }
@@ -1171,10 +1340,21 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (stockMovement) {
+      await this.createStockMovement({
+        ...stockMovement,
+        source_type: 'project_update',
+        source_id: data.id,
+        notes: materialData.notes,
+        created_by: materialData.created_by
+      })
+    }
+
     return data
   }
 
-  static async removeMaterialFromProject(id: string): Promise<void> {
+  static async removeMaterialFromProject(id: string, createdBy?: string): Promise<void> {
     const { data: projectMaterial, error: fetchError } = await supabase
       .from('project_materials')
       .select(`
@@ -1207,6 +1387,17 @@ export class PrismaTypedService {
       if (updateStockError) {
         throw new Error(`Error al devolver stock: ${updateStockError.message}`)
       }
+
+      await this.createStockMovement({
+        material_id: material.id,
+        type: 'in',
+        quantity: quantityToReturn,
+        stock_after: newStock,
+        source_type: 'project_removal',
+        source_id: id,
+        reference: `Devolución desde proyecto: ${projectMaterial.project_id}`,
+        created_by: createdBy
+      })
     }
     
     const { error } = await supabase
@@ -2140,6 +2331,950 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
+  // ==================== SUPPLIERS ====================
+
+  static async getAllSuppliers(activeOnly = true) {
+    let query = supabase.from('suppliers').select('*').order('name')
+    if (activeOnly) query = query.eq('is_active', true)
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getSupplierById(id: string) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async createSupplier(input: {
+    name: string
+    contact_name?: string
+    email?: string
+    phone?: string
+    address?: string
+    cuit?: string
+    notes?: string
+    is_active?: boolean
+  }) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert({
+        name: input.name,
+        contact_name: input.contact_name ?? null,
+        email: input.email ?? null,
+        phone: input.phone ?? null,
+        address: input.address ?? null,
+        cuit: input.cuit ?? null,
+        notes: input.notes ?? null,
+        is_active: input.is_active ?? true,
+      })
+      .select('*')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async updateSupplier(
+    id: string,
+    input: {
+      name?: string
+      contact_name?: string
+      email?: string
+      phone?: string
+      address?: string
+      cuit?: string
+      notes?: string
+      is_active?: boolean
+    }
+  ) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .update({
+        ...input,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async deleteSupplier(id: string) {
+    const { error } = await supabase.from('suppliers').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE ORDERS ====================
+
+  static async getAllPurchaseOrders(filters?: {
+    status?: string
+    supplier_id?: string
+    search?: string
+  }) {
+    let query = supabase
+      .from('purchase_orders')
+      .select('*, supplier:suppliers(name, contact_name)')
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+    if (filters?.supplier_id) query = query.eq('supplier_id', filters.supplier_id)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getPurchaseOrderById(id: string) {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select(
+        `*,
+        supplier:suppliers(*),
+        purchase_request:purchase_requests(id, request_number, status),
+        items:purchase_order_items(*, material:materials(id, code, name, unit)),
+        attachments:purchase_order_attachments(*),
+        receipts:purchase_order_receipts(id, purchase_order_id, receipt_number, remito_number, remito_file_url, remito_file_name, notes, received_at)`
+      )
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+
+    // Cargar ítems de recepciones por separado para evitar problemas de join
+    if (data?.receipts && data.receipts.length > 0) {
+      const receiptIds = data.receipts.map((r: any) => r.id)
+      const { data: receiptItems, error: itemsError } = await supabase
+        .from('purchase_order_receipt_items')
+        .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+        .in('receipt_id', receiptIds)
+
+      if (itemsError) throw itemsError
+
+      const itemsByReceipt: Record<string, any[]> = {}
+      for (const item of receiptItems || []) {
+        if (!itemsByReceipt[item.receipt_id]) itemsByReceipt[item.receipt_id] = []
+        itemsByReceipt[item.receipt_id].push(item)
+      }
+
+      data.receipts = data.receipts.map((r: any) => ({
+        ...r,
+        items: itemsByReceipt[r.id] || [],
+      }))
+    }
+
+    return data
+  }
+
+  static async getNextPurchaseOrderNumber(): Promise<string> {
+    const year = new Date().getFullYear()
+    const prefix = `OC-${year}-`
+
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .ilike('order_number', `${prefix}%`)
+      .order('order_number', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const last = data[0].order_number as string
+      const match = last.match(/-(\d+)$/)
+      if (match) nextNum = parseInt(match[1], 10) + 1
+    }
+
+    return `${prefix}${String(nextNum).padStart(4, '0')}`
+  }
+
+  static async createPurchaseOrder(input: {
+    order_number: string
+    supplier_id: string
+    purchase_request_id?: string
+    status?: string
+    subtotal?: number
+    tax_pct?: number
+    tax_amount?: number
+    total?: number
+    payment_terms?: string
+    delivery_terms?: string
+    delivery_date?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      material_id?: string
+      description: string
+      quantity: number
+      unit: string
+      unit_price: number
+      total_price: number
+    }>
+  }) {
+    const { items, ...orderData } = input
+
+    const { data: order, error: orderError } = await supabase
+      .from('purchase_orders')
+      .insert({
+        order_number: orderData.order_number,
+        supplier_id: orderData.supplier_id,
+        purchase_request_id: orderData.purchase_request_id ?? null,
+        status: orderData.status ?? 'draft',
+        subtotal: orderData.subtotal ?? 0,
+        tax_pct: orderData.tax_pct ?? 21,
+        tax_amount: orderData.tax_amount ?? 0,
+        total: orderData.total ?? 0,
+        payment_terms: orderData.payment_terms ?? null,
+        delivery_terms: orderData.delivery_terms ?? null,
+        delivery_date: orderData.delivery_date ?? null,
+        notes: orderData.notes ?? null,
+        created_by: orderData.created_by ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (orderError) throw orderError
+
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_order_items').insert(
+        items.map((item) => ({
+          purchase_order_id: order.id,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }))
+      )
+      if (itemsError) throw itemsError
+    }
+
+    return this.getPurchaseOrderById(order.id)
+  }
+
+  static async updatePurchaseOrder(
+    id: string,
+    input: {
+      supplier_id?: string
+      purchase_request_id?: string | null
+      status?: string
+      subtotal?: number
+      tax_pct?: number
+      tax_amount?: number
+      total?: number
+      payment_terms?: string
+      delivery_terms?: string
+      delivery_date?: string
+      notes?: string
+      items?: Array<{
+        id?: string
+        material_id?: string
+        description: string
+        quantity: number
+        unit: string
+        unit_price: number
+        total_price: number
+      }>
+    }
+  ) {
+    const { items, ...orderData } = input
+
+    const updatePayload: Record<string, unknown> = {
+      ...orderData,
+      updated_at: new Date().toISOString(),
+    }
+    if (orderData.purchase_request_id === null) {
+      updatePayload.purchase_request_id = null
+    }
+
+    const { error: orderError } = await supabase
+      .from('purchase_orders')
+      .update(updatePayload)
+      .eq('id', id)
+
+    if (orderError) throw orderError
+
+    if (items) {
+      // Obtener items actuales para hacer upsert y preservar recepciones
+      const { data: existingItems, error: fetchError } = await supabase
+        .from('purchase_order_items')
+        .select('id')
+        .eq('purchase_order_id', id)
+
+      if (fetchError) throw fetchError
+
+      const existingIds = new Set((existingItems || []).map((i: any) => i.id))
+      const sentIds = new Set(items.map((item) => item.id).filter(Boolean) as string[])
+
+      // Actualizar items existentes
+      const itemsToUpdate = items.filter((item) => item.id && existingIds.has(item.id))
+      for (const item of itemsToUpdate) {
+        const { error: updateError } = await supabase
+          .from('purchase_order_items')
+          .update({
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          })
+          .eq('id', item.id)
+
+        if (updateError) throw updateError
+      }
+
+      // Insertar items nuevos
+      const itemsToInsert = items.filter((item) => !item.id || !existingIds.has(item.id))
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase.from('purchase_order_items').insert(
+          itemsToInsert.map((item) => ({
+            purchase_order_id: id,
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          }))
+        )
+        if (itemsError) throw itemsError
+      }
+
+      // Borrar items que ya no están en la lista, SOLO si no tienen recepciones asociadas
+      const itemsToDelete = (existingItems || []).filter((i: any) => !sentIds.has(i.id))
+      if (itemsToDelete.length > 0) {
+        const itemIdsToDelete = itemsToDelete.map((i: any) => i.id)
+
+        const { data: receiptItems, error: riError } = await supabase
+          .from('purchase_order_receipt_items')
+          .select('purchase_order_item_id')
+          .in('purchase_order_item_id', itemIdsToDelete)
+
+        if (riError) throw riError
+
+        const idsWithReceipts = new Set((receiptItems || []).map((ri: any) => ri.purchase_order_item_id))
+        const deletableIds = itemIdsToDelete.filter((id: string) => !idsWithReceipts.has(id))
+
+        if (deletableIds.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('purchase_order_items')
+            .delete()
+            .in('id', deletableIds)
+
+          if (deleteError) throw deleteError
+        }
+      }
+    }
+
+    return this.getPurchaseOrderById(id)
+  }
+
+  static async deletePurchaseOrder(id: string) {
+    // Los attachments e items se eliminan en cascada por la DB
+    const { error } = await supabase.from('purchase_orders').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  static async updatePurchaseOrderStatus(
+    id: string,
+    status: 'draft' | 'pending' | 'approved' | 'partial_received' | 'received' | 'cancelled'
+  ) {
+    const now = new Date().toISOString()
+    const updateData: Record<string, unknown> = { status, updated_at: now }
+
+    if (status === 'received') {
+      updateData.received_at = now
+    }
+
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update(updateData)
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE REQUESTS ====================
+
+  static async getAllPurchaseRequests(filters?: { status?: string; search?: string }) {
+    let query = supabase
+      .from('purchase_requests')
+      .select(
+        `*,
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand)),
+        supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name)),
+        purchase_orders:purchase_orders(id, order_number, status, total)`
+      )
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+
+    const { data, error } = await query
+    if (error) throw error
+
+    if (filters?.search && data) {
+      const term = filters.search.toLowerCase()
+      return data.filter((r: any) =>
+        r.request_number?.toLowerCase().includes(term) ||
+        r.notes?.toLowerCase().includes(term)
+      )
+    }
+
+    return data ?? []
+  }
+
+  static async getPurchaseRequestById(id: string) {
+    const { data, error } = await supabase
+      .from('purchase_requests')
+      .select(
+        `*,
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand)),
+        supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name, contact_name)),
+        purchase_orders:purchase_orders(id, order_number, status, total, supplier:suppliers(id, name))`
+      )
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async getNextPurchaseRequestNumber(): Promise<string> {
+    const year = new Date().getFullYear()
+    const prefix = `PED-${year}-`
+
+    const { data, error } = await supabase
+      .from('purchase_requests')
+      .select('request_number')
+      .ilike('request_number', `${prefix}%`)
+      .order('request_number', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const last = data[0].request_number as string
+      const match = last.match(/-(\d+)$/)
+      if (match) nextNum = parseInt(match[1], 10) + 1
+    }
+
+    return `${prefix}${String(nextNum).padStart(4, '0')}`
+  }
+
+  static async createPurchaseRequest(input: {
+    request_number?: string
+    status?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      material_id?: string
+      description: string
+      quantity: number
+      unit: string
+    }>
+  }) {
+    const { items, ...requestData } = input
+    const requestNumber = requestData.request_number ?? (await this.getNextPurchaseRequestNumber())
+
+    const { data: request, error: requestError } = await supabase
+      .from('purchase_requests')
+      .insert({
+        request_number: requestNumber,
+        status: requestData.status ?? 'draft',
+        notes: requestData.notes ?? null,
+        created_by: requestData.created_by ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (requestError) throw requestError
+
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_request_items').insert(
+        items.map((item) => ({
+          purchase_request_id: request.id,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+        }))
+      )
+      if (itemsError) throw itemsError
+    }
+
+    return this.getPurchaseRequestById(request.id)
+  }
+
+  static async updatePurchaseRequest(
+    id: string,
+    input: {
+      status?: string
+      notes?: string
+      items?: Array<{
+        id?: string
+        material_id?: string
+        description: string
+        quantity: number
+        unit: string
+      }>
+    }
+  ) {
+    const { items, ...requestData } = input
+
+    const { error: requestError } = await supabase
+      .from('purchase_requests')
+      .update({
+        ...requestData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (requestError) throw requestError
+
+    if (items) {
+      const { error: deleteError } = await supabase
+        .from('purchase_request_items')
+        .delete()
+        .eq('purchase_request_id', id)
+      if (deleteError) throw deleteError
+
+      if (items.length > 0) {
+        const { error: itemsError } = await supabase.from('purchase_request_items').insert(
+          items.map((item) => ({
+            purchase_request_id: id,
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+          }))
+        )
+        if (itemsError) throw itemsError
+      }
+    }
+
+    return this.getPurchaseRequestById(id)
+  }
+
+  static async deletePurchaseRequest(id: string) {
+    const { error } = await supabase.from('purchase_requests').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== SUPPLIER QUOTES ====================
+
+  static async getSupplierQuotesByPurchaseRequest(purchaseRequestId: string) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .select('*, supplier:suppliers(*)')
+      .eq('purchase_request_id', purchaseRequestId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getSupplierQuoteById(id: string) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .select('*, supplier:suppliers(*), purchase_request:purchase_requests(id, request_number)')
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async createSupplierQuote(input: {
+    purchase_request_id: string
+    supplier_id: string
+    total?: number
+    quote_date?: string
+    valid_until?: string
+    file_url?: string
+    file_name?: string
+    status?: string
+    notes?: string
+  }) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .insert({
+        purchase_request_id: input.purchase_request_id,
+        supplier_id: input.supplier_id,
+        total: input.total ?? 0,
+        quote_date: input.quote_date ?? null,
+        valid_until: input.valid_until ?? null,
+        file_url: input.file_url ?? null,
+        file_name: input.file_name ?? null,
+        status: input.status ?? 'draft',
+        notes: input.notes ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return this.getSupplierQuoteById(data.id)
+  }
+
+  static async updateSupplierQuote(
+    id: string,
+    input: {
+      supplier_id?: string
+      total?: number
+      quote_date?: string
+      valid_until?: string
+      file_url?: string
+      file_name?: string
+      status?: string
+      notes?: string
+    }
+  ) {
+    const updateData: Record<string, unknown> = {
+      ...input,
+      updated_at: new Date().toISOString(),
+    }
+    if (input.file_url === null) updateData.file_url = null
+    if (input.file_name === null) updateData.file_name = null
+
+    const { error } = await supabase
+      .from('supplier_quotes')
+      .update(updateData)
+      .eq('id', id)
+
+    if (error) throw error
+    return this.getSupplierQuoteById(id)
+  }
+
+  static async deleteSupplierQuote(id: string) {
+    const { error } = await supabase.from('supplier_quotes').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE ORDER RECEIPTS ====================
+
+  static async getPurchaseOrderReceipts(purchaseOrderId: string) {
+    const { data: receipts, error } = await supabase
+      .from('purchase_order_receipts')
+      .select('*')
+      .eq('purchase_order_id', purchaseOrderId)
+      .order('received_at', { ascending: false })
+
+    if (error) throw error
+    if (!receipts || receipts.length === 0) return []
+
+    const receiptIds = receipts.map((r: any) => r.id)
+    const { data: receiptItems, error: itemsError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+      .in('receipt_id', receiptIds)
+
+    if (itemsError) throw itemsError
+
+    const itemsByReceipt: Record<string, any[]> = {}
+    for (const item of receiptItems || []) {
+      if (!itemsByReceipt[item.receipt_id]) itemsByReceipt[item.receipt_id] = []
+      itemsByReceipt[item.receipt_id].push(item)
+    }
+
+    return receipts.map((r: any) => ({
+      ...r,
+      items: itemsByReceipt[r.id] || [],
+    }))
+  }
+
+  static async createPurchaseOrderReceipt(input: {
+    purchase_order_id: string
+    receipt_number?: string
+    remito_number?: string
+    remito_file_url?: string
+    remito_file_name?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      purchase_order_item_id: string
+      material_id?: string
+      description: string
+      quantity_received: number
+    }>
+  }) {
+    const { items, ...receiptData } = input
+
+    console.log('[createPurchaseOrderReceipt] input:', JSON.stringify(input, null, 2))
+
+    const { data: purchaseOrder, error: purchaseOrderError } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .eq('id', receiptData.purchase_order_id)
+      .single()
+
+    if (purchaseOrderError) throw purchaseOrderError
+
+    const { data: receipt, error: receiptError } = await supabase
+      .from('purchase_order_receipts')
+      .insert({
+        purchase_order_id: receiptData.purchase_order_id,
+        receipt_number: receiptData.receipt_number ?? null,
+        remito_number: receiptData.remito_number ?? null,
+        remito_file_url: receiptData.remito_file_url ?? null,
+        remito_file_name: receiptData.remito_file_name ?? null,
+        notes: receiptData.notes ?? null,
+      })
+      .select('*')
+      .single()
+
+    console.log('[createPurchaseOrderReceipt] receipt insert result:', { receipt, receiptError })
+
+    if (receiptError) throw receiptError
+    if (!receipt) throw new Error('No se pudo crear la recepción')
+
+    if (items.length > 0) {
+      // Buscar ítems actuales de la orden para resolver IDs correctos
+      const { data: currentOrderItems, error: orderItemsError } = await supabase
+        .from('purchase_order_items')
+        .select('id, material_id, description, quantity')
+        .eq('purchase_order_id', receiptData.purchase_order_id)
+
+      if (orderItemsError) throw orderItemsError
+
+      console.log('[createPurchaseOrderReceipt] currentOrderItems:', JSON.stringify(currentOrderItems, null, 2))
+
+      const receiptItemsPayload = items.map((item) => {
+        // Intentar encontrar el ítem actual por material_id + description
+        const matchingItem = currentOrderItems?.find(
+          (oi: any) =>
+            oi.material_id === (item.material_id ?? null) &&
+            oi.description === item.description
+        )
+
+        const resolvedPurchaseOrderItemId = matchingItem?.id || item.purchase_order_item_id
+
+        return {
+          receipt_id: receipt.id,
+          purchase_order_item_id: resolvedPurchaseOrderItemId,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity_received: item.quantity_received,
+        }
+      })
+
+      console.log('[createPurchaseOrderReceipt] receiptItemsPayload:', JSON.stringify(receiptItemsPayload, null, 2))
+
+      const { data: insertedItems, error: itemsError } = await supabase
+        .from('purchase_order_receipt_items')
+        .insert(receiptItemsPayload)
+        .select()
+
+      console.log('[createPurchaseOrderReceipt] receipt items insert result:', { insertedItems, itemsError })
+
+      if (itemsError) {
+        // Si falla la inserción de ítems, borrar la recepción huérfana
+        console.error('[createPurchaseOrderReceipt] items insert failed, deleting orphan receipt:', receipt.id)
+        await supabase.from('purchase_order_receipts').delete().eq('id', receipt.id)
+        throw itemsError
+      }
+
+      // Actualizar stock y registrar movimientos por cada ítem con material_id
+      for (const item of items) {
+        if (!item.material_id) continue
+
+        const { data: material, error: materialError } = await supabase
+          .from('materials')
+          .select('stock_quantity')
+          .eq('id', item.material_id)
+          .single()
+
+        if (materialError) throw materialError
+
+        const newStock = (material.stock_quantity ?? 0) + (item.quantity_received ?? 0)
+        const { error: updateError } = await supabase
+          .from('materials')
+          .update({ stock_quantity: newStock })
+          .eq('id', item.material_id)
+
+        if (updateError) throw updateError
+
+        await this.createStockMovement({
+          material_id: item.material_id,
+          type: 'in',
+          quantity: item.quantity_received ?? 0,
+          stock_after: newStock,
+          source_type: 'purchase_receipt',
+          source_id: receipt.id,
+          reference: `Recepción ${purchaseOrder?.order_number || ''}`.trim(),
+          notes: receiptData.notes,
+          created_by: input.created_by
+        })
+      }
+    }
+
+    // Recalcular estado de la orden según cantidades recibidas
+    await this.recalculatePurchaseOrderStatus(receiptData.purchase_order_id)
+
+    const finalReceipt = await this.getPurchaseOrderReceiptById(receipt.id)
+    console.log('[createPurchaseOrderReceipt] final receipt:', JSON.stringify(finalReceipt, null, 2))
+
+    return finalReceipt
+  }
+
+  static async getPurchaseOrderReceiptById(id: string) {
+    // Traer recepción e ítems por separado para evitar problemas de join
+    const { data: receipt, error: receiptError } = await supabase
+      .from('purchase_order_receipts')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (receiptError) throw receiptError
+
+    const { data: receiptItems, error: itemsError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+      .eq('receipt_id', id)
+
+    if (itemsError) throw itemsError
+
+    return {
+      ...receipt,
+      items: receiptItems || [],
+    }
+  }
+
+  static async deletePurchaseOrderReceipt(id: string, createdBy?: string) {
+    // Obtener ítems para ajustar stock (restar lo recibido)
+    const { data: receipt, error: fetchError } = await supabase
+      .from('purchase_order_receipts')
+      .select('purchase_order_id, items:purchase_order_receipt_items(material_id, quantity_received)')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    const { data: purchaseOrder } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .eq('id', receipt.purchase_order_id)
+      .single()
+
+    if (receipt?.items) {
+      for (const item of receipt.items as any[]) {
+        if (!item.material_id) continue
+
+        const { data: material, error: materialError } = await supabase
+          .from('materials')
+          .select('stock_quantity')
+          .eq('id', item.material_id)
+          .single()
+
+        if (materialError) throw materialError
+
+        const newStock = Math.max(0, (material.stock_quantity ?? 0) - (item.quantity_received ?? 0))
+        const { error: updateError } = await supabase
+          .from('materials')
+          .update({ stock_quantity: newStock })
+          .eq('id', item.material_id)
+
+        if (updateError) throw updateError
+
+        await this.createStockMovement({
+          material_id: item.material_id,
+          type: 'out',
+          quantity: item.quantity_received ?? 0,
+          stock_after: newStock,
+          source_type: 'purchase_receipt',
+          source_id: id,
+          reference: `Anulación de recepción ${purchaseOrder?.order_number || ''}`.trim(),
+          created_by: createdBy
+        })
+      }
+    }
+
+    const purchaseOrderId = receipt.purchase_order_id
+    const { error } = await supabase.from('purchase_order_receipts').delete().eq('id', id)
+    if (error) throw error
+
+    await this.recalculatePurchaseOrderStatus(purchaseOrderId)
+  }
+
+  static async recalculatePurchaseOrderStatus(purchaseOrderId: string) {
+    // Obtener ítems de la orden con cantidad pedida
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('purchase_order_items')
+      .select('id, quantity')
+      .eq('purchase_order_id', purchaseOrderId)
+
+    if (itemsError) throw itemsError
+    if (!orderItems || orderItems.length === 0) return
+
+    // Obtener TODAS las recepciones de la orden para sumar correctamente
+    // incluso si los IDs de ítems cambiaron por ediciones previas
+    const { data: receipts, error: receiptsError } = await supabase
+      .from('purchase_order_receipts')
+      .select('id')
+      .eq('purchase_order_id', purchaseOrderId)
+
+    if (receiptsError) throw receiptsError
+
+    let totalReceived = 0
+    if (receipts && receipts.length > 0) {
+      const receiptIds = receipts.map((r: any) => r.id)
+      const { data: receivedItems, error: receivedError } = await supabase
+        .from('purchase_order_receipt_items')
+        .select('quantity_received')
+        .in('receipt_id', receiptIds)
+
+      if (receivedError) throw receivedError
+
+      totalReceived = (receivedItems || []).reduce(
+        (sum: number, ri: any) => sum + (ri.quantity_received ?? 0),
+        0
+      )
+    }
+
+    const totalOrdered = orderItems.reduce((sum: number, i: any) => sum + (i.quantity ?? 0), 0)
+
+    // Redondear para evitar problemas de punto flotante
+    const round4 = (n: number) => Math.round(n * 10000) / 10000
+    const orderedRounded = round4(totalOrdered)
+    const receivedRounded = round4(totalReceived)
+
+    console.log('[recalculatePurchaseOrderStatus]', { purchaseOrderId, orderedRounded, receivedRounded })
+
+    let newStatus: string | null = null
+    if (receivedRounded <= 0) {
+      newStatus = 'approved'
+    } else if (receivedRounded >= orderedRounded) {
+      newStatus = 'received'
+    } else {
+      newStatus = 'partial_received'
+    }
+
+    const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() }
+    if (newStatus === 'received') {
+      const { data: current } = await supabase
+        .from('purchase_orders')
+        .select('received_at')
+        .eq('id', purchaseOrderId)
+        .single()
+      if (!current?.received_at) {
+        updateData.received_at = new Date().toISOString()
+      }
+    } else {
+      updateData.received_at = null
+    }
+
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update(updateData)
+      .eq('id', purchaseOrderId)
+
+    if (error) throw error
+  }
+
   // ==================== RENTAL MODULES ====================
 
   static async getRentalModules(filters?: { status?: string; project_id?: string }) {
@@ -2439,7 +3574,18 @@ export type {
   ProjectStatus,
   ProjectPriority,
   TaskStatus,
-  TaskPriority
+  TaskPriority,
+  Supplier,
+  PurchaseOrder,
+  PurchaseOrderItem,
+  PurchaseOrderAttachment,
+  PurchaseOrderStatus,
+  PurchaseRequest,
+  PurchaseRequestItem,
+  PurchaseRequestStatus,
+  SupplierQuote,
+  PurchaseOrderReceipt,
+  PurchaseOrderReceiptItem,
 } from './generated/prisma/index'
 
 // Re-exportar tipos del módulo de presupuestos

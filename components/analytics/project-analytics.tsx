@@ -188,7 +188,7 @@ export function ProjectAnalytics() {
 
         {/* Period selector + PDF export */}
         <div className="flex flex-col gap-2 sm:items-end shrink-0">
-          <p className="text-xs text-muted-foreground">Período del reporte</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Período del reporte</p>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex gap-2">
               <Button

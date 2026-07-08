@@ -16,7 +16,7 @@ export function ProjectStats({ totalProjects, activeProjects, completedProjects,
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
             <p className="text-lg font-bold">{totalProjects}</p>
           </div>
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
@@ -26,7 +26,7 @@ export function ProjectStats({ totalProjects, activeProjects, completedProjects,
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Planificación</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Planificación</p>
             <p className="text-lg font-bold">{planningProjects}</p>
           </div>
           <Clock className="h-4 w-4 text-muted-foreground" />
@@ -36,7 +36,7 @@ export function ProjectStats({ totalProjects, activeProjects, completedProjects,
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Activos</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Activos</p>
             <p className="text-lg font-bold">{activeProjects}</p>
           </div>
           <Play className="h-4 w-4 text-muted-foreground" />
@@ -46,7 +46,7 @@ export function ProjectStats({ totalProjects, activeProjects, completedProjects,
       <Card className="p-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Completados</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Completados</p>
             <p className="text-lg font-bold">{completedProjects}</p>
           </div>
           <CheckCircle className="h-4 w-4 text-muted-foreground" />

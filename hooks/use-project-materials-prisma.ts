@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth-context'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
 
 export interface ProjectMaterial {
@@ -41,6 +42,7 @@ export interface UpdateProjectMaterialData {
 }
 
 export function useProjectMaterialsPrisma(projectId: string) {
+  const { userProfile } = useAuth()
   const [projectMaterials, setProjectMaterials] = useState<ProjectMaterial[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -91,7 +93,10 @@ export function useProjectMaterialsPrisma(projectId: string) {
     try {
       setError(null)
       
-      const result = await PrismaTypedService.addMaterialToProject(projectId, materialData)
+      const result = await PrismaTypedService.addMaterialToProject(projectId, {
+        ...materialData,
+        created_by: userProfile?.id
+      })
 
       // Convertir al formato ProjectMaterial
       const formattedMaterial: ProjectMaterial = {
@@ -134,7 +139,10 @@ export function useProjectMaterialsPrisma(projectId: string) {
     try {
       setError(null)
       
-      await PrismaTypedService.updateProjectMaterial(projectMaterialId, materialData)
+      await PrismaTypedService.updateProjectMaterial(projectMaterialId, {
+        ...materialData,
+        created_by: userProfile?.id
+      })
 
       // Actualizar estado local
       await fetchProjectMaterials()
@@ -153,7 +161,7 @@ export function useProjectMaterialsPrisma(projectId: string) {
     try {
       setError(null)
       
-      await PrismaTypedService.removeMaterialFromProject(projectMaterialId)
+      await PrismaTypedService.removeMaterialFromProject(projectMaterialId, userProfile?.id)
 
       // Actualizar estado local
       await fetchProjectMaterials()
