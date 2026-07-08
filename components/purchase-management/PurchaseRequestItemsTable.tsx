@@ -18,8 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Trash2, Plus, Loader2 } from "lucide-react"
+import { Trash2, Plus } from "lucide-react"
 import { useMaterialsPrisma } from "@/hooks/use-materials-prisma"
+import { MaterialSelector } from "@/components/ui/material-selector"
 
 export interface PurchaseRequestItemInput {
   id?: string
@@ -103,7 +104,7 @@ export function PurchaseRequestItemsTable({ items, onChange }: PurchaseRequestIt
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border overflow-x-auto">
+      <div className="overflow-x-auto sm:rounded-md sm:border">
         <Table className="min-w-[360px] sm:min-w-[640px]">
           <TableHeader>
             <TableRow>
@@ -127,35 +128,12 @@ export function PurchaseRequestItemsTable({ items, onChange }: PurchaseRequestIt
                 <TableRow key={index}>
                   <TableCell className="text-muted-foreground text-xs">{index + 1}</TableCell>
                   <TableCell>
-                    <Select
-                      value={item.material_id || "custom"}
-                      onValueChange={(value) =>
-                        handleUpdateItem(index, "material_id", value === "custom" ? undefined : value)
-                      }
-                    >
-                      <SelectTrigger className="w-full sm:w-full">
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="custom">Manual (sin catálogo)</SelectItem>
-                        {materialsLoading ? (
-                          <div className="flex items-center justify-center py-2">
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          </div>
-                        ) : (
-                          materials.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              <div className="flex items-center justify-between w-full gap-2">
-                                <span className="truncate">{m.code} - {m.name}</span>
-                                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                                  Stock: {m.stockQuantity}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <MaterialSelector
+                      materials={materials}
+                      selectedId={item.material_id}
+                      loading={materialsLoading}
+                      onSelect={(materialId) => handleUpdateItem(index, "material_id", materialId)}
+                    />
                   </TableCell>
                   <TableCell>
                     <Input
@@ -200,9 +178,9 @@ export function PurchaseRequestItemsTable({ items, onChange }: PurchaseRequestIt
                   <TableCell>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
-                      className="h-8 w-8 text-destructive"
+                      className="h-8 w-8 cursor-pointer"
                       onClick={() => handleRemoveItem(index)}
                     >
                       <Trash2 className="h-4 w-4" />

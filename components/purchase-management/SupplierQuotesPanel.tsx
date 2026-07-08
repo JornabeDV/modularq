@@ -3,6 +3,7 @@
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PriceInput } from "@/components/ui/price-input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -105,7 +106,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
     setFormMode("edit")
     setFormId(quote.id)
     setFormSupplierId(quote.supplier_id)
-    setFormTotal(quote.total?.toString() || "")
+    setFormTotal(quote.total?.toString().replace(".", ",") || "")
     setFormQuoteDate(quote.quote_date ? quote.quote_date.split("T")[0] : "")
     setFormValidUntil(quote.valid_until ? quote.valid_until.split("T")[0] : "")
     setFormStatus(quote.status || "draft")
@@ -251,12 +252,12 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="h-4 w-4" />
           Presupuestos de proveedores
         </CardTitle>
-        <Button size="sm" variant="outline" className="cursor-pointer" onClick={openCreate}>
+        <Button size="sm" variant="outline" className="cursor-pointer max-sm:w-full" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" /> Agregar
         </Button>
       </CardHeader>
@@ -270,8 +271,8 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
             No hay presupuestos registrados para este pedido.
           </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Proveedor</TableHead>
@@ -290,7 +291,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                     onClick={() => openEdit(quote)}
                   >
                     <TableCell>{getSupplierName(quote.supplier_id)}</TableCell>
-                    <TableCell className="font-mono">
+                    <TableCell>
                       ${quote.total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -395,13 +396,11 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="total">Total</Label>
-                  <Input
+                  <PriceInput
                     id="total"
-                    type="text"
-                    inputMode="decimal"
                     value={formTotal}
-                    onChange={(e) => setFormTotal(e.target.value.replace(",", "."))}
-                    placeholder="0.00"
+                    onChange={setFormTotal}
+                    placeholder="0,00"
                   />
                 </div>
                 <div className="space-y-2 w-full">
@@ -525,7 +524,7 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
                         <FileText className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{formFileName || "Archivo adjunto"}</p>
+                        <p className="text-sm font-medium truncate max-sm:w-36">{formFileName || "Archivo adjunto"}</p>
                         <a
                           href={formFileUrl}
                           target="_blank"
@@ -561,11 +560,11 @@ export function SupplierQuotesPanel({ purchaseRequestId }: SupplierQuotesPanelPr
               </div>
             </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" className="cursor-pointer max-sm:order-1" onClick={() => setFormOpen(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button type="button" variant="outline" className="cursor-pointer max-sm:w-full max-sm:order-2" onClick={() => setFormOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer max-sm:w-full max-sm:order-2">
                 {isSubmitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (

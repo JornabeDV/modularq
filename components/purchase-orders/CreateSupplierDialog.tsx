@@ -170,19 +170,19 @@ export function CreateSupplierDialog({ onCreated }: CreateSupplierDialogProps) {
             </div>
           </div>
 
-          <DialogFooter className="shrink-0 flex-col max-sm:gap-2 sm:flex-row">
+          <DialogFooter className="shrink-0 flex-col gap-2 sm:flex-row">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              className="max-sm:w-full max-sm:order-1"
+              className="max-sm:w-full"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="max-sm:w-full max-sm:order-2"
+              className="max-sm:w-full"
             >
               {isSubmitting ? "Creando..." : "Crear Proveedor"}
             </Button>

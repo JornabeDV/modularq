@@ -218,7 +218,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       </div>
 
       {/* Proveedor y pedido */}
-      <Card className="p-4 sm:p-6">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">Proveedor y pedido</CardTitle>
         </CardHeader>
@@ -250,7 +250,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       </Card>
 
       {/* Ítems */}
-      <Card className="p-4 sm:p-6">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">Ítems de la orden</CardTitle>
         </CardHeader>
@@ -268,7 +268,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       </Card>
 
       {/* Estado */}
-      <Card className="p-4 sm:p-6">
+      <Card>
         <CardHeader >
           <CardTitle className="text-base">Estado de la orden</CardTitle>
         </CardHeader>
@@ -295,7 +295,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       </Card>
 
       {/* Condiciones */}
-      <Card className="p-4 sm:p-6">
+      <Card>
         <CardHeader>
           <CardTitle className="text-base">Condiciones comerciales</CardTitle>
         </CardHeader>

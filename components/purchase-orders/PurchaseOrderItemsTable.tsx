@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,9 +18,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Trash2, Plus, Loader2 } from "lucide-react"
+import { Trash2, Plus } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useMaterialsPrisma } from "@/hooks/use-materials-prisma"
 import { PriceInput } from "@/components/ui/price-input"
+import { MaterialSelector } from "@/components/ui/material-selector"
 
 export interface PurchaseOrderItemInput {
   id?: string
@@ -50,6 +56,8 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
   const { materials, loading: materialsLoading } = useMaterialsPrisma()
   const [editingQuantities, setEditingQuantities] = useState<Record<number, string>>({})
   const [editingPrices, setEditingPrices] = useState<Record<number, string>>({})
+  const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null)
+  const descriptionRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
   const materialsById = useMemo(() => {
     const map: Record<string, typeof materials[0]> = {}
@@ -131,9 +139,51 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
     })
   }
 
+  const handlePriceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      const updated = [...items]
+      const raw = editingPrices[index]
+      if (raw !== undefined) {
+        const num = parseFloat(raw.replace(/\./g, "").replace(",", "."))
+        if (!isNaN(num) && num >= 0) {
+          updated[index] = {
+            ...updated[index],
+            unit_price: num,
+            total_price: updated[index].quantity * num,
+          }
+        }
+      }
+      updated.push({
+        description: "",
+        quantity: 1,
+        unit: "unidad",
+        unit_price: 0,
+        total_price: 0,
+      })
+      setEditingPrices((prev) => {
+        const next = { ...prev }
+        delete next[index]
+        return next
+      })
+      setLastAddedIndex(updated.length - 1)
+      onChange(updated)
+    }
+  }
+
+  useEffect(() => {
+    if (lastAddedIndex !== null) {
+      const input = descriptionRefs.current[lastAddedIndex]
+      if (input) {
+        input.focus()
+      }
+      setLastAddedIndex(null)
+    }
+  }, [items, lastAddedIndex])
+
   return (
     <div className="space-y-4">
-      <div className="rounded-md border overflow-x-auto">
+      <div className="overflow-x-auto sm:rounded-md sm:border">
         <Table className="min-w-[520px] sm:min-w-[640px]">
           <TableHeader>
             <TableRow>
@@ -161,38 +211,16 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                     {index + 1}
                   </TableCell>
                   <TableCell>
-                    <Select
-                      value={item.material_id || "custom"}
-                      onValueChange={(value) =>
-                        handleUpdateItem(index, "material_id", value === "custom" ? undefined : value)
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="custom">Manual (sin catálogo)</SelectItem>
-                        {materialsLoading ? (
-                          <div className="flex items-center justify-center py-2">
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                          </div>
-                        ) : (
-                          materials.map((m) => (
-                            <SelectItem key={m.id} value={m.id}>
-                              <div className="flex items-center justify-between w-full gap-2">
-                                <span className="truncate">{m.code} - {m.name}</span>
-                                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                                  Stock: {m.stockQuantity}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <MaterialSelector
+                      materials={materials}
+                      selectedId={item.material_id}
+                      loading={materialsLoading}
+                      onSelect={(materialId) => handleUpdateItem(index, "material_id", materialId)}
+                    />
                   </TableCell>
                   <TableCell>
                     <Input
+                      ref={(el) => { descriptionRefs.current[index] = el }}
                       value={item.description}
                       onChange={(e) => handleUpdateItem(index, "description", e.target.value)}
                       placeholder="Descripción del ítem"
@@ -237,6 +265,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                       onChange={(raw) => handlePriceChange(index, raw)}
                       onFocus={(e) => e.target.select()}
                       onBlur={() => handlePriceBlur(index)}
+                      onKeyDown={(e) => handlePriceKeyDown(e, index)}
                       className="w-full sm:w-[100px] tabular-nums"
                     />
                   </TableCell>
@@ -244,15 +273,22 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                     ${item.total_price.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 cursor-pointer"
-                      onClick={() => handleRemoveItem(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 cursor-pointer"
+                          onClick={() => handleRemoveItem(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Eliminar ítem</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))

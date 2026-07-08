@@ -101,7 +101,7 @@ export function PurchaseRequestForm({
         </DialogHeader>
 
         <div className="space-y-4 max-sm:flex-1 max-sm:overflow-y-auto min-w-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 items-start">
             <div>
               <Label htmlFor="status" className="mb-2">Estado</Label>
               <Select value={status} onValueChange={setStatus}>

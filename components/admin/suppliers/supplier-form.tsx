@@ -217,16 +217,17 @@ export function SupplierForm({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
+            className="max-sm:w-full"
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} className="max-sm:w-full">
             {isLoading ? "Guardando..." : isEditing ? "Guardar Cambios" : "Crear Proveedor"}
           </Button>
         </div>

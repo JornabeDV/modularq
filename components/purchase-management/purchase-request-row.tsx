@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Eye, ShoppingCart, FileDown } from "lucide-react"
+import { Edit, Trash2, Eye, ShoppingCart } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -43,7 +44,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 interface PurchaseRequestRowProps {
   request: any
-  onView: (request: any) => void
   onEdit: (request: any) => void
   onDelete: (requestId: string) => void
   onCreateOrder: (request: any) => void
@@ -52,18 +52,19 @@ interface PurchaseRequestRowProps {
 
 export function PurchaseRequestRow({
   request,
-  onView,
   onEdit,
   onDelete,
   onCreateOrder,
   isReadOnly = false,
 }: PurchaseRequestRowProps) {
+  const router = useRouter()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const detailUrl = `/admin/purchase-management/${request.id}`
 
   return (
     <>
       <TableRow
-        onClick={() => onView(request)}
+        onClick={() => router.push(detailUrl)}
         className="cursor-pointer hover:bg-muted/50"
       >
         <TableCell className="font-medium tabular-nums">{request.request_number}</TableCell>
@@ -89,7 +90,7 @@ export function PurchaseRequestRow({
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        onView(request)
+                        router.push(detailUrl)
                       }}
                       className="cursor-pointer"
                     >

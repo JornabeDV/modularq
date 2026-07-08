@@ -28,7 +28,6 @@ interface PurchaseRequestTableProps {
   onSearchChange: (value: string) => void
   statusFilter: string
   onStatusFilterChange: (value: string) => void
-  onViewRequest: (request: any) => void
   onEditRequest: (request: any) => void
   onDeleteRequest: (requestId: string) => void
   onCreateOrder: (request: any) => void
@@ -50,7 +49,6 @@ export function PurchaseRequestTable({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
-  onViewRequest,
   onEditRequest,
   onDeleteRequest,
   onCreateOrder,
@@ -148,7 +146,6 @@ export function PurchaseRequestTable({
                   <PurchaseRequestRow
                     key={request.id}
                     request={request}
-                    onView={onViewRequest}
                     onEdit={onEditRequest}
                     onDelete={onDeleteRequest}
                     onCreateOrder={onCreateOrder}

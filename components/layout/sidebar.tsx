@@ -182,8 +182,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navegación */}
-      <nav className="flex-1 p-2 overflow-y-auto">
-        <ul className="space-y-1">
+      <nav className="flex-1 p-2 overflow-y-auto scrollbar-subtle">
+        <ul className="space-y-0.5">
           {userProfile?.role === "operario" &&
             navigation.map((item) => (
               <li key={item.name}>

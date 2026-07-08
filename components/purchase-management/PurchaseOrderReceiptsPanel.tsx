@@ -21,11 +21,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { usePurchaseOrders } from "@/hooks/use-purchase-orders"
 import { Badge } from "@/components/ui/badge"
 import { Package, Plus, Trash2, Loader2, ExternalLink, FileText, Upload, X } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface PurchaseOrderReceiptsPanelProps {
   orderId: string
@@ -288,10 +304,10 @@ export function PurchaseOrderReceiptsPanel({ orderId, onOrderChange }: PurchaseO
   }
 
   return (
-    <Card className="p-6 sm:p-8">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <CardTitle className="text-base flex items-center gap-2">
-          <Package className="h-4 w-4" />
+          <Package className="h-4 w-4 max-sm:hidden" />
           Recepciones y remitos
         </CardTitle>
         <Button
@@ -368,24 +384,65 @@ export function PurchaseOrderReceiptsPanel({ orderId, onOrderChange }: PurchaseO
                   </div>
                   <div className="flex items-center gap-2">
                     {receipt.remito_file_url && (
-                      <a
-                        href={receipt.remito_file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        <FileText className="h-4 w-4" />
-                      </a>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 cursor-pointer"
+                          >
+                            <a
+                              href={receipt.remito_file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ver remito</p>
+                        </TooltipContent>
+                      </Tooltip>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => handleDelete(receipt.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Eliminar remito</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar recepción?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción no se puede deshacer. Se eliminará la recepción
+                            {receipt.receipt_number ? ` ${receipt.receipt_number}` : ""} y se ajustará el stock.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(receipt.id)}
+                            className="cursor-pointer"
+                          >
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
                 <div className="text-xs sm:text-sm text-muted-foreground mb-2">
