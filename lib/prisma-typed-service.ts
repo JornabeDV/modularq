@@ -954,10 +954,11 @@ export class PrismaTypedService {
     created_by?: string
   }): Promise<any> {
     const stockQuantity = materialData.stock_quantity ?? 0
+    const { created_by, ...materialInsertData } = materialData
     const { data, error } = await supabase
       .from('materials')
       .insert({
-        ...materialData,
+        ...materialInsertData,
         stock_quantity: stockQuantity,
         min_stock: materialData.min_stock ?? 0,
         updated_at: new Date().toISOString()
@@ -976,7 +977,7 @@ export class PrismaTypedService {
         source_type: 'initial_stock',
         reference: 'Stock inicial',
         notes: 'Stock inicial al crear el material',
-        created_by: materialData.created_by
+        created_by
       })
     }
 
@@ -999,10 +1000,11 @@ export class PrismaTypedService {
     const currentMaterial = await this.getMaterialById(id)
     if (!currentMaterial) throw new Error('Material no encontrado')
 
+    const { created_by, ...materialUpdateData } = materialData
     const { data, error } = await supabase
       .from('materials')
       .update({
-        ...materialData,
+        ...materialUpdateData,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -1025,7 +1027,7 @@ export class PrismaTypedService {
           source_type: 'manual_adjustment',
           reference: 'Ajuste manual de stock',
           notes: `Stock actualizado desde ${currentStock} a ${newStock}`,
-          created_by: materialData.created_by
+          created_by
         })
       }
     }
@@ -3562,6 +3564,413 @@ export class PrismaTypedService {
     if (moduleError) throw moduleError
 
     return updatedContract
+  }
+
+  // ==================== DELIVERY RECEIPTS ====================
+
+  static async generateDeliveryReceiptNumber(): Promise<string> {
+    const year = new Date().getFullYear().toString()
+    const prefix = `REM-${year}-`
+
+    const { data } = await supabase
+      .from('delivery_receipts')
+      .select('number')
+      .like('number', `${prefix}%`)
+      .order('number', { ascending: false })
+      .limit(1)
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const lastNum = parseInt(data[0].number.replace(prefix, ''), 10)
+      if (!isNaN(lastNum)) nextNum = lastNum + 1
+    }
+
+    return `${prefix}${nextNum.toString().padStart(4, '0')}`
+  }
+
+  static async createDeliveryReceipt(input: {
+    number?: string
+    type?: 'sale' | 'rental'
+    client_id?: string | null
+    client_name: string
+    client_company?: string
+    client_phone?: string
+    client_email?: string
+    delivery_address?: string
+    delivery_date?: string
+    notes?: string
+    delivery_conditions?: any[] | null
+    notes_list?: any[] | null
+    created_by: string
+    items: Array<{
+      type: 'standard_module' | 'custom_module' | 'service'
+      standard_module_id?: string
+      name: string
+      description?: string
+      quantity: number
+      is_optional?: boolean
+      sort_order: number
+      module_description?: { section: string; description: string }[] | null
+      additionals?: Array<{
+        material_id?: string
+        name: string
+        quantity: number
+      }>
+      attachments?: Array<{
+        filename: string
+        original_name: string
+        mime_type: string
+        size: number
+        url: string
+        storage_path: string
+      }>
+    }>
+  }): Promise<{ id: string; number: string }> {
+    const number = input.number ?? await this.generateDeliveryReceiptNumber()
+
+    const { data: receipt, error } = await supabase
+      .from('delivery_receipts')
+      .insert({
+        number,
+        type: input.type ?? 'sale',
+        status: 'draft',
+        client_id: input.client_id ?? null,
+        client_name: input.client_name,
+        client_company: input.client_company ?? null,
+        client_phone: input.client_phone ?? null,
+        client_email: input.client_email ?? null,
+        delivery_address: input.delivery_address ?? null,
+        delivery_date: input.delivery_date ?? null,
+        notes: input.notes ?? null,
+        delivery_conditions: input.delivery_conditions ?? null,
+        notes_list: input.notes_list ?? null,
+        created_by: input.created_by,
+      })
+      .select('id, number')
+      .single()
+
+    if (error) throw error
+
+    for (const item of input.items) {
+      const { data: rItem, error: itemErr } = await supabase
+        .from('delivery_receipt_items')
+        .insert({
+          delivery_receipt_id: receipt.id,
+          type: item.type,
+          standard_module_id: item.standard_module_id ?? null,
+          name: item.name,
+          description: item.description ?? null,
+          quantity: item.quantity,
+          is_optional: item.is_optional ?? false,
+          sort_order: item.sort_order,
+          module_description: item.module_description ?? null,
+        })
+        .select('id')
+        .single()
+
+      if (itemErr) throw itemErr
+
+      if (item.additionals && item.additionals.length > 0) {
+        const { error: addErr } = await supabase
+          .from('delivery_receipt_additionals')
+          .insert(
+            item.additionals.map((a) => ({
+              receipt_item_id: rItem.id,
+              material_id: a.material_id ?? null,
+              name: a.name,
+              quantity: a.quantity,
+            }))
+          )
+        if (addErr) throw addErr
+      }
+
+      if (item.attachments && item.attachments.length > 0) {
+        const { error: attErr } = await supabase
+          .from('delivery_receipt_item_attachments')
+          .insert(
+            item.attachments.map((a) => ({
+              receipt_item_id: rItem.id,
+              filename: a.filename,
+              original_name: a.original_name,
+              mime_type: a.mime_type,
+              size: a.size,
+              url: a.url,
+              storage_path: a.storage_path,
+            }))
+          )
+        if (attErr) throw attErr
+      }
+    }
+
+    return { id: receipt.id, number: receipt.number }
+  }
+
+  static async replaceDeliveryReceipt(
+    id: string,
+    input: {
+      type?: 'sale' | 'rental'
+      client_id?: string | null
+      client_name: string
+      client_company?: string
+      client_phone?: string
+      client_email?: string
+      delivery_address?: string
+      delivery_date?: string
+      notes?: string
+      delivery_conditions?: any[] | null
+      notes_list?: any[] | null
+      items: Array<{
+        type: 'standard_module' | 'custom_module' | 'service'
+        standard_module_id?: string
+        name: string
+        description?: string
+        quantity: number
+        is_optional?: boolean
+        sort_order: number
+        module_description?: { section: string; description: string }[] | null
+        additionals?: Array<{
+          material_id?: string
+          name: string
+          quantity: number
+        }>
+        attachments?: Array<{
+          filename: string
+          original_name: string
+          mime_type: string
+          size: number
+          url: string
+          storage_path: string
+        }>
+      }>
+    }
+  ): Promise<{ id: string; number: string }> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('delivery_receipts')
+      .select('number, status')
+      .eq('id', id)
+      .single()
+
+    if (existingErr) throw existingErr
+    if (!existing) throw new Error('Remito no encontrado')
+    if (existing.status !== 'draft') throw new Error('Solo se pueden editar remitos en borrador')
+
+    const { error: updateErr } = await supabase
+      .from('delivery_receipts')
+      .update({
+        type: input.type ?? 'sale',
+        client_id: input.client_id ?? null,
+        client_name: input.client_name,
+        client_company: input.client_company ?? null,
+        client_phone: input.client_phone ?? null,
+        client_email: input.client_email ?? null,
+        delivery_address: input.delivery_address ?? null,
+        delivery_date: input.delivery_date ?? null,
+        notes: input.notes ?? null,
+        delivery_conditions: input.delivery_conditions ?? null,
+        notes_list: input.notes_list ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (updateErr) throw updateErr
+
+    await supabase.from('delivery_receipt_items').delete().eq('delivery_receipt_id', id)
+
+    for (const item of input.items) {
+      const { data: rItem, error: itemErr } = await supabase
+        .from('delivery_receipt_items')
+        .insert({
+          delivery_receipt_id: id,
+          type: item.type,
+          standard_module_id: item.standard_module_id ?? null,
+          name: item.name,
+          description: item.description ?? null,
+          quantity: item.quantity,
+          is_optional: item.is_optional ?? false,
+          sort_order: item.sort_order,
+          module_description: item.module_description ?? null,
+        })
+        .select('id')
+        .single()
+
+      if (itemErr) throw itemErr
+
+      if (item.additionals && item.additionals.length > 0) {
+        const { error: addErr } = await supabase
+          .from('delivery_receipt_additionals')
+          .insert(
+            item.additionals.map((a) => ({
+              receipt_item_id: rItem.id,
+              material_id: a.material_id ?? null,
+              name: a.name,
+              quantity: a.quantity,
+            }))
+          )
+        if (addErr) throw addErr
+      }
+
+      if (item.attachments && item.attachments.length > 0) {
+        const { error: attErr } = await supabase
+          .from('delivery_receipt_item_attachments')
+          .insert(
+            item.attachments.map((a) => ({
+              receipt_item_id: rItem.id,
+              filename: a.filename,
+              original_name: a.original_name,
+              mime_type: a.mime_type,
+              size: a.size,
+              url: a.url,
+              storage_path: a.storage_path,
+            }))
+          )
+        if (attErr) throw attErr
+      }
+    }
+
+    return { id, number: existing.number }
+  }
+
+  static async getDeliveryReceiptById(id: string): Promise<any | null> {
+    const { data: receipt, error } = await supabase
+      .from('delivery_receipts')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    if (!receipt) return null
+
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_receipt_items')
+      .select(`
+        *,
+        additionals:delivery_receipt_additionals(*),
+        attachments:delivery_receipt_item_attachments(*)
+      `)
+      .eq('delivery_receipt_id', id)
+      .order('sort_order', { ascending: true })
+
+    if (itemsError) throw itemsError
+
+    let client_cuit: string | null = null
+    if (receipt.client_id) {
+      const client = await this.getClientById(receipt.client_id)
+      client_cuit = client?.cuit ?? null
+    }
+
+    return { ...receipt, client_cuit, items: items || [] }
+  }
+
+  static async getAllDeliveryReceipts(filters?: {
+    status?: string
+    clientId?: string
+    search?: string
+  }): Promise<any[]> {
+    let query = supabase
+      .from('delivery_receipts')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+    if (filters?.clientId) query = query.eq('client_id', filters.clientId)
+    if (filters?.search) {
+      query = query.or(`number.ilike.%${filters.search}%,client_name.ilike.%${filters.search}%,client_company.ilike.%${filters.search}%`)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async deleteDeliveryReceipt(id: string): Promise<void> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('delivery_receipts')
+      .select('status')
+      .eq('id', id)
+      .single()
+
+    if (existingErr) throw existingErr
+    if (!existing) throw new Error('Remito no encontrado')
+    if (existing.status !== 'draft') throw new Error('Solo se pueden eliminar remitos en borrador')
+
+    const { error } = await supabase.from('delivery_receipts').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  static async issueDeliveryReceipt(id: string): Promise<any> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('delivery_receipts')
+      .select('status')
+      .eq('id', id)
+      .single()
+
+    if (existingErr) throw existingErr
+    if (!existing) throw new Error('Remito no encontrado')
+    if (existing.status !== 'draft') throw new Error('El remito ya fue emitido')
+
+    const { error } = await supabase
+      .from('delivery_receipts')
+      .update({
+        status: 'issued',
+        issued_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (error) throw error
+
+    return this.getDeliveryReceiptById(id)
+  }
+
+  static async duplicateDeliveryReceipt(id: string, createdBy: string): Promise<{ id: string; number: string }> {
+    const receipt = await this.getDeliveryReceiptById(id)
+    if (!receipt) throw new Error('Remito no encontrado')
+
+    return this.createDeliveryReceipt({
+      type: receipt.type,
+      client_id: receipt.client_id,
+      client_name: receipt.client_name,
+      client_company: receipt.client_company,
+      client_phone: receipt.client_phone,
+      client_email: receipt.client_email,
+      delivery_address: receipt.delivery_address,
+      delivery_date: receipt.delivery_date,
+      notes: receipt.notes,
+      delivery_conditions: receipt.delivery_conditions,
+      notes_list: receipt.notes_list,
+      created_by: createdBy,
+      items: receipt.items.map((item: any) => ({
+        type: item.type,
+        standard_module_id: item.standard_module_id,
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        is_optional: item.is_optional,
+        sort_order: item.sort_order,
+        module_description: item.module_description,
+        additionals: item.additionals?.map((a: any) => ({
+          material_id: a.material_id,
+          name: a.name,
+          quantity: a.quantity,
+        })),
+        attachments: item.attachments?.map((a: any) => ({
+          filename: a.filename,
+          original_name: a.original_name,
+          mime_type: a.mime_type,
+          size: a.size,
+          url: a.url,
+          storage_path: a.storage_path,
+        })),
+      })),
+    })
+  }
+
+  static async updateDeliveryReceiptPdfUrl(id: string, pdfUrl: string): Promise<void> {
+    const { error } = await supabase
+      .from('delivery_receipts')
+      .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
   }
 }
 

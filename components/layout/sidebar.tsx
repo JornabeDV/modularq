@@ -49,6 +49,7 @@ const adminNavigation = [
   { name: "Gestión de Stock", href: "/admin/stock", icon: Package },
   { name: "Gestión de Compra", href: "/admin/purchase-management", icon: ShoppingCart },  { name: "Cotizador", href: "/quoter", icon: ShoppingCart },
   { name: "Cotizaciones", href: "/quoter/history", icon: History },
+  { name: "Remitos de Entrega", href: "/admin/delivery-receipts", icon: Truck },
   {
     name: "Módulos Estándar",
     href: "/admin/standard-modules",

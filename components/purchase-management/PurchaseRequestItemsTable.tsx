@@ -19,8 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Trash2, Plus } from "lucide-react"
-import { useMaterialsPrisma } from "@/hooks/use-materials-prisma"
+import { type Material } from "@/hooks/use-materials-prisma"
 import { MaterialSelector } from "@/components/ui/material-selector"
+import { CreateMaterialDialog } from "./CreateMaterialDialog"
 
 export interface PurchaseRequestItemInput {
   id?: string
@@ -33,6 +34,20 @@ export interface PurchaseRequestItemInput {
 interface PurchaseRequestItemsTableProps {
   items: PurchaseRequestItemInput[]
   onChange: (items: PurchaseRequestItemInput[]) => void
+  materials: Material[]
+  materialsLoading: boolean
+  createMaterial: (data: {
+    code: string
+    name: string
+    description?: string
+    category: Material["category"]
+    unit: Material["unit"]
+    stock_quantity?: number
+    min_stock?: number
+    unit_price?: number
+    supplier?: string
+    brand?: string
+  }) => Promise<{ success: boolean; error?: string; material?: Material }>
 }
 
 const UNITS = [
@@ -44,8 +59,13 @@ const UNITS = [
   { value: "litro", label: "Litro" },
 ]
 
-export function PurchaseRequestItemsTable({ items, onChange }: PurchaseRequestItemsTableProps) {
-  const { materials, loading: materialsLoading } = useMaterialsPrisma()
+export function PurchaseRequestItemsTable({
+  items,
+  onChange,
+  materials,
+  materialsLoading,
+  createMaterial,
+}: PurchaseRequestItemsTableProps) {
   const [editingQuantities, setEditingQuantities] = useState<Record<number, string>>({})
 
   const materialsById = useMemo(() => {
@@ -81,6 +101,17 @@ export function PurchaseRequestItemsTable({ items, onChange }: PurchaseRequestIt
       }
     }
 
+    onChange(updated)
+  }
+
+  const handleMaterialCreated = (index: number, material: Material) => {
+    const updated = [...items]
+    updated[index] = {
+      ...updated[index],
+      material_id: material.id,
+      description: material.name,
+      unit: material.unit,
+    }
     onChange(updated)
   }
 
@@ -126,14 +157,23 @@ export function PurchaseRequestItemsTable({ items, onChange }: PurchaseRequestIt
             ) : (
               items.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell className="text-muted-foreground text-xs">{index + 1}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm text-center">{index + 1}</TableCell>
                   <TableCell>
-                    <MaterialSelector
-                      materials={materials}
-                      selectedId={item.material_id}
-                      loading={materialsLoading}
-                      onSelect={(materialId) => handleUpdateItem(index, "material_id", materialId)}
-                    />
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <MaterialSelector
+                          materials={materials}
+                          selectedId={item.material_id}
+                          loading={materialsLoading}
+                          onSelect={(materialId) => handleUpdateItem(index, "material_id", materialId)}
+                        />
+                      </div>
+                      <CreateMaterialDialog
+                        materials={materials}
+                        createMaterial={createMaterial}
+                        onMaterialCreated={(material) => handleMaterialCreated(index, material)}
+                      />
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Input

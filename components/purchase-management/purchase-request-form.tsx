@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,8 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { DialogForm } from "@/components/ui/dialog-form"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card"
 import { PurchaseRequestItemsTable, PurchaseRequestItemInput } from "./PurchaseRequestItemsTable"
+import { useMaterialsPrisma } from "@/hooks/use-materials-prisma"
+import { ArrowLeft, Save, Loader2 } from "lucide-react"
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Borrador" },
@@ -25,22 +31,20 @@ const STATUS_OPTIONS = [
 ]
 
 interface PurchaseRequestFormProps {
-  isOpen: boolean
-  onClose: () => void
   onSubmit: (data: {
     status: string
     notes?: string
     items: PurchaseRequestItemInput[]
   }) => void
+  onClose: () => void
   isEditing: boolean
   initialData?: any | null
   isLoading?: boolean
 }
 
 export function PurchaseRequestForm({
-  isOpen,
-  onClose,
   onSubmit,
+  onClose,
   isEditing,
   initialData,
   isLoading = false,
@@ -48,6 +52,7 @@ export function PurchaseRequestForm({
   const [status, setStatus] = useState("draft")
   const [notes, setNotes] = useState("")
   const [items, setItems] = useState<PurchaseRequestItemInput[]>([])
+  const { materials, loading: materialsLoading, createMaterial } = useMaterialsPrisma()
 
   useEffect(() => {
     if (isEditing && initialData) {
@@ -69,8 +74,9 @@ export function PurchaseRequestForm({
     }
   }, [isEditing, initialData?.id])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
     onSubmit({
       status,
       notes: notes || undefined,
@@ -85,22 +91,29 @@ export function PurchaseRequestForm({
   }
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open && !isLoading) {
-          onClose()
-        }
-      }}
-    >
-      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] w-[95vw] !max-w-6xl max-sm:!max-w-none max-h-[700px] max-sm:h-[100dvh] overflow-y-auto rounded-none md:rounded-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar Pedido de Materiales" : "Crear Nuevo Pedido"}
-          </DialogTitle>
-        </DialogHeader>
+    <form onSubmit={(e) => handleSubmit(e)} className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col items-start gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="cursor-pointer"
+          size="sm"
+          onClick={onClose}
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver
+        </Button>
+        <h1 className="text-xl sm:text-2xl font-bold">
+          {isEditing ? `Editar Pedido ${initialData?.request_number || ""}` : "Nuevo Pedido de Materiales"}
+        </h1>
+      </div>
 
-        <div className="space-y-4 min-w-0">
+      {/* Estado y notas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Estado y notas</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 items-start">
             <div>
               <Label htmlFor="status" className="mb-2">Estado</Label>
@@ -128,36 +141,40 @@ export function PurchaseRequestForm({
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div>
-            <Label className="mb-2">Ítems del pedido</Label>
-            <PurchaseRequestItemsTable items={items} onChange={setItems} />
-          </div>
-        </div>
+      {/* Ítems */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ítems del pedido</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <PurchaseRequestItemsTable
+            items={items}
+            onChange={setItems}
+            materials={materials}
+            materialsLoading={materialsLoading}
+            createMaterial={createMaterial}
+          />
+        </CardContent>
+      </Card>
 
-        <div className="flex max-sm:flex-col max-sm:gap-2 justify-end sm:space-x-2 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-            className="cursor-pointer max-sm:w-full"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="cursor-pointer"
-          >
-            {isLoading
-              ? "Guardando..."
-              : isEditing
-                ? "Actualizar Pedido"
-                : "Crear Pedido"}
-          </Button>
-        </div>
-      </DialogForm>
-    </Dialog>
+      {/* Acciones */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-4 border-t">
+        <Button type="button" disabled={isLoading} onClick={() => handleSubmit()} className="w-full sm:w-auto cursor-pointer">
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-1" />
+          ) : (
+            <Save className="h-4 w-4 mr-1" />
+          )}
+          {isLoading
+            ? "Guardando..."
+            : isEditing
+              ? "Guardar Cambios"
+              : "Crear Pedido"}
+        </Button>
+      </div>
+    </form>
   )
 }

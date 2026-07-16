@@ -32,7 +32,7 @@ export function MaterialSelector({
   selectedId,
   loading = false,
   onSelect,
-  placeholder = "Seleccionar material...",
+  placeholder = "Seleccionar material",
 }: MaterialSelectorProps) {
   const [open, setOpen] = useState(false)
 
@@ -44,7 +44,7 @@ export function MaterialSelector({
     ? selectedMaterial
       ? `${selectedMaterial.code} - ${selectedMaterial.name}`
       : "Material seleccionado"
-    : "Manual (sin catálogo)"
+    : placeholder
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -56,7 +56,7 @@ export function MaterialSelector({
           aria-expanded={open}
           className="w-full justify-between font-normal"
         >
-          <span className="truncate">{selectedLabel}</span>
+          <span className={cn("truncate", !selectedId && "text-muted-foreground")}>{selectedLabel}</span>
           {loading ? (
             <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
           ) : (

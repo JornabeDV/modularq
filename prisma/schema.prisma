@@ -451,6 +451,84 @@ model QuoteItemAttachment {
   quoteItem QuoteItem @relation(fields: [quote_item_id], references: [id], onDelete: Cascade)
   @@map("quote_item_attachments")
 }
+
+// Remitos de entrega
+model DeliveryReceipt {
+  id              String   @id @default(cuid())
+  number          String   @unique
+  type            String   @default("sale") // 'sale' | 'rental'
+  status          String   @default("draft") // 'draft' | 'issued'
+  client_id       String?
+  client_name     String
+  client_company  String?
+  client_phone    String?
+  client_email    String?
+  delivery_address String?
+  issue_date      DateTime @default(now())
+  delivery_date   DateTime?
+  notes           String?
+  delivery_conditions Json?
+  notes_list      Json?
+  pdf_url         String?
+  created_by      String
+  issued_at       DateTime?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  items DeliveryReceiptItem[]
+
+  @@map("delivery_receipts")
+}
+
+model DeliveryReceiptItem {
+  id                  String  @id @default(cuid())
+  delivery_receipt_id String
+  type                String  // 'standard_module' | 'custom_module' | 'service'
+  standard_module_id  String?
+  name                String
+  description         String?
+  quantity            Int     @default(1)
+  sort_order          Int     @default(0)
+  module_description  Json?
+  is_optional         Boolean @default(false)
+
+  attachments DeliveryReceiptItemAttachment[]
+  additionals DeliveryReceiptAdditional[]
+
+  deliveryReceipt DeliveryReceipt @relation(fields: [delivery_receipt_id], references: [id], onDelete: Cascade)
+
+  @@map("delivery_receipt_items")
+}
+
+model DeliveryReceiptItemAttachment {
+  id            String   @id @default(cuid())
+  receipt_item_id String
+  filename      String
+  original_name String
+  mime_type     String
+  size          Int
+  url           String
+  storage_path  String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  receiptItem DeliveryReceiptItem @relation(fields: [receipt_item_id], references: [id], onDelete: Cascade)
+
+  @@map("delivery_receipt_item_attachments")
+}
+
+model DeliveryReceiptAdditional {
+  id              String  @id @default(cuid())
+  receipt_item_id String
+  material_id     String?
+  name            String
+  quantity        Int     @default(1)
+
+  receiptItem DeliveryReceiptItem @relation(fields: [receipt_item_id], references: [id], onDelete: Cascade)
+
+  @@map("delivery_receipt_additionals")
+}
+
 // Catálogo de servicios para cotizaciones
 model ServiceCatalog {
   id          String   @id @default(cuid())
