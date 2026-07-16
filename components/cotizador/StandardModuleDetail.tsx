@@ -309,7 +309,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                     <span className="truncate">
                       {selectedMaterial
                         ? `${selectedMaterial.code} - ${selectedMaterial.name}`
-                        : "Seleccionar material..."}
+                        : "Seleccionar material"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
                   </Button>

@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast"
 import { usePurchaseRequests } from "@/hooks/use-purchase-requests"
 import { PurchaseRequestStats } from "./purchase-request-stats"
 import { PurchaseRequestTable } from "./purchase-request-table"
-import { PurchaseRequestForm } from "./purchase-request-form"
 
 type SortField = "request_number" | "status" | "created_at"
 type SortOrder = "asc" | "desc"
@@ -22,13 +21,8 @@ export function PurchaseRequestManagement() {
     purchaseRequests,
     loading,
     error,
-    createPurchaseRequest,
-    updatePurchaseRequest,
     deletePurchaseRequest,
   } = usePurchaseRequests()
-
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [editingRequest, setEditingRequest] = useState<any>(null)
 
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -92,43 +86,6 @@ export function PurchaseRequestManagement() {
     setCurrentPage(1)
   }
 
-  const handleCreate = async (data: {
-    status: string
-    notes?: string
-    items: any[]
-  }) => {
-    try {
-      await createPurchaseRequest(data)
-      setIsCreateDialogOpen(false)
-      toast({ title: "Pedido creado", description: "El pedido se creó correctamente" })
-    } catch (error) {
-      toast({
-        title: "Error al crear pedido",
-        description: error instanceof Error ? error.message : "No se pudo crear el pedido",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleUpdate = async (data: {
-    status: string
-    notes?: string
-    items: any[]
-  }) => {
-    if (!editingRequest) return
-    try {
-      await updatePurchaseRequest(editingRequest.id, data)
-      setEditingRequest(null)
-      toast({ title: "Pedido actualizado", description: "El pedido se actualizó correctamente" })
-    } catch (error) {
-      toast({
-        title: "Error al actualizar pedido",
-        description: error instanceof Error ? error.message : "No se pudo actualizar el pedido",
-        variant: "destructive",
-      })
-    }
-  }
-
   const handleDelete = async (requestId: string) => {
     try {
       await deletePurchaseRequest(requestId)
@@ -146,6 +103,14 @@ export function PurchaseRequestManagement() {
     const params = new URLSearchParams()
     params.append("purchase_request_id", request.id)
     router.push(`/admin/purchase-orders/new?${params.toString()}`)
+  }
+
+  const handleCreateRequest = () => {
+    router.push("/admin/purchase-requests/new")
+  }
+
+  const handleEditRequest = (request: any) => {
+    router.push(`/admin/purchase-requests/${request.id}/edit`)
   }
 
   const totalRequests = purchaseRequests?.length || 0
@@ -192,10 +157,10 @@ export function PurchaseRequestManagement() {
         onSearchChange={handleSearchChange}
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
-        onEditRequest={setEditingRequest}
+        onEditRequest={handleEditRequest}
         onDeleteRequest={handleDelete}
         onCreateOrder={handleCreateOrder}
-        onCreateRequest={() => setIsCreateDialogOpen(true)}
+        onCreateRequest={handleCreateRequest}
         isReadOnly={isReadOnly}
         sortField={sortField}
         sortOrder={sortOrder}
@@ -205,23 +170,6 @@ export function PurchaseRequestManagement() {
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         onItemsPerPageChange={setItemsPerPage}
-      />
-
-      {/* Create Form */}
-      <PurchaseRequestForm
-        isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
-        onSubmit={handleCreate}
-        isEditing={false}
-      />
-
-      {/* Edit Form */}
-      <PurchaseRequestForm
-        isOpen={!!editingRequest}
-        onClose={() => setEditingRequest(null)}
-        onSubmit={handleUpdate}
-        isEditing={true}
-        initialData={editingRequest}
       />
     </div>
   )

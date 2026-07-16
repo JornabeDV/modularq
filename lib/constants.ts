@@ -49,4 +49,11 @@ export const UNIT_LABELS: Record<string, string> = {
   global: 'gl',
 }
 
+// Condiciones de entrega predeterminadas para remitos
+export const DEFAULT_DELIVERY_CONDITIONS = [
+  'El módulo se entrega en perfecto estado, bajo planos aprobados.',
+  'ModulArq no se responsabiliza por daños o roturas que pudiera sufrir el módulo una vez que el mismo haya sido retirado de nuestras instalaciones.',
+  'Posicionamiento y anclaje quedan a cargo del cliente.',
+] as const
+
 

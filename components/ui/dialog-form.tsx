@@ -17,6 +17,7 @@ export function DialogForm({
 }: DialogFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     onSubmit(e);
   };
 
