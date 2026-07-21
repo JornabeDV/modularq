@@ -165,9 +165,7 @@ model Project {
   width         Float           @default(1.5)
   depth         Float           @default(0.8)
   module_count  Int             @default(1)
-  // Relación con cotización aprobada
-  quote_id      String?   @unique
-  quote         Quote?    @relation(fields: [quote_id], references: [id])
+  quote_projects QuoteProject[]
   // Relación con módulo de alquiler (si aplica)
   rental_module RentalModule?
   completed_at  DateTime?
@@ -401,10 +399,23 @@ model Quote {
   sent_at        DateTime?
   closed_at      DateTime?
   items QuoteItem[]
-  project       Project?
+  quote_projects QuoteProject[]
   rental_contract RentalContract?
   @@map("quotes")
 }
+
+model QuoteProject {
+  id         String   @id @default(cuid())
+  quote_id   String   @db.Uuid
+  project_id String   @db.Uuid
+  created_at DateTime @default(now())
+  quote      Quote    @relation(fields: [quote_id], references: [id], onDelete: Cascade)
+  project    Project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@unique([quote_id, project_id])
+  @@map("quote_projects")
+}
+
 // Líneas de una cotización (módulos estándar, personalizados o servicios)
 model QuoteItem {
   id                 String          @id @default(cuid())

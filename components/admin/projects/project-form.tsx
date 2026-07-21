@@ -56,7 +56,7 @@ interface ProjectFormData {
   supervisor?: string;
   budget?: number;
   progress?: number;
-  quoteId?: string;
+  quoteIds: string[];
   // Especificaciones técnicas
   modulation: string;
   height: string;
@@ -77,7 +77,7 @@ interface ProjectSubmitData {
   startDate?: string;
   estimatedEndDate?: string;
   moduleCount: number;
-  quoteId?: string;
+  quoteIds?: string[];
 }
 
 interface ProjectFormProps {
@@ -137,7 +137,7 @@ export function ProjectForm({
     startDate: "",
     endDate: "",
     clientId: "none",
-    quoteId: "none",
+    quoteIds: [] as string[],
     modulation: "standard",
     height: "2.00",
     width: "1.50",
@@ -147,7 +147,7 @@ export function ProjectForm({
 
   // Cargar cotizaciones aprobadas disponibles
   useEffect(() => {
-    if (!isOpen || isEditing) return;
+    if (!isOpen) return;
     setQuotesLoading(true);
     fetch('/api/quotes/approved')
       .then((r) => r.json())
@@ -156,38 +156,52 @@ export function ProjectForm({
       })
       .catch(() => {})
       .finally(() => setQuotesLoading(false));
-  }, [isOpen, isEditing]);
+  }, [isOpen]);
 
   // Precargar cotización preseleccionada cuando ya tenemos cotizaciones y clientes cargados
   useEffect(() => {
     if (!isOpen || isEditing || !preselectedQuoteId || approvedQuotes.length === 0 || !clients || clients.length === 0) return;
     const quote = approvedQuotes.find((q) => q.id === preselectedQuoteId);
-    if (quote && formData.quoteId !== preselectedQuoteId) {
+    if (quote && !formData.quoteIds.includes(preselectedQuoteId)) {
       handleQuoteSelect(quote);
     }
-  }, [isOpen, isEditing, preselectedQuoteId, approvedQuotes, clients, formData.quoteId]);
+  }, [isOpen, isEditing, preselectedQuoteId, approvedQuotes, clients, formData.quoteIds]);
 
   const handleQuoteSelect = (quote: ApprovedQuote) => {
     const matchedClient = clients?.find((c) => c.id === quote.client_id);
-    setFormData((prev) => ({
-      ...prev,
-      quoteId: quote.id,
-      name: `Proyecto ${quote.number}`,
-      clientId: matchedClient ? matchedClient.id : prev.clientId,
-      condition: quote.quote_type === 'rental' ? 'alquiler' : 'venta',
-      description: prev.description || `Proyecto derivado de cotización ${quote.number} - ${quote.client_name}`,
-    }));
+    setFormData((prev) => {
+      const isFirstSelection = prev.quoteIds.length === 0;
+      const quoteIds = prev.quoteIds.includes(quote.id)
+        ? prev.quoteIds
+        : [...prev.quoteIds, quote.id];
+      return {
+        ...prev,
+        quoteIds,
+        name: isFirstSelection && !prev.name.trim()
+          ? `Proyecto ${quote.number}`
+          : prev.name,
+        clientId: matchedClient ? matchedClient.id : prev.clientId,
+        condition: quote.quote_type === 'rental' ? 'alquiler' : 'venta',
+        description: prev.description.trim()
+          ? prev.description
+          : `Proyecto derivado de cotización ${quote.number} - ${quote.client_name}`,
+      };
+    });
   };
 
-  const handleQuoteChange = (value: string) => {
-    if (value === "none") {
-      setFormData((prev) => ({ ...prev, quoteId: "none" }));
-      return;
-    }
-    const quote = approvedQuotes.find((q) => q.id === value);
-    if (quote) {
-      handleQuoteSelect(quote);
-    }
+  const toggleQuoteSelection = (quoteId: string) => {
+    const quote = approvedQuotes.find((q) => q.id === quoteId);
+    if (!quote) return;
+    setFormData((prev) => {
+      const selected = prev.quoteIds.includes(quoteId);
+      const quoteIds = selected
+        ? prev.quoteIds.filter((id) => id !== quoteId)
+        : [...prev.quoteIds, quoteId];
+      return {
+        ...prev,
+        quoteIds,
+      };
+    });
   };
 
   useEffect(() => {
@@ -200,7 +214,7 @@ export function ProjectForm({
         startDate: initialData.startDate || "",
         endDate: initialData.endDate || "",
         clientId: initialData.clientId || "none",
-        quoteId: initialData.quoteId || "none",
+        quoteIds: (initialData.quotes || []).map((q) => q.id),
         modulation: initialData.modulation || "standard",
         height: initialData.height?.toString() || "2.00",
         width: initialData.width?.toString() || "1.50",
@@ -216,7 +230,7 @@ export function ProjectForm({
         startDate: "",
         endDate: "",
         clientId: "none",
-        quoteId: "none",
+        quoteIds: [],
         modulation: "standard",
         height: "2.00",
         width: "1.50",
@@ -235,6 +249,9 @@ export function ProjectForm({
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const clientTriggerRef = useRef<HTMLButtonElement>(null);
   const [clientTriggerWidth, setClientTriggerWidth] = useState<number>();
+  const [quotePopoverOpen, setQuotePopoverOpen] = useState(false);
+  const quoteTriggerRef = useRef<HTMLButtonElement>(null);
+  const [quoteTriggerWidth, setQuoteTriggerWidth] = useState<number>();
   const parseDecimal = (value: string): number | undefined => {
     if (value === "") return undefined;
     return parseFloat(value);
@@ -247,7 +264,7 @@ export function ProjectForm({
       const submitData: ProjectSubmitData = {
         ...formData,
         clientId: formData.clientId === "none" ? undefined : formData.clientId,
-        quoteId: formData.quoteId === "none" ? undefined : formData.quoteId,
+        quoteIds: formData.quoteIds,
         height: parseDecimal(formData.height),
         width: parseDecimal(formData.width),
         depth: parseDecimal(formData.depth),
@@ -264,7 +281,7 @@ export function ProjectForm({
       const submitData: ProjectSubmitData = {
         ...formData,
         clientId: formData.clientId === "none" ? undefined : formData.clientId,
-        quoteId: formData.quoteId === "none" ? undefined : formData.quoteId,
+        quoteIds: formData.quoteIds,
         height: parseDecimal(formData.height),
         width: parseDecimal(formData.width),
         depth: parseDecimal(formData.depth),
@@ -413,36 +430,94 @@ export function ProjectForm({
             </div>
           </div>
 
-          {!isEditing && (
+          {(!isEditing || approvedQuotes.length > 0 || (initialData?.quotes && initialData.quotes.length > 0)) && (
             <div>
-              <Label htmlFor="quoteId" className="mb-2">
-                Cotización aprobada
+              <Label className="mb-2">
+                Cotizaciones aprobadas
               </Label>
-              <Select
-                value={formData.quoteId}
-                onValueChange={handleQuoteChange}
+              <Popover
+                open={quotePopoverOpen}
+                onOpenChange={setQuotePopoverOpen}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar cotización aprobada (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin cotización</SelectItem>
-                  {quotesLoading ? (
-                    <SelectItem value="loading" disabled>
-                      Cargando cotizaciones...
-                    </SelectItem>
-                  ) : (
-                    approvedQuotes.map((quote) => (
-                      <SelectItem key={quote.id} value={quote.id}>
-                        {quote.number} - {quote.client_name} ({quote.quote_type === 'rental' ? 'Alquiler' : 'Venta'})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {approvedQuotes.length === 0 && !quotesLoading && (
+                <PopoverTrigger asChild>
+                  <Button
+                    ref={quoteTriggerRef}
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={quotePopoverOpen}
+                    className="w-full justify-between font-normal"
+                    disabled={quotesLoading}
+                    onClick={() => {
+                      if (quoteTriggerRef.current) {
+                        setQuoteTriggerWidth(quoteTriggerRef.current.offsetWidth);
+                      }
+                    }}
+                  >
+                    <span className="truncate">
+                      {formData.quoteIds.length === 0
+                        ? "Seleccionar cotizaciones (opcional)"
+                        : `${formData.quoteIds.length} cotización${formData.quoteIds.length === 1 ? '' : 'es'} seleccionada${formData.quoteIds.length === 1 ? '' : 's'}`}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="p-0"
+                  style={{ width: quoteTriggerWidth }}
+                  align="start"
+                  onWheel={(e) => e.stopPropagation()}
+                >
+                  <Command>
+                    <CommandInput placeholder="Buscar cotización..." className="h-9" />
+                    <CommandList className="max-h-[260px]">
+                      <CommandEmpty>No se encontró la cotización.</CommandEmpty>
+                      <CommandGroup>
+                        {quotesLoading ? (
+                          <CommandItem value="loading" disabled>
+                            Cargando cotizaciones...
+                          </CommandItem>
+                        ) : (
+                          (() => {
+                            const selectedQuotes = (initialData?.quotes || []).map((q) => ({
+                              id: q.id,
+                              number: q.number,
+                              client_name: q.clientName,
+                              quote_type: q.quoteType as 'sale' | 'rental',
+                            }));
+                            const availableQuotes = approvedQuotes.filter(
+                              (q) => !selectedQuotes.some((sq) => sq.id === q.id)
+                            );
+                            const allOptions = [...selectedQuotes, ...availableQuotes];
+                            return allOptions.map((quote) => (
+                              <CommandItem
+                                key={quote.id}
+                                value={`${quote.number} ${quote.client_name}`}
+                                onSelect={() => toggleQuoteSelection(quote.id)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4 shrink-0",
+                                    formData.quoteIds.includes(quote.id)
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{quote.number} - {quote.client_name}</p>
+                                  <p className="text-xs sm:text-sm text-muted-foreground">{quote.quote_type === 'rental' ? 'Alquiler' : 'Venta'}</p>
+                                </div>
+                              </CommandItem>
+                            ));
+                          })()
+                        )}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {!quotesLoading && approvedQuotes.length === 0 && (!initialData?.quotes || initialData.quotes.length === 0) && (
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  No hay cotizaciones aprobadas sin proyecto asociado.
+                  No hay cotizaciones aprobadas disponibles.
                 </p>
               )}
             </div>

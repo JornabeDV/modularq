@@ -5,6 +5,7 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Eye } from "lucide-react"
 import { PurchaseOrderStatusBadge } from "@/components/purchase-orders/PurchaseOrderStatusBadge"
+import { PurchaseOrderPDFActions } from "@/components/purchase-orders/PurchaseOrderPDFActions"
 import {
   Tooltip,
   TooltipContent,
@@ -115,6 +116,7 @@ export function PurchaseOrderRow({
                     <p>Editar orden</p>
                   </TooltipContent>
                 </Tooltip>
+                <PurchaseOrderPDFActions orderId={order.id} orderNumber={order.order_number} />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
