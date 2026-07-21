@@ -181,6 +181,11 @@ const styles = StyleSheet.create({
     textAlign: "right",
     paddingRight: 15,
   },
+  totalLabelSmall: {
+    fontSize: 8,
+    color: "#9ca3af",
+    fontWeight: "normal",
+  },
   totalValue: {
     fontSize: 10,
     fontFamily: "Courier",
@@ -204,9 +209,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     color: "#ffffff",
-    width: 120,
+    width: 240,
     textAlign: "right",
     paddingRight: 15,
+  },
+  grandTotalLabelSmall: {
+    fontSize: 9,
+    color: "#d1d5db",
+    fontWeight: "normal",
   },
   grandTotalValue: {
     fontSize: 12,
@@ -246,7 +256,12 @@ const styles = StyleSheet.create({
 })
 
 function formatCurrency(value: number): string {
-  return `$ ${value.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)
 }
 
 function formatDate(dateStr: string): string {
@@ -373,9 +388,27 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
 
         {/* Totales */}
         <View style={styles.totalsBox}>
+          {purchaseOrder.tax_pct > 0 && (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>
+                  Subtotal <Text style={styles.totalLabelSmall}>(SIN IVA)</Text>
+                </Text>
+                <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>
+                  Impuestos <Text style={styles.totalLabelSmall}>(IVA {purchaseOrder.tax_pct}%)</Text>
+                </Text>
+                <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount)}</Text>
+              </View>
+            </>
+          )}
           <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>TOTAL</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
+            <Text style={styles.grandTotalLabel}>
+              TOTAL <Text style={styles.grandTotalLabelSmall}>(SUBTOTAL + IVA)</Text>
+            </Text>
+            <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.total)}</Text>
           </View>
         </View>
 

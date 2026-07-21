@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
 
 // GET /api/quotes/approved?quoteType=sale|rental
-// Devuelve cotizaciones aprobadas que aún no tienen proyecto asociado
+// Devuelve cotizaciones aprobadas con el conteo de proyectos asociados
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

@@ -231,7 +231,7 @@ export function ProjectDetail({ projectId }: ProjectDetailProps) {
         showFiles={showFiles}
       />
 
-      <ProjectQuoteCard quote={project.quote} />
+      <ProjectQuoteCard quotes={project.quotes} />
 
       <ProjectRentalCard project={project} />
 

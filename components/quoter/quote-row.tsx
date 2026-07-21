@@ -323,7 +323,7 @@ export function QuoteRow({
               </DropdownMenu>
             )}
 
-            {quote.status === 'approved' && !quote.has_project && (
+            {quote.status === 'approved' && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -338,7 +338,7 @@ export function QuoteRow({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Crear proyecto</p>
+                  <p>Crear proyecto{quote.project_count && quote.project_count > 0 ? ` (${quote.project_count} existente${quote.project_count === 1 ? '' : 's'})` : ''}</p>
                 </TooltipContent>
               </Tooltip>
             )}

@@ -106,6 +106,14 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const [deliveryDateOpen, setDeliveryDateOpen] = useState(false)
   const [notes, setNotes] = useState(initialData?.notes || "")
 
+  const [taxPct, setTaxPct] = useState(initialData?.tax_pct ?? 21)
+
+  useEffect(() => {
+    if (initialData?.tax_pct !== undefined) {
+      setTaxPct(initialData.tax_pct)
+    }
+  }, [initialData?.tax_pct])
+
   const currentYear = new Date().getFullYear()
   const calendarStartMonth = new Date(currentYear, 0, 1)
   const calendarEndMonth = new Date(currentYear + 10, 11, 31)
@@ -122,6 +130,14 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + (item.total_price || 0), 0)
   }, [items])
+
+  const taxAmount = useMemo(() => {
+    return subtotal * (taxPct / 100)
+  }, [subtotal, taxPct])
+
+  const total = useMemo(() => {
+    return subtotal + taxAmount
+  }, [subtotal, taxAmount])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -147,9 +163,9 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       purchase_request_id: purchaseRequestId || undefined,
       status,
       subtotal,
-      tax_pct: 0,
-      tax_amount: 0,
-      total: subtotal,
+      tax_pct: taxPct,
+      tax_amount: taxAmount,
+      total,
       payment_terms: paymentTerms || undefined,
       delivery_terms: deliveryTerms || undefined,
       delivery_date: deliveryDate || undefined,
@@ -180,21 +196,21 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         order_number: initialData.order_number,
         status: initialData.status,
         supplier: initialData.supplier || { name: "" },
-        items: initialData.items.map((item) => ({
+        items: items.map((item) => ({
           description: item.description,
           quantity: item.quantity,
           unit: item.unit,
           unit_price: item.unit_price,
           total_price: item.total_price,
         })),
-        subtotal: initialData.subtotal,
-        tax_pct: 0,
-        tax_amount: 0,
-        total: initialData.total,
-        payment_terms: initialData.payment_terms,
-        delivery_terms: initialData.delivery_terms,
-        delivery_date: initialData.delivery_date,
-        notes: initialData.notes,
+        subtotal,
+        tax_pct: taxPct,
+        tax_amount: taxAmount,
+        total,
+        payment_terms: paymentTerms || initialData.payment_terms,
+        delivery_terms: deliveryTerms || initialData.delivery_terms,
+        delivery_date: deliveryDate || initialData.delivery_date,
+        notes: notes || initialData.notes,
         created_at: initialData.created_at,
       }
     : null
@@ -256,12 +272,64 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         </CardHeader>
         <CardContent className="space-y-4">
           <PurchaseOrderItemsTable items={items} onChange={setItems} />
-          <div className="flex justify-end pt-4 border-t">
-            <div className="text-right">
-              <p className="text-muted-foreground text-sm">Total</p>
-              <p className="tabular-nums text-xl font-bold">
-                ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-              </p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">IVA</span>
+              <div className="flex rounded-md border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setTaxPct(0)}
+                  className={`px-2 py-1 text-xs font-medium transition-colors ${
+                    taxPct === 0
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  0%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTaxPct(10.5)}
+                  className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
+                    taxPct === 10.5
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  10.5%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTaxPct(21)}
+                  className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
+                    taxPct === 21
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  21%
+                </button>
+              </div>
+            </div>
+            <div className="text-right space-y-1">
+              <div className="flex justify-end gap-4 text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="tabular-nums font-medium">
+                  ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-end gap-4 text-sm">
+                <span className="text-muted-foreground">IVA ({taxPct}%)</span>
+                <span className="tabular-nums font-medium">
+                  ${taxAmount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-end gap-4 pt-2 border-t">
+                <span className="text-muted-foreground text-sm">Total</span>
+                <p className="tabular-nums text-xl font-bold">
+                  ${total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

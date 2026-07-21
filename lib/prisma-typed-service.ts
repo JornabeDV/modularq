@@ -200,17 +200,20 @@ export class PrismaTypedService {
             deleted_at
           )
         ),
-        quote:quote_id (
-          id,
-          number,
-          quote_type,
-          status,
-          client_name,
-          total,
-          total_ars,
-          currency,
-          exchange_rate,
-          pdf_url
+        quote_projects (
+          quote_id,
+          quote:quote_id (
+            id,
+            number,
+            quote_type,
+            status,
+            client_name,
+            total,
+            total_ars,
+            currency,
+            exchange_rate,
+            pdf_url
+          )
         )
       `)
       .order('project_order', { ascending: true, nullsFirst: false })
@@ -245,7 +248,7 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
-    quote_id?: string
+    quote_ids?: string[]
   }): Promise<any> {
     const { data, error } = await supabase
       .from('projects')
@@ -263,13 +266,22 @@ export class PrismaTypedService {
         height: projectData.height || 2.0,
         width: projectData.width || 1.5,
         depth: projectData.depth || 0.8,
-        module_count: projectData.module_count || 1,
-        quote_id: projectData.quote_id || null
+        module_count: projectData.module_count || 1
       })
       .select()
       .single()
     
     if (error) throw error
+
+    // Asociar cotizaciones seleccionadas
+    const quoteIds = projectData.quote_ids?.filter(Boolean) ?? []
+    if (quoteIds.length > 0 && data?.id) {
+      const { error: linkError } = await supabase
+        .from('quote_projects')
+        .insert(quoteIds.map((quote_id) => ({ quote_id, project_id: data.id })))
+      if (linkError) throw linkError
+    }
+
     return data as any
   }
 
@@ -288,6 +300,7 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
+    quote_ids?: string[]
   }): Promise<any> {
     const updateData: any = {}
 
@@ -340,6 +353,24 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    // Reemplazar cotizaciones asociadas si se enviaron
+    if (projectData.quote_ids !== undefined) {
+      const quoteIds = projectData.quote_ids.filter(Boolean)
+      const { error: deleteError } = await supabase
+        .from('quote_projects')
+        .delete()
+        .eq('project_id', id)
+      if (deleteError) throw deleteError
+
+      if (quoteIds.length > 0) {
+        const { error: insertError } = await supabase
+          .from('quote_projects')
+          .insert(quoteIds.map((quote_id) => ({ quote_id, project_id: id })))
+        if (insertError) throw insertError
+      }
+    }
+
     return data as any
   }
 
@@ -2151,16 +2182,18 @@ export class PrismaTypedService {
     const { data, error } = await query
     if (error) throw error
     
-    // Obtener qué cotizaciones ya tienen proyecto asociado
+    // Obtener cantidad de proyectos asociados a cada cotización
     const quotes = data ?? []
     if (quotes.length > 0) {
-      const { data: projectsData } = await supabase
-        .from('projects')
+      const { data: linksData } = await supabase
+        .from('quote_projects')
         .select('quote_id')
-        .not('quote_id', 'is', null)
       
-      const quoteIdsWithProject = new Set(projectsData?.map((p: any) => p.quote_id) ?? [])
-      return quotes.map((q: any) => ({ ...q, has_project: quoteIdsWithProject.has(q.id) }))
+      const countsByQuote: Record<string, number> = {}
+      for (const link of linksData ?? []) {
+        countsByQuote[link.quote_id] = (countsByQuote[link.quote_id] || 0) + 1
+      }
+      return quotes.map((q: any) => ({ ...q, project_count: countsByQuote[q.id] || 0 }))
     }
     
     return quotes
@@ -2181,14 +2214,16 @@ export class PrismaTypedService {
     if (error) throw error
     if (!quotes || quotes.length === 0) return []
 
-    // Obtener cotizaciones que ya tienen proyecto
-    const { data: projectsData } = await supabase
-      .from('projects')
+    // Contar proyectos asociados a cada cotización (para el selector de creación de proyecto)
+    const { data: linksData } = await supabase
+      .from('quote_projects')
       .select('quote_id')
-      .not('quote_id', 'is', null)
 
-    const quoteIdsWithProject = new Set(projectsData?.map((p: any) => p.quote_id) ?? [])
-    return quotes.filter((q: any) => !quoteIdsWithProject.has(q.id))
+    const countsByQuote: Record<string, number> = {}
+    for (const link of linksData ?? []) {
+      countsByQuote[link.quote_id] = (countsByQuote[link.quote_id] || 0) + 1
+    }
+    return quotes.map((q: any) => ({ ...q, project_count: countsByQuote[q.id] || 0 }))
   }
 
   static async getQuoteById(id: string) {
@@ -2243,9 +2278,18 @@ export class PrismaTypedService {
       attachments: attachments.filter((a) => a.quote_item_id === item.id),
     }))
 
+    // 6. Proyectos asociados
+    const { data: projectsData, error: projectsError } = await supabase
+      .from('quote_projects')
+      .select('project_id, project:project_id (id, name, status)')
+      .eq('quote_id', id)
+
+    if (projectsError) throw projectsError
+
     return {
       ...quote,
       items: itemsWithDetails,
+      projects: projectsData ?? [],
     }
   }
 
