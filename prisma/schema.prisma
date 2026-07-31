@@ -685,6 +685,8 @@ model PurchaseOrder {
   subtotal            Float               @default(0)
   tax_pct             Float               @default(21)
   tax_amount          Float               @default(0)
+  iibb_lh_pct         Float               @default(0)
+  iibb_lh_amount      Float               @default(0)
   total               Float               @default(0)
 
   payment_terms       String?

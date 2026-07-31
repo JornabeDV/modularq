@@ -35,6 +35,8 @@ export async function PUT(
       subtotal: body.subtotal,
       tax_pct: body.tax_pct,
       tax_amount: body.tax_amount,
+      iibb_lh_pct: body.iibb_lh_pct,
+      iibb_lh_amount: body.iibb_lh_amount,
       total: body.total,
       payment_terms: body.payment_terms,
       delivery_terms: body.delivery_terms,

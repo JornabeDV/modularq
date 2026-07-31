@@ -62,30 +62,48 @@ export async function POST(request: NextRequest) {
     const moduleIds: string[] = moduleIdsRaw ? JSON.parse(moduleIdsRaw) : []
 
     // Recopilar PDFs adjuntos de los ítems de la cotización.
-    // Los attachments guardados en el quote_item tienen prioridad sobre los del
-    // catálogo de módulos estándar, permitiendo reemplazarlos desde el cotizador.
+    // Para módulos estándar, los adjuntos que provienen del catálogo se validan
+    // contra el catálogo actual: si fueron eliminados del módulo, no se incluyen.
+    // Los adjuntos agregados manualmente al ítem de cotización se mantienen.
     const attachmentUrls = new Set<string>()
 
     if (quoteDataRaw) {
       try {
         const quoteData = JSON.parse(quoteDataRaw)
         for (const item of quoteData.items ?? []) {
-          if (item.attachments && item.attachments.length > 0) {
-            for (const att of item.attachments) {
-              if (att.mime_type === 'application/pdf') {
-                attachmentUrls.add(att.url)
+          if (item.type === 'standard_module' && item.standard_module_id) {
+            const moduleId = item.standard_module_id as string
+            const currentCatalogAttachments = await PrismaTypedService.getStandardModuleAttachments(moduleId)
+            const currentCatalogUrls = new Set(currentCatalogAttachments.map((a: any) => a.url))
+
+            if (item.attachments != null) {
+              for (const att of item.attachments) {
+                if (att.mime_type !== 'application/pdf') continue
+
+                const isCatalogAttachment = att.storage_path?.startsWith(`attachments/${moduleId}/`)
+                if (isCatalogAttachment) {
+                  // Solo incluir adjuntos de catálogo que sigan existiendo en el módulo
+                  if (currentCatalogUrls.has(att.url)) {
+                    attachmentUrls.add(att.url)
+                  }
+                } else {
+                  // Adjunto agregado manualmente al ítem: mantenerlo
+                  attachmentUrls.add(att.url)
+                }
               }
-            }
-          } else if (item.type === 'standard_module' && item.standard_module_id) {
-            try {
-              const attachments = await PrismaTypedService.getStandardModuleAttachments(item.standard_module_id)
-              for (const att of attachments) {
+            } else {
+              // Si el ítem no tiene adjuntos propios, usar los del catálogo actual
+              for (const att of currentCatalogAttachments) {
                 if (att.mime_type === 'application/pdf') {
                   attachmentUrls.add(att.url)
                 }
               }
-            } catch {
-              // continuar sin los adjuntos de este módulo
+            }
+          } else if (item.attachments && item.attachments.length > 0) {
+            for (const att of item.attachments) {
+              if (att.mime_type === 'application/pdf') {
+                attachmentUrls.add(att.url)
+              }
             }
           }
         }
@@ -94,8 +112,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fallback legacy: si no hay quoteData, usar los moduleIds recibidos
-    if (attachmentUrls.size === 0 && moduleIds.length > 0) {
+    // Fallback legacy: si no vino quoteData, usar los moduleIds recibidos
+    if (!quoteDataRaw && attachmentUrls.size === 0 && moduleIds.length > 0) {
       for (const moduleId of moduleIds) {
         try {
           const attachments = await PrismaTypedService.getStandardModuleAttachments(moduleId)

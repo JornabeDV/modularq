@@ -42,6 +42,8 @@ export default function EditPurchaseOrderPage() {
     subtotal: number
     tax_pct: number
     tax_amount: number
+    iibb_lh_pct: number
+    iibb_lh_amount: number
     total: number
     payment_terms?: string
     delivery_terms?: string
@@ -129,6 +131,8 @@ export default function EditPurchaseOrderPage() {
               subtotal: order.subtotal,
               tax_pct: order.tax_pct,
               tax_amount: order.tax_amount,
+              iibb_lh_pct: order.iibb_lh_pct,
+              iibb_lh_amount: order.iibb_lh_amount,
               total: order.total,
               payment_terms: order.payment_terms || undefined,
               delivery_terms: order.delivery_terms || undefined,

@@ -2548,6 +2548,8 @@ export class PrismaTypedService {
     subtotal?: number
     tax_pct?: number
     tax_amount?: number
+    iibb_lh_pct?: number
+    iibb_lh_amount?: number
     total?: number
     payment_terms?: string
     delivery_terms?: string
@@ -2575,6 +2577,8 @@ export class PrismaTypedService {
         subtotal: orderData.subtotal ?? 0,
         tax_pct: orderData.tax_pct ?? 21,
         tax_amount: orderData.tax_amount ?? 0,
+        iibb_lh_pct: orderData.iibb_lh_pct ?? 0,
+        iibb_lh_amount: orderData.iibb_lh_amount ?? 0,
         total: orderData.total ?? 0,
         payment_terms: orderData.payment_terms ?? null,
         delivery_terms: orderData.delivery_terms ?? null,
@@ -2614,6 +2618,8 @@ export class PrismaTypedService {
       subtotal?: number
       tax_pct?: number
       tax_amount?: number
+      iibb_lh_pct?: number
+      iibb_lh_amount?: number
       total?: number
       payment_terms?: string
       delivery_terms?: string

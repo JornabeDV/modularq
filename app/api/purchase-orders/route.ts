@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
       subtotal: body.subtotal ?? 0,
       tax_pct: body.tax_pct ?? 21,
       tax_amount: body.tax_amount ?? 0,
+      iibb_lh_pct: body.iibb_lh_pct ?? 0,
+      iibb_lh_amount: body.iibb_lh_amount ?? 0,
       total: body.total ?? 0,
       payment_terms: body.payment_terms,
       delivery_terms: body.delivery_terms,

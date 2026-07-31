@@ -37,6 +37,8 @@ interface PDFPurchaseOrder {
   subtotal: number
   tax_pct: number
   tax_amount: number
+  iibb_lh_pct: number
+  iibb_lh_amount: number
   total: number
   payment_terms?: string
   delivery_terms?: string
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 10,
     fontWeight: "bold",
-    width: 120,
+    width: 200,
     textAlign: "right",
     paddingRight: 15,
   },
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     color: "#ffffff",
-    width: 240,
+    width: 320,
     textAlign: "right",
     paddingRight: 15,
   },
@@ -388,25 +390,31 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
 
         {/* Totales */}
         <View style={styles.totalsBox}>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>
+              Subtotal <Text style={styles.totalLabelSmall}>(SIN IMPUESTOS)</Text>
+            </Text>
+            <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
+          </View>
           {purchaseOrder.tax_pct > 0 && (
-            <>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>
-                  Subtotal <Text style={styles.totalLabelSmall}>(SIN IVA)</Text>
-                </Text>
-                <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>
-                  Impuestos <Text style={styles.totalLabelSmall}>(IVA {purchaseOrder.tax_pct}%)</Text>
-                </Text>
-                <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount)}</Text>
-              </View>
-            </>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>
+                IVA <Text style={styles.totalLabelSmall}>({purchaseOrder.tax_pct}%)</Text>
+              </Text>
+              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount)}</Text>
+            </View>
+          )}
+          {purchaseOrder.iibb_lh_pct > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>
+                Percepción IIBB y LH <Text style={styles.totalLabelSmall}>({purchaseOrder.iibb_lh_pct}%)</Text>
+              </Text>
+              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.iibb_lh_amount)}</Text>
+            </View>
           )}
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>
-              TOTAL <Text style={styles.grandTotalLabelSmall}>(SUBTOTAL + IVA)</Text>
+              TOTAL <Text style={styles.grandTotalLabelSmall}>(SUBTOTAL + IMPUESTOS)</Text>
             </Text>
             <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.total)}</Text>
           </View>
