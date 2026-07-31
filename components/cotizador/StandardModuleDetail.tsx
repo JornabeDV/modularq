@@ -208,6 +208,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
       );
       if (!res.ok) throw new Error();
       toast({ title: "Archivo eliminado" });
+      onRefresh();
     } catch {
       setLocalAttachments(previous);
       toast({ title: "Error al eliminar archivo", variant: "destructive" });

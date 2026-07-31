@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Save, ArrowLeft, Package, CalendarIcon } from "lucide-react"
 
 interface PurchaseOrderFormProps {
@@ -47,6 +48,8 @@ interface PurchaseOrderFormProps {
     subtotal: number
     tax_pct: number
     tax_amount: number
+    iibb_lh_pct: number
+    iibb_lh_amount: number
     total: number
     payment_terms?: string
     delivery_terms?: string
@@ -74,6 +77,8 @@ interface PurchaseOrderFormProps {
     subtotal: number
     tax_pct: number
     tax_amount: number
+    iibb_lh_pct: number
+    iibb_lh_amount: number
     total: number
     payment_terms?: string
     delivery_terms?: string
@@ -114,6 +119,19 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
     }
   }, [initialData?.tax_pct])
 
+  const defaultIibbLhPct = 2
+  const [iibbLhPct, setIibbLhPct] = useState(initialData?.iibb_lh_pct ?? 0)
+  const [iibbLhInput, setIibbLhInput] = useState(String(initialData?.iibb_lh_pct ?? defaultIibbLhPct))
+  const [includeIibbLh, setIncludeIibbLh] = useState(initialData?.iibb_lh_pct ? initialData.iibb_lh_pct > 0 : false)
+
+  useEffect(() => {
+    if (initialData?.iibb_lh_pct !== undefined) {
+      setIibbLhPct(initialData.iibb_lh_pct)
+      setIibbLhInput(String(initialData.iibb_lh_pct))
+      setIncludeIibbLh(initialData.iibb_lh_pct > 0)
+    }
+  }, [initialData?.iibb_lh_pct])
+
   const currentYear = new Date().getFullYear()
   const calendarStartMonth = new Date(currentYear, 0, 1)
   const calendarEndMonth = new Date(currentYear + 10, 11, 31)
@@ -135,9 +153,14 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
     return subtotal * (taxPct / 100)
   }, [subtotal, taxPct])
 
+  const effectiveIibbLhPct = includeIibbLh ? iibbLhPct : 0
+  const iibbLhAmount = useMemo(() => {
+    return subtotal * (effectiveIibbLhPct / 100)
+  }, [subtotal, effectiveIibbLhPct])
+
   const total = useMemo(() => {
-    return subtotal + taxAmount
-  }, [subtotal, taxAmount])
+    return subtotal + taxAmount + iibbLhAmount
+  }, [subtotal, taxAmount, iibbLhAmount])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -165,6 +188,8 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       subtotal,
       tax_pct: taxPct,
       tax_amount: taxAmount,
+      iibb_lh_pct: effectiveIibbLhPct,
+      iibb_lh_amount: iibbLhAmount,
       total,
       payment_terms: paymentTerms || undefined,
       delivery_terms: deliveryTerms || undefined,
@@ -206,6 +231,8 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         subtotal,
         tax_pct: taxPct,
         tax_amount: taxAmount,
+        iibb_lh_pct: effectiveIibbLhPct,
+        iibb_lh_amount: iibbLhAmount,
         total,
         payment_terms: paymentTerms || initialData.payment_terms,
         delivery_terms: deliveryTerms || initialData.delivery_terms,
@@ -273,42 +300,87 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         <CardContent className="space-y-4">
           <PurchaseOrderItemsTable items={items} onChange={setItems} />
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">IVA</span>
-              <div className="flex rounded-md border overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setTaxPct(0)}
-                  className={`px-2 py-1 text-xs font-medium transition-colors ${
-                    taxPct === 0
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  0%
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTaxPct(10.5)}
-                  className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
-                    taxPct === 10.5
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  10.5%
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTaxPct(21)}
-                  className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
-                    taxPct === 21
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  21%
-                </button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">IVA</span>
+                <div className="flex rounded-md border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setTaxPct(0)}
+                    className={`px-2 py-1 text-xs font-medium transition-colors ${
+                      taxPct === 0
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    0%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaxPct(10.5)}
+                    className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
+                      taxPct === 10.5
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    10.5%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaxPct(21)}
+                    className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
+                      taxPct === 21
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    21%
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="include-iibb-lh"
+                  checked={includeIibbLh}
+                  onCheckedChange={(checked) => {
+                    const enabled = checked === true
+                    setIncludeIibbLh(enabled)
+                    if (enabled && iibbLhPct === 0) {
+                      const next = defaultIibbLhPct
+                      setIibbLhPct(next)
+                      setIibbLhInput(String(next))
+                    }
+                  }}
+                />
+                <Label htmlFor="include-iibb-lh" className="text-sm text-muted-foreground cursor-pointer">
+                  Percepción IIBB y LH
+                </Label>
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    disabled={!includeIibbLh}
+                    value={iibbLhInput}
+                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(",", ".")
+                      if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+                        setIibbLhInput(raw)
+                        const parsed = parseFloat(raw)
+                        setIibbLhPct(Number.isNaN(parsed) ? 0 : parsed)
+                      }
+                    }}
+                    onBlur={() => {
+                      const parsed = parseFloat(iibbLhInput)
+                      const next = Number.isNaN(parsed) || parsed < 0 ? 0 : parsed
+                      setIibbLhPct(next)
+                      setIibbLhInput(String(next))
+                    }}
+                    className="w-20 h-8 text-sm"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
               </div>
             </div>
             <div className="text-right space-y-1">
@@ -324,6 +396,14 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                   ${taxAmount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                 </span>
               </div>
+              {effectiveIibbLhPct > 0 && (
+                <div className="flex justify-end gap-4 text-sm">
+                  <span className="text-muted-foreground">Percepción IIBB y LH ({effectiveIibbLhPct}%)</span>
+                  <span className="tabular-nums font-medium">
+                    ${iibbLhAmount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-end gap-4 pt-2 border-t">
                 <span className="text-muted-foreground text-sm">Total</span>
                 <p className="tabular-nums text-xl font-bold">

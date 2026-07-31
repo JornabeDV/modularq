@@ -52,6 +52,8 @@ export default function NewPurchaseOrderPage() {
               subtotal: 0,
               tax_pct: 21,
               tax_amount: 0,
+              iibb_lh_pct: 0,
+              iibb_lh_amount: 0,
               total: 0,
               created_at: new Date().toISOString(),
             }}

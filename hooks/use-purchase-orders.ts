@@ -73,6 +73,8 @@ export interface PurchaseOrder {
   subtotal: number
   tax_pct: number
   tax_amount: number
+  iibb_lh_pct: number
+  iibb_lh_amount: number
   total: number
   payment_terms?: string
   delivery_terms?: string
@@ -91,6 +93,8 @@ export interface CreatePurchaseOrderData {
   subtotal?: number
   tax_pct?: number
   tax_amount?: number
+  iibb_lh_pct?: number
+  iibb_lh_amount?: number
   total?: number
   payment_terms?: string
   delivery_terms?: string
@@ -114,6 +118,8 @@ export interface UpdatePurchaseOrderData {
   subtotal?: number
   tax_pct?: number
   tax_amount?: number
+  iibb_lh_pct?: number
+  iibb_lh_amount?: number
   total?: number
   payment_terms?: string
   delivery_terms?: string
