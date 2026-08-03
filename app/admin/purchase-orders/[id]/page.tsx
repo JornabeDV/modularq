@@ -48,6 +48,7 @@ export default function EditPurchaseOrderPage() {
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
+    order_date?: string
     notes?: string
     items: Array<{
       id?: string
@@ -137,6 +138,7 @@ export default function EditPurchaseOrderPage() {
               payment_terms: order.payment_terms || undefined,
               delivery_terms: order.delivery_terms || undefined,
               delivery_date: order.delivery_date || undefined,
+              order_date: order.order_date || undefined,
               notes: order.notes || undefined,
               supplier: order.supplier,
               purchase_request: order.purchase_request,

@@ -692,6 +692,7 @@ model PurchaseOrder {
   payment_terms       String?
   delivery_terms      String?
   delivery_date       DateTime?
+  order_date          DateTime?
   notes               String?
 
   created_by          String?

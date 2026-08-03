@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,9 +10,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { usePurchaseOrders } from "@/hooks/use-purchase-orders"
+import { usePurchaseRequests } from "@/hooks/use-purchase-requests"
 import { SupplierSelect } from "./SupplierSelect"
 import { CreateSupplierDialog } from "./CreateSupplierDialog"
 import { PurchaseOrderItemsTable, PurchaseOrderItemInput } from "./PurchaseOrderItemsTable"
@@ -54,6 +65,7 @@ interface PurchaseOrderFormProps {
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
+    order_date?: string
     notes?: string
     supplier?: {
       name: string
@@ -83,6 +95,7 @@ interface PurchaseOrderFormProps {
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
+    order_date?: string
     notes?: string
     items: PurchaseOrderItemInput[]
   }) => Promise<void>
@@ -94,21 +107,41 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const router = useRouter()
   const { toast } = useToast()
   const { getPurchaseOrder } = usePurchaseOrders()
+  const { getPurchaseRequest } = usePurchaseRequests()
 
   const [supplierId, setSupplierId] = useState(initialData?.supplier_id || "")
   const [purchaseRequestId, setPurchaseRequestId] = useState(initialData?.purchase_request_id || "")
   const [status, setStatus] = useState(initialData?.status || "draft")
   const [items, setItems] = useState<PurchaseOrderItemInput[]>(initialData?.items || [])
+  const [isLoadingRequestItems, setIsLoadingRequestItems] = useState(false)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null)
+
+  const prefilledRequestIdRef = useRef<string | undefined>(undefined)
+  const loadingRequestIdRef = useRef<string | null>(null)
+  const itemsRef = useRef<PurchaseOrderItemInput[]>(items)
+  const isConfirmOpenRef = useRef(false)
+  const confirmedChangeRef = useRef(false)
+  itemsRef.current = items
 
   useEffect(() => {
     if (initialData?.status) {
       setStatus(initialData.status)
     }
   }, [initialData?.status])
+  const normalizeDateString = (value?: string | null): string => {
+    if (!value) return ""
+    const date = new Date(value)
+    if (isNaN(date.getTime())) return ""
+    return date.toISOString().split("T")[0]
+  }
+
   const [paymentTerms, setPaymentTerms] = useState(initialData?.payment_terms || "")
   const [deliveryTerms, setDeliveryTerms] = useState(initialData?.delivery_terms || "")
-  const [deliveryDate, setDeliveryDate] = useState(initialData?.delivery_date || "")
+  const [deliveryDate, setDeliveryDate] = useState(normalizeDateString(initialData?.delivery_date))
   const [deliveryDateOpen, setDeliveryDateOpen] = useState(false)
+  const [orderDate, setOrderDate] = useState(normalizeDateString(initialData?.order_date))
+  const [orderDateOpen, setOrderDateOpen] = useState(false)
   const [notes, setNotes] = useState(initialData?.notes || "")
 
   const [taxPct, setTaxPct] = useState(initialData?.tax_pct ?? 21)
@@ -132,17 +165,123 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
     }
   }, [initialData?.iibb_lh_pct])
 
+  const loadItemsFromRequest = useCallback(async (requestId: string) => {
+    if (loadingRequestIdRef.current === requestId) return
+    loadingRequestIdRef.current = requestId
+    setIsLoadingRequestItems(true)
+    try {
+      const request = await getPurchaseRequest(requestId)
+      if (!request.items || request.items.length === 0) {
+        toast({
+          title: "Pedido vacío",
+          description: "El pedido seleccionado no tiene ítems para cargar.",
+          variant: "destructive",
+        })
+        return
+      }
+      const mappedItems = request.items.map((item) => {
+        const unitPrice = item.material?.unit_price ?? 0
+        return {
+          material_id: item.material_id,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: unitPrice,
+          total_price: item.quantity * unitPrice,
+        }
+      })
+      setItems(mappedItems)
+      toast({
+        title: "Ítems cargados",
+        description: `Se precargaron ${mappedItems.length} ítems del pedido ${request.request_number}.`,
+      })
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "No se pudieron cargar los ítems del pedido.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingRequestItems(false)
+      loadingRequestIdRef.current = null
+    }
+  }, [getPurchaseRequest, toast])
+
+  const handleConfirmRequestChange = () => {
+    if (!pendingRequestId) return
+    confirmedChangeRef.current = true
+    isConfirmOpenRef.current = false
+    setIsConfirmOpen(false)
+    prefilledRequestIdRef.current = pendingRequestId
+    setPurchaseRequestId(pendingRequestId)
+    loadItemsFromRequest(pendingRequestId)
+    setPendingRequestId(null)
+  }
+
+  const handleCancelRequestChange = () => {
+    confirmedChangeRef.current = false
+    isConfirmOpenRef.current = false
+    setIsConfirmOpen(false)
+    setPurchaseRequestId(prefilledRequestIdRef.current || "")
+    setPendingRequestId(null)
+  }
+
+  // Revertir el pedido seleccionado si el modal se cierra sin confirmar/cancelar explícitamente
+  useEffect(() => {
+    if (isConfirmOpen) return
+    if (confirmedChangeRef.current) {
+      confirmedChangeRef.current = false
+      return
+    }
+    if (pendingRequestId) {
+      setPurchaseRequestId(prefilledRequestIdRef.current || "")
+      setPendingRequestId(null)
+      isConfirmOpenRef.current = false
+    }
+  }, [isConfirmOpen, pendingRequestId])
+
+  // Precargar ítems cuando se llega con un purchase_request_id inicial
+  useEffect(() => {
+    if (mode !== "create") return
+    const initialRequestId = initialData?.purchase_request_id
+    if (!initialRequestId) return
+    if (prefilledRequestIdRef.current === initialRequestId) return
+    if (itemsRef.current.length > 0) return
+    prefilledRequestIdRef.current = initialRequestId
+    loadItemsFromRequest(initialRequestId)
+  }, [mode, initialData?.purchase_request_id, loadItemsFromRequest])
+
+  // Precargar ítems cuando el usuario cambia el pedido seleccionado
+  useEffect(() => {
+    if (mode !== "create") return
+    if (!purchaseRequestId) return
+    if (purchaseRequestId === prefilledRequestIdRef.current) return
+    if (isConfirmOpenRef.current) return
+
+    if (itemsRef.current.length === 0) {
+      prefilledRequestIdRef.current = purchaseRequestId
+      loadItemsFromRequest(purchaseRequestId)
+    } else {
+      isConfirmOpenRef.current = true
+      setPendingRequestId(purchaseRequestId)
+      setIsConfirmOpen(true)
+    }
+  }, [mode, purchaseRequestId, loadItemsFromRequest])
+
   const currentYear = new Date().getFullYear()
   const calendarStartMonth = new Date(currentYear, 0, 1)
   const calendarEndMonth = new Date(currentYear + 10, 11, 31)
 
   const formatDateLabel = (dateString: string) => {
     if (!dateString) return null
-    return new Date(dateString + "T00:00:00").toLocaleDateString("es-AR", {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return null
+    return new Intl.DateTimeFormat("es-AR", {
       day: "2-digit",
       month: "long",
       year: "numeric",
-    })
+      timeZone: "UTC",
+    }).format(date)
   }
 
   const subtotal = useMemo(() => {
@@ -194,6 +333,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       payment_terms: paymentTerms || undefined,
       delivery_terms: deliveryTerms || undefined,
       delivery_date: deliveryDate || undefined,
+      order_date: orderDate || undefined,
       notes: notes || undefined,
       items,
     })
@@ -237,6 +377,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         payment_terms: paymentTerms || initialData.payment_terms,
         delivery_terms: deliveryTerms || initialData.delivery_terms,
         delivery_date: deliveryDate || initialData.delivery_date,
+        order_date: orderDate || initialData.order_date,
         notes: notes || initialData.notes,
         created_at: initialData.created_at,
       }
@@ -266,7 +407,40 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           <CardTitle className="text-base">Proveedor y pedido</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-2">
+            <div>
+              <Label className="mb-2">Fecha de orden (opcional)</Label>
+              <Popover open={orderDateOpen} onOpenChange={setOrderDateOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !orderDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formatDateLabel(orderDate) || "Fecha actual por defecto"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    captionLayout="dropdown-years"
+                    startMonth={calendarStartMonth}
+                    endMonth={calendarEndMonth}
+                    selected={orderDate ? new Date(orderDate + "T00:00:00") : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setOrderDate(date.toISOString().split("T")[0])
+                        setOrderDateOpen(false)
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             <div>
               <Label htmlFor="supplier" className="mb-2">Proveedor *</Label>
               <div className="flex flex-col sm:flex-row sm:items-end gap-2">
@@ -286,6 +460,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                 value={purchaseRequestId}
                 onChange={setPurchaseRequestId}
                 placeholder="Seleccionar pedido..."
+                disabled={isLoadingRequestItems || isSubmitting}
               />
             </div>
           </div>
@@ -533,6 +708,21 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           {mode === "create" ? "Crear Orden" : "Guardar Cambios"}
         </Button>
       </div>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cambiar pedido de materiales</AlertDialogTitle>
+            <AlertDialogDescription>
+              Al cambiar el pedido asociado se reemplazarán los ítems actuales de la orden por los del nuevo pedido. Los cambios manuales que hayas hecho se perderán.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelRequestChange}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRequestChange}>Continuar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   )
 }

@@ -45,6 +45,7 @@ export function PurchaseOrderPDFActions({ orderId, orderNumber }: PurchaseOrderP
       payment_terms: order.payment_terms,
       delivery_terms: order.delivery_terms,
       delivery_date: order.delivery_date,
+      order_date: order.order_date,
       notes: order.notes,
       created_at: order.created_at,
     }

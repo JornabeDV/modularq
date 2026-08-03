@@ -986,6 +986,28 @@ export class PrismaTypedService {
   }): Promise<any> {
     const stockQuantity = materialData.stock_quantity ?? 0
     const { created_by, ...materialInsertData } = materialData
+
+    // Pre-validar duplicados antes de tocar la base
+    const { data: existingCode } = await supabase
+      .from('materials')
+      .select('code')
+      .eq('code', materialData.code.trim())
+      .maybeSingle()
+
+    if (existingCode) {
+      throw new Error(`Ya existe un material con el código ${existingCode.code}. Usá otro código.`)
+    }
+
+    const { data: existingName } = await supabase
+      .from('materials')
+      .select('code, name')
+      .ilike('name', materialData.name.trim())
+      .maybeSingle()
+
+    if (existingName) {
+      throw new Error(`Ya existe un material con el nombre "${existingName.name}" (${existingName.code}). Cambiá el nombre.`)
+    }
+
     const { data, error } = await supabase
       .from('materials')
       .insert({
@@ -1032,6 +1054,34 @@ export class PrismaTypedService {
     if (!currentMaterial) throw new Error('Material no encontrado')
 
     const { created_by, ...materialUpdateData } = materialData
+
+    // Pre-validar duplicados antes de tocar la base
+    if (materialData.code !== undefined && materialData.code.trim() !== currentMaterial.code) {
+      const { data: existingCode } = await supabase
+        .from('materials')
+        .select('code')
+        .eq('code', materialData.code.trim())
+        .neq('id', id)
+        .maybeSingle()
+
+      if (existingCode) {
+        throw new Error(`Ya existe un material con el código ${existingCode.code}. Usá otro código.`)
+      }
+    }
+
+    if (materialData.name !== undefined && materialData.name.trim() !== currentMaterial.name) {
+      const { data: existingName } = await supabase
+        .from('materials')
+        .select('code, name')
+        .ilike('name', materialData.name.trim())
+        .neq('id', id)
+        .maybeSingle()
+
+      if (existingName) {
+        throw new Error(`Ya existe un material con el nombre "${existingName.name}" (${existingName.code}). Cambiá el nombre.`)
+      }
+    }
+
     const { data, error } = await supabase
       .from('materials')
       .update({
@@ -2554,6 +2604,7 @@ export class PrismaTypedService {
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
+    order_date?: string
     notes?: string
     created_by?: string
     items: Array<{
@@ -2583,6 +2634,7 @@ export class PrismaTypedService {
         payment_terms: orderData.payment_terms ?? null,
         delivery_terms: orderData.delivery_terms ?? null,
         delivery_date: orderData.delivery_date ?? null,
+        order_date: orderData.order_date ?? null,
         notes: orderData.notes ?? null,
         created_by: orderData.created_by ?? null,
       })
@@ -2624,6 +2676,7 @@ export class PrismaTypedService {
       payment_terms?: string
       delivery_terms?: string
       delivery_date?: string
+      order_date?: string
       notes?: string
       items?: Array<{
         id?: string
@@ -2761,7 +2814,7 @@ export class PrismaTypedService {
       .from('purchase_requests')
       .select(
         `*,
-        items:purchase_request_items(*, material:materials(id, code, name, unit, brand)),
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand, unit_price)),
         supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name)),
         purchase_orders:purchase_orders(id, order_number, status, total)`
       )
@@ -2788,7 +2841,7 @@ export class PrismaTypedService {
       .from('purchase_requests')
       .select(
         `*,
-        items:purchase_request_items(*, material:materials(id, code, name, unit, brand)),
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand, unit_price)),
         supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name, contact_name)),
         purchase_orders:purchase_orders(id, order_number, status, total, supplier:suppliers(id, name))`
       )

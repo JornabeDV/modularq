@@ -43,6 +43,7 @@ interface PDFPurchaseOrder {
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
+  order_date?: string
   notes?: string
   created_at: string
 }
@@ -269,11 +270,13 @@ function formatCurrency(value: number): string {
 function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr)
-    return date.toLocaleDateString("es-AR", {
+    if (isNaN(date.getTime())) return dateStr
+    return new Intl.DateTimeFormat("es-AR", {
       day: "numeric",
       month: "long",
       year: "numeric",
-    })
+      timeZone: "UTC",
+    }).format(date)
   } catch {
     return dateStr
   }
@@ -312,7 +315,7 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
           <View style={styles.orderTitle}>
             <Text style={styles.orderTitleText}>Orden de Compra</Text>
             <Text style={styles.orderCode}>N°: {purchaseOrder.order_number}</Text>
-            <Text style={styles.orderDate}>Emisión: {formatDate(purchaseOrder.created_at)}</Text>
+            <Text style={styles.orderDate}>{formatDate(purchaseOrder.order_date || purchaseOrder.created_at)}</Text>
           </View>
         </View>
 
