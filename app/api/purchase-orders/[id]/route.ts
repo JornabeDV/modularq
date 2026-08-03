@@ -41,6 +41,7 @@ export async function PUT(
       payment_terms: body.payment_terms,
       delivery_terms: body.delivery_terms,
       delivery_date: body.delivery_date,
+      order_date: body.order_date,
       notes: body.notes,
       items: body.items,
     })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 export interface PurchaseRequestItem {
   id?: string
@@ -10,6 +10,7 @@ export interface PurchaseRequestItem {
     code: string
     name: string
     unit: string
+    unit_price?: number
   } | null
   description: string
   quantity: number
@@ -104,12 +105,12 @@ export function usePurchaseRequests() {
     }
   }
 
-  const getPurchaseRequest = async (id: string): Promise<PurchaseRequest> => {
+  const getPurchaseRequest = useCallback(async (id: string): Promise<PurchaseRequest> => {
     const response = await fetch(`/api/purchase-requests/${id}`)
     if (!response.ok) throw new Error('Error al obtener pedido de materiales')
     const data = await response.json()
     return data.purchaseRequest
-  }
+  }, [])
 
   const createPurchaseRequest = async (data: CreatePurchaseRequestData): Promise<PurchaseRequest> => {
     const response = await fetch('/api/purchase-requests', {

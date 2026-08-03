@@ -79,6 +79,7 @@ export interface PurchaseOrder {
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
+  order_date?: string
   notes?: string
   created_by?: string
   created_at: string
@@ -99,6 +100,7 @@ export interface CreatePurchaseOrderData {
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
+  order_date?: string
   notes?: string
   created_by?: string
   items: Array<{
@@ -124,6 +126,7 @@ export interface UpdatePurchaseOrderData {
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
+  order_date?: string
   notes?: string
   items?: Array<{
     id?: string
