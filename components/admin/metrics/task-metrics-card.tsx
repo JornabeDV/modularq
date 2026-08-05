@@ -125,7 +125,7 @@ export function TaskMetricsCard({ project, projectId }: Props) {
                     ) : (
                       <Badge
                         variant="outline"
-                        className="text-xs text-muted-foreground"
+                        className="text-xs sm:text-sm text-muted-foreground"
                       >
                         Sin asignar
                       </Badge>
@@ -173,7 +173,7 @@ export function TaskMetricsCard({ project, projectId }: Props) {
                             {projectTask.collaborators.length > 2 && (
                               <Badge
                                 variant="outline"
-                                className="text-xs text-muted-foreground"
+                                className="text-xs sm:text-sm text-muted-foreground"
                               >
                                 +{projectTask.collaborators.length - 2} más
                               </Badge>

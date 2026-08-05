@@ -123,7 +123,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
               <span>{Math.round(progressPercentage)}%</span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
               <span>{task.actualHours || 0}h trabajadas</span>
               <span>{task.task?.estimatedHours || 0}h estimadas</span>
             </div>

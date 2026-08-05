@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ArrowUpDown } from "lucide-react";
+import { Plus, Tag } from "lucide-react";
+import Link from "next/link";
 import { DataPagination } from "@/components/ui/data-pagination";
 import { MaterialStats } from "./material-stats";
 import { MaterialTable } from "./material-table";
@@ -14,6 +15,7 @@ import {
 } from "@/hooks/use-materials-prisma";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { useMaterialCategories } from "@/hooks/use-material-categories";
 
 type SortField =
   | "code"
@@ -21,7 +23,8 @@ type SortField =
   | "category"
   | "stockQuantity"
   | "unitPrice"
-  | "supplier";
+  | "supplier"
+  | "brand";
 type SortOrder = "asc" | "desc";
 
 export function StockManagement() {
@@ -38,7 +41,12 @@ export function StockManagement() {
     createMaterial,
     updateMaterial,
     deleteMaterial,
+    refetch,
   } = useMaterialsPrisma();
+  const {
+    categories: materialCategories,
+    loading: categoriesLoading,
+  } = useMaterialCategories(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
 
@@ -86,8 +94,8 @@ export function StockManagement() {
       if (materialData.name !== undefined) updateData.name = materialData.name;
       if (materialData.description !== undefined)
         updateData.description = materialData.description;
-      if (materialData.category !== undefined)
-        updateData.category = materialData.category;
+      if (materialData.category_id !== undefined)
+        updateData.category_id = materialData.category_id;
       if (materialData.unit !== undefined) updateData.unit = materialData.unit;
       if (materialData.stock_quantity !== undefined)
         updateData.stock_quantity = materialData.stock_quantity;
@@ -236,10 +244,9 @@ export function StockManagement() {
       return sum + m.stockQuantity * (m.unitPrice || 0);
     }, 0) || 0;
 
-  const categories = new Set(materials?.map((m) => m.category) || []);
-  const totalCategories = categories.size;
+  const totalCategories = materialCategories?.length || 0;
 
-  if (loading) {
+  if (loading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -273,17 +280,32 @@ export function StockManagement() {
         </div>
 
         {!isReadOnly && (
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button type="button" className="w-full sm:w-auto cursor-pointer">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Material
+          <div className="flex flex-col sm:flex-row gap-2">
+            {userProfile?.role === "admin" && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto cursor-pointer"
+                asChild
+              >
+                <Link href="/admin/material-categories">
+                  <Tag className="h-4 w-4 mr-2" />
+                  Categorías
+                </Link>
               </Button>
-            </DialogTrigger>
-          </Dialog>
+            )}
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button type="button" className="w-full sm:w-auto cursor-pointer">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Material
+                </Button>
+              </DialogTrigger>
+            </Dialog>
+          </div>
         )}
       </div>
 
@@ -306,6 +328,7 @@ export function StockManagement() {
         onLowStockOnlyChange={handleLowStockOnlyChange}
         onEditMaterial={handleEditMaterial}
         onDeleteMaterial={handleDeleteMaterial}
+        onStockAdjusted={() => refetch(true)}
         isReadOnly={isReadOnly}
         sortField={sortField}
         sortOrder={sortOrder}
@@ -315,6 +338,7 @@ export function StockManagement() {
         currentPage={currentPage}
         onPageChange={setCurrentPage}
         onItemsPerPageChange={setItemsPerPage}
+        categories={materialCategories}
       />
 
       {/* Create Material Dialog */}
@@ -324,6 +348,7 @@ export function StockManagement() {
         onSubmit={handleCreateMaterial}
         isEditing={false}
         existingMaterials={materials || []}
+        categories={materialCategories.filter((c) => !c.deleted_at)}
       />
 
       {/* Edit Material Dialog */}
@@ -341,6 +366,7 @@ export function StockManagement() {
         initialData={editingMaterial}
         isLoading={isUpdating}
         existingMaterials={materials || []}
+        categories={materialCategories.filter((c) => !c.deleted_at)}
       />
     </div>
   );

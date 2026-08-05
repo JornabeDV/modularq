@@ -157,13 +157,13 @@ export function ProjectDocumentsViewer({ projectId }: ProjectDocumentsViewerProp
                       <p className="font-medium text-sm truncate" title={file.file_name}>
                         {file.file_name}
                       </p>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground mt-1">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
                         <span>{SupabaseFileStorage.formatFileSize(file.file_size)}</span>
                         <span>{new Date(file.uploaded_at).toLocaleDateString('es-ES')}</span>
                         <span className="capitalize">{file.file_type}</span>
                       </div>
                       {file.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1" title={file.description}>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-1" title={file.description}>
                           {file.description}
                         </p>
                       )}

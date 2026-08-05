@@ -129,7 +129,7 @@ export function RentalModulesPage() {
           <CardContent className="sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
                 <p className="text-xl font-bold">{stats.total}</p>
               </div>
               <Package className="h-5 w-5 text-muted-foreground" />
@@ -140,7 +140,7 @@ export function RentalModulesPage() {
           <CardContent className="sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Disponibles</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Disponibles</p>
                 <p className="text-xl font-bold">{stats.available}</p>
               </div>
               <CheckCircle className="h-5 w-5 text-emerald-500" />
@@ -151,7 +151,7 @@ export function RentalModulesPage() {
           <CardContent className="sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">En Alquiler</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">En Alquiler</p>
                 <p className="text-xl font-bold">{stats.rented}</p>
               </div>
               <Truck className="h-5 w-5 text-blue-500" />
@@ -162,7 +162,7 @@ export function RentalModulesPage() {
           <CardContent className="sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Mantenimiento</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Mantenimiento</p>
                 <p className="text-xl font-bold">{stats.maintenance}</p>
               </div>
               <Wrench className="h-5 w-5 text-amber-500" />
@@ -173,7 +173,7 @@ export function RentalModulesPage() {
           <CardContent className="sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">En Destino</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">En Destino</p>
                 <p className="text-xl font-bold">{stats.destination}</p>
               </div>
               <MapPin className="h-5 w-5 text-purple-500" />

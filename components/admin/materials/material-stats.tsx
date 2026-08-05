@@ -21,7 +21,7 @@ export function MaterialStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Total Materiales</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Total Materiales</p>
             <p className="text-lg sm:text-xl font-bold">{totalMaterials}</p>
           </div>
           <Package className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
@@ -31,7 +31,7 @@ export function MaterialStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Stock Bajo</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Stock Bajo</p>
             <p className={`text-lg sm:text-xl font-bold ${lowStockCount > 0 ? 'text-destructive' : ''}`}>
               {lowStockCount}
             </p>
@@ -43,7 +43,7 @@ export function MaterialStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Valor Inventario</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Valor Inventario</p>
             <p className="text-lg sm:text-xl font-bold">
               ${totalInventoryValue.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
@@ -55,7 +55,7 @@ export function MaterialStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground">Categorías</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Categorías</p>
             <p className="text-lg sm:text-xl font-bold">{totalCategories}</p>
           </div>
           <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />

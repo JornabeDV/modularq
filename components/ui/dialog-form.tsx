@@ -17,12 +17,13 @@ export function DialogForm({
 }: DialogFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     onSubmit(e);
   };
 
   return (
     <DialogContent className={cn(className)} {...props}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 min-w-0 max-sm:h-full">
         {children}
       </form>
     </DialogContent>

@@ -200,17 +200,20 @@ export class PrismaTypedService {
             deleted_at
           )
         ),
-        quote:quote_id (
-          id,
-          number,
-          quote_type,
-          status,
-          client_name,
-          total,
-          total_ars,
-          currency,
-          exchange_rate,
-          pdf_url
+        quote_projects (
+          quote_id,
+          quote:quote_id (
+            id,
+            number,
+            quote_type,
+            status,
+            client_name,
+            total,
+            total_ars,
+            currency,
+            exchange_rate,
+            pdf_url
+          )
         )
       `)
       .order('project_order', { ascending: true, nullsFirst: false })
@@ -245,7 +248,7 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
-    quote_id?: string
+    quote_ids?: string[]
   }): Promise<any> {
     const { data, error } = await supabase
       .from('projects')
@@ -263,13 +266,22 @@ export class PrismaTypedService {
         height: projectData.height || 2.0,
         width: projectData.width || 1.5,
         depth: projectData.depth || 0.8,
-        module_count: projectData.module_count || 1,
-        quote_id: projectData.quote_id || null
+        module_count: projectData.module_count || 1
       })
       .select()
       .single()
     
     if (error) throw error
+
+    // Asociar cotizaciones seleccionadas
+    const quoteIds = projectData.quote_ids?.filter(Boolean) ?? []
+    if (quoteIds.length > 0 && data?.id) {
+      const { error: linkError } = await supabase
+        .from('quote_projects')
+        .insert(quoteIds.map((quote_id) => ({ quote_id, project_id: data.id })))
+      if (linkError) throw linkError
+    }
+
     return data as any
   }
 
@@ -288,6 +300,7 @@ export class PrismaTypedService {
     width?: number
     depth?: number
     module_count?: number
+    quote_ids?: string[]
   }): Promise<any> {
     const updateData: any = {}
 
@@ -340,6 +353,24 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    // Reemplazar cotizaciones asociadas si se enviaron
+    if (projectData.quote_ids !== undefined) {
+      const quoteIds = projectData.quote_ids.filter(Boolean)
+      const { error: deleteError } = await supabase
+        .from('quote_projects')
+        .delete()
+        .eq('project_id', id)
+      if (deleteError) throw deleteError
+
+      if (quoteIds.length > 0) {
+        const { error: insertError } = await supabase
+          .from('quote_projects')
+          .insert(quoteIds.map((quote_id) => ({ quote_id, project_id: id })))
+        if (insertError) throw insertError
+      }
+    }
+
     return data as any
   }
 
@@ -882,11 +913,253 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
+  // Material Categories
+  private static normalizeForSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  }
+
+  private static generateCodePrefixFromName(name: string): string {
+    const words = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(w => w.length >= 2)
+
+    if (words.length === 0) return 'CAT'
+    if (words.length === 1) return words[0].slice(0, 3).toUpperCase()
+
+    return words
+      .map(w => w[0].toUpperCase())
+      .join('')
+      .slice(0, 3)
+  }
+
+  private static async ensureUniqueSlug(slug: string, excludeId?: string): Promise<string> {
+    let candidate = slug
+    let counter = 1
+
+    while (true) {
+      let query = supabase
+        .from('material_categories')
+        .select('id')
+        .eq('slug', candidate)
+
+      if (excludeId) {
+        query = query.neq('id', excludeId)
+      }
+
+      const { data, error } = await query.maybeSingle()
+      if (error) throw error
+      if (!data) return candidate
+
+      counter++
+      candidate = `${slug}-${counter}`
+    }
+  }
+
+  private static async ensureUniqueCodePrefix(prefix: string, excludeId?: string): Promise<string> {
+    let candidate = prefix
+    let counter = 1
+
+    while (true) {
+      let query = supabase
+        .from('material_categories')
+        .select('id')
+        .eq('code_prefix', candidate)
+
+      if (excludeId) {
+        query = query.neq('id', excludeId)
+      }
+
+      const { data, error } = await query.maybeSingle()
+      if (error) throw error
+      if (!data) return candidate
+
+      counter++
+      candidate = `${prefix.slice(0, 3 - String(counter).length)}${counter}`.slice(0, 3)
+      if (candidate.length < 3) candidate = `${prefix.slice(0, 3)}${counter}`.slice(0, 4)
+    }
+  }
+
+  static async getMaterialCategories(activeOnly = false): Promise<any[]> {
+    let query = supabase
+      .from('material_categories')
+      .select('*')
+      .order('order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (activeOnly) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async getMaterialCategoryById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('material_categories')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) return null
+    return data
+  }
+
+  static async getMaterialCategoryBySlug(slug: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('material_categories')
+      .select('*')
+      .eq('slug', slug)
+      .single()
+
+    if (error) return null
+    return data
+  }
+
+  static async createMaterialCategory(categoryData: {
+    name: string
+    slug?: string
+    code_prefix?: string
+    order?: number
+  }): Promise<any> {
+    const name = categoryData.name.trim()
+    if (!name) throw new Error('El nombre de la categoría es obligatorio')
+
+    const slug = await this.ensureUniqueSlug(
+      categoryData.slug?.trim() || this.normalizeForSlug(name)
+    )
+    const codePrefix = await this.ensureUniqueCodePrefix(
+      categoryData.code_prefix?.trim().toUpperCase() || this.generateCodePrefixFromName(name)
+    )
+
+    const { data: existingName } = await supabase
+      .from('material_categories')
+      .select('id')
+      .ilike('name', name)
+      .maybeSingle()
+
+    if (existingName) {
+      throw new Error(`Ya existe una categoría con el nombre "${name}"`)
+    }
+
+    const { data, error } = await supabase
+      .from('material_categories')
+      .insert({
+        id: crypto.randomUUID(),
+        name,
+        slug,
+        code_prefix: codePrefix,
+        order: categoryData.order ?? 0,
+        deleted_at: null
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateMaterialCategory(id: string, categoryData: {
+    name?: string
+    slug?: string
+    code_prefix?: string
+    order?: number
+  }): Promise<any> {
+    const current = await this.getMaterialCategoryById(id)
+    if (!current) throw new Error('Categoría no encontrada')
+
+    const updateData: any = {}
+
+    if (categoryData.name !== undefined) {
+      const name = categoryData.name.trim()
+      if (!name) throw new Error('El nombre de la categoría es obligatorio')
+
+      const { data: existingName } = await supabase
+        .from('material_categories')
+        .select('id')
+        .ilike('name', name)
+        .neq('id', id)
+        .maybeSingle()
+
+      if (existingName) {
+        throw new Error(`Ya existe una categoría con el nombre "${name}"`)
+      }
+
+      updateData.name = name
+    }
+
+    if (categoryData.slug !== undefined) {
+      const slug = categoryData.slug.trim()
+      if (!slug) throw new Error('El slug es obligatorio')
+      updateData.slug = await this.ensureUniqueSlug(slug, id)
+    }
+
+    if (categoryData.code_prefix !== undefined) {
+      const prefix = categoryData.code_prefix.trim().toUpperCase()
+      if (!prefix) throw new Error('El prefijo es obligatorio')
+      updateData.code_prefix = await this.ensureUniqueCodePrefix(prefix, id)
+    }
+
+    if (categoryData.order !== undefined) {
+      updateData.order = categoryData.order
+    }
+
+    if (Object.keys(updateData).length === 0) return current
+
+    const { data, error } = await supabase
+      .from('material_categories')
+      .update({ ...updateData, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteMaterialCategory(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('material_categories')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+      .is('deleted_at', null)
+
+    if (error) throw error
+  }
+
+  static async restoreMaterialCategory(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('material_categories')
+      .update({ deleted_at: null })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
   // Materiales
   static async getAllMaterials(): Promise<any[]> {
     const { data, error } = await supabase
       .from('materials')
-      .select('*')
+      .select(`
+        *,
+        category:material_categories (
+          id,
+          name,
+          slug,
+          code_prefix,
+          deleted_at
+        )
+      `)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -894,18 +1167,13 @@ export class PrismaTypedService {
   }
 
   // Obtener el siguiente código disponible para una categoría
-  static async getNextMaterialCode(category: string): Promise<string> {
-    const categoryPrefixes: Record<string, string> = {
-      estructura: 'EST',
-      paneles: 'PAN',
-      herrajes: 'HER',
-      aislacion: 'AIS',
-      electricidad: 'ELE',
-      sanitarios: 'SAN',
-      otros: 'OTR'
+  static async getNextMaterialCode(categoryId: string): Promise<string> {
+    const category = await this.getMaterialCategoryById(categoryId)
+    if (!category) {
+      throw new Error('Categoría no encontrada')
     }
 
-    const prefix = categoryPrefixes[category] || 'MAT'
+    const prefix = category.code_prefix || 'MAT'
     
     const { data, error } = await supabase
       .from('materials')
@@ -932,7 +1200,16 @@ export class PrismaTypedService {
   static async getMaterialById(id: string): Promise<any | null> {
     const { data, error } = await supabase
       .from('materials')
-      .select('*')
+      .select(`
+        *,
+        category:material_categories (
+          id,
+          name,
+          slug,
+          code_prefix,
+          deleted_at
+        )
+      `)
       .eq('id', id)
       .single()
     
@@ -944,18 +1221,44 @@ export class PrismaTypedService {
     code: string
     name: string
     description?: string
-    category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+    category_id: string
     unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
     stock_quantity?: number
     min_stock?: number
     unit_price?: number
     supplier?: string
+    brand?: string
+    created_by?: string
   }): Promise<any> {
+    const stockQuantity = materialData.stock_quantity ?? 0
+    const { created_by, ...materialInsertData } = materialData
+
+    // Pre-validar duplicados antes de tocar la base
+    const { data: existingCode } = await supabase
+      .from('materials')
+      .select('code')
+      .eq('code', materialData.code.trim())
+      .maybeSingle()
+
+    if (existingCode) {
+      throw new Error(`Ya existe un material con el código ${existingCode.code}. Usá otro código.`)
+    }
+
+    const { data: existingName } = await supabase
+      .from('materials')
+      .select('code, name')
+      .ilike('name', materialData.name.trim())
+      .maybeSingle()
+
+    if (existingName) {
+      throw new Error(`Ya existe un material con el nombre "${existingName.name}" (${existingName.code}). Cambiá el nombre.`)
+    }
+
     const { data, error } = await supabase
       .from('materials')
       .insert({
-        ...materialData,
-        stock_quantity: materialData.stock_quantity ?? 0,
+        ...materialInsertData,
+        stock_quantity: stockQuantity,
         min_stock: materialData.min_stock ?? 0,
         updated_at: new Date().toISOString()
       })
@@ -963,6 +1266,20 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (stockQuantity > 0) {
+      await this.createStockMovement({
+        material_id: data.id,
+        type: 'in',
+        quantity: stockQuantity,
+        stock_after: stockQuantity,
+        source_type: 'initial_stock',
+        reference: 'Stock inicial',
+        notes: 'Stock inicial al crear el material',
+        created_by
+      })
+    }
+
     return data
   }
 
@@ -970,17 +1287,51 @@ export class PrismaTypedService {
     code?: string
     name?: string
     description?: string
-    category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+    category_id?: string
     unit?: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
     stock_quantity?: number
     min_stock?: number
     unit_price?: number
     supplier?: string
+    brand?: string
+    created_by?: string
   }): Promise<any> {
+    const currentMaterial = await this.getMaterialById(id)
+    if (!currentMaterial) throw new Error('Material no encontrado')
+
+    const { created_by, ...materialUpdateData } = materialData
+
+    // Pre-validar duplicados antes de tocar la base
+    if (materialData.code !== undefined && materialData.code.trim() !== currentMaterial.code) {
+      const { data: existingCode } = await supabase
+        .from('materials')
+        .select('code')
+        .eq('code', materialData.code.trim())
+        .neq('id', id)
+        .maybeSingle()
+
+      if (existingCode) {
+        throw new Error(`Ya existe un material con el código ${existingCode.code}. Usá otro código.`)
+      }
+    }
+
+    if (materialData.name !== undefined && materialData.name.trim() !== currentMaterial.name) {
+      const { data: existingName } = await supabase
+        .from('materials')
+        .select('code, name')
+        .ilike('name', materialData.name.trim())
+        .neq('id', id)
+        .maybeSingle()
+
+      if (existingName) {
+        throw new Error(`Ya existe un material con el nombre "${existingName.name}" (${existingName.code}). Cambiá el nombre.`)
+      }
+    }
+
     const { data, error } = await supabase
       .from('materials')
       .update({
-        ...materialData,
+        ...materialUpdateData,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -988,6 +1339,26 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (materialData.stock_quantity !== undefined) {
+      const currentStock = currentMaterial.stock_quantity ?? 0
+      const newStock = materialData.stock_quantity
+      const difference = newStock - currentStock
+
+      if (Math.abs(difference) >= 0.0001) {
+        await this.createStockMovement({
+          material_id: id,
+          type: difference > 0 ? 'in' : 'out',
+          quantity: Math.abs(difference),
+          stock_after: newStock,
+          source_type: 'manual_adjustment',
+          reference: 'Ajuste manual de stock',
+          notes: `Stock actualizado desde ${currentStock} a ${newStock}`,
+          created_by
+        })
+      }
+    }
+
     return data
   }
 
@@ -1011,6 +1382,95 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
+  // Stock movements helpers
+  private static async createStockMovement(movement: {
+    material_id: string
+    type: 'in' | 'out' | 'adjustment'
+    quantity: number
+    stock_after: number
+    source_type: 'purchase_receipt' | 'project_assignment' | 'project_removal' | 'project_update' | 'manual_adjustment' | 'initial_stock'
+    source_id?: string
+    reference?: string
+    notes?: string
+    created_by?: string
+  }): Promise<void> {
+    const { error } = await supabase.from('stock_movements').insert({
+      material_id: movement.material_id,
+      type: movement.type,
+      quantity: movement.quantity,
+      stock_after: movement.stock_after,
+      source_type: movement.source_type,
+      source_id: movement.source_id ?? null,
+      reference: movement.reference ?? null,
+      notes: movement.notes ?? null,
+      created_by: movement.created_by ?? null,
+      created_at: new Date().toISOString()
+    })
+
+    if (error) throw error
+  }
+
+  static async getStockMovementsByMaterial(materialId: string, options?: { limit?: number; offset?: number }): Promise<any[]> {
+    let query = supabase
+      .from('stock_movements')
+      .select('*')
+      .eq('material_id', materialId)
+      .order('created_at', { ascending: false })
+
+    if (options?.limit) {
+      query = query.limit(options.limit)
+    }
+    if (options?.offset) {
+      query = query.range(options.offset, options.offset + (options.limit ?? 50) - 1)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async adjustMaterialStock(
+    materialId: string,
+    newStock: number,
+    reason: string,
+    createdBy?: string
+  ): Promise<any> {
+    const material = await this.getMaterialById(materialId)
+    if (!material) throw new Error('Material no encontrado')
+
+    const currentStock = material.stock_quantity ?? 0
+    const difference = newStock - currentStock
+
+    if (Math.abs(difference) < 0.0001) {
+      return material
+    }
+
+    const { data, error } = await supabase
+      .from('materials')
+      .update({
+        stock_quantity: newStock,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', materialId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    await this.createStockMovement({
+      material_id: materialId,
+      type: difference > 0 ? 'in' : 'out',
+      quantity: Math.abs(difference),
+      stock_after: newStock,
+      source_type: 'manual_adjustment',
+      reference: 'Ajuste manual de stock',
+      notes: reason,
+      created_by: createdBy
+    })
+
+    return data
+  }
+
   // Project Materials (relación entre proyectos y materiales)
   static async getProjectMaterials(projectId: string): Promise<any[]> {
     const { data, error } = await supabase
@@ -1022,12 +1482,19 @@ export class PrismaTypedService {
           code,
           name,
           description,
-          category,
+          category_id,
           unit,
           stock_quantity,
           min_stock,
           unit_price,
-          supplier
+          supplier,
+          category:material_categories (
+            id,
+            name,
+            slug,
+            code_prefix,
+            deleted_at
+          )
         )
       `)
       .eq('project_id', projectId)
@@ -1043,6 +1510,7 @@ export class PrismaTypedService {
     unit_price?: number
     notes?: string
     assigned_by?: string
+    created_by?: string
   }): Promise<any> {
     const material = await this.getMaterialById(materialData.material_id)
     if (!material) {
@@ -1093,6 +1561,24 @@ export class PrismaTypedService {
         .eq('id', materialData.material_id)
       throw error
     }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('name')
+      .eq('id', projectId)
+      .single()
+
+    await this.createStockMovement({
+      material_id: materialData.material_id,
+      type: 'out',
+      quantity: materialData.quantity,
+      stock_after: newStock,
+      source_type: 'project_assignment',
+      source_id: data.id,
+      reference: project?.name ? `Asignación a proyecto: ${project.name}` : 'Asignación a proyecto',
+      notes: materialData.notes,
+      created_by: materialData.created_by
+    })
     
     return data
   }
@@ -1101,7 +1587,10 @@ export class PrismaTypedService {
     quantity?: number
     unit_price?: number
     notes?: string
+    created_by?: string
   }): Promise<any> {
+    let stockMovement: { material_id: string; type: 'in' | 'out'; quantity: number; stock_after: number; reference: string } | null = null
+
     if (materialData.quantity !== undefined) {
       const { data: currentData, error: fetchError } = await supabase
         .from('project_materials')
@@ -1142,6 +1631,14 @@ export class PrismaTypedService {
           if (updateStockError) {
             throw new Error(`Error al actualizar stock: ${updateStockError.message}`)
           }
+
+          stockMovement = {
+            material_id: material.id,
+            type: 'out',
+            quantity: Math.abs(difference),
+            stock_after: newStock,
+            reference: `Ajuste de cantidad en proyecto: ${currentQuantity} → ${newQuantity}`
+          }
         }
         else if (difference < 0) {
           const newStock = currentStock + Math.abs(difference)
@@ -1155,6 +1652,14 @@ export class PrismaTypedService {
           
           if (updateStockError) {
             throw new Error(`Error al devolver stock: ${updateStockError.message}`)
+          }
+
+          stockMovement = {
+            material_id: material.id,
+            type: 'in',
+            quantity: Math.abs(difference),
+            stock_after: newStock,
+            reference: `Ajuste de cantidad en proyecto: ${currentQuantity} → ${newQuantity}`
           }
         }
       }
@@ -1171,10 +1676,21 @@ export class PrismaTypedService {
       .single()
     
     if (error) throw error
+
+    if (stockMovement) {
+      await this.createStockMovement({
+        ...stockMovement,
+        source_type: 'project_update',
+        source_id: data.id,
+        notes: materialData.notes,
+        created_by: materialData.created_by
+      })
+    }
+
     return data
   }
 
-  static async removeMaterialFromProject(id: string): Promise<void> {
+  static async removeMaterialFromProject(id: string, createdBy?: string): Promise<void> {
     const { data: projectMaterial, error: fetchError } = await supabase
       .from('project_materials')
       .select(`
@@ -1207,6 +1723,17 @@ export class PrismaTypedService {
       if (updateStockError) {
         throw new Error(`Error al devolver stock: ${updateStockError.message}`)
       }
+
+      await this.createStockMovement({
+        material_id: material.id,
+        type: 'in',
+        quantity: quantityToReturn,
+        stock_after: newStock,
+        source_type: 'project_removal',
+        source_id: id,
+        reference: `Devolución desde proyecto: ${projectMaterial.project_id}`,
+        created_by: createdBy
+      })
     }
     
     const { error } = await supabase
@@ -1587,11 +2114,19 @@ export class PrismaTypedService {
   }
 
   static async getAdicionales() {
-    const { data, error } = await supabase
+    const category = await this.getMaterialCategoryBySlug('adicional')
+    const categoryId = category?.id
+
+    let query = supabase
       .from('materials')
       .select('*')
-      .eq('category', 'adicional')
       .order('name', { ascending: true })
+
+    if (categoryId) {
+      query = query.eq('category_id', categoryId)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data
@@ -1958,16 +2493,18 @@ export class PrismaTypedService {
     const { data, error } = await query
     if (error) throw error
     
-    // Obtener qué cotizaciones ya tienen proyecto asociado
+    // Obtener cantidad de proyectos asociados a cada cotización
     const quotes = data ?? []
     if (quotes.length > 0) {
-      const { data: projectsData } = await supabase
-        .from('projects')
+      const { data: linksData } = await supabase
+        .from('quote_projects')
         .select('quote_id')
-        .not('quote_id', 'is', null)
       
-      const quoteIdsWithProject = new Set(projectsData?.map((p: any) => p.quote_id) ?? [])
-      return quotes.map((q: any) => ({ ...q, has_project: quoteIdsWithProject.has(q.id) }))
+      const countsByQuote: Record<string, number> = {}
+      for (const link of linksData ?? []) {
+        countsByQuote[link.quote_id] = (countsByQuote[link.quote_id] || 0) + 1
+      }
+      return quotes.map((q: any) => ({ ...q, project_count: countsByQuote[q.id] || 0 }))
     }
     
     return quotes
@@ -1988,14 +2525,16 @@ export class PrismaTypedService {
     if (error) throw error
     if (!quotes || quotes.length === 0) return []
 
-    // Obtener cotizaciones que ya tienen proyecto
-    const { data: projectsData } = await supabase
-      .from('projects')
+    // Contar proyectos asociados a cada cotización (para el selector de creación de proyecto)
+    const { data: linksData } = await supabase
+      .from('quote_projects')
       .select('quote_id')
-      .not('quote_id', 'is', null)
 
-    const quoteIdsWithProject = new Set(projectsData?.map((p: any) => p.quote_id) ?? [])
-    return quotes.filter((q: any) => !quoteIdsWithProject.has(q.id))
+    const countsByQuote: Record<string, number> = {}
+    for (const link of linksData ?? []) {
+      countsByQuote[link.quote_id] = (countsByQuote[link.quote_id] || 0) + 1
+    }
+    return quotes.map((q: any) => ({ ...q, project_count: countsByQuote[q.id] || 0 }))
   }
 
   static async getQuoteById(id: string) {
@@ -2050,9 +2589,18 @@ export class PrismaTypedService {
       attachments: attachments.filter((a) => a.quote_item_id === item.id),
     }))
 
+    // 6. Proyectos asociados
+    const { data: projectsData, error: projectsError } = await supabase
+      .from('quote_projects')
+      .select('project_id, project:project_id (id, name, status)')
+      .eq('quote_id', id)
+
+    if (projectsError) throw projectsError
+
     return {
       ...quote,
       items: itemsWithDetails,
+      projects: projectsData ?? [],
     }
   }
 
@@ -2137,6 +2685,959 @@ export class PrismaTypedService {
 
   static async deleteServiceCatalog(id: string) {
     const { error } = await supabase.from('service_catalogs').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== SUPPLIERS ====================
+
+  static async getAllSuppliers(activeOnly = true) {
+    let query = supabase.from('suppliers').select('*').order('name')
+    if (activeOnly) query = query.eq('is_active', true)
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getSupplierById(id: string) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async createSupplier(input: {
+    name: string
+    contact_name?: string
+    email?: string
+    phone?: string
+    address?: string
+    cuit?: string
+    notes?: string
+    is_active?: boolean
+  }) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .insert({
+        name: input.name,
+        contact_name: input.contact_name ?? null,
+        email: input.email ?? null,
+        phone: input.phone ?? null,
+        address: input.address ?? null,
+        cuit: input.cuit ?? null,
+        notes: input.notes ?? null,
+        is_active: input.is_active ?? true,
+      })
+      .select('*')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async updateSupplier(
+    id: string,
+    input: {
+      name?: string
+      contact_name?: string
+      email?: string
+      phone?: string
+      address?: string
+      cuit?: string
+      notes?: string
+      is_active?: boolean
+    }
+  ) {
+    const { data, error } = await supabase
+      .from('suppliers')
+      .update({
+        ...input,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('*')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async deleteSupplier(id: string) {
+    const { error } = await supabase.from('suppliers').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE ORDERS ====================
+
+  static async getAllPurchaseOrders(filters?: {
+    status?: string
+    supplier_id?: string
+    search?: string
+  }) {
+    let query = supabase
+      .from('purchase_orders')
+      .select('*, supplier:suppliers(name, contact_name)')
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+    if (filters?.supplier_id) query = query.eq('supplier_id', filters.supplier_id)
+
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getPurchaseOrderById(id: string) {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select(
+        `*,
+        supplier:suppliers(*),
+        purchase_request:purchase_requests(id, request_number, status),
+        items:purchase_order_items(*, material:materials(id, code, name, unit)),
+        attachments:purchase_order_attachments(*),
+        receipts:purchase_order_receipts(id, purchase_order_id, receipt_number, remito_number, remito_file_url, remito_file_name, notes, received_at)`
+      )
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+
+    // Cargar ítems de recepciones por separado para evitar problemas de join
+    if (data?.receipts && data.receipts.length > 0) {
+      const receiptIds = data.receipts.map((r: any) => r.id)
+      const { data: receiptItems, error: itemsError } = await supabase
+        .from('purchase_order_receipt_items')
+        .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+        .in('receipt_id', receiptIds)
+
+      if (itemsError) throw itemsError
+
+      const itemsByReceipt: Record<string, any[]> = {}
+      for (const item of receiptItems || []) {
+        if (!itemsByReceipt[item.receipt_id]) itemsByReceipt[item.receipt_id] = []
+        itemsByReceipt[item.receipt_id].push(item)
+      }
+
+      data.receipts = data.receipts.map((r: any) => ({
+        ...r,
+        items: itemsByReceipt[r.id] || [],
+      }))
+    }
+
+    return data
+  }
+
+  static async getNextPurchaseOrderNumber(): Promise<string> {
+    const year = new Date().getFullYear()
+    const prefix = `OC-${year}-`
+
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .ilike('order_number', `${prefix}%`)
+      .order('order_number', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const last = data[0].order_number as string
+      const match = last.match(/-(\d+)$/)
+      if (match) nextNum = parseInt(match[1], 10) + 1
+    }
+
+    return `${prefix}${String(nextNum).padStart(4, '0')}`
+  }
+
+  static async createPurchaseOrder(input: {
+    order_number: string
+    supplier_id: string
+    purchase_request_id?: string
+    status?: string
+    subtotal?: number
+    tax_pct?: number
+    tax_amount?: number
+    iibb_lh_pct?: number
+    iibb_lh_amount?: number
+    total?: number
+    payment_terms?: string
+    delivery_terms?: string
+    delivery_date?: string
+    order_date?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      material_id?: string
+      description: string
+      quantity: number
+      unit: string
+      unit_price: number
+      total_price: number
+    }>
+  }) {
+    const { items, ...orderData } = input
+
+    const { data: order, error: orderError } = await supabase
+      .from('purchase_orders')
+      .insert({
+        order_number: orderData.order_number,
+        supplier_id: orderData.supplier_id,
+        purchase_request_id: orderData.purchase_request_id ?? null,
+        status: orderData.status ?? 'draft',
+        subtotal: orderData.subtotal ?? 0,
+        tax_pct: orderData.tax_pct ?? 21,
+        tax_amount: orderData.tax_amount ?? 0,
+        iibb_lh_pct: orderData.iibb_lh_pct ?? 0,
+        iibb_lh_amount: orderData.iibb_lh_amount ?? 0,
+        total: orderData.total ?? 0,
+        payment_terms: orderData.payment_terms ?? null,
+        delivery_terms: orderData.delivery_terms ?? null,
+        delivery_date: orderData.delivery_date ?? null,
+        order_date: orderData.order_date ?? null,
+        notes: orderData.notes ?? null,
+        created_by: orderData.created_by ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (orderError) throw orderError
+
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_order_items').insert(
+        items.map((item) => ({
+          purchase_order_id: order.id,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }))
+      )
+      if (itemsError) throw itemsError
+    }
+
+    return this.getPurchaseOrderById(order.id)
+  }
+
+  static async updatePurchaseOrder(
+    id: string,
+    input: {
+      supplier_id?: string
+      purchase_request_id?: string | null
+      status?: string
+      subtotal?: number
+      tax_pct?: number
+      tax_amount?: number
+      iibb_lh_pct?: number
+      iibb_lh_amount?: number
+      total?: number
+      payment_terms?: string
+      delivery_terms?: string
+      delivery_date?: string
+      order_date?: string
+      notes?: string
+      items?: Array<{
+        id?: string
+        material_id?: string
+        description: string
+        quantity: number
+        unit: string
+        unit_price: number
+        total_price: number
+      }>
+    }
+  ) {
+    const { items, ...orderData } = input
+
+    const updatePayload: Record<string, unknown> = {
+      ...orderData,
+      updated_at: new Date().toISOString(),
+    }
+    if (orderData.purchase_request_id === null) {
+      updatePayload.purchase_request_id = null
+    }
+
+    const { error: orderError } = await supabase
+      .from('purchase_orders')
+      .update(updatePayload)
+      .eq('id', id)
+
+    if (orderError) throw orderError
+
+    if (items) {
+      // Obtener items actuales para hacer upsert y preservar recepciones
+      const { data: existingItems, error: fetchError } = await supabase
+        .from('purchase_order_items')
+        .select('id')
+        .eq('purchase_order_id', id)
+
+      if (fetchError) throw fetchError
+
+      const existingIds = new Set((existingItems || []).map((i: any) => i.id))
+      const sentIds = new Set(items.map((item) => item.id).filter(Boolean) as string[])
+
+      // Actualizar items existentes
+      const itemsToUpdate = items.filter((item) => item.id && existingIds.has(item.id))
+      for (const item of itemsToUpdate) {
+        const { error: updateError } = await supabase
+          .from('purchase_order_items')
+          .update({
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          })
+          .eq('id', item.id)
+
+        if (updateError) throw updateError
+      }
+
+      // Insertar items nuevos
+      const itemsToInsert = items.filter((item) => !item.id || !existingIds.has(item.id))
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase.from('purchase_order_items').insert(
+          itemsToInsert.map((item) => ({
+            purchase_order_id: id,
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          }))
+        )
+        if (itemsError) throw itemsError
+      }
+
+      // Borrar items que ya no están en la lista, SOLO si no tienen recepciones asociadas
+      const itemsToDelete = (existingItems || []).filter((i: any) => !sentIds.has(i.id))
+      if (itemsToDelete.length > 0) {
+        const itemIdsToDelete = itemsToDelete.map((i: any) => i.id)
+
+        const { data: receiptItems, error: riError } = await supabase
+          .from('purchase_order_receipt_items')
+          .select('purchase_order_item_id')
+          .in('purchase_order_item_id', itemIdsToDelete)
+
+        if (riError) throw riError
+
+        const idsWithReceipts = new Set((receiptItems || []).map((ri: any) => ri.purchase_order_item_id))
+        const deletableIds = itemIdsToDelete.filter((id: string) => !idsWithReceipts.has(id))
+
+        if (deletableIds.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('purchase_order_items')
+            .delete()
+            .in('id', deletableIds)
+
+          if (deleteError) throw deleteError
+        }
+      }
+    }
+
+    return this.getPurchaseOrderById(id)
+  }
+
+  static async deletePurchaseOrder(id: string) {
+    // Los attachments e items se eliminan en cascada por la DB
+    const { error } = await supabase.from('purchase_orders').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  static async updatePurchaseOrderStatus(
+    id: string,
+    status: 'draft' | 'pending' | 'approved' | 'partial_received' | 'received' | 'cancelled'
+  ) {
+    const now = new Date().toISOString()
+    const updateData: Record<string, unknown> = { status, updated_at: now }
+
+    if (status === 'received') {
+      updateData.received_at = now
+    }
+
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update(updateData)
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE REQUESTS ====================
+
+  static async getAllPurchaseRequests(filters?: { status?: string; search?: string }) {
+    let query = supabase
+      .from('purchase_requests')
+      .select(
+        `*,
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand, unit_price)),
+        supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name)),
+        purchase_orders:purchase_orders(id, order_number, status, total)`
+      )
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+
+    const { data, error } = await query
+    if (error) throw error
+
+    if (filters?.search && data) {
+      const term = filters.search.toLowerCase()
+      return data.filter((r: any) =>
+        r.request_number?.toLowerCase().includes(term) ||
+        r.notes?.toLowerCase().includes(term)
+      )
+    }
+
+    return data ?? []
+  }
+
+  static async getPurchaseRequestById(id: string) {
+    const { data, error } = await supabase
+      .from('purchase_requests')
+      .select(
+        `*,
+        items:purchase_request_items(*, material:materials(id, code, name, unit, brand, unit_price)),
+        supplier_quotes:supplier_quotes(*, supplier:suppliers(id, name, contact_name)),
+        purchase_orders:purchase_orders(id, order_number, status, total, supplier:suppliers(id, name))`
+      )
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async getNextPurchaseRequestNumber(): Promise<string> {
+    const year = new Date().getFullYear()
+    const prefix = `PED-${year}-`
+
+    const { data, error } = await supabase
+      .from('purchase_requests')
+      .select('request_number')
+      .ilike('request_number', `${prefix}%`)
+      .order('request_number', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const last = data[0].request_number as string
+      const match = last.match(/-(\d+)$/)
+      if (match) nextNum = parseInt(match[1], 10) + 1
+    }
+
+    return `${prefix}${String(nextNum).padStart(4, '0')}`
+  }
+
+  static async createPurchaseRequest(input: {
+    request_number?: string
+    status?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      material_id?: string
+      description: string
+      quantity: number
+      unit: string
+    }>
+  }) {
+    const { items, ...requestData } = input
+    const requestNumber = requestData.request_number ?? (await this.getNextPurchaseRequestNumber())
+
+    const { data: request, error: requestError } = await supabase
+      .from('purchase_requests')
+      .insert({
+        request_number: requestNumber,
+        status: requestData.status ?? 'draft',
+        notes: requestData.notes ?? null,
+        created_by: requestData.created_by ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (requestError) throw requestError
+
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase.from('purchase_request_items').insert(
+        items.map((item) => ({
+          purchase_request_id: request.id,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+        }))
+      )
+      if (itemsError) throw itemsError
+    }
+
+    return this.getPurchaseRequestById(request.id)
+  }
+
+  static async updatePurchaseRequest(
+    id: string,
+    input: {
+      status?: string
+      notes?: string
+      items?: Array<{
+        id?: string
+        material_id?: string
+        description: string
+        quantity: number
+        unit: string
+      }>
+    }
+  ) {
+    const { items, ...requestData } = input
+
+    const { error: requestError } = await supabase
+      .from('purchase_requests')
+      .update({
+        ...requestData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (requestError) throw requestError
+
+    if (items) {
+      const { error: deleteError } = await supabase
+        .from('purchase_request_items')
+        .delete()
+        .eq('purchase_request_id', id)
+      if (deleteError) throw deleteError
+
+      if (items.length > 0) {
+        const { error: itemsError } = await supabase.from('purchase_request_items').insert(
+          items.map((item) => ({
+            purchase_request_id: id,
+            material_id: item.material_id ?? null,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+          }))
+        )
+        if (itemsError) throw itemsError
+      }
+    }
+
+    return this.getPurchaseRequestById(id)
+  }
+
+  static async deletePurchaseRequest(id: string) {
+    const { error } = await supabase.from('purchase_requests').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== SUPPLIER QUOTES ====================
+
+  static async getSupplierQuotesByPurchaseRequest(purchaseRequestId: string) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .select('*, supplier:suppliers(*)')
+      .eq('purchase_request_id', purchaseRequestId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  static async getSupplierQuoteById(id: string) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .select('*, supplier:suppliers(*), purchase_request:purchase_requests(id, request_number)')
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  static async createSupplierQuote(input: {
+    purchase_request_id: string
+    supplier_id: string
+    total?: number
+    quote_date?: string
+    valid_until?: string
+    file_url?: string
+    file_name?: string
+    status?: string
+    notes?: string
+  }) {
+    const { data, error } = await supabase
+      .from('supplier_quotes')
+      .insert({
+        purchase_request_id: input.purchase_request_id,
+        supplier_id: input.supplier_id,
+        total: input.total ?? 0,
+        quote_date: input.quote_date ?? null,
+        valid_until: input.valid_until ?? null,
+        file_url: input.file_url ?? null,
+        file_name: input.file_name ?? null,
+        status: input.status ?? 'draft',
+        notes: input.notes ?? null,
+      })
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return this.getSupplierQuoteById(data.id)
+  }
+
+  static async updateSupplierQuote(
+    id: string,
+    input: {
+      supplier_id?: string
+      total?: number
+      quote_date?: string
+      valid_until?: string
+      file_url?: string
+      file_name?: string
+      status?: string
+      notes?: string
+    }
+  ) {
+    const updateData: Record<string, unknown> = {
+      ...input,
+      updated_at: new Date().toISOString(),
+    }
+    if (input.file_url === null) updateData.file_url = null
+    if (input.file_name === null) updateData.file_name = null
+
+    const { error } = await supabase
+      .from('supplier_quotes')
+      .update(updateData)
+      .eq('id', id)
+
+    if (error) throw error
+    return this.getSupplierQuoteById(id)
+  }
+
+  static async deleteSupplierQuote(id: string) {
+    const { error } = await supabase.from('supplier_quotes').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  // ==================== PURCHASE ORDER RECEIPTS ====================
+
+  static async getPurchaseOrderReceipts(purchaseOrderId: string) {
+    const { data: receipts, error } = await supabase
+      .from('purchase_order_receipts')
+      .select('*')
+      .eq('purchase_order_id', purchaseOrderId)
+      .order('received_at', { ascending: false })
+
+    if (error) throw error
+    if (!receipts || receipts.length === 0) return []
+
+    const receiptIds = receipts.map((r: any) => r.id)
+    const { data: receiptItems, error: itemsError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+      .in('receipt_id', receiptIds)
+
+    if (itemsError) throw itemsError
+
+    const itemsByReceipt: Record<string, any[]> = {}
+    for (const item of receiptItems || []) {
+      if (!itemsByReceipt[item.receipt_id]) itemsByReceipt[item.receipt_id] = []
+      itemsByReceipt[item.receipt_id].push(item)
+    }
+
+    return receipts.map((r: any) => ({
+      ...r,
+      items: itemsByReceipt[r.id] || [],
+    }))
+  }
+
+  static async createPurchaseOrderReceipt(input: {
+    purchase_order_id: string
+    receipt_number?: string
+    remito_number?: string
+    remito_file_url?: string
+    remito_file_name?: string
+    notes?: string
+    created_by?: string
+    items: Array<{
+      purchase_order_item_id: string
+      material_id?: string
+      description: string
+      quantity_received: number
+    }>
+  }) {
+    const { items, ...receiptData } = input
+
+    console.log('[createPurchaseOrderReceipt] input:', JSON.stringify(input, null, 2))
+
+    const { data: purchaseOrder, error: purchaseOrderError } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .eq('id', receiptData.purchase_order_id)
+      .single()
+
+    if (purchaseOrderError) throw purchaseOrderError
+
+    const { data: receipt, error: receiptError } = await supabase
+      .from('purchase_order_receipts')
+      .insert({
+        purchase_order_id: receiptData.purchase_order_id,
+        receipt_number: receiptData.receipt_number ?? null,
+        remito_number: receiptData.remito_number ?? null,
+        remito_file_url: receiptData.remito_file_url ?? null,
+        remito_file_name: receiptData.remito_file_name ?? null,
+        notes: receiptData.notes ?? null,
+      })
+      .select('*')
+      .single()
+
+    console.log('[createPurchaseOrderReceipt] receipt insert result:', { receipt, receiptError })
+
+    if (receiptError) throw receiptError
+    if (!receipt) throw new Error('No se pudo crear la recepción')
+
+    if (items.length > 0) {
+      // Buscar ítems actuales de la orden para resolver IDs correctos
+      const { data: currentOrderItems, error: orderItemsError } = await supabase
+        .from('purchase_order_items')
+        .select('id, material_id, description, quantity')
+        .eq('purchase_order_id', receiptData.purchase_order_id)
+
+      if (orderItemsError) throw orderItemsError
+
+      console.log('[createPurchaseOrderReceipt] currentOrderItems:', JSON.stringify(currentOrderItems, null, 2))
+
+      const receiptItemsPayload = items.map((item) => {
+        // Intentar encontrar el ítem actual por material_id + description
+        const matchingItem = currentOrderItems?.find(
+          (oi: any) =>
+            oi.material_id === (item.material_id ?? null) &&
+            oi.description === item.description
+        )
+
+        const resolvedPurchaseOrderItemId = matchingItem?.id || item.purchase_order_item_id
+
+        return {
+          receipt_id: receipt.id,
+          purchase_order_item_id: resolvedPurchaseOrderItemId,
+          material_id: item.material_id ?? null,
+          description: item.description,
+          quantity_received: item.quantity_received,
+        }
+      })
+
+      console.log('[createPurchaseOrderReceipt] receiptItemsPayload:', JSON.stringify(receiptItemsPayload, null, 2))
+
+      const { data: insertedItems, error: itemsError } = await supabase
+        .from('purchase_order_receipt_items')
+        .insert(receiptItemsPayload)
+        .select()
+
+      console.log('[createPurchaseOrderReceipt] receipt items insert result:', { insertedItems, itemsError })
+
+      if (itemsError) {
+        // Si falla la inserción de ítems, borrar la recepción huérfana
+        console.error('[createPurchaseOrderReceipt] items insert failed, deleting orphan receipt:', receipt.id)
+        await supabase.from('purchase_order_receipts').delete().eq('id', receipt.id)
+        throw itemsError
+      }
+
+      // Actualizar stock y registrar movimientos por cada ítem con material_id
+      for (const item of items) {
+        if (!item.material_id) continue
+
+        const { data: material, error: materialError } = await supabase
+          .from('materials')
+          .select('stock_quantity')
+          .eq('id', item.material_id)
+          .single()
+
+        if (materialError) throw materialError
+
+        const newStock = (material.stock_quantity ?? 0) + (item.quantity_received ?? 0)
+        const { error: updateError } = await supabase
+          .from('materials')
+          .update({ stock_quantity: newStock })
+          .eq('id', item.material_id)
+
+        if (updateError) throw updateError
+
+        await this.createStockMovement({
+          material_id: item.material_id,
+          type: 'in',
+          quantity: item.quantity_received ?? 0,
+          stock_after: newStock,
+          source_type: 'purchase_receipt',
+          source_id: receipt.id,
+          reference: `Recepción ${purchaseOrder?.order_number || ''}`.trim(),
+          notes: receiptData.notes,
+          created_by: input.created_by
+        })
+      }
+    }
+
+    // Recalcular estado de la orden según cantidades recibidas
+    await this.recalculatePurchaseOrderStatus(receiptData.purchase_order_id)
+
+    const finalReceipt = await this.getPurchaseOrderReceiptById(receipt.id)
+    console.log('[createPurchaseOrderReceipt] final receipt:', JSON.stringify(finalReceipt, null, 2))
+
+    return finalReceipt
+  }
+
+  static async getPurchaseOrderReceiptById(id: string) {
+    // Traer recepción e ítems por separado para evitar problemas de join
+    const { data: receipt, error: receiptError } = await supabase
+      .from('purchase_order_receipts')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (receiptError) throw receiptError
+
+    const { data: receiptItems, error: itemsError } = await supabase
+      .from('purchase_order_receipt_items')
+      .select('id, receipt_id, purchase_order_item_id, material_id, description, quantity_received, material:materials(id, code, name, unit)')
+      .eq('receipt_id', id)
+
+    if (itemsError) throw itemsError
+
+    return {
+      ...receipt,
+      items: receiptItems || [],
+    }
+  }
+
+  static async deletePurchaseOrderReceipt(id: string, createdBy?: string) {
+    // Obtener ítems para ajustar stock (restar lo recibido)
+    const { data: receipt, error: fetchError } = await supabase
+      .from('purchase_order_receipts')
+      .select('purchase_order_id, items:purchase_order_receipt_items(material_id, quantity_received)')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    const { data: purchaseOrder } = await supabase
+      .from('purchase_orders')
+      .select('order_number')
+      .eq('id', receipt.purchase_order_id)
+      .single()
+
+    if (receipt?.items) {
+      for (const item of receipt.items as any[]) {
+        if (!item.material_id) continue
+
+        const { data: material, error: materialError } = await supabase
+          .from('materials')
+          .select('stock_quantity')
+          .eq('id', item.material_id)
+          .single()
+
+        if (materialError) throw materialError
+
+        const newStock = Math.max(0, (material.stock_quantity ?? 0) - (item.quantity_received ?? 0))
+        const { error: updateError } = await supabase
+          .from('materials')
+          .update({ stock_quantity: newStock })
+          .eq('id', item.material_id)
+
+        if (updateError) throw updateError
+
+        await this.createStockMovement({
+          material_id: item.material_id,
+          type: 'out',
+          quantity: item.quantity_received ?? 0,
+          stock_after: newStock,
+          source_type: 'purchase_receipt',
+          source_id: id,
+          reference: `Anulación de recepción ${purchaseOrder?.order_number || ''}`.trim(),
+          created_by: createdBy
+        })
+      }
+    }
+
+    const purchaseOrderId = receipt.purchase_order_id
+    const { error } = await supabase.from('purchase_order_receipts').delete().eq('id', id)
+    if (error) throw error
+
+    await this.recalculatePurchaseOrderStatus(purchaseOrderId)
+  }
+
+  static async recalculatePurchaseOrderStatus(purchaseOrderId: string) {
+    // Obtener ítems de la orden con cantidad pedida
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('purchase_order_items')
+      .select('id, quantity')
+      .eq('purchase_order_id', purchaseOrderId)
+
+    if (itemsError) throw itemsError
+    if (!orderItems || orderItems.length === 0) return
+
+    // Obtener TODAS las recepciones de la orden para sumar correctamente
+    // incluso si los IDs de ítems cambiaron por ediciones previas
+    const { data: receipts, error: receiptsError } = await supabase
+      .from('purchase_order_receipts')
+      .select('id')
+      .eq('purchase_order_id', purchaseOrderId)
+
+    if (receiptsError) throw receiptsError
+
+    let totalReceived = 0
+    if (receipts && receipts.length > 0) {
+      const receiptIds = receipts.map((r: any) => r.id)
+      const { data: receivedItems, error: receivedError } = await supabase
+        .from('purchase_order_receipt_items')
+        .select('quantity_received')
+        .in('receipt_id', receiptIds)
+
+      if (receivedError) throw receivedError
+
+      totalReceived = (receivedItems || []).reduce(
+        (sum: number, ri: any) => sum + (ri.quantity_received ?? 0),
+        0
+      )
+    }
+
+    const totalOrdered = orderItems.reduce((sum: number, i: any) => sum + (i.quantity ?? 0), 0)
+
+    // Redondear para evitar problemas de punto flotante
+    const round4 = (n: number) => Math.round(n * 10000) / 10000
+    const orderedRounded = round4(totalOrdered)
+    const receivedRounded = round4(totalReceived)
+
+    console.log('[recalculatePurchaseOrderStatus]', { purchaseOrderId, orderedRounded, receivedRounded })
+
+    let newStatus: string | null = null
+    if (receivedRounded <= 0) {
+      newStatus = 'approved'
+    } else if (receivedRounded >= orderedRounded) {
+      newStatus = 'received'
+    } else {
+      newStatus = 'partial_received'
+    }
+
+    const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() }
+    if (newStatus === 'received') {
+      const { data: current } = await supabase
+        .from('purchase_orders')
+        .select('received_at')
+        .eq('id', purchaseOrderId)
+        .single()
+      if (!current?.received_at) {
+        updateData.received_at = new Date().toISOString()
+      }
+    } else {
+      updateData.received_at = null
+    }
+
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update(updateData)
+      .eq('id', purchaseOrderId)
+
     if (error) throw error
   }
 
@@ -2428,6 +3929,413 @@ export class PrismaTypedService {
 
     return updatedContract
   }
+
+  // ==================== DELIVERY RECEIPTS ====================
+
+  static async generateDeliveryReceiptNumber(): Promise<string> {
+    const year = new Date().getFullYear().toString()
+    const prefix = `REM-${year}-`
+
+    const { data } = await supabase
+      .from('delivery_receipts')
+      .select('number')
+      .like('number', `${prefix}%`)
+      .order('number', { ascending: false })
+      .limit(1)
+
+    let nextNum = 1
+    if (data && data.length > 0) {
+      const lastNum = parseInt(data[0].number.replace(prefix, ''), 10)
+      if (!isNaN(lastNum)) nextNum = lastNum + 1
+    }
+
+    return `${prefix}${nextNum.toString().padStart(4, '0')}`
+  }
+
+  static async createDeliveryReceipt(input: {
+    number?: string
+    type?: 'sale' | 'rental'
+    client_id?: string | null
+    client_name: string
+    client_company?: string
+    client_phone?: string
+    client_email?: string
+    delivery_address?: string
+    delivery_date?: string
+    notes?: string
+    delivery_conditions?: any[] | null
+    notes_list?: any[] | null
+    created_by: string
+    items: Array<{
+      type: 'standard_module' | 'custom_module' | 'service'
+      standard_module_id?: string
+      name: string
+      description?: string
+      quantity: number
+      is_optional?: boolean
+      sort_order: number
+      module_description?: { section: string; description: string }[] | null
+      additionals?: Array<{
+        material_id?: string
+        name: string
+        quantity: number
+      }>
+      attachments?: Array<{
+        filename: string
+        original_name: string
+        mime_type: string
+        size: number
+        url: string
+        storage_path: string
+      }>
+    }>
+  }): Promise<{ id: string; number: string }> {
+    const number = input.number ?? await this.generateDeliveryReceiptNumber()
+
+    const { data: receipt, error } = await supabase
+      .from('delivery_receipts')
+      .insert({
+        number,
+        type: input.type ?? 'sale',
+        status: 'draft',
+        client_id: input.client_id ?? null,
+        client_name: input.client_name,
+        client_company: input.client_company ?? null,
+        client_phone: input.client_phone ?? null,
+        client_email: input.client_email ?? null,
+        delivery_address: input.delivery_address ?? null,
+        delivery_date: input.delivery_date ?? null,
+        notes: input.notes ?? null,
+        delivery_conditions: input.delivery_conditions ?? null,
+        notes_list: input.notes_list ?? null,
+        created_by: input.created_by,
+      })
+      .select('id, number')
+      .single()
+
+    if (error) throw error
+
+    for (const item of input.items) {
+      const { data: rItem, error: itemErr } = await supabase
+        .from('delivery_receipt_items')
+        .insert({
+          delivery_receipt_id: receipt.id,
+          type: item.type,
+          standard_module_id: item.standard_module_id ?? null,
+          name: item.name,
+          description: item.description ?? null,
+          quantity: item.quantity,
+          is_optional: item.is_optional ?? false,
+          sort_order: item.sort_order,
+          module_description: item.module_description ?? null,
+        })
+        .select('id')
+        .single()
+
+      if (itemErr) throw itemErr
+
+      if (item.additionals && item.additionals.length > 0) {
+        const { error: addErr } = await supabase
+          .from('delivery_receipt_additionals')
+          .insert(
+            item.additionals.map((a) => ({
+              receipt_item_id: rItem.id,
+              material_id: a.material_id ?? null,
+              name: a.name,
+              quantity: a.quantity,
+            }))
+          )
+        if (addErr) throw addErr
+      }
+
+      if (item.attachments && item.attachments.length > 0) {
+        const { error: attErr } = await supabase
+          .from('delivery_receipt_item_attachments')
+          .insert(
+            item.attachments.map((a) => ({
+              receipt_item_id: rItem.id,
+              filename: a.filename,
+              original_name: a.original_name,
+              mime_type: a.mime_type,
+              size: a.size,
+              url: a.url,
+              storage_path: a.storage_path,
+            }))
+          )
+        if (attErr) throw attErr
+      }
+    }
+
+    return { id: receipt.id, number: receipt.number }
+  }
+
+  static async replaceDeliveryReceipt(
+    id: string,
+    input: {
+      type?: 'sale' | 'rental'
+      client_id?: string | null
+      client_name: string
+      client_company?: string
+      client_phone?: string
+      client_email?: string
+      delivery_address?: string
+      delivery_date?: string
+      notes?: string
+      delivery_conditions?: any[] | null
+      notes_list?: any[] | null
+      items: Array<{
+        type: 'standard_module' | 'custom_module' | 'service'
+        standard_module_id?: string
+        name: string
+        description?: string
+        quantity: number
+        is_optional?: boolean
+        sort_order: number
+        module_description?: { section: string; description: string }[] | null
+        additionals?: Array<{
+          material_id?: string
+          name: string
+          quantity: number
+        }>
+        attachments?: Array<{
+          filename: string
+          original_name: string
+          mime_type: string
+          size: number
+          url: string
+          storage_path: string
+        }>
+      }>
+    }
+  ): Promise<{ id: string; number: string }> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('delivery_receipts')
+      .select('number, status')
+      .eq('id', id)
+      .single()
+
+    if (existingErr) throw existingErr
+    if (!existing) throw new Error('Remito no encontrado')
+    if (existing.status !== 'draft') throw new Error('Solo se pueden editar remitos en borrador')
+
+    const { error: updateErr } = await supabase
+      .from('delivery_receipts')
+      .update({
+        type: input.type ?? 'sale',
+        client_id: input.client_id ?? null,
+        client_name: input.client_name,
+        client_company: input.client_company ?? null,
+        client_phone: input.client_phone ?? null,
+        client_email: input.client_email ?? null,
+        delivery_address: input.delivery_address ?? null,
+        delivery_date: input.delivery_date ?? null,
+        notes: input.notes ?? null,
+        delivery_conditions: input.delivery_conditions ?? null,
+        notes_list: input.notes_list ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (updateErr) throw updateErr
+
+    await supabase.from('delivery_receipt_items').delete().eq('delivery_receipt_id', id)
+
+    for (const item of input.items) {
+      const { data: rItem, error: itemErr } = await supabase
+        .from('delivery_receipt_items')
+        .insert({
+          delivery_receipt_id: id,
+          type: item.type,
+          standard_module_id: item.standard_module_id ?? null,
+          name: item.name,
+          description: item.description ?? null,
+          quantity: item.quantity,
+          is_optional: item.is_optional ?? false,
+          sort_order: item.sort_order,
+          module_description: item.module_description ?? null,
+        })
+        .select('id')
+        .single()
+
+      if (itemErr) throw itemErr
+
+      if (item.additionals && item.additionals.length > 0) {
+        const { error: addErr } = await supabase
+          .from('delivery_receipt_additionals')
+          .insert(
+            item.additionals.map((a) => ({
+              receipt_item_id: rItem.id,
+              material_id: a.material_id ?? null,
+              name: a.name,
+              quantity: a.quantity,
+            }))
+          )
+        if (addErr) throw addErr
+      }
+
+      if (item.attachments && item.attachments.length > 0) {
+        const { error: attErr } = await supabase
+          .from('delivery_receipt_item_attachments')
+          .insert(
+            item.attachments.map((a) => ({
+              receipt_item_id: rItem.id,
+              filename: a.filename,
+              original_name: a.original_name,
+              mime_type: a.mime_type,
+              size: a.size,
+              url: a.url,
+              storage_path: a.storage_path,
+            }))
+          )
+        if (attErr) throw attErr
+      }
+    }
+
+    return { id, number: existing.number }
+  }
+
+  static async getDeliveryReceiptById(id: string): Promise<any | null> {
+    const { data: receipt, error } = await supabase
+      .from('delivery_receipts')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    if (!receipt) return null
+
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_receipt_items')
+      .select(`
+        *,
+        additionals:delivery_receipt_additionals(*),
+        attachments:delivery_receipt_item_attachments(*)
+      `)
+      .eq('delivery_receipt_id', id)
+      .order('sort_order', { ascending: true })
+
+    if (itemsError) throw itemsError
+
+    let client_cuit: string | null = null
+    if (receipt.client_id) {
+      const client = await this.getClientById(receipt.client_id)
+      client_cuit = client?.cuit ?? null
+    }
+
+    return { ...receipt, client_cuit, items: items || [] }
+  }
+
+  static async getAllDeliveryReceipts(filters?: {
+    status?: string
+    clientId?: string
+    search?: string
+  }): Promise<any[]> {
+    let query = supabase
+      .from('delivery_receipts')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (filters?.status) query = query.eq('status', filters.status)
+    if (filters?.clientId) query = query.eq('client_id', filters.clientId)
+    if (filters?.search) {
+      query = query.or(`number.ilike.%${filters.search}%,client_name.ilike.%${filters.search}%,client_company.ilike.%${filters.search}%`)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async deleteDeliveryReceipt(id: string): Promise<void> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('delivery_receipts')
+      .select('status')
+      .eq('id', id)
+      .single()
+
+    if (existingErr) throw existingErr
+    if (!existing) throw new Error('Remito no encontrado')
+    if (existing.status !== 'draft') throw new Error('Solo se pueden eliminar remitos en borrador')
+
+    const { error } = await supabase.from('delivery_receipts').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  static async issueDeliveryReceipt(id: string): Promise<any> {
+    const { data: existing, error: existingErr } = await supabase
+      .from('delivery_receipts')
+      .select('status')
+      .eq('id', id)
+      .single()
+
+    if (existingErr) throw existingErr
+    if (!existing) throw new Error('Remito no encontrado')
+    if (existing.status !== 'draft') throw new Error('El remito ya fue emitido')
+
+    const { error } = await supabase
+      .from('delivery_receipts')
+      .update({
+        status: 'issued',
+        issued_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (error) throw error
+
+    return this.getDeliveryReceiptById(id)
+  }
+
+  static async duplicateDeliveryReceipt(id: string, createdBy: string): Promise<{ id: string; number: string }> {
+    const receipt = await this.getDeliveryReceiptById(id)
+    if (!receipt) throw new Error('Remito no encontrado')
+
+    return this.createDeliveryReceipt({
+      type: receipt.type,
+      client_id: receipt.client_id,
+      client_name: receipt.client_name,
+      client_company: receipt.client_company,
+      client_phone: receipt.client_phone,
+      client_email: receipt.client_email,
+      delivery_address: receipt.delivery_address,
+      delivery_date: receipt.delivery_date,
+      notes: receipt.notes,
+      delivery_conditions: receipt.delivery_conditions,
+      notes_list: receipt.notes_list,
+      created_by: createdBy,
+      items: receipt.items.map((item: any) => ({
+        type: item.type,
+        standard_module_id: item.standard_module_id,
+        name: item.name,
+        description: item.description,
+        quantity: item.quantity,
+        is_optional: item.is_optional,
+        sort_order: item.sort_order,
+        module_description: item.module_description,
+        additionals: item.additionals?.map((a: any) => ({
+          material_id: a.material_id,
+          name: a.name,
+          quantity: a.quantity,
+        })),
+        attachments: item.attachments?.map((a: any) => ({
+          filename: a.filename,
+          original_name: a.original_name,
+          mime_type: a.mime_type,
+          size: a.size,
+          url: a.url,
+          storage_path: a.storage_path,
+        })),
+      })),
+    })
+  }
+
+  static async updateDeliveryReceiptPdfUrl(id: string, pdfUrl: string): Promise<void> {
+    const { error } = await supabase
+      .from('delivery_receipts')
+      .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
+  }
 }
 
 export type {
@@ -2439,7 +4347,18 @@ export type {
   ProjectStatus,
   ProjectPriority,
   TaskStatus,
-  TaskPriority
+  TaskPriority,
+  Supplier,
+  PurchaseOrder,
+  PurchaseOrderItem,
+  PurchaseOrderAttachment,
+  PurchaseOrderStatus,
+  PurchaseRequest,
+  PurchaseRequestItem,
+  PurchaseRequestStatus,
+  SupplierQuote,
+  PurchaseOrderReceipt,
+  PurchaseOrderReceiptItem,
 } from './generated/prisma/index'
 
 // Re-exportar tipos del módulo de presupuestos

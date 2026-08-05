@@ -123,7 +123,7 @@ function ServiceFormFields({
             onChange={(val) => setForm((f) => ({ ...f, unit_price: val }))}
           />
           {exchangeRate && form.unit_price && (
-            <p className="text-[10px] sm:text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs sm:text-sm text-muted-foreground">
               {formatARS((parseFloat(form.unit_price.replace(",", ".")) || 0) * exchangeRate.venta)}
             </p>
           )}
@@ -381,11 +381,11 @@ export default function ServicesAdminPage() {
                         </Badge>
                       </div>
                       {service.description && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
                           {service.description}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                         Unidad: {service.unit}
                       </p>
                     </div>

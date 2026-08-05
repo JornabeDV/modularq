@@ -93,7 +93,7 @@ export default function CotizadorPage() {
               <CardTitle className="text-base">Datos de la cotización</CardTitle>
               <div className="flex items-center gap-2">
                 {q.selectedClient && !q.quoteHeaderExpanded && (
-                  <span className="text-xs text-muted-foreground truncate max-w-[160px] sm:max-w-[240px]">
+                  <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[160px] sm:max-w-[240px]">
                     {q.selectedClient.companyName}
                   </span>
                 )}
@@ -244,7 +244,7 @@ export default function CotizadorPage() {
                   <div className="space-y-2">
                     {q.exchangeRate && q.quoteCurrency === 'USD' && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground w-5">1.</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground w-5">1.</span>
                         <input
                           type="text"
                           value={`Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.`}
@@ -256,7 +256,7 @@ export default function CotizadorPage() {
                     )}
                     {q.freeNotes.map((note, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground w-5">{i + 2}.</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground w-5">{i + 2}.</span>
                         <input
                           type="text"
                           value={note.content}
@@ -311,7 +311,7 @@ export default function CotizadorPage() {
                               }}
                               className="mt-0.5"
                             />
-                            <span className="text-xs text-muted-foreground leading-tight">
+                            <span className="text-xs sm:text-sm text-muted-foreground leading-tight">
                               {item.label}) {item.content}
                               {item.link && (
                                 <a
@@ -352,7 +352,7 @@ export default function CotizadorPage() {
                               }}
                               className="mt-0.5"
                             />
-                            <span className="text-xs text-muted-foreground leading-tight">
+                            <span className="text-xs sm:text-sm text-muted-foreground leading-tight">
                               {item.label}) {item.content}
                               {item.link && (
                                 <a
@@ -391,7 +391,7 @@ export default function CotizadorPage() {
                               }}
                               className="mt-0.5"
                             />
-                            <span className="text-xs text-muted-foreground leading-tight">
+                            <span className="text-xs sm:text-sm text-muted-foreground leading-tight">
                               {item.label}) {item.content}
                             </span>
                           </label>

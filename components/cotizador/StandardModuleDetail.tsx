@@ -27,7 +27,7 @@ interface RawMaterial {
   id: string;
   code: string;
   name: string;
-  category: string;
+  category: string | { name?: string; slug?: string };
   unit: string;
   unit_price?: number;
 }
@@ -46,6 +46,11 @@ const UNIT_LABELS: Record<string, string> = {
   kilogramo: "kg",
   litro: "L",
 };
+
+function getCategoryLabel(category: RawMaterial["category"]): string {
+  if (typeof category === "string") return category;
+  return category?.name || category?.slug || "—";
+}
 
 export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: Props) {
   const { toast } = useToast();
@@ -102,7 +107,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
         id: mat.id,
         code: mat.code,
         name: mat.name,
-        category: mat.category,
+        category: getCategoryLabel(mat.category),
         unit: mat.unit,
         unit_price: mat.unit_price,
       },
@@ -208,6 +213,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
       );
       if (!res.ok) throw new Error();
       toast({ title: "Archivo eliminado" });
+      onRefresh();
     } catch {
       setLocalAttachments(previous);
       toast({ title: "Error al eliminar archivo", variant: "destructive" });
@@ -249,7 +255,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
         {localMaterials.length > 0 && (
           <table className="w-full text-sm mb-4">
             <thead>
-              <tr className="text-xs text-muted-foreground border-b">
+              <tr className="text-xs sm:text-sm text-muted-foreground border-b">
                 <th className="text-left py-1 font-medium">Material</th>
                 <th className="text-left py-1 font-medium hidden sm:table-cell">
                   Categoría
@@ -264,12 +270,12 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                 <tr key={item.id} className="border-b last:border-0">
                   <td className="py-1.5">
                     <span className="font-medium">{item.material.name}</span>
-                    <span className="text-xs text-muted-foreground ml-1">
+                    <span className="text-xs sm:text-sm text-muted-foreground ml-1">
                       ({item.material.code})
                     </span>
                   </td>
                   <td className="py-1.5 text-muted-foreground capitalize hidden sm:table-cell">
-                    {item.material.category}
+                    {getCategoryLabel(item.material.category)}
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
                     {item.quantity}
@@ -309,7 +315,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                     <span className="truncate">
                       {selectedMaterial
                         ? `${selectedMaterial.code} - ${selectedMaterial.name}`
-                        : "Seleccionar material..."}
+                        : "Seleccionar material"}
                     </span>
                     <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
                   </Button>
@@ -338,8 +344,8 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                             <span className="flex-1 truncate">
                               {m.code} - {m.name}
                             </span>
-                            <span className="ml-2 text-xs text-muted-foreground capitalize shrink-0">
-                              {m.category}
+                            <span className="ml-2 text-xs sm:text-sm text-muted-foreground capitalize shrink-0">
+                              {getCategoryLabel(m.category)}
                             </span>
                           </CommandItem>
                         ))}
@@ -393,7 +399,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                 >
                   {att.original_name}
                 </a>
-                <span className="text-xs text-muted-foreground shrink-0">
+                <span className="text-xs sm:text-sm text-muted-foreground shrink-0">
                   {(att.size / 1024).toFixed(0)} KB
                 </span>
                 <Button
@@ -442,7 +448,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
               <p className="text-sm font-medium">
                 Arrastrá un PDF o hacé clic para seleccionar
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Solo archivos PDF · Máximo 10MB
               </p>
             </>

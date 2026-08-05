@@ -88,7 +88,7 @@ export function ProjectManagement() {
           : new Date(),
         end_date: projectData.endDate ? new Date(projectData.endDate) : undefined,
         client_id: projectData.clientId || undefined,
-        quote_id: projectData.quoteId || undefined,
+        quote_ids: projectData.quoteIds?.filter(Boolean) || undefined,
         created_by: user.id,
         modulation: projectData.modulation,
         height: projectData.height,
@@ -155,6 +155,8 @@ export function ProjectManagement() {
         : undefined;
     if (projectData.clientId !== undefined)
       updateData.client_id = projectData.clientId || undefined;
+    if (projectData.quoteIds !== undefined)
+      updateData.quote_ids = projectData.quoteIds.filter(Boolean);
 
     if (projectData.modulation !== undefined)
       updateData.modulation = projectData.modulation;

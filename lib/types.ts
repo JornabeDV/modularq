@@ -16,8 +16,7 @@ export interface Project {
   completedAt?: string
   deliveredAt?: string
   clientId?: string
-  quoteId?: string
-  quote?: {
+  quotes?: {
     id: string
     number: string
     quoteType: string
@@ -28,7 +27,7 @@ export interface Project {
     currency?: string
     exchangeRate?: number
     pdfUrl?: string
-  }
+  }[]
   client?: {
     id: string
     cuit: string

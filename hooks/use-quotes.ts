@@ -27,7 +27,7 @@ export interface Quote {
   created_at: string
   sent_at?: string
   closed_at?: string
-  has_project?: boolean
+  project_count?: number
 }
 
 export type QuoteItemType = 'standard_module' | 'custom_module' | 'service'

@@ -218,7 +218,7 @@ export function ProjectTaskManager({
                                     >
                                       {task.category}
                                     </Badge>
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                                       {task.estimatedHours}h estimadas
                                     </span>
                                   </div>
@@ -269,7 +269,7 @@ export function ProjectTaskManager({
                                     >
                                       {task.category}
                                     </Badge>
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                                       {task.estimatedHours}h estimadas
                                     </span>
                                   </div>

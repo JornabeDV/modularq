@@ -148,7 +148,7 @@ function ReportsContent() {
                             <div className="text-lg font-semibold">
                               {totalTasks}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Tareas
                             </div>
                           </div>
@@ -157,7 +157,7 @@ function ReportsContent() {
                               <div className="text-lg font-semibold">
                                 {operariosCount}
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs sm:text-sm text-muted-foreground">
                                 Operario{operariosCount !== 1 ? "s" : ""}
                               </div>
                             </div>
@@ -167,7 +167,7 @@ function ReportsContent() {
                               <div className="text-lg font-semibold">
                                 {subcontractorsCount}
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs sm:text-sm text-muted-foreground">
                                 Subcontratista
                                 {subcontractorsCount !== 1 ? "s" : ""}
                               </div>
@@ -175,7 +175,7 @@ function ReportsContent() {
                           )}
                           <div>
                             <div className="text-lg font-semibold">100%</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               Completado
                             </div>
                           </div>

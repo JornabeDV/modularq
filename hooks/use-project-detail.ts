@@ -65,7 +65,7 @@ export function useProjectDetail({
   }, [editingTask, project?.status]);
 
   const handleUpdateProject = useCallback(
-    async (projectData: Partial<Project>) => {
+    async (projectData: Partial<Project> & { quoteIds?: string[] }) => {
       if (!project) return;
 
       // ✅ VALIDACIÓN: Si se intenta activar proyecto desde edición, verificar checklist
@@ -91,7 +91,10 @@ export function useProjectDetail({
         }
       }
 
-      const mappedData = mapProjectFormData(projectData);
+      const mappedData = {
+        ...mapProjectFormData(projectData),
+        quote_ids: projectData.quoteIds,
+      };
       const result = await updateProject(project.id, mappedData);
 
       if (result.success) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogHeader,
@@ -23,6 +23,7 @@ import {
   type CreateMaterialData,
   type Material,
 } from "@/hooks/use-materials-prisma";
+import { type MaterialCategory } from "@/hooks/use-material-categories";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PriceInput } from "@/components/ui/price-input";
 import { DialogForm } from "@/components/ui/dialog-form";
@@ -31,15 +32,7 @@ interface MaterialFormData {
   code: string;
   name: string;
   description: string;
-  category:
-    | "estructura"
-    | "paneles"
-    | "herrajes"
-    | "aislacion"
-    | "electricidad"
-    | "sanitarios"
-    | "otros"
-    | "adicional";
+  category: string;
   unit:
     | "unidad"
     | "metro"
@@ -51,6 +44,7 @@ interface MaterialFormData {
   min_stock: number;
   unit_price: number;
   supplier: string;
+  brand: string;
 }
 
 interface MaterialFormProps {
@@ -61,7 +55,28 @@ interface MaterialFormProps {
   initialData?: any | null;
   isLoading?: boolean;
   existingMaterials?: Material[];
+  categories?: MaterialCategory[];
 }
+
+type FormErrors = {
+  code?: string;
+  name?: string;
+  category?: string;
+  unit?: string;
+  stock_quantity?: string;
+  min_stock?: string;
+  unit_price?: string;
+};
+
+const VALIDATABLE_FIELDS: (keyof FormErrors)[] = [
+  "code",
+  "name",
+  "category",
+  "unit",
+  "stock_quantity",
+  "min_stock",
+  "unit_price",
+];
 
 // Función para normalizar nombres (quitar acentos, espacios extras, artículos)
 function normalizeName(name: string): string {
@@ -151,17 +166,6 @@ function levenshteinDistance(str1: string, str2: string): number {
   return matrix[str2.length][str1.length];
 }
 
-const CATEGORIES = [
-  { value: "estructura", label: "Estructura" },
-  { value: "paneles", label: "Paneles" },
-  { value: "herrajes", label: "Herrajes" },
-  { value: "aislacion", label: "Aislación" },
-  { value: "electricidad", label: "Electricidad" },
-  { value: "sanitarios", label: "Sanitarios" },
-  { value: "otros", label: "Otros" },
-  { value: "adicional", label: "Adicionales" },
-];
-
 const UNITS = [
   { value: "unidad", label: "Unidad" },
   { value: "metro", label: "Metro" },
@@ -179,10 +183,14 @@ export function MaterialForm({
   initialData,
   isLoading = false,
   existingMaterials = [],
+  categories = [],
 }: MaterialFormProps) {
   const { getNextCode } = useMaterialsPrisma();
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const isGeneratingCodeRef = useRef(false);
+  const hasSetDefaultCategory = useRef(false);
   const [unitPriceInput, setUnitPriceInput] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState<MaterialFormData>({
     code: "",
     name: "",
@@ -193,38 +201,44 @@ export function MaterialForm({
     min_stock: 0,
     unit_price: 0,
     supplier: "",
+    brand: "",
   });
 
   // Estado para sugerencias de autocompletado
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [nameInputFocused, setNameInputFocused] = useState(false);
 
-  const generateCodeForCategory = async (category: string) => {
-    if (!category || isEditing) return;
+  const generateCodeForCategory = useCallback(async (categoryId: string) => {
+    if (!categoryId || isEditing || isGeneratingCodeRef.current) return;
 
+    isGeneratingCodeRef.current = true;
     setIsGeneratingCode(true);
     try {
-      const nextCode = await getNextCode(category);
+      const nextCode = await getNextCode(categoryId);
       setFormData((prev) => ({ ...prev, code: nextCode }));
     } catch (error) {
       console.error("Error generating code:", error);
     } finally {
       setIsGeneratingCode(false);
+      isGeneratingCodeRef.current = false;
     }
-  };
+  }, [getNextCode, isEditing]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (isEditing && initialData) {
       setFormData({
         code: initialData.code || "",
         name: initialData.name || "",
         description: initialData.description || "",
-        category: initialData.category || "otros",
+        category: initialData.categoryId || "",
         unit: initialData.unit || "unidad",
         stock_quantity: initialData.stockQuantity || 0,
         min_stock: initialData.minStock || 0,
         unit_price: initialData.unitPrice || 0,
         supplier: initialData.supplier || "",
+        brand: initialData.brand || "",
       });
       setUnitPriceInput(initialData.unitPrice?.toString().replace(".", ",") || "");
     } else {
@@ -232,23 +246,210 @@ export function MaterialForm({
         code: "",
         name: "",
         description: "",
-        category: "otros",
+        category: "",
         unit: "unidad",
         stock_quantity: 0,
         min_stock: 0,
         unit_price: 0,
         supplier: "",
+        brand: "",
       });
       setUnitPriceInput("");
     }
-  }, [isEditing, initialData?.id]);
+    setErrors({});
+  }, [isOpen, isEditing, initialData?.id]);
+
+  // Establecer categoría por defecto en creación cuando carguen las categorías
+  useEffect(() => {
+    if (!isOpen) {
+      hasSetDefaultCategory.current = false;
+      return;
+    }
+    if (isEditing || hasSetDefaultCategory.current || categories.length === 0) return;
+
+    const defaultCategory =
+      categories.find((c) => c.slug === "otros") || categories[0];
+    if (defaultCategory) {
+      hasSetDefaultCategory.current = true;
+      setFormData((prev) => ({ ...prev, category: defaultCategory.id }));
+    }
+  }, [isOpen, isEditing, categories]);
 
   // Generar código automáticamente al abrir el formulario (solo creación)
   useEffect(() => {
-    if (isOpen && !isEditing && !formData.code) {
-      generateCodeForCategory(formData.category || "otros");
+    if (isOpen && !isEditing && !formData.code && formData.category && !isGeneratingCodeRef.current) {
+      generateCodeForCategory(formData.category);
     }
-  }, [isOpen, isEditing]);
+  }, [isOpen, isEditing, formData.code, formData.category, generateCodeForCategory]);
+
+  // Validar código cuando cambia (generación automática o edición manual)
+  useEffect(() => {
+    if (!isOpen) return;
+    const codeError = validateField("code", formData.code);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (codeError) next.code = codeError;
+      else delete next.code;
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.code, isOpen]);
+
+  // Validar nombre cuando cambia
+  useEffect(() => {
+    if (!isOpen) return;
+    const nameError = validateField("name", formData.name);
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (nameError) next.name = nameError;
+      else delete next.name;
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.name, isOpen]);
+
+  const findDuplicateCode = (code: string): Material | undefined => {
+    return existingMaterials.find(
+      (m) =>
+        m.code.toLowerCase().trim() === code.toLowerCase().trim() &&
+        (!isEditing || m.id !== initialData?.id),
+    );
+  };
+
+  // Duplicado exacto: bloquea el envío. Solo coincidencia real.
+  const findExactDuplicateName = (name: string): Material | undefined => {
+    if (!name || name.trim().length < 2) return undefined;
+
+    const normalizedInput = normalizeName(name);
+
+    return existingMaterials.find((m) => {
+      if (isEditing && m.id === initialData?.id) return false;
+
+      const normalizedExisting = normalizeName(m.name);
+
+      // 1. Coincidencia exacta normalizada
+      if (normalizedExisting === normalizedInput) return true;
+
+      // 2. Contención mutua con ratio muy alto (>0.95).
+      //    Evita bloquear variantes que solo cambian en números/medidas
+      //    (p. ej. "Tornillo autorroscante 10" vs "Tornillo autorroscante 12").
+      if (
+        normalizedExisting.includes(normalizedInput) ||
+        normalizedInput.includes(normalizedExisting)
+      ) {
+        const ratio =
+          Math.min(normalizedInput.length, normalizedExisting.length) /
+          Math.max(normalizedInput.length, normalizedExisting.length);
+        if (ratio > 0.95) return true;
+      }
+
+      return false;
+    });
+  };
+
+  // Material similar: solo advertencia naranja, no bloquea.
+  const findSimilarMaterialByName = (name: string): Material | undefined => {
+    if (!name || name.trim().length < 2) return undefined;
+
+    const normalizedInput = normalizeName(name);
+    const inputKeywords = extractKeywords(name);
+
+    return existingMaterials.find((m) => {
+      if (isEditing && m.id === initialData?.id) return false;
+
+      const normalizedExisting = normalizeName(m.name);
+
+      // 1. Coincidencia exacta normalizada
+      if (normalizedExisting === normalizedInput) return true;
+
+      // 2. Una contiene a la otra completamente
+      if (
+        normalizedExisting.includes(normalizedInput) ||
+        normalizedInput.includes(normalizedExisting)
+      ) {
+        const ratio =
+          Math.min(normalizedInput.length, normalizedExisting.length) /
+          Math.max(normalizedInput.length, normalizedExisting.length);
+        if (ratio > 0.7) return true;
+      }
+
+      // 3. Mismas palabras clave
+      const existingKeywords = extractKeywords(m.name);
+      if (inputKeywords.length > 0 && existingKeywords.length > 0) {
+        const common = inputKeywords.filter((k1) =>
+          existingKeywords.some(
+            (k2) => k1 === k2 || k1.includes(k2) || k2.includes(k1),
+          ),
+        );
+        if (
+          common.length === inputKeywords.length ||
+          common.length === existingKeywords.length
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+  };
+
+  const validateField = (
+    field: keyof MaterialFormData,
+    value: any,
+  ): string | undefined => {
+    switch (field) {
+      case "code": {
+        const codeValue = typeof value === "string" ? value.trim() : "";
+        if (!codeValue) return "El código es obligatorio.";
+        const duplicate = findDuplicateCode(codeValue);
+        if (duplicate) {
+          return `Ya existe un material con el código ${duplicate.code}. Usá otro código.`;
+        }
+        return undefined;
+      }
+      case "name": {
+        const nameValue = typeof value === "string" ? value.trim() : "";
+        if (!nameValue) return "El nombre es obligatorio.";
+        const duplicate = findExactDuplicateName(nameValue);
+        if (duplicate) {
+          return `Ya existe un material con el nombre ${duplicate.name} (${duplicate.code}). Cambiá el nombre.`;
+        }
+        return undefined;
+      }
+      case "category":
+        if (!value) return "La categoría es obligatoria.";
+        return undefined;
+      case "unit":
+        if (!value) return "La unidad de medida es obligatoria.";
+        return undefined;
+      case "stock_quantity":
+        if (typeof value === "number" && value < 0) {
+          return "El stock actual no puede ser negativo.";
+        }
+        return undefined;
+      case "min_stock":
+        if (typeof value === "number" && value < 0) {
+          return "El stock mínimo no puede ser negativo.";
+        }
+        return undefined;
+      case "unit_price":
+        if (typeof value === "number" && value < 0) {
+          return "El precio unitario no puede ser negativo.";
+        }
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  const validateForm = (): FormErrors => {
+    const newErrors: FormErrors = {};
+    VALIDATABLE_FIELDS.forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) newErrors[field] = error;
+    });
+    return newErrors;
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => {
@@ -261,6 +462,16 @@ export function MaterialForm({
 
       return newData;
     });
+
+    if (VALIDATABLE_FIELDS.includes(field as keyof FormErrors)) {
+      const error = validateField(field as keyof MaterialFormData, value);
+      setErrors((prev) => {
+        const next = { ...prev };
+        if (error) next[field as keyof FormErrors] = error;
+        else delete next[field as keyof FormErrors];
+        return next;
+      });
+    }
   };
 
   const handleRegenerateCode = () => {
@@ -284,49 +495,11 @@ export function MaterialForm({
       .slice(0, 5); // Máximo 5 sugerencias
   }, [formData.name, existingMaterials, isEditing, initialData?.id]);
 
-  // Verificar si hay un duplicado exacto o muy similar
-  const exactDuplicate = useMemo(() => {
+  // Verificar si hay un material similar (solo advertencia, no bloquea)
+  const similarMaterial = useMemo(() => {
     if (!formData.name || isEditing) return null;
-
-    const normalizedInput = normalizeName(formData.name);
-    const inputKeywords = extractKeywords(formData.name);
-
-    return existingMaterials.find((m) => {
-      const normalizedExisting = normalizeName(m.name);
-
-      // 1. Coincidencia exacta normalizada
-      if (normalizedExisting === normalizedInput) return true;
-
-      // 2. Una contiene a la otra completamente
-      if (
-        normalizedExisting.includes(normalizedInput) ||
-        normalizedInput.includes(normalizedExisting)
-      ) {
-        const ratio =
-          Math.min(normalizedInput.length, normalizedExisting.length) /
-          Math.max(normalizedInput.length, normalizedExisting.length);
-        if (ratio > 0.7) return true; // Si el match es >70%, es duplicado
-      }
-
-      // 3. Mismas palabras clave (ej: "perfil" vs "perfiles")
-      const existingKeywords = extractKeywords(m.name);
-      if (inputKeywords.length > 0 && existingKeywords.length > 0) {
-        const common = inputKeywords.filter((k1) =>
-          existingKeywords.some(
-            (k2) => k1 === k2 || k1.includes(k2) || k2.includes(k1),
-          ),
-        );
-        if (
-          common.length === inputKeywords.length ||
-          common.length === existingKeywords.length
-        ) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-  }, [formData.name, existingMaterials, isEditing]);
+    return findSimilarMaterialByName(formData.name) || null;
+  }, [formData.name, existingMaterials, isEditing, initialData?.id]);
 
   // Seleccionar material de la sugerencia
   const handleSelectSuggestion = (material: Material) => {
@@ -334,63 +507,28 @@ export function MaterialForm({
       ...prev,
       name: material.name,
       description: material.description || prev.description,
-      category: material.category,
+      category: material.categoryId,
       unit: material.unit,
       unit_price: material.unitPrice || 0,
       supplier: material.supplier || "",
+      brand: material.brand || "",
     }));
     setShowSuggestions(false);
+    // La validación de nombre se dispara por el cambio de formData.name
   };
-
-  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar duplicado con la misma lógica mejorada
-    const normalizedInput = normalizeName(formData.name);
-    const inputKeywords = extractKeywords(formData.name);
-
-    const duplicate = existingMaterials.find((m) => {
-      if (isEditing && m.id === initialData?.id) return false;
-
-      const normalizedExisting = normalizeName(m.name);
-
-      // Coincidencia exacta
-      if (normalizedExisting === normalizedInput) return true;
-
-      // Contención mutua
-      if (
-        normalizedExisting.includes(normalizedInput) ||
-        normalizedInput.includes(normalizedExisting)
-      ) {
-        const ratio =
-          Math.min(normalizedInput.length, normalizedExisting.length) /
-          Math.max(normalizedInput.length, normalizedExisting.length);
-        if (ratio > 0.7) return true;
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstErrorField = Object.keys(newErrors)[0] as keyof FormErrors;
+      const element = document.getElementById(String(firstErrorField));
+      if (element) {
+        element.focus();
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-
-      // Palabras clave
-      const existingKeywords = extractKeywords(m.name);
-      if (inputKeywords.length > 0 && existingKeywords.length > 0) {
-        const common = inputKeywords.filter((k1) =>
-          existingKeywords.some(
-            (k2) => k1 === k2 || k1.includes(k2) || k2.includes(k1),
-          ),
-        );
-        if (
-          common.length === inputKeywords.length ||
-          common.length === existingKeywords.length
-        ) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-
-    if (duplicate && !showDuplicateWarning) {
-      setShowDuplicateWarning(true);
       return;
     }
 
@@ -398,16 +536,18 @@ export function MaterialForm({
       code: formData.code,
       name: formData.name,
       description: formData.description || undefined,
-      category: formData.category,
+      category_id: formData.category,
       unit: formData.unit,
       stock_quantity: formData.stock_quantity,
       min_stock: formData.min_stock,
       unit_price: formData.unit_price > 0 ? formData.unit_price : undefined,
       supplier: formData.supplier || undefined,
+      brand: formData.brand || undefined,
     };
     onSubmit(submitData);
-    setShowDuplicateWarning(false);
   };
+
+  const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <Dialog
@@ -418,7 +558,7 @@ export function MaterialForm({
         }
       }}
     >
-      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] overflow-y-auto md:max-w-2xl md:rounded-lg">
+      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] sm:h-[90dvh] overflow-y-auto md:max-w-4xl md:rounded-lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Material" : "Crear Nuevo Material"}
@@ -434,17 +574,33 @@ export function MaterialForm({
               value={formData.category}
               onValueChange={(value) => handleInputChange("category", value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className={`w-full ${errors.category ? "border-destructive focus:ring-destructive" : ""}`}
+                aria-invalid={Boolean(errors.category)}
+                aria-describedby={errors.category ? "material-category-error" : undefined}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
                   </SelectItem>
                 ))}
+                {isEditing &&
+                  initialData?.categoryId &&
+                  !categories.some((c) => c.id === initialData.categoryId) && (
+                    <SelectItem value={initialData.categoryId} disabled>
+                      {initialData.categoryName || initialData.category} (inactiva)
+                    </SelectItem>
+                  )}
               </SelectContent>
             </Select>
+            {errors.category && (
+              <p id="material-category-error" className="text-xs sm:text-sm text-destructive mt-1">
+                {errors.category}
+              </p>
+            )}
           </div>
 
           {/* 2. Código */}
@@ -462,7 +618,9 @@ export function MaterialForm({
                 required
                 placeholder="Ej: EST-001"
                 disabled={isEditing || isGeneratingCode}
-                className="flex-1"
+                className={`flex-1 ${errors.code ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                aria-invalid={Boolean(errors.code)}
+                aria-describedby={errors.code ? "material-code-error" : undefined}
               />
               {!isEditing && (
                 <Button
@@ -480,11 +638,17 @@ export function MaterialForm({
                 </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {isEditing
-                ? "Código único del material (no editable)"
-                : "Código generado automáticamente según categoría"}
-            </p>
+            {errors.code ? (
+              <p id="material-code-error" className="text-xs sm:text-sm text-destructive mt-1">
+                {errors.code}
+              </p>
+            ) : (
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {isEditing
+                  ? "Código único del material (no editable)"
+                  : "Código generado automáticamente según categoría"}
+              </p>
+            )}
           </div>
 
           {/* 3. Nombre */}
@@ -498,7 +662,6 @@ export function MaterialForm({
               onChange={(e) => {
                 handleInputChange("name", e.target.value);
                 setShowSuggestions(true);
-                setShowDuplicateWarning(false);
               }}
               onFocus={() => {
                 setNameInputFocused(true);
@@ -512,14 +675,22 @@ export function MaterialForm({
               required
               placeholder="Ej: Perfil de acero 50x50"
               autoComplete="off"
+              className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+              aria-invalid={Boolean(errors.name)}
+              aria-describedby={errors.name ? "material-name-error" : undefined}
             />
+            {errors.name && (
+              <p id="material-name-error" className="text-xs sm:text-sm text-destructive mt-1">
+                {errors.name}
+              </p>
+            )}
 
             {/* Autocompletado - Sugerencias */}
             {showSuggestions &&
               nameInputFocused &&
               similarMaterials.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white dark:bg-card border rounded-md shadow-lg max-h-48 overflow-auto">
-                  <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                  <div className="px-3 py-2 text-xs sm:text-sm text-muted-foreground border-b">
                     Materiales similares encontrados:
                   </div>
                   {similarMaterials.map((material) => (
@@ -531,7 +702,7 @@ export function MaterialForm({
                     >
                       <div>
                         <span className="font-medium">{material.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
+                        <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                           ({material.code})
                         </span>
                       </div>
@@ -545,27 +716,16 @@ export function MaterialForm({
                 </div>
               )}
 
-            {/* Alerta de duplicado exacto */}
-            {(exactDuplicate || showDuplicateWarning) && (
+            {/* Alerta de material similar (informativa, no bloquea) */}
+            {similarMaterial && !errors.name && (
               <Alert className="mt-2 border-orange-500 bg-orange-50 dark:bg-orange-950">
                 <AlertTriangle className="h-4 w-4 text-orange-600" />
                 <AlertDescription className="text-orange-800 dark:text-orange-200">
-                  {exactDuplicate ? (
-                    <>
-                      <strong>¡Atención!</strong> Ya existe un material con
-                      nombre muy similar: <strong>{exactDuplicate.name}</strong>{" "}
-                      ({exactDuplicate.code})
-                      <br />
-                      ¿Estás seguro de que quieres crear este material?
-                    </>
-                  ) : (
-                    <>
-                      <strong>¡Atención!</strong> Parece que estás creando un
-                      material similar a uno existente.
-                      <br />
-                      ¿Deseas continuar de todos modos?
-                    </>
-                  )}
+                  <strong>¡Atención!</strong> Ya existe un material con nombre
+                  similar: <strong>{similarMaterial.name}</strong>{" "}
+                  ({similarMaterial.code})
+                  <br />
+                  Revisá que no sea el mismo producto antes de guardar.
                 </AlertDescription>
               </Alert>
             )}
@@ -594,7 +754,11 @@ export function MaterialForm({
               value={formData.unit}
               onValueChange={(value) => handleInputChange("unit", value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className={`w-full ${errors.unit ? "border-destructive focus:ring-destructive" : ""}`}
+                aria-invalid={Boolean(errors.unit)}
+                aria-describedby={errors.unit ? "material-unit-error" : undefined}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -605,6 +769,11 @@ export function MaterialForm({
                 ))}
               </SelectContent>
             </Select>
+            {errors.unit && (
+              <p id="material-unit-error" className="text-xs sm:text-sm text-destructive mt-1">
+                {errors.unit}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -632,7 +801,15 @@ export function MaterialForm({
                   }
                 }}
                 placeholder="0"
+                className={errors.stock_quantity ? "border-destructive focus-visible:ring-destructive" : ""}
+                aria-invalid={Boolean(errors.stock_quantity)}
+                aria-describedby={errors.stock_quantity ? "material-stock-error" : undefined}
               />
+              {errors.stock_quantity && (
+                <p id="material-stock-error" className="text-xs sm:text-sm text-destructive mt-1">
+                  {errors.stock_quantity}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="min_stock" className="mb-2">
@@ -656,10 +833,19 @@ export function MaterialForm({
                   }
                 }}
                 placeholder="0"
+                className={errors.min_stock ? "border-destructive focus-visible:ring-destructive" : ""}
+                aria-invalid={Boolean(errors.min_stock)}
+                aria-describedby={errors.min_stock ? "material-min-stock-error" : undefined}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Alerta cuando el stock esté por debajo
-              </p>
+              {errors.min_stock ? (
+                <p id="material-min-stock-error" className="text-xs sm:text-sm text-destructive mt-1">
+                  {errors.min_stock}
+                </p>
+              ) : (
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  Alerta cuando el stock esté por debajo
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="unit_price" className="mb-2">
@@ -681,7 +867,15 @@ export function MaterialForm({
                   }
                 }}
                 placeholder="0.00"
+                className={errors.unit_price ? "border-destructive focus-visible:ring-destructive" : ""}
+                aria-invalid={Boolean(errors.unit_price)}
+                aria-describedby={errors.unit_price ? "material-price-error" : undefined}
               />
+              {errors.unit_price && (
+                <p id="material-price-error" className="text-xs sm:text-sm text-destructive mt-1">
+                  {errors.unit_price}
+                </p>
+              )}
             </div>
           </div>
 
@@ -697,6 +891,18 @@ export function MaterialForm({
             />
           </div>
 
+          <div>
+            <Label htmlFor="brand" className="mb-2">
+              Marca
+            </Label>
+            <Input
+              id="brand"
+              value={formData.brand}
+              onChange={(e) => handleInputChange("brand", e.target.value)}
+              placeholder="Ej: 3M, IMSA, JELUZ"
+            />
+          </div>
+
           <div className="flex max-sm:flex-col max-sm:gap-2 justify-end space-x-2 pt-4">
             <Button
               type="button"
@@ -709,7 +915,7 @@ export function MaterialForm({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || hasErrors}
               className="cursor-pointer"
             >
               {isLoading

@@ -224,7 +224,7 @@ export function QuoteItemCard({
           {!isExpanded && (
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                <span className="text-xs sm:text-sm text-muted-foreground tabular-nums shrink-0">
                   x{item.quantity}
                 </span>
                 <div className="flex flex-col items-start">
@@ -259,7 +259,7 @@ export function QuoteItemCard({
                     />
                     <label
                       htmlFor={`optional-${item.key}`}
-                      className="text-[10px] sm:text-xs text-muted-foreground cursor-pointer select-none"
+                      className="text-[10px] sm:text-xs sm:text-sm text-muted-foreground cursor-pointer select-none"
                     >
                       Incluir
                     </label>
@@ -286,7 +286,7 @@ export function QuoteItemCard({
           )}
 
           {isExpanded && item.description && (
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               {item.description}
             </p>
           )}
@@ -308,7 +308,7 @@ export function QuoteItemCard({
                   {item.moduleDescriptionSections.map((sec, i) => (
                     <div key={i} className="border-l-2 border-primary/40 pl-3">
                       <p className="font-medium text-sm">{sec.section}</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                         {sec.description}
                       </p>
                     </div>
@@ -487,11 +487,11 @@ export function QuoteItemCard({
                     }}
                   />
                   {uploading ? (
-                    <p className="text-xs text-muted-foreground">Subiendo...</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Subiendo...</p>
                   ) : (
                     <>
                       <Upload className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         Hacé clic para subir un PDF
                       </p>
                     </>

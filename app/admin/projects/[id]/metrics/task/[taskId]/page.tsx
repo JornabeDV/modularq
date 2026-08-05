@@ -217,7 +217,7 @@ export default function TaskMetricsPage() {
                           <p className="font-medium text-sm sm:text-base">
                             {formattedDate}
                             {isEstimatedStart && !startedByUser && (
-                              <span className="ml-2 text-xs text-muted-foreground">
+                              <span className="ml-2 text-xs sm:text-sm text-muted-foreground">
                                 (estimada)
                               </span>
                             )}

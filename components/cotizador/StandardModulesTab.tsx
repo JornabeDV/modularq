@@ -59,7 +59,7 @@ export function StandardModulesTab({ modules, loading, onAddModule, exchangeRate
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm">{mod.name}</p>
                 {mod.description && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
                     {mod.description}
                   </p>
                 )}
