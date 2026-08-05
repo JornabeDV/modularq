@@ -32,15 +32,7 @@ interface MaterialRowProps {
   onStockAdjusted?: () => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  estructura: "Estructura",
-  paneles: "Paneles",
-  herrajes: "Herrajes",
-  aislacion: "Aislación",
-  electricidad: "Electricidad",
-  sanitarios: "Sanitarios",
-  otros: "Otros",
-};
+
 
 const UNIT_LABELS: Record<string, string> = {
   unidad: "Unidad",
@@ -80,7 +72,7 @@ export function MaterialRow({
         </TableCell>
         <TableCell>
           <Badge variant="outline">
-            {CATEGORY_LABELS[material.category] || material.category}
+            {material.categoryName || material.category}
           </Badge>
         </TableCell>
         <TableCell>

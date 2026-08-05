@@ -913,11 +913,253 @@ export class PrismaTypedService {
     if (error) throw error
   }
 
+  // Material Categories
+  private static normalizeForSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  }
+
+  private static generateCodePrefixFromName(name: string): string {
+    const words = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(w => w.length >= 2)
+
+    if (words.length === 0) return 'CAT'
+    if (words.length === 1) return words[0].slice(0, 3).toUpperCase()
+
+    return words
+      .map(w => w[0].toUpperCase())
+      .join('')
+      .slice(0, 3)
+  }
+
+  private static async ensureUniqueSlug(slug: string, excludeId?: string): Promise<string> {
+    let candidate = slug
+    let counter = 1
+
+    while (true) {
+      let query = supabase
+        .from('material_categories')
+        .select('id')
+        .eq('slug', candidate)
+
+      if (excludeId) {
+        query = query.neq('id', excludeId)
+      }
+
+      const { data, error } = await query.maybeSingle()
+      if (error) throw error
+      if (!data) return candidate
+
+      counter++
+      candidate = `${slug}-${counter}`
+    }
+  }
+
+  private static async ensureUniqueCodePrefix(prefix: string, excludeId?: string): Promise<string> {
+    let candidate = prefix
+    let counter = 1
+
+    while (true) {
+      let query = supabase
+        .from('material_categories')
+        .select('id')
+        .eq('code_prefix', candidate)
+
+      if (excludeId) {
+        query = query.neq('id', excludeId)
+      }
+
+      const { data, error } = await query.maybeSingle()
+      if (error) throw error
+      if (!data) return candidate
+
+      counter++
+      candidate = `${prefix.slice(0, 3 - String(counter).length)}${counter}`.slice(0, 3)
+      if (candidate.length < 3) candidate = `${prefix.slice(0, 3)}${counter}`.slice(0, 4)
+    }
+  }
+
+  static async getMaterialCategories(activeOnly = false): Promise<any[]> {
+    let query = supabase
+      .from('material_categories')
+      .select('*')
+      .order('order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (activeOnly) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  static async getMaterialCategoryById(id: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('material_categories')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) return null
+    return data
+  }
+
+  static async getMaterialCategoryBySlug(slug: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('material_categories')
+      .select('*')
+      .eq('slug', slug)
+      .single()
+
+    if (error) return null
+    return data
+  }
+
+  static async createMaterialCategory(categoryData: {
+    name: string
+    slug?: string
+    code_prefix?: string
+    order?: number
+  }): Promise<any> {
+    const name = categoryData.name.trim()
+    if (!name) throw new Error('El nombre de la categoría es obligatorio')
+
+    const slug = await this.ensureUniqueSlug(
+      categoryData.slug?.trim() || this.normalizeForSlug(name)
+    )
+    const codePrefix = await this.ensureUniqueCodePrefix(
+      categoryData.code_prefix?.trim().toUpperCase() || this.generateCodePrefixFromName(name)
+    )
+
+    const { data: existingName } = await supabase
+      .from('material_categories')
+      .select('id')
+      .ilike('name', name)
+      .maybeSingle()
+
+    if (existingName) {
+      throw new Error(`Ya existe una categoría con el nombre "${name}"`)
+    }
+
+    const { data, error } = await supabase
+      .from('material_categories')
+      .insert({
+        id: crypto.randomUUID(),
+        name,
+        slug,
+        code_prefix: codePrefix,
+        order: categoryData.order ?? 0,
+        deleted_at: null
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updateMaterialCategory(id: string, categoryData: {
+    name?: string
+    slug?: string
+    code_prefix?: string
+    order?: number
+  }): Promise<any> {
+    const current = await this.getMaterialCategoryById(id)
+    if (!current) throw new Error('Categoría no encontrada')
+
+    const updateData: any = {}
+
+    if (categoryData.name !== undefined) {
+      const name = categoryData.name.trim()
+      if (!name) throw new Error('El nombre de la categoría es obligatorio')
+
+      const { data: existingName } = await supabase
+        .from('material_categories')
+        .select('id')
+        .ilike('name', name)
+        .neq('id', id)
+        .maybeSingle()
+
+      if (existingName) {
+        throw new Error(`Ya existe una categoría con el nombre "${name}"`)
+      }
+
+      updateData.name = name
+    }
+
+    if (categoryData.slug !== undefined) {
+      const slug = categoryData.slug.trim()
+      if (!slug) throw new Error('El slug es obligatorio')
+      updateData.slug = await this.ensureUniqueSlug(slug, id)
+    }
+
+    if (categoryData.code_prefix !== undefined) {
+      const prefix = categoryData.code_prefix.trim().toUpperCase()
+      if (!prefix) throw new Error('El prefijo es obligatorio')
+      updateData.code_prefix = await this.ensureUniqueCodePrefix(prefix, id)
+    }
+
+    if (categoryData.order !== undefined) {
+      updateData.order = categoryData.order
+    }
+
+    if (Object.keys(updateData).length === 0) return current
+
+    const { data, error } = await supabase
+      .from('material_categories')
+      .update({ ...updateData, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async deleteMaterialCategory(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('material_categories')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+      .is('deleted_at', null)
+
+    if (error) throw error
+  }
+
+  static async restoreMaterialCategory(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('material_categories')
+      .update({ deleted_at: null })
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
   // Materiales
   static async getAllMaterials(): Promise<any[]> {
     const { data, error } = await supabase
       .from('materials')
-      .select('*')
+      .select(`
+        *,
+        category:material_categories (
+          id,
+          name,
+          slug,
+          code_prefix,
+          deleted_at
+        )
+      `)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -925,18 +1167,13 @@ export class PrismaTypedService {
   }
 
   // Obtener el siguiente código disponible para una categoría
-  static async getNextMaterialCode(category: string): Promise<string> {
-    const categoryPrefixes: Record<string, string> = {
-      estructura: 'EST',
-      paneles: 'PAN',
-      herrajes: 'HER',
-      aislacion: 'AIS',
-      electricidad: 'ELE',
-      sanitarios: 'SAN',
-      otros: 'OTR'
+  static async getNextMaterialCode(categoryId: string): Promise<string> {
+    const category = await this.getMaterialCategoryById(categoryId)
+    if (!category) {
+      throw new Error('Categoría no encontrada')
     }
 
-    const prefix = categoryPrefixes[category] || 'MAT'
+    const prefix = category.code_prefix || 'MAT'
     
     const { data, error } = await supabase
       .from('materials')
@@ -963,7 +1200,16 @@ export class PrismaTypedService {
   static async getMaterialById(id: string): Promise<any | null> {
     const { data, error } = await supabase
       .from('materials')
-      .select('*')
+      .select(`
+        *,
+        category:material_categories (
+          id,
+          name,
+          slug,
+          code_prefix,
+          deleted_at
+        )
+      `)
       .eq('id', id)
       .single()
     
@@ -975,7 +1221,7 @@ export class PrismaTypedService {
     code: string
     name: string
     description?: string
-    category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+    category_id: string
     unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
     stock_quantity?: number
     min_stock?: number
@@ -1041,7 +1287,7 @@ export class PrismaTypedService {
     code?: string
     name?: string
     description?: string
-    category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+    category_id?: string
     unit?: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
     stock_quantity?: number
     min_stock?: number
@@ -1236,12 +1482,19 @@ export class PrismaTypedService {
           code,
           name,
           description,
-          category,
+          category_id,
           unit,
           stock_quantity,
           min_stock,
           unit_price,
-          supplier
+          supplier,
+          category:material_categories (
+            id,
+            name,
+            slug,
+            code_prefix,
+            deleted_at
+          )
         )
       `)
       .eq('project_id', projectId)
@@ -1861,11 +2114,19 @@ export class PrismaTypedService {
   }
 
   static async getAdicionales() {
-    const { data, error } = await supabase
+    const category = await this.getMaterialCategoryBySlug('adicional')
+    const categoryId = category?.id
+
+    let query = supabase
       .from('materials')
       .select('*')
-      .eq('category', 'adicional')
       .order('name', { ascending: true })
+
+    if (categoryId) {
+      query = query.eq('category_id', categoryId)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data

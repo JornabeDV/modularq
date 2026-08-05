@@ -27,7 +27,7 @@ interface RawMaterial {
   id: string;
   code: string;
   name: string;
-  category: string;
+  category: string | { name?: string; slug?: string };
   unit: string;
   unit_price?: number;
 }
@@ -46,6 +46,11 @@ const UNIT_LABELS: Record<string, string> = {
   kilogramo: "kg",
   litro: "L",
 };
+
+function getCategoryLabel(category: RawMaterial["category"]): string {
+  if (typeof category === "string") return category;
+  return category?.name || category?.slug || "—";
+}
 
 export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: Props) {
   const { toast } = useToast();
@@ -102,7 +107,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
         id: mat.id,
         code: mat.code,
         name: mat.name,
-        category: mat.category,
+        category: getCategoryLabel(mat.category),
         unit: mat.unit,
         unit_price: mat.unit_price,
       },
@@ -270,7 +275,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                     </span>
                   </td>
                   <td className="py-1.5 text-muted-foreground capitalize hidden sm:table-cell">
-                    {item.material.category}
+                    {getCategoryLabel(item.material.category)}
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
                     {item.quantity}
@@ -340,7 +345,7 @@ export function StandardModuleDetail({ module, onRefresh, onSaveDescription }: P
                               {m.code} - {m.name}
                             </span>
                             <span className="ml-2 text-xs sm:text-sm text-muted-foreground capitalize shrink-0">
-                              {m.category}
+                              {getCategoryLabel(m.category)}
                             </span>
                           </CommandItem>
                         ))}

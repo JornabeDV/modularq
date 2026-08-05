@@ -20,6 +20,7 @@ import {
 import { MaterialFilters } from "@/components/admin/materials/material-filters";
 import { MaterialRow } from "@/components/admin/materials/material-row";
 import type { Material } from "@/hooks/use-materials-prisma";
+import { type MaterialCategory } from "@/hooks/use-material-categories";
 
 type SortField =
   | "code"
@@ -50,6 +51,7 @@ interface MaterialTableProps {
   currentPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (value: number) => void;
+  categories?: MaterialCategory[];
 }
 
 export function MaterialTable({
@@ -72,6 +74,7 @@ export function MaterialTable({
   currentPage,
   onPageChange,
   onItemsPerPageChange,
+  categories = [],
 }: MaterialTableProps) {
   return (
     <Card>
@@ -88,6 +91,7 @@ export function MaterialTable({
             onCategoryFilterChange={onCategoryFilterChange}
             lowStockOnly={lowStockOnly}
             onLowStockOnlyChange={onLowStockOnlyChange}
+            categories={categories}
           />
         </div>
       </CardHeader>
