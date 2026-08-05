@@ -3,6 +3,7 @@
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search } from 'lucide-react'
+import { type MaterialCategory } from '@/hooks/use-material-categories'
 
 interface MaterialFiltersProps {
   searchTerm: string
@@ -11,19 +12,8 @@ interface MaterialFiltersProps {
   onCategoryFilterChange?: (value: string) => void
   lowStockOnly?: boolean
   onLowStockOnlyChange?: (value: boolean) => void
+  categories?: MaterialCategory[]
 }
-
-const CATEGORIES = [
-  { value: 'all', label: 'Todas las categorías' },
-  { value: 'estructura', label: 'Estructura' },
-  { value: 'paneles', label: 'Paneles' },
-  { value: 'herrajes', label: 'Herrajes' },
-  { value: 'aislacion', label: 'Aislación' },
-  { value: 'electricidad', label: 'Electricidad' },
-  { value: 'sanitarios', label: 'Sanitarios' },
-  { value: 'otros', label: 'Otros' },
-  { value: 'adicional', label: 'Adicionales' }
-]
 
 export function MaterialFilters({
   searchTerm,
@@ -31,7 +21,8 @@ export function MaterialFilters({
   categoryFilter = 'all',
   onCategoryFilterChange,
   lowStockOnly = false,
-  onLowStockOnlyChange
+  onLowStockOnlyChange,
+  categories = []
 }: MaterialFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-3">
@@ -46,13 +37,19 @@ export function MaterialFilters({
       </div>
       {onCategoryFilterChange && (
         <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-          <SelectTrigger className="w-full sm:w-[200px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {CATEGORIES.map((cat) => (
-              <SelectItem key={cat.value} value={cat.value}>
-                {cat.label}
+            <SelectItem value="all">Todas las categorías</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.slug}>
+                <span className="flex items-center gap-2">
+                  {cat.name}
+                  {cat.deleted_at && (
+                    <span className="text-[10px] text-muted-foreground">(inactiva)</span>
+                  )}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

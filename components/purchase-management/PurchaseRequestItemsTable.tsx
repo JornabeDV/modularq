@@ -40,7 +40,7 @@ interface PurchaseRequestItemsTableProps {
     code: string
     name: string
     description?: string
-    category: Material["category"]
+    category_id: string
     unit: Material["unit"]
     stock_quantity?: number
     min_stock?: number

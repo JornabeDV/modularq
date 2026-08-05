@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,17 +14,10 @@ import { PriceInput } from '@/components/ui/price-input'
 import { AlertTriangle } from 'lucide-react'
 import type { ProjectMaterial, CreateProjectMaterialData, UpdateProjectMaterialData } from '@/hooks/use-project-materials-prisma'
 
-const CATEGORIES = [
-  { value: 'all', label: 'Todas las categorías' },
-  { value: 'estructura', label: 'Estructura' },
-  { value: 'paneles', label: 'Paneles' },
-  { value: 'herrajes', label: 'Herrajes' },
-  { value: 'aislacion', label: 'Aislación' },
-  { value: 'electricidad', label: 'Electricidad' },
-  { value: 'sanitarios', label: 'Sanitarios' },
-  { value: 'otros', label: 'Otros' },
-  { value: 'adicional', label: 'Adicionales' }
-]
+interface MaterialCategoryOption {
+  value: string
+  label: string
+}
 
 interface ProjectMaterialFormProps {
   isOpen: boolean
@@ -46,6 +39,18 @@ const UNIT_LABELS: Record<string, string> = {
 
 export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, initialData, isLoading = false }: ProjectMaterialFormProps) {
   const { materials, loading: materialsLoading } = useMaterialsPrisma()
+
+  const categoryOptions: MaterialCategoryOption[] = useMemo(() => {
+    const map = new Map<string, { value: string; label: string }>()
+    map.set('all', { value: 'all', label: 'Todas las categorías' })
+    materials.forEach((m) => {
+      if (!map.has(m.categoryId)) {
+        map.set(m.categoryId, { value: m.category, label: m.categoryName || m.category })
+      }
+    })
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label))
+  }, [materials])
+
   const [formData, setFormData] = useState({
     material_id: '',
     quantity: 0,
@@ -165,7 +170,7 @@ export function ProjectMaterialForm({ isOpen, onClose, onSubmit, isEditing, init
                     <SelectValue placeholder="Todas las categorías" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         {cat.label}
                       </SelectItem>

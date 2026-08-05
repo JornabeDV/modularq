@@ -24,16 +24,6 @@ interface ProjectMaterialRowProps {
   isReadOnly?: boolean
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  estructura: 'Estructura',
-  paneles: 'Paneles',
-  herrajes: 'Herrajes',
-  aislacion: 'Aislación',
-  electricidad: 'Electricidad',
-  sanitarios: 'Sanitarios',
-  otros: 'Otros'
-}
-
 const UNIT_LABELS: Record<string, string> = {
   unidad: 'Unidad',
   metro: 'm',
@@ -66,7 +56,7 @@ export function ProjectMaterialRow({ projectMaterial, onEdit, onDelete, isReadOn
           </div>
         </TableCell>
         <TableCell>
-          <Badge variant="outline">{CATEGORY_LABELS[material.category] || material.category}</Badge>
+          <Badge variant="outline">{material.categoryName || material.category}</Badge>
         </TableCell>
         <TableCell>
           <div className="flex flex-col">
