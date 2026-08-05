@@ -320,7 +320,6 @@ export function MaterialForm({
     if (!name || name.trim().length < 2) return undefined;
 
     const normalizedInput = normalizeName(name);
-    const inputKeywords = extractKeywords(name);
 
     return existingMaterials.find((m) => {
       if (isEditing && m.id === initialData?.id) return false;
@@ -330,7 +329,9 @@ export function MaterialForm({
       // 1. Coincidencia exacta normalizada
       if (normalizedExisting === normalizedInput) return true;
 
-      // 2. Contención mutua con ratio muy alto (>0.9)
+      // 2. Contención mutua con ratio muy alto (>0.95).
+      //    Evita bloquear variantes que solo cambian en números/medidas
+      //    (p. ej. "Tornillo autorroscante 10" vs "Tornillo autorroscante 12").
       if (
         normalizedExisting.includes(normalizedInput) ||
         normalizedInput.includes(normalizedExisting)
@@ -338,24 +339,7 @@ export function MaterialForm({
         const ratio =
           Math.min(normalizedInput.length, normalizedExisting.length) /
           Math.max(normalizedInput.length, normalizedExisting.length);
-        if (ratio > 0.9) return true;
-      }
-
-      // 3. Mismas palabras clave, pero requiriendo más de una palabra en común
-      //    para no confundir variantes como "Silicona 200ml" vs "Silicona 400ml".
-      const existingKeywords = extractKeywords(m.name);
-      if (inputKeywords.length > 1 && existingKeywords.length > 1) {
-        const common = inputKeywords.filter((k1) =>
-          existingKeywords.some(
-            (k2) => k1 === k2 || k1.includes(k2) || k2.includes(k1),
-          ),
-        );
-        if (
-          common.length === inputKeywords.length ||
-          common.length === existingKeywords.length
-        ) {
-          return true;
-        }
+        if (ratio > 0.95) return true;
       }
 
       return false;
