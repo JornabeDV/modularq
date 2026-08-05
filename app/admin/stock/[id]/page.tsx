@@ -22,17 +22,6 @@ import { MainLayout } from "@/components/layout/main-layout";
 import { AdminOrSupervisorOnly } from "@/components/auth/route-guard";
 import type { Material } from "@/hooks/use-materials-prisma";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  estructura: "Estructura",
-  paneles: "Paneles",
-  herrajes: "Herrajes",
-  aislacion: "Aislación",
-  electricidad: "Electricidad",
-  sanitarios: "Sanitarios",
-  otros: "Otros",
-  adicional: "Adicional",
-};
-
 const UNIT_LABELS: Record<string, string> = {
   unidad: "Unidad",
   metro: "m",
@@ -43,12 +32,15 @@ const UNIT_LABELS: Record<string, string> = {
 };
 
 function formatMaterial(data: any): Material {
+  const category = data.category || {}
   return {
     id: data.id,
     code: data.code,
     name: data.name,
     description: data.description,
-    category: data.category,
+    category: category.slug || data.category_id,
+    categoryId: data.category_id,
+    categoryName: category.name,
     unit: data.unit,
     stockQuantity: data.stock_quantity ?? 0,
     minStock: data.min_stock ?? 0,
@@ -160,7 +152,7 @@ function PageContent() {
               <Badge variant="outline">{material.code}</Badge>
             </h1>
             <p className="text-muted-foreground mt-1">
-              {CATEGORY_LABELS[material.category] || material.category} ·{" "}
+              {material.categoryName || material.category} ·{" "}
               {isLowStock ? (
                 <span className="text-destructive font-medium">
                   Stock bajo: {material.stockQuantity} {UNIT_LABELS[material.unit] || material.unit}
@@ -203,7 +195,7 @@ function PageContent() {
                 <div>
                   <p className="text-muted-foreground">Categoría</p>
                   <p className="font-medium">
-                    {CATEGORY_LABELS[material.category] || material.category}
+                    {material.categoryName || material.category}
                   </p>
                 </div>
                 <div>

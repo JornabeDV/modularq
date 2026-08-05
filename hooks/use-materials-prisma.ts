@@ -9,7 +9,9 @@ export interface Material {
   code: string
   name: string
   description?: string
-  category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+  category: string
+  categoryId: string
+  categoryName?: string
   unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
   stockQuantity: number
   minStock: number
@@ -24,7 +26,7 @@ export interface CreateMaterialData {
   code: string
   name: string
   description?: string
-  category: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+  category_id: string
   unit: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
   stock_quantity?: number
   min_stock?: number
@@ -37,13 +39,34 @@ export interface UpdateMaterialData {
   code?: string
   name?: string
   description?: string
-  category?: 'estructura' | 'paneles' | 'herrajes' | 'aislacion' | 'electricidad' | 'sanitarios' | 'otros' | 'adicional'
+  category_id?: string
   unit?: 'unidad' | 'metro' | 'metro_cuadrado' | 'metro_cubico' | 'kilogramo' | 'litro'
   stock_quantity?: number
   min_stock?: number
   unit_price?: number
   supplier?: string
   brand?: string
+}
+
+function formatMaterial(material: any): Material {
+  const category = material.category || {}
+  return {
+    id: material.id,
+    code: material.code,
+    name: material.name,
+    description: material.description,
+    category: category.slug || material.category_id,
+    categoryId: material.category_id,
+    categoryName: category.name,
+    unit: material.unit,
+    stockQuantity: material.stock_quantity ?? 0,
+    minStock: material.min_stock ?? 0,
+    unitPrice: material.unit_price,
+    supplier: material.supplier,
+    brand: material.brand,
+    createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
+    updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
+  }
 }
 
 export function useMaterialsPrisma() {
@@ -61,21 +84,7 @@ export function useMaterialsPrisma() {
       const data = await PrismaTypedService.getAllMaterials()
       
       // Convertir datos al formato Material
-      const formattedMaterials: Material[] = data.map(material => ({
-        id: material.id,
-        code: material.code,
-        name: material.name,
-        description: material.description,
-        category: material.category,
-        unit: material.unit,
-        stockQuantity: material.stock_quantity ?? 0,
-        minStock: material.min_stock ?? 0,
-        unitPrice: material.unit_price,
-        supplier: material.supplier,
-        brand: material.brand,
-        createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
-        updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
-      }))
+      const formattedMaterials: Material[] = data.map(formatMaterial)
       
       setMaterials(formattedMaterials)
     } catch (err) {
@@ -97,21 +106,7 @@ export function useMaterialsPrisma() {
       })
 
       // Convertir el material al formato Material personalizado
-      const formattedMaterial: Material = {
-        id: material.id,
-        code: material.code,
-        name: material.name,
-        description: material.description,
-        category: material.category,
-        unit: material.unit,
-        stockQuantity: material.stock_quantity ?? 0,
-        minStock: material.min_stock ?? 0,
-        unitPrice: material.unit_price,
-        supplier: material.supplier,
-        brand: material.brand,
-        createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
-        updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
-      }
+      const formattedMaterial: Material = formatMaterial(material)
 
       // Agregar material al estado local inmediatamente sin recargar
       setMaterials(prev => [...prev, formattedMaterial])
@@ -183,21 +178,7 @@ export function useMaterialsPrisma() {
       const material = await PrismaTypedService.getMaterialById(materialId)
       if (!material) return null
 
-      return {
-        id: material.id,
-        code: material.code,
-        name: material.name,
-        description: material.description,
-        category: material.category,
-        unit: material.unit,
-        stockQuantity: material.stock_quantity ?? 0,
-        minStock: material.min_stock ?? 0,
-        unitPrice: material.unit_price,
-        supplier: material.supplier,
-        brand: material.brand,
-        createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
-        updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
-      }
+      return formatMaterial(material)
     } catch (err) {
       console.error('Error fetching material by id:', err)
       return null
@@ -210,19 +191,13 @@ export function useMaterialsPrisma() {
   }
 
   // Obtener el siguiente código disponible para una categoría
-  const getNextCode = async (category: string): Promise<string> => {
+  const getNextCode = async (categoryId: string): Promise<string> => {
     try {
-      return await PrismaTypedService.getNextMaterialCode(category)
+      return await PrismaTypedService.getNextMaterialCode(categoryId)
     } catch (err) {
       console.error('Error getting next code:', err)
       // Fallback: código genérico con timestamp
-      const prefix = category === 'estructura' ? 'EST' : 
-                     category === 'paneles' ? 'PAN' :
-                     category === 'herrajes' ? 'HER' :
-                     category === 'aislacion' ? 'AIS' :
-                     category === 'electricidad' ? 'ELE' :
-                     category === 'sanitarios' ? 'SAN' : 'OTR'
-      return `${prefix}-${Date.now().toString().slice(-3)}`
+      return `MAT-${Date.now().toString().slice(-3)}`
     }
   }
 

@@ -48,16 +48,6 @@ enum TaskType {
   standard
   custom
 }
-enum MaterialCategory {
-  estructura
-  paneles
-  herrajes
-  aislacion
-  electricidad
-  sanitarios
-  otros
-  adicional
-}
 enum UnitType {
   unidad
   metro
@@ -219,20 +209,35 @@ model Client {
   rental_contracts RentalContract[]
   @@map("clients")
 }
+model MaterialCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  code_prefix String     @default("")
+  order       Int        @default(0)
+  deleted_at  DateTime?
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  materials   Material[]
+
+  @@map("material_categories")
+}
+
 model Material {
-  id              String          @id @default(cuid())
-  code            String          @unique
+  id              String           @id @default(cuid())
+  code            String           @unique
   name            String
   description     String?
-  category        MaterialCategory
+  category_id     String
+  category        MaterialCategory @relation(fields: [category_id], references: [id])
   unit            UnitType
-  stock_quantity  Float           @default(0)
-  min_stock       Float           @default(0)
+  stock_quantity  Float            @default(0)
+  min_stock       Float            @default(0)
   unit_price      Float?
   supplier        String?
   brand           String?
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
   project_materials        ProjectMaterial[]
   standard_module_materials StandardModuleMaterial[]
   purchase_order_items     PurchaseOrderItem[]

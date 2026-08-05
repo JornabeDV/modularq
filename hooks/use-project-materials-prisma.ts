@@ -19,6 +19,7 @@ export interface ProjectMaterial {
     name: string
     description?: string
     category: string
+    categoryName?: string
     unit: string
     stock_quantity: number
     min_stock: number
@@ -39,6 +40,23 @@ export interface UpdateProjectMaterialData {
   quantity?: number
   unit_price?: number
   notes?: string
+}
+
+function formatMaterial(material: any) {
+  const category = material.category || {}
+  return {
+    id: material.id,
+    code: material.code,
+    name: material.name,
+    description: material.description,
+    category: category.slug || material.category_id,
+    categoryName: category.name,
+    unit: material.unit,
+    stock_quantity: material.stock_quantity ?? 0,
+    min_stock: material.min_stock ?? 0,
+    unit_price: material.unit_price,
+    supplier: material.supplier
+  }
 }
 
 export function useProjectMaterialsPrisma(projectId: string) {
@@ -65,18 +83,7 @@ export function useProjectMaterialsPrisma(projectId: string) {
         notes: pm.notes,
         assignedAt: typeof pm.assigned_at === 'string' ? pm.assigned_at : pm.assigned_at.toISOString(),
         assignedBy: pm.assigned_by,
-        material: pm.material ? {
-          id: pm.material.id,
-          code: pm.material.code,
-          name: pm.material.name,
-          description: pm.material.description,
-          category: pm.material.category,
-          unit: pm.material.unit,
-          stock_quantity: pm.material.stock_quantity ?? 0,
-          min_stock: pm.material.min_stock ?? 0,
-          unit_price: pm.material.unit_price,
-          supplier: pm.material.supplier
-        } : undefined
+        material: pm.material ? formatMaterial(pm.material) : undefined
       }))
       
       setProjectMaterials(formattedMaterials)
@@ -108,18 +115,7 @@ export function useProjectMaterialsPrisma(projectId: string) {
         notes: result.notes,
         assignedAt: typeof result.assigned_at === 'string' ? result.assigned_at : result.assigned_at.toISOString(),
         assignedBy: result.assigned_by,
-        material: result.material ? {
-          id: result.material.id,
-          code: result.material.code,
-          name: result.material.name,
-          description: result.material.description,
-          category: result.material.category,
-          unit: result.material.unit,
-          stock_quantity: result.material.stock_quantity ?? 0,
-          min_stock: result.material.min_stock ?? 0,
-          unit_price: result.material.unit_price,
-          supplier: result.material.supplier
-        } : undefined
+        material: result.material ? formatMaterial(result.material) : undefined
       }
 
       // Actualizar estado local

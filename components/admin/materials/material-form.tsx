@@ -23,6 +23,7 @@ import {
   type CreateMaterialData,
   type Material,
 } from "@/hooks/use-materials-prisma";
+import { type MaterialCategory } from "@/hooks/use-material-categories";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PriceInput } from "@/components/ui/price-input";
 import { DialogForm } from "@/components/ui/dialog-form";
@@ -31,15 +32,7 @@ interface MaterialFormData {
   code: string;
   name: string;
   description: string;
-  category:
-    | "estructura"
-    | "paneles"
-    | "herrajes"
-    | "aislacion"
-    | "electricidad"
-    | "sanitarios"
-    | "otros"
-    | "adicional";
+  category: string;
   unit:
     | "unidad"
     | "metro"
@@ -62,6 +55,7 @@ interface MaterialFormProps {
   initialData?: any | null;
   isLoading?: boolean;
   existingMaterials?: Material[];
+  categories?: MaterialCategory[];
 }
 
 type FormErrors = {
@@ -172,17 +166,6 @@ function levenshteinDistance(str1: string, str2: string): number {
   return matrix[str2.length][str1.length];
 }
 
-const CATEGORIES = [
-  { value: "estructura", label: "Estructura" },
-  { value: "paneles", label: "Paneles" },
-  { value: "herrajes", label: "Herrajes" },
-  { value: "aislacion", label: "Aislación" },
-  { value: "electricidad", label: "Electricidad" },
-  { value: "sanitarios", label: "Sanitarios" },
-  { value: "otros", label: "Otros" },
-  { value: "adicional", label: "Adicionales" },
-];
-
 const UNITS = [
   { value: "unidad", label: "Unidad" },
   { value: "metro", label: "Metro" },
@@ -200,10 +183,12 @@ export function MaterialForm({
   initialData,
   isLoading = false,
   existingMaterials = [],
+  categories = [],
 }: MaterialFormProps) {
   const { getNextCode } = useMaterialsPrisma();
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const isGeneratingCodeRef = useRef(false);
+  const hasSetDefaultCategory = useRef(false);
   const [unitPriceInput, setUnitPriceInput] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState<MaterialFormData>({
@@ -223,13 +208,13 @@ export function MaterialForm({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [nameInputFocused, setNameInputFocused] = useState(false);
 
-  const generateCodeForCategory = useCallback(async (category: string) => {
-    if (!category || isEditing || isGeneratingCodeRef.current) return;
+  const generateCodeForCategory = useCallback(async (categoryId: string) => {
+    if (!categoryId || isEditing || isGeneratingCodeRef.current) return;
 
     isGeneratingCodeRef.current = true;
     setIsGeneratingCode(true);
     try {
-      const nextCode = await getNextCode(category);
+      const nextCode = await getNextCode(categoryId);
       setFormData((prev) => ({ ...prev, code: nextCode }));
     } catch (error) {
       console.error("Error generating code:", error);
@@ -247,7 +232,7 @@ export function MaterialForm({
         code: initialData.code || "",
         name: initialData.name || "",
         description: initialData.description || "",
-        category: initialData.category || "otros",
+        category: initialData.categoryId || "",
         unit: initialData.unit || "unidad",
         stock_quantity: initialData.stockQuantity || 0,
         min_stock: initialData.minStock || 0,
@@ -261,7 +246,7 @@ export function MaterialForm({
         code: "",
         name: "",
         description: "",
-        category: "otros",
+        category: "",
         unit: "unidad",
         stock_quantity: 0,
         min_stock: 0,
@@ -274,10 +259,26 @@ export function MaterialForm({
     setErrors({});
   }, [isOpen, isEditing, initialData?.id]);
 
+  // Establecer categoría por defecto en creación cuando carguen las categorías
+  useEffect(() => {
+    if (!isOpen) {
+      hasSetDefaultCategory.current = false;
+      return;
+    }
+    if (isEditing || hasSetDefaultCategory.current || categories.length === 0) return;
+
+    const defaultCategory =
+      categories.find((c) => c.slug === "otros") || categories[0];
+    if (defaultCategory) {
+      hasSetDefaultCategory.current = true;
+      setFormData((prev) => ({ ...prev, category: defaultCategory.id }));
+    }
+  }, [isOpen, isEditing, categories]);
+
   // Generar código automáticamente al abrir el formulario (solo creación)
   useEffect(() => {
-    if (isOpen && !isEditing && !formData.code && !isGeneratingCodeRef.current) {
-      generateCodeForCategory(formData.category || "otros");
+    if (isOpen && !isEditing && !formData.code && formData.category && !isGeneratingCodeRef.current) {
+      generateCodeForCategory(formData.category);
     }
   }, [isOpen, isEditing, formData.code, formData.category, generateCodeForCategory]);
 
@@ -506,7 +507,7 @@ export function MaterialForm({
       ...prev,
       name: material.name,
       description: material.description || prev.description,
-      category: material.category,
+      category: material.categoryId,
       unit: material.unit,
       unit_price: material.unitPrice || 0,
       supplier: material.supplier || "",
@@ -535,7 +536,7 @@ export function MaterialForm({
       code: formData.code,
       name: formData.name,
       description: formData.description || undefined,
-      category: formData.category,
+      category_id: formData.category,
       unit: formData.unit,
       stock_quantity: formData.stock_quantity,
       min_stock: formData.min_stock,
@@ -581,11 +582,18 @@ export function MaterialForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label}
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
                   </SelectItem>
                 ))}
+                {isEditing &&
+                  initialData?.categoryId &&
+                  !categories.some((c) => c.id === initialData.categoryId) && (
+                    <SelectItem value={initialData.categoryId} disabled>
+                      {initialData.categoryName || initialData.category} (inactiva)
+                    </SelectItem>
+                  )}
               </SelectContent>
             </Select>
             {errors.category && (

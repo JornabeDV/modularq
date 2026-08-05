@@ -5,6 +5,7 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MaterialForm } from "@/components/admin/materials/material-form"
 import { type Material } from "@/hooks/use-materials-prisma"
+import { useMaterialCategories } from "@/hooks/use-material-categories"
 import { useToast } from "@/hooks/use-toast"
 
 interface CreateMaterialDialogProps {
@@ -13,7 +14,7 @@ interface CreateMaterialDialogProps {
     code: string
     name: string
     description?: string
-    category: Material["category"]
+    category_id: string
     unit: Material["unit"]
     stock_quantity?: number
     min_stock?: number
@@ -33,6 +34,7 @@ export function CreateMaterialDialog({
 }: CreateMaterialDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { categories, loading: categoriesLoading } = useMaterialCategories(true)
   const { toast } = useToast()
 
   const handleSubmit = async (data: Parameters<typeof createMaterial>[0]) => {
@@ -83,6 +85,7 @@ export function CreateMaterialDialog({
         isEditing={false}
         isLoading={isLoading}
         existingMaterials={materials}
+        categories={categoriesLoading ? [] : categories}
       />
     </>
   )
