@@ -43,7 +43,7 @@ export function MaterialStats({
       <Card className="p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs sm:text-sm text-muted-foreground">Valor Inventario</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Valor Inventario (ARS)</p>
             <p className="text-lg sm:text-xl font-bold">
               ${totalInventoryValue.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>

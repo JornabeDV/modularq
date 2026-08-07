@@ -11,6 +11,7 @@ export interface PurchaseRequestItem {
     name: string
     unit: string
     unit_price?: number
+    currency?: 'ARS' | 'USD'
   } | null
   description: string
   quantity: number
@@ -46,6 +47,7 @@ export interface PurchaseRequest {
   request_number: string
   status: 'draft' | 'pending' | 'quoted' | 'approved' | 'rejected' | 'cancelled'
   notes?: string
+  currency: 'ARS' | 'USD'
   items: PurchaseRequestItem[]
   supplier_quotes: SupplierQuoteSummary[]
   purchase_orders: PurchaseOrderSummary[]
@@ -57,6 +59,7 @@ export interface PurchaseRequest {
 export interface CreatePurchaseRequestData {
   status?: string
   notes?: string
+  currency?: 'ARS' | 'USD'
   created_by?: string
   items: Array<{
     material_id?: string
@@ -69,6 +72,7 @@ export interface CreatePurchaseRequestData {
 export interface UpdatePurchaseRequestData {
   status?: string
   notes?: string
+  currency?: 'ARS' | 'USD'
   items?: Array<{
     id?: string
     material_id?: string

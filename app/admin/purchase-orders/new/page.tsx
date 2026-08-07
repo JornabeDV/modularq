@@ -55,6 +55,7 @@ export default function NewPurchaseOrderPage() {
               iibb_lh_pct: 0,
               iibb_lh_amount: 0,
               total: 0,
+              currency: 'ARS',
               created_at: new Date().toISOString(),
             }}
             onSubmit={handleSubmit}

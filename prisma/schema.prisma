@@ -234,6 +234,10 @@ model Material {
   stock_quantity  Float            @default(0)
   min_stock       Float            @default(0)
   unit_price      Float?
+  currency        String           @default("ARS")
+  unit_price_ars  Float?
+  exchange_rate   Float?
+  exchange_rate_date DateTime?
   supplier        String?
   brand           String?
   created_at      DateTime         @default(now())
@@ -633,6 +637,7 @@ model PurchaseRequest {
   request_number  String                @unique
   status          PurchaseRequestStatus @default(draft)
   notes           String?
+  currency        String                @default("ARS")
   items           PurchaseRequestItem[]
   supplier_quotes SupplierQuote[]
   purchase_orders PurchaseOrder[]
@@ -693,6 +698,10 @@ model PurchaseOrder {
   iibb_lh_pct         Float               @default(0)
   iibb_lh_amount      Float               @default(0)
   total               Float               @default(0)
+  currency            String              @default("ARS")
+  total_ars           Float?
+  exchange_rate       Float?
+  exchange_rate_date  DateTime?
 
   payment_terms       String?
   delivery_terms      String?

@@ -45,6 +45,10 @@ function formatMaterial(data: any): Material {
     stockQuantity: data.stock_quantity ?? 0,
     minStock: data.min_stock ?? 0,
     unitPrice: data.unit_price,
+    currency: data.currency || 'ARS',
+    unitPriceARS: data.unit_price_ars,
+    exchangeRate: data.exchange_rate,
+    exchangeRateDate: data.exchange_rate_date,
     supplier: data.supplier,
     brand: data.brand,
     createdAt:

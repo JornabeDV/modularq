@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { PrismaTypedService } from '@/lib/prisma-typed-service'
+import { getExchangeRate, usdToArs } from '@/lib/exchange-rate'
+
+export type MaterialCurrency = 'ARS' | 'USD'
 
 export interface Material {
   id: string
@@ -16,6 +19,10 @@ export interface Material {
   stockQuantity: number
   minStock: number
   unitPrice?: number
+  currency: MaterialCurrency
+  unitPriceARS?: number | null
+  exchangeRate?: number | null
+  exchangeRateDate?: string | null
   supplier?: string
   brand?: string
   createdAt: string
@@ -31,6 +38,10 @@ export interface CreateMaterialData {
   stock_quantity?: number
   min_stock?: number
   unit_price?: number
+  currency?: MaterialCurrency
+  unit_price_ars?: number | null
+  exchange_rate?: number | null
+  exchange_rate_date?: string | null
   supplier?: string
   brand?: string
 }
@@ -44,6 +55,10 @@ export interface UpdateMaterialData {
   stock_quantity?: number
   min_stock?: number
   unit_price?: number
+  currency?: MaterialCurrency
+  unit_price_ars?: number | null
+  exchange_rate?: number | null
+  exchange_rate_date?: string | null
   supplier?: string
   brand?: string
 }
@@ -62,11 +77,36 @@ function formatMaterial(material: any): Material {
     stockQuantity: material.stock_quantity ?? 0,
     minStock: material.min_stock ?? 0,
     unitPrice: material.unit_price,
+    currency: material.currency || 'ARS',
+    unitPriceARS: material.unit_price_ars,
+    exchangeRate: material.exchange_rate,
+    exchangeRateDate: material.exchange_rate_date,
     supplier: material.supplier,
     brand: material.brand,
     createdAt: typeof material.created_at === 'string' ? material.created_at : material.created_at.toISOString(),
     updatedAt: typeof material.updated_at === 'string' ? material.updated_at : material.updated_at.toISOString()
   }
+}
+
+async function buildMaterialPayload(data: CreateMaterialData | UpdateMaterialData): Promise<any> {
+  const payload = { ...data }
+  const currency = data.currency || 'ARS'
+
+  if (currency === 'USD' && typeof data.unit_price === 'number' && data.unit_price > 0) {
+    const rate = await getExchangeRate()
+    const venta = rate?.venta ?? 0
+    if (venta > 0) {
+      payload.unit_price_ars = usdToArs(data.unit_price, venta)
+      payload.exchange_rate = venta
+      payload.exchange_rate_date = rate?.actualizado ?? new Date().toISOString()
+    }
+  } else if (currency === 'ARS' && typeof data.unit_price === 'number') {
+    payload.unit_price_ars = data.unit_price
+    payload.exchange_rate = null
+    payload.exchange_rate_date = null
+  }
+
+  return payload
 }
 
 export function useMaterialsPrisma() {
@@ -99,9 +139,11 @@ export function useMaterialsPrisma() {
   const createMaterial = async (materialData: CreateMaterialData): Promise<{ success: boolean; error?: string; material?: Material }> => {
     try {
       setError(null)
-      
+
+      const payload = await buildMaterialPayload(materialData)
+
       const material = await PrismaTypedService.createMaterial({
-        ...materialData,
+        ...payload,
         created_by: userProfile?.id
       })
 
@@ -127,9 +169,11 @@ export function useMaterialsPrisma() {
   const updateMaterial = async (materialId: string, materialData: UpdateMaterialData): Promise<{ success: boolean; error?: string; material?: Material }> => {
     try {
       setError(null)
-      
+
+      const payload = await buildMaterialPayload(materialData)
+
       await PrismaTypedService.updateMaterial(materialId, {
-        ...materialData,
+        ...payload,
         created_by: userProfile?.id
       })
 

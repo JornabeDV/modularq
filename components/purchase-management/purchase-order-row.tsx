@@ -22,6 +22,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { formatCurrencyPair } from "@/lib/exchange-rate"
 
 interface PurchaseOrderRowProps {
   order: any
@@ -29,14 +31,6 @@ interface PurchaseOrderRowProps {
   onEdit: (orderId: string) => void
   onDelete: (orderId: string) => void
   isReadOnly?: boolean
-}
-
-function formatARS(amount: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    minimumFractionDigits: 2,
-  }).format(amount)
 }
 
 export function PurchaseOrderRow({
@@ -69,9 +63,21 @@ export function PurchaseOrderRow({
           <PurchaseOrderStatusBadge status={order.status} />
         </TableCell>
         <TableCell className="text-right">
-          <span className="tabular-nums font-semibold">
-            {formatARS(order.total)}
-          </span>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px]">
+                {order.currency || 'ARS'}
+              </Badge>
+              <span className="tabular-nums font-semibold">
+                {formatCurrencyPair(order.total, order.currency || 'ARS', order.exchange_rate ?? null).primary}
+              </span>
+            </div>
+            {order.currency === 'USD' && order.total_ars && (
+              <span className="text-[10px] text-muted-foreground tabular-nums">
+                {formatCurrencyPair(order.total, 'USD', order.exchange_rate ?? null).secondary}
+              </span>
+            )}
+          </div>
         </TableCell>
         <TableCell className="text-muted-foreground text-sm">
           {new Date(order.created_at).toLocaleDateString("es-AR")}

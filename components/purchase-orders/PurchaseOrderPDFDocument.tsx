@@ -40,6 +40,9 @@ interface PDFPurchaseOrder {
   iibb_lh_pct: number
   iibb_lh_amount: number
   total: number
+  currency?: 'ARS' | 'USD'
+  total_ars?: number | null
+  exchange_rate?: number | null
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
@@ -258,10 +261,10 @@ const styles = StyleSheet.create({
   },
 })
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: number, currency: 'ARS' | 'USD' = 'ARS'): string {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
-    currency: "ARS",
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value)
@@ -296,6 +299,8 @@ interface PurchaseOrderPDFDocumentProps {
 }
 
 export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocumentProps) {
+  const currency = purchaseOrder.currency || 'ARS'
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -381,10 +386,10 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
                 </Text>
                 <Text style={[styles.tableCell, styles.colUnit]}>{item.unit}</Text>
                 <Text style={[styles.tableCell, styles.colUnitPrice]}>
-                  {formatCurrency(item.unit_price)}
+                  {formatCurrency(item.unit_price, currency)}
                 </Text>
                 <Text style={[styles.tableCell, styles.colTotal]}>
-                  {formatCurrency(item.total_price)}
+                  {formatCurrency(item.total_price, currency)}
                 </Text>
               </View>
             ))}
@@ -397,14 +402,14 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
             <Text style={styles.totalLabel}>
               Subtotal <Text style={styles.totalLabelSmall}>(SIN IMPUESTOS)</Text>
             </Text>
-            <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal, currency)}</Text>
           </View>
           {purchaseOrder.tax_pct > 0 && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>
                 IVA <Text style={styles.totalLabelSmall}>({purchaseOrder.tax_pct}%)</Text>
               </Text>
-              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount)}</Text>
+              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount, currency)}</Text>
             </View>
           )}
           {purchaseOrder.iibb_lh_pct > 0 && (
@@ -412,14 +417,12 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
               <Text style={styles.totalLabel}>
                 Percepción IIBB y LH <Text style={styles.totalLabelSmall}>({purchaseOrder.iibb_lh_pct}%)</Text>
               </Text>
-              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.iibb_lh_amount)}</Text>
+              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.iibb_lh_amount, currency)}</Text>
             </View>
           )}
           <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>
-              TOTAL <Text style={styles.grandTotalLabelSmall}>(SUBTOTAL + IMPUESTOS)</Text>
-            </Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.total)}</Text>
+            <Text style={styles.grandTotalLabel}>TOTAL</Text>
+            <Text style={styles.grandTotalValue}>{formatCurrency(purchaseOrder.total, currency)}</Text>
           </View>
         </View>
 

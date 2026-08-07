@@ -70,3 +70,40 @@ export function usdToArs(amountUSD: number, rate: number): number {
   if (!rate || rate <= 0) return 0
   return amountUSD * rate
 }
+
+export function formatUSDFromUsd(amountUSD: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amountUSD)
+}
+
+export interface CurrencyPair {
+  primary: string
+  secondary: string | null
+  rate: number
+}
+
+export function formatCurrencyPair(
+  amount: number,
+  currency: 'ARS' | 'USD',
+  exchangeRate: ExchangeRate | number | null
+): CurrencyPair {
+  const rate = typeof exchangeRate === 'number' ? exchangeRate : (exchangeRate?.venta ?? 0)
+
+  if (currency === 'USD') {
+    return {
+      primary: formatUSDFromUsd(amount),
+      secondary: rate > 0 ? formatARS(usdToArs(amount, rate)) : null,
+      rate
+    }
+  }
+
+  return {
+    primary: formatARS(amount),
+    secondary: rate > 0 ? formatUSD(amount, rate) : null,
+    rate
+  }
+}

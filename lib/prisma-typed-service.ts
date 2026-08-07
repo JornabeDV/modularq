@@ -1226,6 +1226,10 @@ export class PrismaTypedService {
     stock_quantity?: number
     min_stock?: number
     unit_price?: number
+    currency?: string
+    unit_price_ars?: number
+    exchange_rate?: number
+    exchange_rate_date?: string
     supplier?: string
     brand?: string
     created_by?: string
@@ -1292,6 +1296,10 @@ export class PrismaTypedService {
     stock_quantity?: number
     min_stock?: number
     unit_price?: number
+    currency?: string
+    unit_price_ars?: number
+    exchange_rate?: number
+    exchange_rate_date?: string
     supplier?: string
     brand?: string
     created_by?: string
@@ -1487,6 +1495,10 @@ export class PrismaTypedService {
           stock_quantity,
           min_stock,
           unit_price,
+          currency,
+          unit_price_ars,
+          exchange_rate,
+          exchange_rate_date,
           supplier,
           category:material_categories (
             id,
@@ -2862,6 +2874,10 @@ export class PrismaTypedService {
     iibb_lh_pct?: number
     iibb_lh_amount?: number
     total?: number
+    currency?: string
+    total_ars?: number
+    exchange_rate?: number
+    exchange_rate_date?: string
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
@@ -2892,6 +2908,10 @@ export class PrismaTypedService {
         iibb_lh_pct: orderData.iibb_lh_pct ?? 0,
         iibb_lh_amount: orderData.iibb_lh_amount ?? 0,
         total: orderData.total ?? 0,
+        currency: orderData.currency ?? 'ARS',
+        total_ars: orderData.total_ars ?? null,
+        exchange_rate: orderData.exchange_rate ?? null,
+        exchange_rate_date: orderData.exchange_rate_date ?? null,
         payment_terms: orderData.payment_terms ?? null,
         delivery_terms: orderData.delivery_terms ?? null,
         delivery_date: orderData.delivery_date ?? null,
@@ -2934,6 +2954,10 @@ export class PrismaTypedService {
       iibb_lh_pct?: number
       iibb_lh_amount?: number
       total?: number
+      currency?: string
+      total_ars?: number
+      exchange_rate?: number
+      exchange_rate_date?: string
       payment_terms?: string
       delivery_terms?: string
       delivery_date?: string
@@ -3139,6 +3163,7 @@ export class PrismaTypedService {
     request_number?: string
     status?: string
     notes?: string
+    currency?: string
     created_by?: string
     items: Array<{
       material_id?: string
@@ -3156,6 +3181,7 @@ export class PrismaTypedService {
         request_number: requestNumber,
         status: requestData.status ?? 'draft',
         notes: requestData.notes ?? null,
+        currency: requestData.currency ?? 'ARS',
         created_by: requestData.created_by ?? null,
       })
       .select('*')
@@ -3184,6 +3210,7 @@ export class PrismaTypedService {
     input: {
       status?: string
       notes?: string
+      currency?: string
       items?: Array<{
         id?: string
         material_id?: string

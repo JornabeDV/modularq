@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowUpDown } from "lucide-react";
 import {
   Card,
@@ -21,6 +21,7 @@ import { MaterialFilters } from "@/components/admin/materials/material-filters";
 import { MaterialRow } from "@/components/admin/materials/material-row";
 import type { Material } from "@/hooks/use-materials-prisma";
 import { type MaterialCategory } from "@/hooks/use-material-categories";
+import { getExchangeRate, type ExchangeRate } from "@/lib/exchange-rate";
 
 type SortField =
   | "code"
@@ -76,6 +77,12 @@ export function MaterialTable({
   onItemsPerPageChange,
   categories = [],
 }: MaterialTableProps) {
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
+
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {});
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -189,6 +196,7 @@ export function MaterialTable({
                     onDelete={onDeleteMaterial}
                     onStockAdjusted={onStockAdjusted}
                     isReadOnly={isReadOnly}
+                    exchangeRate={exchangeRate}
                   />
                 ))
               )}
