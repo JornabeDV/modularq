@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { usePurchaseOrders } from "@/hooks/use-purchase-orders"
 import { usePurchaseRequests } from "@/hooks/use-purchase-requests"
+import { getExchangeRate, formatCurrencyPair, type ExchangeRate } from "@/lib/exchange-rate"
 import { SupplierSelect } from "./SupplierSelect"
 import { CreateSupplierDialog } from "./CreateSupplierDialog"
 import { PurchaseOrderItemsTable, PurchaseOrderItemInput } from "./PurchaseOrderItemsTable"
@@ -54,6 +55,8 @@ interface PurchaseOrderFormProps {
         code: string
         name: string
         unit: string
+        unit_price?: number
+        currency?: 'ARS' | 'USD'
       } | null
     })[]
     subtotal: number
@@ -62,6 +65,9 @@ interface PurchaseOrderFormProps {
     iibb_lh_pct: number
     iibb_lh_amount: number
     total: number
+    currency?: 'ARS' | 'USD'
+    total_ars?: number | null
+    exchange_rate?: number | null
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
@@ -92,6 +98,9 @@ interface PurchaseOrderFormProps {
     iibb_lh_pct: number
     iibb_lh_amount: number
     total: number
+    currency?: 'ARS' | 'USD'
+    total_ars?: number | null
+    exchange_rate?: number | null
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
@@ -152,6 +161,19 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
     }
   }, [initialData?.tax_pct])
 
+  const [currency, setCurrency] = useState<'ARS' | 'USD'>(initialData?.currency || "ARS")
+  const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null)
+
+  useEffect(() => {
+    if (initialData?.currency) {
+      setCurrency(initialData.currency as 'ARS' | 'USD')
+    }
+  }, [initialData?.currency])
+
+  useEffect(() => {
+    getExchangeRate().then(setExchangeRate).catch(() => {})
+  }, [])
+
   const defaultIibbLhPct = 2
   const [iibbLhPct, setIibbLhPct] = useState(initialData?.iibb_lh_pct ?? 0)
   const [iibbLhInput, setIibbLhInput] = useState(String(initialData?.iibb_lh_pct ?? defaultIibbLhPct))
@@ -190,6 +212,10 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           total_price: item.quantity * unitPrice,
         }
       })
+      const firstCurrency = request.items.find((item) => item.material?.currency)?.material?.currency as 'ARS' | 'USD' | undefined
+      if (firstCurrency) {
+        setCurrency(firstCurrency)
+      }
       setItems(mappedItems)
       toast({
         title: "Ítems cargados",
@@ -301,6 +327,12 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
     return subtotal + taxAmount + iibbLhAmount
   }, [subtotal, taxAmount, iibbLhAmount])
 
+  const totalARS = useMemo(() => {
+    if (currency === 'ARS') return total
+    const rate = exchangeRate?.venta ?? 0
+    return rate > 0 ? total * rate : null
+  }, [total, currency, exchangeRate])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -330,6 +362,9 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       iibb_lh_pct: effectiveIibbLhPct,
       iibb_lh_amount: iibbLhAmount,
       total,
+      currency,
+      total_ars: totalARS,
+      exchange_rate: exchangeRate?.venta ?? null,
       payment_terms: paymentTerms || undefined,
       delivery_terms: deliveryTerms || undefined,
       delivery_date: deliveryDate || undefined,
@@ -374,6 +409,9 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
         iibb_lh_pct: effectiveIibbLhPct,
         iibb_lh_amount: iibbLhAmount,
         total,
+        currency,
+        total_ars: totalARS,
+        exchange_rate: exchangeRate?.venta ?? null,
         payment_terms: paymentTerms || initialData.payment_terms,
         delivery_terms: deliveryTerms || initialData.delivery_terms,
         delivery_date: deliveryDate || initialData.delivery_date,
@@ -473,9 +511,36 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           <CardTitle className="text-base">Ítems de la orden</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <PurchaseOrderItemsTable items={items} onChange={setItems} />
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 pt-4 border-t">
+          <PurchaseOrderItemsTable items={items} onChange={setItems} currency={currency} />
+          <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 pt-4 border-t">
             <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Moneda</span>
+                <div className="flex rounded-md border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCurrency('ARS')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors ${
+                      currency === 'ARS'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    ARS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrency('USD')}
+                    className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
+                      currency === 'USD'
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    USD
+                  </button>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">IVA</span>
                 <div className="flex rounded-md border overflow-hidden">
@@ -557,33 +622,64 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                   <span className="text-sm text-muted-foreground">%</span>
                 </div>
               </div>
+              
             </div>
             <div className="text-right space-y-1">
               <div className="flex justify-end gap-4 text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="tabular-nums font-medium">
-                  ${subtotal.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  {formatCurrencyPair(subtotal, currency, exchangeRate).primary}
                 </span>
               </div>
-              <div className="flex justify-end gap-4 text-sm">
-                <span className="text-muted-foreground">IVA ({taxPct}%)</span>
-                <span className="tabular-nums font-medium">
-                  ${taxAmount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              {effectiveIibbLhPct > 0 && (
-                <div className="flex justify-end gap-4 text-sm">
-                  <span className="text-muted-foreground">Percepción IIBB y LH ({effectiveIibbLhPct}%)</span>
-                  <span className="tabular-nums font-medium">
-                    ${iibbLhAmount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+              {currency === 'USD' && (
+                <div className="flex justify-end gap-4 text-[10px] sm:text-xs  text-muted-foreground">
+                  <span className="tabular-nums">
+                    {formatCurrencyPair(subtotal, currency, exchangeRate).secondary}
                   </span>
                 </div>
               )}
+              <div className="flex justify-end gap-4 text-sm">
+                <span className="text-muted-foreground">IVA ({taxPct}%)</span>
+                <span className="tabular-nums font-medium">
+                  {formatCurrencyPair(taxAmount, currency, exchangeRate).primary}
+                </span>
+              </div>
+              {currency === 'USD' && (
+                <div className="flex justify-end gap-4 text-[10px] sm:text-xs text-muted-foreground">
+                  <span className="tabular-nums">
+                    {formatCurrencyPair(taxAmount, currency, exchangeRate).secondary}
+                  </span>
+                </div>
+              )}
+              {effectiveIibbLhPct > 0 && (
+                <>
+                  <div className="flex justify-end gap-4 text-sm">
+                    <span className="text-muted-foreground">Percepción IIBB y LH ({effectiveIibbLhPct}%)</span>
+                    <span className="tabular-nums font-medium">
+                      {formatCurrencyPair(iibbLhAmount, currency, exchangeRate).primary}
+                    </span>
+                  </div>
+                  {currency === 'USD' && (
+                    <div className="flex justify-end gap-4 text-[10px] sm:text-xs text-muted-foreground">
+                      <span className="tabular-nums">
+                        {formatCurrencyPair(iibbLhAmount, currency, exchangeRate).secondary}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="flex justify-end gap-4 pt-2 border-t">
                 <span className="text-muted-foreground text-sm">Total</span>
-                <p className="tabular-nums text-xl font-bold">
-                  ${total.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                </p>
+                <div className="flex flex-col items-end">
+                  <p className="tabular-nums text-xl font-bold">
+                    {formatCurrencyPair(total, currency, exchangeRate).primary}
+                  </p>
+                  {currency === 'USD' && formatCurrencyPair(total, currency, exchangeRate).secondary && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground tabular-nums">
+                      {formatCurrencyPair(total, currency, exchangeRate).secondary}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

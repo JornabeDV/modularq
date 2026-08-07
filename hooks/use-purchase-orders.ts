@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { getExchangeRate, usdToArs } from '@/lib/exchange-rate'
 import type { Supplier } from './use-suppliers'
 
 export interface PurchaseOrderItem {
@@ -76,6 +77,10 @@ export interface PurchaseOrder {
   iibb_lh_pct: number
   iibb_lh_amount: number
   total: number
+  currency: 'ARS' | 'USD'
+  total_ars?: number | null
+  exchange_rate?: number | null
+  exchange_rate_date?: string | null
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
@@ -97,6 +102,10 @@ export interface CreatePurchaseOrderData {
   iibb_lh_pct?: number
   iibb_lh_amount?: number
   total?: number
+  currency?: 'ARS' | 'USD'
+  total_ars?: number | null
+  exchange_rate?: number | null
+  exchange_rate_date?: string | null
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
@@ -123,6 +132,10 @@ export interface UpdatePurchaseOrderData {
   iibb_lh_pct?: number
   iibb_lh_amount?: number
   total?: number
+  currency?: 'ARS' | 'USD'
+  total_ars?: number | null
+  exchange_rate?: number | null
+  exchange_rate_date?: string | null
   payment_terms?: string
   delivery_terms?: string
   delivery_date?: string
@@ -152,6 +165,27 @@ export interface CreateReceiptData {
     description: string
     quantity_received: number
   }>
+}
+
+async function buildPurchaseOrderPayload(data: CreatePurchaseOrderData | UpdatePurchaseOrderData): Promise<any> {
+  const payload = { ...data }
+  const currency = data.currency || 'ARS'
+
+  if (currency === 'USD' && typeof data.total === 'number' && data.total > 0) {
+    const rate = await getExchangeRate()
+    const venta = rate?.venta ?? 0
+    if (venta > 0) {
+      payload.total_ars = usdToArs(data.total, venta)
+      payload.exchange_rate = venta
+      payload.exchange_rate_date = rate?.actualizado ?? new Date().toISOString()
+    }
+  } else if (currency === 'ARS') {
+    payload.total_ars = data.total
+    payload.exchange_rate = null
+    payload.exchange_rate_date = null
+  }
+
+  return payload
 }
 
 export function usePurchaseOrders() {
@@ -190,10 +224,12 @@ export function usePurchaseOrders() {
   }
 
   const createPurchaseOrder = async (data: CreatePurchaseOrderData): Promise<PurchaseOrder> => {
+    const payload = await buildPurchaseOrderPayload(data)
+
     const response = await fetch('/api/purchase-orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     })
 
     if (!response.ok) {
@@ -207,10 +243,12 @@ export function usePurchaseOrders() {
   }
 
   const updatePurchaseOrder = async (id: string, data: UpdatePurchaseOrderData): Promise<PurchaseOrder> => {
+    const payload = await buildPurchaseOrderPayload(data)
+
     const response = await fetch(`/api/purchase-orders/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     })
 
     if (!response.ok) {

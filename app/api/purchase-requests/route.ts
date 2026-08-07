@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const purchaseRequest = await PrismaTypedService.createPurchaseRequest({
       status: body.status ?? 'draft',
       notes: body.notes,
+      currency: body.currency ?? 'ARS',
       created_by: body.created_by,
       items: body.items,
     })

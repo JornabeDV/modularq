@@ -41,6 +41,7 @@ export interface PurchaseOrderItemInput {
 interface PurchaseOrderItemsTableProps {
   items: PurchaseOrderItemInput[]
   onChange: (items: PurchaseOrderItemInput[]) => void
+  currency?: 'ARS' | 'USD'
 }
 
 const UNITS = [
@@ -52,7 +53,16 @@ const UNITS = [
   { value: "litro", label: "Litro" },
 ]
 
-export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsTableProps) {
+function formatMoney(amount: number, currency: 'ARS' | 'USD') {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+export function PurchaseOrderItemsTable({ items, onChange, currency = 'ARS' }: PurchaseOrderItemsTableProps) {
   const { materials, loading: materialsLoading } = useMaterialsPrisma()
   const [editingQuantities, setEditingQuantities] = useState<Record<number, string>>({})
   const [editingPrices, setEditingPrices] = useState<Record<number, string>>({})
@@ -86,7 +96,6 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
     const updated = [...items]
     updated[index] = { ...updated[index], [field]: value }
 
-    // Si cambió el material, autocompletar descripción y unidad
     if (field === "material_id" && value) {
       const material = materialsById[value as string]
       if (material) {
@@ -95,7 +104,6 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
       }
     }
 
-    // Recalcular total
     if (["quantity", "unit_price"].includes(field)) {
       updated[index].total_price = updated[index].quantity * updated[index].unit_price
     }
@@ -270,7 +278,7 @@ export function PurchaseOrderItemsTable({ items, onChange }: PurchaseOrderItemsT
                     />
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    ${item.total_price.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatMoney(item.total_price, currency)}
                   </TableCell>
                   <TableCell>
                     <Tooltip>

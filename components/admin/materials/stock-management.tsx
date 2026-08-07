@@ -103,6 +103,8 @@ export function StockManagement() {
         updateData.min_stock = materialData.min_stock;
       if (materialData.unit_price !== undefined)
         updateData.unit_price = materialData.unit_price;
+      if (materialData.currency !== undefined)
+        updateData.currency = materialData.currency;
       if (materialData.supplier !== undefined)
         updateData.supplier = materialData.supplier;
 
@@ -241,7 +243,9 @@ export function StockManagement() {
 
   const totalInventoryValue =
     materials?.reduce((sum, m) => {
-      return sum + m.stockQuantity * (m.unitPrice || 0);
+      const priceInArs =
+        (m.currency === 'USD' ? m.unitPriceARS : m.unitPrice) || 0;
+      return sum + m.stockQuantity * priceInArs;
     }, 0) || 0;
 
   const totalCategories = materialCategories?.length || 0;

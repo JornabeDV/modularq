@@ -45,6 +45,9 @@ export default function EditPurchaseOrderPage() {
     iibb_lh_pct: number
     iibb_lh_amount: number
     total: number
+    currency?: 'ARS' | 'USD'
+    total_ars?: number | null
+    exchange_rate?: number | null
     payment_terms?: string
     delivery_terms?: string
     delivery_date?: string
@@ -135,6 +138,9 @@ export default function EditPurchaseOrderPage() {
               iibb_lh_pct: order.iibb_lh_pct,
               iibb_lh_amount: order.iibb_lh_amount,
               total: order.total,
+              currency: order.currency || 'ARS',
+              total_ars: order.total_ars,
+              exchange_rate: order.exchange_rate,
               payment_terms: order.payment_terms || undefined,
               delivery_terms: order.delivery_terms || undefined,
               delivery_date: order.delivery_date || undefined,

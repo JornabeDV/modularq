@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Trash2, Plus } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { type Material } from "@/hooks/use-materials-prisma"
 import { MaterialSelector } from "@/components/ui/material-selector"
 import { CreateMaterialDialog } from "./CreateMaterialDialog"
@@ -45,6 +46,7 @@ interface PurchaseRequestItemsTableProps {
     stock_quantity?: number
     min_stock?: number
     unit_price?: number
+    currency?: Material["currency"]
     supplier?: string
     brand?: string
   }) => Promise<{ success: boolean; error?: string; material?: Material }>
@@ -167,6 +169,20 @@ export function PurchaseRequestItemsTable({
                           loading={materialsLoading}
                           onSelect={(materialId) => handleUpdateItem(index, "material_id", materialId)}
                         />
+                        {item.material_id && materialsById[item.material_id] && (
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <Badge variant="outline" className="text-[10px]">
+                              {materialsById[item.material_id].currency || 'ARS'}
+                            </Badge>
+                            {materialsById[item.material_id].unitPrice ? (
+                              <span className="text-[10px] text-muted-foreground tabular-nums">
+                                {materialsById[item.material_id].currency === 'USD'
+                                  ? `USD ${materialsById[item.material_id].unitPrice?.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+                                  : `ARS ${materialsById[item.material_id].unitPrice?.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
                       <CreateMaterialDialog
                         materials={materials}

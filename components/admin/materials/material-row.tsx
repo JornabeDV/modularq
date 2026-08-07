@@ -15,7 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MaterialStockAdjustDialog } from "./material-stock-adjust-dialog";
 import {
@@ -23,6 +22,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getExchangeRate, formatCurrencyPair, type ExchangeRate } from "@/lib/exchange-rate";
+import { useEffect, useState } from "react";
 
 interface MaterialRowProps {
   material: Material;
@@ -30,9 +31,8 @@ interface MaterialRowProps {
   onDelete: (materialId: string) => void;
   isReadOnly?: boolean;
   onStockAdjusted?: () => void;
+  exchangeRate?: ExchangeRate | null;
 }
-
-
 
 const UNIT_LABELS: Record<string, string> = {
   unidad: "Unidad",
@@ -49,6 +49,7 @@ export function MaterialRow({
   onDelete,
   isReadOnly = false,
   onStockAdjusted,
+  exchangeRate,
 }: MaterialRowProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -90,13 +91,25 @@ export function MaterialRow({
         </TableCell>
         <TableCell>
           {material.unitPrice ? (
-            <span>
-              $
-              {material.unitPrice.toLocaleString("es-AR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
+            <div className="flex flex-col">
+              {(() => {
+                const pair = formatCurrencyPair(
+                  material.unitPrice,
+                  material.currency || 'ARS',
+                  exchangeRate ?? material.exchangeRate ?? null
+                );
+                return (
+                  <>
+                    <span className="font-medium tabular-nums">{pair.primary}</span>
+                    {pair.secondary && (
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {pair.secondary}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           ) : (
             <span className="text-muted-foreground">-</span>
           )}

@@ -31,6 +31,7 @@ export async function PUT(
     const purchaseRequest = await PrismaTypedService.updatePurchaseRequest(id, {
       status: body.status,
       notes: body.notes,
+      currency: body.currency ?? 'ARS',
       items: body.items,
     })
 

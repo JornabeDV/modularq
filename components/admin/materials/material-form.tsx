@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +24,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PriceInput } from "@/components/ui/price-input";
 import { DialogForm } from "@/components/ui/dialog-form";
 
+type MaterialCurrency = "ARS" | "USD";
+
 interface MaterialFormData {
   code: string;
   name: string;
@@ -43,6 +41,7 @@ interface MaterialFormData {
   stock_quantity: number;
   min_stock: number;
   unit_price: number;
+  currency: MaterialCurrency;
   supplier: string;
   brand: string;
 }
@@ -66,6 +65,7 @@ type FormErrors = {
   stock_quantity?: string;
   min_stock?: string;
   unit_price?: string;
+  currency?: string;
 };
 
 const VALIDATABLE_FIELDS: (keyof FormErrors)[] = [
@@ -76,6 +76,7 @@ const VALIDATABLE_FIELDS: (keyof FormErrors)[] = [
   "stock_quantity",
   "min_stock",
   "unit_price",
+  "currency",
 ];
 
 // Función para normalizar nombres (quitar acentos, espacios extras, artículos)
@@ -200,6 +201,7 @@ export function MaterialForm({
     stock_quantity: 0,
     min_stock: 0,
     unit_price: 0,
+    currency: "ARS",
     supplier: "",
     brand: "",
   });
@@ -208,21 +210,24 @@ export function MaterialForm({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [nameInputFocused, setNameInputFocused] = useState(false);
 
-  const generateCodeForCategory = useCallback(async (categoryId: string) => {
-    if (!categoryId || isEditing || isGeneratingCodeRef.current) return;
+  const generateCodeForCategory = useCallback(
+    async (categoryId: string) => {
+      if (!categoryId || isEditing || isGeneratingCodeRef.current) return;
 
-    isGeneratingCodeRef.current = true;
-    setIsGeneratingCode(true);
-    try {
-      const nextCode = await getNextCode(categoryId);
-      setFormData((prev) => ({ ...prev, code: nextCode }));
-    } catch (error) {
-      console.error("Error generating code:", error);
-    } finally {
-      setIsGeneratingCode(false);
-      isGeneratingCodeRef.current = false;
-    }
-  }, [getNextCode, isEditing]);
+      isGeneratingCodeRef.current = true;
+      setIsGeneratingCode(true);
+      try {
+        const nextCode = await getNextCode(categoryId);
+        setFormData((prev) => ({ ...prev, code: nextCode }));
+      } catch (error) {
+        console.error("Error generating code:", error);
+      } finally {
+        setIsGeneratingCode(false);
+        isGeneratingCodeRef.current = false;
+      }
+    },
+    [getNextCode, isEditing],
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -237,10 +242,13 @@ export function MaterialForm({
         stock_quantity: initialData.stockQuantity || 0,
         min_stock: initialData.minStock || 0,
         unit_price: initialData.unitPrice || 0,
+        currency: initialData.currency || "ARS",
         supplier: initialData.supplier || "",
         brand: initialData.brand || "",
       });
-      setUnitPriceInput(initialData.unitPrice?.toString().replace(".", ",") || "");
+      setUnitPriceInput(
+        initialData.unitPrice?.toString().replace(".", ",") || "",
+      );
     } else {
       setFormData({
         code: "",
@@ -251,6 +259,7 @@ export function MaterialForm({
         stock_quantity: 0,
         min_stock: 0,
         unit_price: 0,
+        currency: "ARS",
         supplier: "",
         brand: "",
       });
@@ -265,7 +274,8 @@ export function MaterialForm({
       hasSetDefaultCategory.current = false;
       return;
     }
-    if (isEditing || hasSetDefaultCategory.current || categories.length === 0) return;
+    if (isEditing || hasSetDefaultCategory.current || categories.length === 0)
+      return;
 
     const defaultCategory =
       categories.find((c) => c.slug === "otros") || categories[0];
@@ -277,10 +287,22 @@ export function MaterialForm({
 
   // Generar código automáticamente al abrir el formulario (solo creación)
   useEffect(() => {
-    if (isOpen && !isEditing && !formData.code && formData.category && !isGeneratingCodeRef.current) {
+    if (
+      isOpen &&
+      !isEditing &&
+      !formData.code &&
+      formData.category &&
+      !isGeneratingCodeRef.current
+    ) {
       generateCodeForCategory(formData.category);
     }
-  }, [isOpen, isEditing, formData.code, formData.category, generateCodeForCategory]);
+  }, [
+    isOpen,
+    isEditing,
+    formData.code,
+    formData.category,
+    generateCodeForCategory,
+  ]);
 
   // Validar código cuando cambia (generación automática o edición manual)
   useEffect(() => {
@@ -437,6 +459,11 @@ export function MaterialForm({
           return "El precio unitario no puede ser negativo.";
         }
         return undefined;
+      case "currency":
+        if (!value || !["ARS", "USD"].includes(value)) {
+          return "La moneda es obligatoria.";
+        }
+        return undefined;
       default:
         return undefined;
     }
@@ -510,6 +537,7 @@ export function MaterialForm({
       category: material.categoryId,
       unit: material.unit,
       unit_price: material.unitPrice || 0,
+      currency: material.currency || "ARS",
       supplier: material.supplier || "",
       brand: material.brand || "",
     }));
@@ -541,6 +569,7 @@ export function MaterialForm({
       stock_quantity: formData.stock_quantity,
       min_stock: formData.min_stock,
       unit_price: formData.unit_price > 0 ? formData.unit_price : undefined,
+      currency: formData.currency,
       supplier: formData.supplier || undefined,
       brand: formData.brand || undefined,
     };
@@ -558,7 +587,10 @@ export function MaterialForm({
         }
       }}
     >
-      <DialogForm onSubmit={handleSubmit} className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] sm:h-[90dvh] overflow-y-auto md:max-w-4xl md:rounded-lg">
+      <DialogForm
+        onSubmit={handleSubmit}
+        className="max-sm:w-[100dvw] rounded-none max-w-3xl max-sm:h-[100dvh] sm:h-[90dvh] overflow-y-auto md:max-w-4xl md:rounded-lg"
+      >
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Material" : "Crear Nuevo Material"}
@@ -577,7 +609,9 @@ export function MaterialForm({
               <SelectTrigger
                 className={`w-full ${errors.category ? "border-destructive focus:ring-destructive" : ""}`}
                 aria-invalid={Boolean(errors.category)}
-                aria-describedby={errors.category ? "material-category-error" : undefined}
+                aria-describedby={
+                  errors.category ? "material-category-error" : undefined
+                }
               >
                 <SelectValue />
               </SelectTrigger>
@@ -591,13 +625,17 @@ export function MaterialForm({
                   initialData?.categoryId &&
                   !categories.some((c) => c.id === initialData.categoryId) && (
                     <SelectItem value={initialData.categoryId} disabled>
-                      {initialData.categoryName || initialData.category} (inactiva)
+                      {initialData.categoryName || initialData.category}{" "}
+                      (inactiva)
                     </SelectItem>
                   )}
               </SelectContent>
             </Select>
             {errors.category && (
-              <p id="material-category-error" className="text-xs sm:text-sm text-destructive mt-1">
+              <p
+                id="material-category-error"
+                className="text-xs sm:text-sm text-destructive mt-1"
+              >
                 {errors.category}
               </p>
             )}
@@ -608,7 +646,7 @@ export function MaterialForm({
             <Label htmlFor="code" className="mb-2">
               Código *
             </Label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items">
               <Input
                 id="code"
                 value={formData.code}
@@ -620,7 +658,9 @@ export function MaterialForm({
                 disabled={isEditing || isGeneratingCode}
                 className={`flex-1 ${errors.code ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 aria-invalid={Boolean(errors.code)}
-                aria-describedby={errors.code ? "material-code-error" : undefined}
+                aria-describedby={
+                  errors.code ? "material-code-error" : undefined
+                }
               />
               {!isEditing && (
                 <Button
@@ -639,7 +679,10 @@ export function MaterialForm({
               )}
             </div>
             {errors.code ? (
-              <p id="material-code-error" className="text-xs sm:text-sm text-destructive mt-1">
+              <p
+                id="material-code-error"
+                className="text-xs sm:text-sm text-destructive mt-1"
+              >
                 {errors.code}
               </p>
             ) : (
@@ -675,12 +718,19 @@ export function MaterialForm({
               required
               placeholder="Ej: Perfil de acero 50x50"
               autoComplete="off"
-              className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
+              className={
+                errors.name
+                  ? "border-destructive focus-visible:ring-destructive"
+                  : ""
+              }
               aria-invalid={Boolean(errors.name)}
               aria-describedby={errors.name ? "material-name-error" : undefined}
             />
             {errors.name && (
-              <p id="material-name-error" className="text-xs sm:text-sm text-destructive mt-1">
+              <p
+                id="material-name-error"
+                className="text-xs sm:text-sm text-destructive mt-1"
+              >
                 {errors.name}
               </p>
             )}
@@ -722,8 +772,8 @@ export function MaterialForm({
                 <AlertTriangle className="h-4 w-4 text-orange-600" />
                 <AlertDescription className="text-orange-800 dark:text-orange-200">
                   <strong>¡Atención!</strong> Ya existe un material con nombre
-                  similar: <strong>{similarMaterial.name}</strong>{" "}
-                  ({similarMaterial.code})
+                  similar: <strong>{similarMaterial.name}</strong> (
+                  {similarMaterial.code})
                   <br />
                   Revisá que no sea el mismo producto antes de guardar.
                 </AlertDescription>
@@ -757,7 +807,9 @@ export function MaterialForm({
               <SelectTrigger
                 className={`w-full ${errors.unit ? "border-destructive focus:ring-destructive" : ""}`}
                 aria-invalid={Boolean(errors.unit)}
-                aria-describedby={errors.unit ? "material-unit-error" : undefined}
+                aria-describedby={
+                  errors.unit ? "material-unit-error" : undefined
+                }
               >
                 <SelectValue />
               </SelectTrigger>
@@ -770,7 +822,10 @@ export function MaterialForm({
               </SelectContent>
             </Select>
             {errors.unit && (
-              <p id="material-unit-error" className="text-xs sm:text-sm text-destructive mt-1">
+              <p
+                id="material-unit-error"
+                className="text-xs sm:text-sm text-destructive mt-1"
+              >
                 {errors.unit}
               </p>
             )}
@@ -801,12 +856,21 @@ export function MaterialForm({
                   }
                 }}
                 placeholder="0"
-                className={errors.stock_quantity ? "border-destructive focus-visible:ring-destructive" : ""}
+                className={
+                  errors.stock_quantity
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }
                 aria-invalid={Boolean(errors.stock_quantity)}
-                aria-describedby={errors.stock_quantity ? "material-stock-error" : undefined}
+                aria-describedby={
+                  errors.stock_quantity ? "material-stock-error" : undefined
+                }
               />
               {errors.stock_quantity && (
-                <p id="material-stock-error" className="text-xs sm:text-sm text-destructive mt-1">
+                <p
+                  id="material-stock-error"
+                  className="text-xs sm:text-sm text-destructive mt-1"
+                >
                   {errors.stock_quantity}
                 </p>
               )}
@@ -833,12 +897,21 @@ export function MaterialForm({
                   }
                 }}
                 placeholder="0"
-                className={errors.min_stock ? "border-destructive focus-visible:ring-destructive" : ""}
+                className={
+                  errors.min_stock
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }
                 aria-invalid={Boolean(errors.min_stock)}
-                aria-describedby={errors.min_stock ? "material-min-stock-error" : undefined}
+                aria-describedby={
+                  errors.min_stock ? "material-min-stock-error" : undefined
+                }
               />
               {errors.min_stock ? (
-                <p id="material-min-stock-error" className="text-xs sm:text-sm text-destructive mt-1">
+                <p
+                  id="material-min-stock-error"
+                  className="text-xs sm:text-sm text-destructive mt-1"
+                >
                   {errors.min_stock}
                 </p>
               ) : (
@@ -847,62 +920,109 @@ export function MaterialForm({
                 </p>
               )}
             </div>
-            <div>
-              <Label htmlFor="unit_price" className="mb-2">
-                Precio Unitario
-              </Label>
-              <PriceInput
-                id="unit_price"
-                value={unitPriceInput}
-                onChange={(val) => {
-                  setUnitPriceInput(val);
-                  handleInputChange(
-                    "unit_price",
-                    val === "" ? 0 : parseFloat(val.replace(",", ".")) || 0,
-                  );
-                }}
-                onFocus={(e: any) => {
-                  if (e.target.value === "0") {
-                    e.target.select();
-                  }
-                }}
-                placeholder="0.00"
-                className={errors.unit_price ? "border-destructive focus-visible:ring-destructive" : ""}
-                aria-invalid={Boolean(errors.unit_price)}
-                aria-describedby={errors.unit_price ? "material-price-error" : undefined}
-              />
+            <div className="flex gap-2">
+              <div className="flex flex-col items-start gap-0.5">
+                <Label htmlFor="unit_price" className="mb-2">
+                  Precio Unitario
+                </Label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <PriceInput
+                      id="unit_price"
+                      value={unitPriceInput}
+                      onChange={(val) => {
+                        setUnitPriceInput(val);
+                        handleInputChange(
+                          "unit_price",
+                          val === ""
+                            ? 0
+                            : parseFloat(val.replace(",", ".")) || 0,
+                        );
+                      }}
+                      onFocus={(e: any) => {
+                        if (e.target.value === "0") {
+                          e.target.select();
+                        }
+                      }}
+                      placeholder="0.00"
+                      className={
+                        errors.unit_price
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }
+                      aria-invalid={Boolean(errors.unit_price)}
+                      aria-describedby={
+                        errors.unit_price ? "material-price-error" : undefined
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start">
+                <Label className="mb-2">
+                  Moneda
+                </Label>{" "}
+                <div className="flex rounded-md border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("currency", "ARS")}
+                    className={`px-3 py-2.5 text-xs font-medium transition-colors ${
+                      formData.currency === "ARS"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    ARS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("currency", "USD")}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors border-l ${
+                      formData.currency === "USD"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    USD
+                  </button>
+                </div>
+              </div>
+
               {errors.unit_price && (
-                <p id="material-price-error" className="text-xs sm:text-sm text-destructive mt-1">
+                <p
+                  id="material-price-error"
+                  className="text-xs sm:text-sm text-destructive mt-1"
+                >
                   {errors.unit_price}
                 </p>
               )}
             </div>
-          </div>
 
-          <div>
-            <Label htmlFor="supplier" className="mb-2">
-              Proveedor
-            </Label>
-            <Input
-              id="supplier"
-              value={formData.supplier}
-              onChange={(e) => handleInputChange("supplier", e.target.value)}
-              placeholder="Ej: Proveedor ABC S.A."
-            />
-          </div>
+            <div>
+              <Label htmlFor="supplier" className="mb-2">
+                Proveedor
+              </Label>
+              <Input
+                id="supplier"
+                value={formData.supplier}
+                onChange={(e) => handleInputChange("supplier", e.target.value)}
+                placeholder="Ej: Proveedor ABC S.A."
+              />
+            </div>
 
-          <div>
-            <Label htmlFor="brand" className="mb-2">
-              Marca
-            </Label>
-            <Input
-              id="brand"
-              value={formData.brand}
-              onChange={(e) => handleInputChange("brand", e.target.value)}
-              placeholder="Ej: 3M, IMSA, JELUZ"
-            />
+            <div>
+              <Label htmlFor="brand" className="mb-2">
+                Marca
+              </Label>
+              <Input
+                id="brand"
+                value={formData.brand}
+                onChange={(e) => handleInputChange("brand", e.target.value)}
+                placeholder="Ej: 3M, IMSA, JELUZ"
+              />
+            </div>
           </div>
-
           <div className="flex max-sm:flex-col max-sm:gap-2 justify-end space-x-2 pt-4">
             <Button
               type="button"
