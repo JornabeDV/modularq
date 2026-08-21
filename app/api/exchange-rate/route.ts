@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ...data,
-        origen: type === 'mayorista' ? 'Dólar Mayorista' : 'Dólar BNA',
+        origen: type === 'mayorista' ? 'Dólar Divisa' : 'Dólar BNA',
       },
       {
         headers: {

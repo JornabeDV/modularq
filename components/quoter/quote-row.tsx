@@ -162,7 +162,7 @@ export function QuoteRow({
           </Badge>
           {quote.currency === 'USD' && quote.dollar_type === 'mayorista' && (
             <Badge variant="secondary" className="text-xs">
-              Mayorista
+              Divisa
             </Badge>
           )}
         </div>

@@ -717,8 +717,8 @@ export function CotizadorPDFDocument({
             ...(currency === 'USD' && exchangeRate
               ? [{
                   type: 'free' as const,
-                  content: exchangeRate.origen === 'Dólar Mayorista'
-                    ? 'Precio de venta: Se cotiza en dólar mayorista del dia de la fecha de la facturación.'
+                  content: exchangeRate.origen === 'Dólar Divisa'
+                    ? 'Precio de venta: Se cotiza en dólar Divisa del dia de la fecha de la facturación.'
                     : defaultNote,
                 }]
               : []),
