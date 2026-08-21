@@ -18,6 +18,7 @@ export interface Quote {
   total: number
   total_ars?: number | null
   currency?: string
+  dollar_type?: string
   exchange_rate?: number
   exchange_rate_date?: string
   notes?: string

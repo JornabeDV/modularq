@@ -589,7 +589,7 @@ export function CotizadorPDFDocument({
               <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
             )}
             {currency === 'USD' && exchangeRate && exchangeRate.venta > 0 && (
-              <Text style={styles.quoteDate}>Dólar BNA Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
+              <Text style={styles.quoteDate}>{exchangeRate.origen} Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
             )}
           </View>
         </View>
@@ -711,11 +711,15 @@ export function CotizadorPDFDocument({
 
         {/* Notas */}
         {(() => {
+          const defaultNote =
+            'Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.'
           const displayNotes: NoteItem[] = [
             ...(currency === 'USD' && exchangeRate
               ? [{
                   type: 'free' as const,
-                  content: `Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.`,
+                  content: exchangeRate.origen === 'Dólar Mayorista'
+                    ? 'Precio de venta: Se cotiza en dólar mayorista del dia de la fecha de la facturación.'
+                    : defaultNote,
                 }]
               : []),
             ...(notesList ?? []),

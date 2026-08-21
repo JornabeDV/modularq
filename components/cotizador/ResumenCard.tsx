@@ -94,7 +94,7 @@ export function ResumenCard({
               variant="outline"
               className="text-xs px-2 py-1 border-none bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
             >
-              Dólar BNA: {formatExchangeRate(exchangeRate)}
+              {exchangeRate.origen}: {formatExchangeRate(exchangeRate)}
             </Badge>
           </div>
         )}

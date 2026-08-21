@@ -2181,6 +2181,7 @@ export class PrismaTypedService {
     tax_pct?: number
     total_ars?: number
     currency?: string
+    dollar_type?: string
     exchange_rate?: number
     exchange_rate_date?: string
     pdf_url?: string
@@ -2236,6 +2237,7 @@ export class PrismaTypedService {
         tax_pct: input.tax_pct ?? 21,
         total_ars: input.total_ars ?? null,
         currency: input.currency ?? 'USD',
+        dollar_type: input.dollar_type ?? 'common',
         exchange_rate: input.exchange_rate ?? null,
         exchange_rate_date: input.exchange_rate_date ?? null,
         pdf_url: input.pdf_url ?? null,
@@ -2344,6 +2346,7 @@ export class PrismaTypedService {
       tax_pct?: number
       total_ars?: number
       currency?: string
+      dollar_type?: string
       exchange_rate?: number
       exchange_rate_date?: string
       valid_until?: string
@@ -2398,6 +2401,7 @@ export class PrismaTypedService {
       total: input.total,
       tax_pct: input.tax_pct ?? 21,
       currency: input.currency ?? 'USD',
+      dollar_type: input.dollar_type ?? 'common',
       exchange_rate: input.exchange_rate ?? null,
       exchange_rate_date: input.exchange_rate_date ?? null,
       updated_at: new Date().toISOString(),
@@ -2490,7 +2494,7 @@ export class PrismaTypedService {
   static async getQuotes(userId: string, role: string, status?: string, quoteType?: string) {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, tax_pct, total_ars, currency, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, tax_pct, total_ars, currency, dollar_type, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
       .order('created_at', { ascending: false })
 
     // All authorized roles (admin, supervisor, vendedor) see all quotes

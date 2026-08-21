@@ -53,6 +53,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   const [finalTotal, setFinalTotal] = useState(0);
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
   const [quoteCurrency, setQuoteCurrency] = useState<'ARS' | 'USD'>('USD');
+  const [dollarType, setDollarType] = useState<'common' | 'mayorista'>('common');
   const [taxPct, setTaxPct] = useState(21);
 
   const getDefaultValidUntil = () => {
@@ -129,6 +130,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
 
         setQuoteType(quote.quote_type === 'rental' ? 'rental' : 'sale');
         setQuoteCurrency(quote.currency === 'ARS' ? 'ARS' : 'USD');
+        setDollarType(quote.dollar_type === 'mayorista' ? 'mayorista' : 'common');
         setTaxPct(quote.tax_pct ?? 21);
 
         const migrated = migrateNotesList(
@@ -158,7 +160,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           setValidUntilDate(getDefaultValidUntil());
         }
 
-        const loadRate = quote.exchange_rate ?? exchangeRate?.venta ?? 0;
+        const loadRate = quote.exchange_rate ?? 0;
         const isOldUSD = quote.total_ars == null && (quote.currency === 'USD' || !quote.currency) && loadRate > 0;
 
         const items: QuoteItemState[] = (quote.items ?? []).map((item: any) => ({
@@ -183,7 +185,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         if (quote.total_ars != null) {
           setFinalTotal(quote.total);
         } else {
-          const rate = quote.exchange_rate ?? exchangeRate?.venta ?? 0;
+          const rate = quote.exchange_rate ?? 0;
           if ((quote.currency === 'USD' || !quote.currency) && rate > 0) {
             setFinalTotal(quote.total / rate);
           } else {
@@ -206,7 +208,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         toast({ title: "Error al cargar cotización", variant: "destructive" });
       })
       .finally(() => setLoadingSource(false));
-  }, [searchParams, clients, toast, exchangeRate]);
+  }, [searchParams, clients, toast]);
 
   // ── Derived state ──────────────────────────────────────────────────────────
   const subtotal = useMemo(() => {
@@ -222,8 +224,8 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   }, [subtotal]);
 
   useEffect(() => {
-    getExchangeRate().then(setExchangeRate).catch(() => {});
-  }, []);
+    getExchangeRate(dollarType).then(setExchangeRate).catch(() => {});
+  }, [dollarType]);
 
   // ── Keyboard shortcut ──────────────────────────────────────────────────────
   const handleSaveDraftRef = useRef(handleSaveDraft);
@@ -459,6 +461,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         client_email: selectedClient.email,
         quote_type: quoteType,
         currency: quoteCurrency,
+        dollar_type: dollarType,
         notes_list: [
           ...freeNotes,
           ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
@@ -573,6 +576,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         client_email: selectedClient.email,
         quote_type: quoteType,
         currency: quoteCurrency,
+        dollar_type: dollarType,
         notes_list: [
           ...freeNotes,
           ...(groupHasCheckedItems(paymentNote) ? [paymentNote] : []),
@@ -694,6 +698,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     // Config
     quoteType, setQuoteType,
     quoteCurrency, setQuoteCurrency,
+    dollarType, setDollarType,
     taxPct, setTaxPct,
     selectedClient, setSelectedClient,
     createClientOpen, setCreateClientOpen,
