@@ -8,33 +8,38 @@ export interface ExchangeRate {
   actualizado: string
 }
 
-// Cache simple en memoria del navegador para no saturar la API
-let cachedRate: ExchangeRate | null = null
-let lastFetch: number = 0
-const CACHE_DURATION = 60 * 1000 // 1 minuto
+const CACHE_DURATION = 60 * 1000
+type DollarType = 'common' | 'mayorista'
 
-export async function getExchangeRate(): Promise<ExchangeRate | null> {
-  // Si tenemos cache válido, usarlo
-  if (cachedRate && Date.now() - lastFetch < CACHE_DURATION) {
-    return cachedRate
+interface CacheEntry {
+  rate: ExchangeRate | null
+  timestamp: number
+}
+const cache = new Map<string, CacheEntry>()
+
+function getCacheKey(type: DollarType): string {
+  return `exchange-rate-${type}`
+}
+
+export async function getExchangeRate(dollarType: DollarType = 'common'): Promise<ExchangeRate | null> {
+  const key = getCacheKey(dollarType)
+  const cached = cache.get(key)
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.rate
   }
 
   try {
-    // Usar API route local para evitar CORS
-    // cache: 'no-store' evita que el navegador use cache HTTP
-    const response = await fetch('/api/exchange-rate', { cache: 'no-store' })
+    const typeParam = dollarType === 'mayorista' ? 'mayorista' : 'bna'
+    const response = await fetch(`/api/exchange-rate?type=${typeParam}`, { cache: 'no-store' })
     if (!response.ok) throw new Error('Error fetching exchange rate')
 
     const data: ExchangeRate = await response.json()
-    // Guardar en cache de memoria
-    cachedRate = data
-    lastFetch = Date.now()
-
+    cache.set(key, { rate: data, timestamp: Date.now() })
     return data
   } catch (error) {
     console.error('Error obteniendo cotización:', error)
-    // Si hay error, devolver cache aunque esté viejo, o null
-    return cachedRate
+    if (cached) return cached.rate
+    return null
   }
 }
 
@@ -76,7 +81,6 @@ export function formatUSDFromUsd(amountUSD: number): string {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
   }).format(amountUSD)
 }
 

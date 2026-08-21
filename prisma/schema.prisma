@@ -396,6 +396,7 @@ model Quote {
   tax_pct        Float    @default(21)
   total_ars      Float?
   currency       String   @default("USD")
+  dollar_type    String?  @default("common") // 'common' | 'mayorista'
   exchange_rate  Float?
   exchange_rate_date DateTime?
   notes          String?

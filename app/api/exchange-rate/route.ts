@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const response = await fetch('https://monedapi.ar/api/usd/bna', {
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type') || 'bna'
+
+    const endpoint =
+      type === 'mayorista'
+        ? 'https://monedapi.ar/api/usd/mayorista'
+        : 'https://monedapi.ar/api/usd/bna'
+
+    const response = await fetch(endpoint, {
       cache: 'no-store',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
+        Pragma: 'no-cache',
       },
     })
 
@@ -17,14 +25,19 @@ export async function GET() {
 
     const data = await response.json()
 
-    // Headers anti-caché para que ni el navegador ni el edge cacheen esta respuesta
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+    return NextResponse.json(
+      {
+        ...data,
+        origen: type === 'mayorista' ? 'Dólar Mayorista' : 'Dólar BNA',
       },
-    })
+      {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    )
   } catch (error) {
     console.error('Error fetching exchange rate:', error)
     return NextResponse.json(

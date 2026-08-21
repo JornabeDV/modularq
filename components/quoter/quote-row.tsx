@@ -123,11 +123,13 @@ export function QuoteRow({
   if (isNewSemantic) {
     if (quote.currency === 'ARS') {
       primaryDisplay = formatARS(quote.total);
-      secondaryDisplay = todayRate > 0 ? formatUSD(quote.total, todayRate) : null;
+      const rate = quote.exchange_rate ?? todayRate ?? 0;
+      secondaryDisplay = rate > 0 ? formatUSD(quote.total, rate) : null;
     } else {
       // USD (default)
       primaryDisplay = formatUSD(quote.total, 1); // pasamos rate=1 porque ya está en USD
-      secondaryDisplay = todayRate > 0 ? formatARS(quote.total * todayRate) : null;
+      const rate = quote.exchange_rate ?? todayRate ?? 0;
+      secondaryDisplay = rate > 0 ? formatARS(quote.total * rate) : null;
     }
   } else {
     // Vieja semántica: total está en ARS
@@ -145,7 +147,7 @@ export function QuoteRow({
     <TableRow className="hover:bg-muted/50">
       <TableCell className="font-medium tabular-nums">{quote.number}</TableCell>
       <TableCell>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           <Badge
             variant={quote.quote_type === "rental" ? "secondary" : "outline"}
             className="text-xs"
@@ -158,6 +160,11 @@ export function QuoteRow({
           >
             {quote.currency === 'ARS' ? 'ARS' : 'USD'}
           </Badge>
+          {quote.currency === 'USD' && quote.dollar_type === 'mayorista' && (
+            <Badge variant="secondary" className="text-xs">
+              Mayorista
+            </Badge>
+          )}
         </div>
       </TableCell>
       <TableCell>

@@ -19,6 +19,13 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStandardModules } from "@/hooks/use-standard-modules";
 import { useClientsPrisma } from "@/hooks/use-clients-prisma";
 import { useAuth } from "@/lib/auth-context";
@@ -142,32 +149,49 @@ export default function CotizadorPage() {
                     </button>
                   </div>
                   <div className="flex items-center gap-2 ml-auto">
-                    <Label className="text-xs shrink-0 max-sm:hidden">Moneda</Label>
-                    <div className="flex rounded-md border overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => q.setQuoteCurrency('USD')}
-                        className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                          q.quoteCurrency === 'USD'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background text-muted-foreground hover:bg-muted'
-                        }`}
-                      >
-                        USD
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => q.setQuoteCurrency('ARS')}
-                        className={`px-3 py-1.5 text-xs font-medium transition-colors border-l ${
-                          q.quoteCurrency === 'ARS'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background text-muted-foreground hover:bg-muted'
-                        }`}
-                      >
-                        ARS
-                      </button>
-                    </div>
-                  </div>
+                     <Label className="text-xs shrink-0 max-sm:hidden">Moneda</Label>
+                     <div className="flex rounded-md border overflow-hidden">
+                       <button
+                         type="button"
+                         onClick={() => q.setQuoteCurrency('USD')}
+                         className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                           q.quoteCurrency === 'USD'
+                             ? 'bg-primary text-primary-foreground'
+                             : 'bg-background text-muted-foreground hover:bg-muted'
+                         }`}
+                       >
+                         USD
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => q.setQuoteCurrency('ARS')}
+                         className={`px-3 py-1.5 text-xs font-medium transition-colors border-l ${
+                           q.quoteCurrency === 'ARS'
+                             ? 'bg-primary text-primary-foreground'
+                             : 'bg-background text-muted-foreground hover:bg-muted'
+                         }`}
+                       >
+                         ARS
+                       </button>
+                     </div>
+                     {q.quoteCurrency === 'USD' && (
+                       <div className="flex items-center gap-2">
+                         <Label className="text-xs shrink-0 max-sm:hidden">Dólar</Label>
+                         <Select
+                           value={q.dollarType}
+                           onValueChange={(value) => q.setDollarType(value as 'common' | 'mayorista')}
+                         >
+                           <SelectTrigger className="h-9 text-xs w-auto">
+                             <SelectValue placeholder="Tipo" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="common">Común (BNA)</SelectItem>
+                             <SelectItem value="mayorista">Mayorista</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </div>
+                     )}
+                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -247,7 +271,7 @@ export default function CotizadorPage() {
                         <span className="text-xs sm:text-sm text-muted-foreground w-5">1.</span>
                         <input
                           type="text"
-                          value={`Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.`}
+                          value={`Precio de venta: Se cotiza en dólar ${q.dollarType === 'mayorista' ? 'mayorista' : 'oficial BNA vendedor'} del dia de la fecha de la facturación.`}
                           disabled
                           className="flex-1 text-xs border rounded px-2 py-1 bg-muted/50 text-muted-foreground"
                         />

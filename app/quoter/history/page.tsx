@@ -109,8 +109,8 @@ export default function QuoteHistorialPage() {
     if (q.total_ars != null) {
       // Nueva semántica
       if (q.currency === 'ARS') {
-        const rate = exchangeRate?.venta ?? 0;
-        return sum + (rate > 0 ? q.total / rate : 0);
+        const rate = q.exchange_rate ?? exchangeRate?.venta ?? 0;
+        return sum + (rate > 0 ? q.total_ars / rate : 0);
       }
       // USD: total ya está en USD
       return sum + q.total;
