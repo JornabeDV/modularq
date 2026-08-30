@@ -195,5 +195,4 @@ export async function deletePdfFromSupabase(
  */
 export async function setupStorageBuckets(): Promise<void> {
   // El bucket project-files ya está configurado en Supabase
-  console.log("Buckets configurados");
 }

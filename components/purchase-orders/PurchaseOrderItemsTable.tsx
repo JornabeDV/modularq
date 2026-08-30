@@ -36,6 +36,7 @@ export interface PurchaseOrderItemInput {
   unit: string
   unit_price: number
   total_price: number
+  tax_pct?: number
 }
 
 interface PurchaseOrderItemsTableProps {
@@ -84,6 +85,7 @@ export function PurchaseOrderItemsTable({ items, onChange, currency = 'ARS' }: P
         unit: "unidad",
         unit_price: 0,
         total_price: 0,
+        tax_pct: 21,
       },
     ])
   }
@@ -168,6 +170,7 @@ export function PurchaseOrderItemsTable({ items, onChange, currency = 'ARS' }: P
         unit: "unidad",
         unit_price: 0,
         total_price: 0,
+        tax_pct: 21,
       })
       setEditingPrices((prev) => {
         const next = { ...prev }
@@ -202,13 +205,14 @@ export function PurchaseOrderItemsTable({ items, onChange, currency = 'ARS' }: P
               <TableHead className="w-[80px] sm:w-[110px]">Unidad</TableHead>
               <TableHead className="w-[100px] sm:w-[120px]">Precio Unit.</TableHead>
               <TableHead className="w-[100px] sm:w-[120px] text-right">Total</TableHead>
+              <TableHead className="w-[80px] sm:w-[100px]">IVA</TableHead>
               <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No hay ítems. Agregue al menos uno.
                 </TableCell>
               </TableRow>
@@ -279,6 +283,21 @@ export function PurchaseOrderItemsTable({ items, onChange, currency = 'ARS' }: P
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatMoney(item.total_price, currency)}
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={String(item.tax_pct ?? 21)}
+                      onValueChange={(value) => handleUpdateItem(index, "tax_pct", parseFloat(value))}
+                    >
+                      <SelectTrigger className="w-full sm:w-[90px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="21">21%</SelectItem>
+                        <SelectItem value="10.5">10.5%</SelectItem>
+                        <SelectItem value="0">0%</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
                     <Tooltip>

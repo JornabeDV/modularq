@@ -19,6 +19,7 @@ export interface PurchaseOrderItem {
   unit: string
   unit_price: number
   total_price: number
+  tax_pct?: number
 }
 
 export interface PurchaseOrderAttachment {
@@ -119,6 +120,7 @@ export interface CreatePurchaseOrderData {
     unit: string
     unit_price: number
     total_price: number
+    tax_pct?: number
   }>
 }
 
@@ -149,6 +151,7 @@ export interface UpdatePurchaseOrderData {
     unit: string
     unit_price: number
     total_price: number
+    tax_pct?: number
   }>
 }
 

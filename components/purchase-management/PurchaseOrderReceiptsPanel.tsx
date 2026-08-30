@@ -124,9 +124,6 @@ export function PurchaseOrderReceiptsPanel({ orderId, onOrderChange }: PurchaseO
     return acc
   }, {} as Record<string, number>)
 
-  console.log('[PurchaseOrderReceiptsPanel] localReceipts:', JSON.stringify(localReceipts, null, 2))
-  console.log('[PurchaseOrderReceiptsPanel] receivedByItem:', receivedByItem)
-
   const handleQuantityChange = (itemId: string, value: string) => {
     setQuantities((prev) => ({ ...prev, [itemId]: value }))
   }
