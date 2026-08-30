@@ -2263,8 +2263,6 @@ export class PrismaTypedService {
         sort_order: item.sort_order,
         module_description: item.module_description ?? null,
       }
-      console.log('[createQuote] item payload:', JSON.stringify(itemPayload))
-
       const { data: qItem, error: itemErr } = await supabase
         .from('quote_items')
         .insert(itemPayload)
@@ -2285,7 +2283,6 @@ export class PrismaTypedService {
           quantity: a.quantity,
           subtotal: a.subtotal,
         }))
-        console.log('[createQuote] additionals payload:', JSON.stringify(addPayload))
 
         const { error: addErr } = await supabase
           .from('quote_item_additionals')
@@ -2895,6 +2892,7 @@ export class PrismaTypedService {
       unit: string
       unit_price: number
       total_price: number
+      tax_pct?: number
     }>
   }) {
     const { items, ...orderData } = input
@@ -2938,6 +2936,7 @@ export class PrismaTypedService {
           unit: item.unit,
           unit_price: item.unit_price,
           total_price: item.total_price,
+          tax_pct: item.tax_pct ?? 21,
         }))
       )
       if (itemsError) throw itemsError
@@ -2975,6 +2974,7 @@ export class PrismaTypedService {
         unit: string
         unit_price: number
         total_price: number
+        tax_pct?: number
       }>
     }
   ) {
@@ -3019,6 +3019,7 @@ export class PrismaTypedService {
             unit: item.unit,
             unit_price: item.unit_price,
             total_price: item.total_price,
+            tax_pct: item.tax_pct ?? 21,
           })
           .eq('id', item.id)
 
@@ -3037,6 +3038,7 @@ export class PrismaTypedService {
             unit: item.unit,
             unit_price: item.unit_price,
             total_price: item.total_price,
+            tax_pct: item.tax_pct ?? 21,
           }))
         )
         if (itemsError) throw itemsError
@@ -3401,8 +3403,6 @@ export class PrismaTypedService {
   }) {
     const { items, ...receiptData } = input
 
-    console.log('[createPurchaseOrderReceipt] input:', JSON.stringify(input, null, 2))
-
     const { data: purchaseOrder, error: purchaseOrderError } = await supabase
       .from('purchase_orders')
       .select('order_number')
@@ -3424,8 +3424,6 @@ export class PrismaTypedService {
       .select('*')
       .single()
 
-    console.log('[createPurchaseOrderReceipt] receipt insert result:', { receipt, receiptError })
-
     if (receiptError) throw receiptError
     if (!receipt) throw new Error('No se pudo crear la recepción')
 
@@ -3437,8 +3435,6 @@ export class PrismaTypedService {
         .eq('purchase_order_id', receiptData.purchase_order_id)
 
       if (orderItemsError) throw orderItemsError
-
-      console.log('[createPurchaseOrderReceipt] currentOrderItems:', JSON.stringify(currentOrderItems, null, 2))
 
       const receiptItemsPayload = items.map((item) => {
         // Intentar encontrar el ítem actual por material_id + description
@@ -3459,14 +3455,10 @@ export class PrismaTypedService {
         }
       })
 
-      console.log('[createPurchaseOrderReceipt] receiptItemsPayload:', JSON.stringify(receiptItemsPayload, null, 2))
-
       const { data: insertedItems, error: itemsError } = await supabase
         .from('purchase_order_receipt_items')
         .insert(receiptItemsPayload)
         .select()
-
-      console.log('[createPurchaseOrderReceipt] receipt items insert result:', { insertedItems, itemsError })
 
       if (itemsError) {
         // Si falla la inserción de ítems, borrar la recepción huérfana
@@ -3513,7 +3505,6 @@ export class PrismaTypedService {
     await this.recalculatePurchaseOrderStatus(receiptData.purchase_order_id)
 
     const finalReceipt = await this.getPurchaseOrderReceiptById(receipt.id)
-    console.log('[createPurchaseOrderReceipt] final receipt:', JSON.stringify(finalReceipt, null, 2))
 
     return finalReceipt
   }
@@ -3638,8 +3629,6 @@ export class PrismaTypedService {
     const round4 = (n: number) => Math.round(n * 10000) / 10000
     const orderedRounded = round4(totalOrdered)
     const receivedRounded = round4(totalReceived)
-
-    console.log('[recalculatePurchaseOrderStatus]', { purchaseOrderId, orderedRounded, receivedRounded })
 
     let newStatus: string | null = null
     if (receivedRounded <= 0) {

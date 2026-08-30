@@ -58,6 +58,7 @@ interface PurchaseOrderFormProps {
         unit_price?: number
         currency?: 'ARS' | 'USD'
       } | null
+      tax_pct?: number
     })[]
     subtotal: number
     tax_pct: number
@@ -121,7 +122,12 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const [supplierId, setSupplierId] = useState(initialData?.supplier_id || "")
   const [purchaseRequestId, setPurchaseRequestId] = useState(initialData?.purchase_request_id || "")
   const [status, setStatus] = useState(initialData?.status || "draft")
-  const [items, setItems] = useState<PurchaseOrderItemInput[]>(initialData?.items || [])
+  const [items, setItems] = useState<PurchaseOrderItemInput[]>(
+    (initialData?.items || []).map((item) => ({
+      ...item,
+      tax_pct: item.tax_pct ?? 21,
+    }))
+  )
   const [isLoadingRequestItems, setIsLoadingRequestItems] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null)
@@ -154,6 +160,11 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
   const [notes, setNotes] = useState(initialData?.notes || "")
 
   const [taxPct, setTaxPct] = useState(initialData?.tax_pct ?? 21)
+
+  const handleGeneralTaxPctChange = (newPct: number) => {
+    setTaxPct(newPct)
+    setItems(prev => prev.map(item => ({ ...item, tax_pct: newPct })))
+  }
 
   useEffect(() => {
     if (initialData?.tax_pct !== undefined) {
@@ -210,6 +221,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           unit: item.unit,
           unit_price: unitPrice,
           total_price: item.quantity * unitPrice,
+          tax_pct: 21,
         }
       })
       const firstCurrency = request.items.find((item) => item.material?.currency)?.material?.currency as 'ARS' | 'USD' | undefined
@@ -314,9 +326,22 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
     return items.reduce((sum, item) => sum + (item.total_price || 0), 0)
   }, [items])
 
+  const taxBreakdown = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const item of items) {
+      const pct = item.tax_pct ?? taxPct
+      map.set(pct, (map.get(pct) || 0) + (item.total_price || 0))
+    }
+    const entries = Array.from(map.entries())
+      .map(([pct, base]) => ({ pct, base, amount: base * (pct / 100) }))
+      .sort((a, b) => b.pct - a.pct)
+    const total = entries.reduce((sum, entry) => sum + entry.amount, 0)
+    return { entries, total }
+  }, [items, taxPct])
+
   const taxAmount = useMemo(() => {
-    return subtotal * (taxPct / 100)
-  }, [subtotal, taxPct])
+    return taxBreakdown.entries.reduce((sum, entry) => sum + entry.amount, 0)
+  }, [taxBreakdown])
 
   const effectiveIibbLhPct = includeIibbLh ? iibbLhPct : 0
   const iibbLhAmount = useMemo(() => {
@@ -370,7 +395,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
       delivery_date: deliveryDate || undefined,
       order_date: orderDate || undefined,
       notes: notes || undefined,
-      items,
+      items: items.map(item => ({ ...item, tax_pct: item.tax_pct ?? taxPct })),
     })
 
     // Refrescar datos si estamos editando para obtener los nuevos IDs de ítems
@@ -386,6 +411,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           unit: item.unit,
           unit_price: item.unit_price,
           total_price: item.total_price,
+          tax_pct: item.tax_pct ?? 21,
         }))
       )
     }
@@ -402,6 +428,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
           unit: item.unit,
           unit_price: item.unit_price,
           total_price: item.total_price,
+          tax_pct: item.tax_pct ?? 21,
         })),
         subtotal,
         tax_pct: taxPct,
@@ -546,7 +573,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                 <div className="flex rounded-md border overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => setTaxPct(0)}
+                    onClick={() => handleGeneralTaxPctChange(0)}
                     className={`px-2 py-1 text-xs font-medium transition-colors ${
                       taxPct === 0
                         ? "bg-primary text-primary-foreground"
@@ -557,7 +584,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTaxPct(10.5)}
+                    onClick={() => handleGeneralTaxPctChange(10.5)}
                     className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
                       taxPct === 10.5
                         ? "bg-primary text-primary-foreground"
@@ -568,7 +595,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTaxPct(21)}
+                    onClick={() => handleGeneralTaxPctChange(21)}
                     className={`px-2 py-1 text-xs font-medium transition-colors border-l ${
                       taxPct === 21
                         ? "bg-primary text-primary-foreground"
@@ -626,7 +653,7 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
             </div>
             <div className="text-right space-y-1">
               <div className="flex justify-end gap-4 text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">Subtotal (sin impuestos)</span>
                 <span className="tabular-nums font-medium">
                   {formatCurrencyPair(subtotal, currency, exchangeRate).primary}
                 </span>
@@ -638,16 +665,18 @@ export function PurchaseOrderForm({ mode, initialData, onSubmit, isSubmitting = 
                   </span>
                 </div>
               )}
-              <div className="flex justify-end gap-4 text-sm">
-                <span className="text-muted-foreground">IVA ({taxPct}%)</span>
-                <span className="tabular-nums font-medium">
-                  {formatCurrencyPair(taxAmount, currency, exchangeRate).primary}
-                </span>
-              </div>
-              {currency === 'USD' && (
+              {taxBreakdown.entries.map((entry) => (
+                <div key={entry.pct} className="flex justify-end gap-4 text-sm">
+                  <span className="text-muted-foreground">IVA ({entry.pct}%)</span>
+                  <span className="tabular-nums font-medium">
+                    {formatCurrencyPair(entry.amount, currency, exchangeRate).primary}
+                  </span>
+                </div>
+              ))}
+              {taxBreakdown.entries.length > 0 && currency === 'USD' && (
                 <div className="flex justify-end gap-4 text-[10px] sm:text-xs text-muted-foreground">
                   <span className="tabular-nums">
-                    {formatCurrencyPair(taxAmount, currency, exchangeRate).secondary}
+                    Total IVA: {formatCurrencyPair(taxAmount, currency, exchangeRate).secondary}
                   </span>
                 </div>
               )}

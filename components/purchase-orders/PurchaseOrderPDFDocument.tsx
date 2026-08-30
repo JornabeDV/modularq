@@ -27,6 +27,7 @@ interface PDFItem {
   unit: string
   unit_price: number
   total_price: number
+  tax_pct: number
 }
 
 interface PDFPurchaseOrder {
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 10,
     fontWeight: "bold",
-    width: 200,
+    width: 300,
     textAlign: "right",
     paddingRight: 15,
   },
@@ -301,6 +302,17 @@ interface PurchaseOrderPDFDocumentProps {
 export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocumentProps) {
   const currency = purchaseOrder.currency || 'ARS'
 
+  const taxBreakdown = (() => {
+    const map = new Map<number, number>()
+    for (const item of purchaseOrder.items) {
+      const pct = item.tax_pct ?? purchaseOrder.tax_pct ?? 21
+      map.set(pct, (map.get(pct) || 0) + (item.total_price || 0))
+    }
+    return Array.from(map.entries())
+      .map(([pct, base]) => ({ pct, base, amount: base * (pct / 100) }))
+      .sort((a, b) => b.pct - a.pct)
+  })()
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -404,14 +416,14 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
             </Text>
             <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.subtotal, currency)}</Text>
           </View>
-          {purchaseOrder.tax_pct > 0 && (
-            <View style={styles.totalRow}>
+          {taxBreakdown.map((entry) => (
+            <View key={entry.pct} style={styles.totalRow}>
               <Text style={styles.totalLabel}>
-                IVA <Text style={styles.totalLabelSmall}>({purchaseOrder.tax_pct}%)</Text>
+                IVA <Text style={styles.totalLabelSmall}>({entry.pct}%)</Text>
               </Text>
-              <Text style={styles.totalValue}>{formatCurrency(purchaseOrder.tax_amount, currency)}</Text>
+              <Text style={styles.totalValue}>{formatCurrency(entry.amount, currency)}</Text>
             </View>
-          )}
+          ))}
           {purchaseOrder.iibb_lh_pct > 0 && (
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>

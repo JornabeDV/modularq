@@ -35,6 +35,7 @@ export function PurchaseOrderPDFActions({ orderId, orderNumber }: PurchaseOrderP
         unit: item.unit,
         unit_price: item.unit_price,
         total_price: item.total_price,
+        tax_pct: item.tax_pct,
       })),
       subtotal: order.subtotal,
       tax_pct: order.tax_pct,

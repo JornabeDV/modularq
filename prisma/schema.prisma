@@ -731,6 +731,7 @@ model PurchaseOrderItem {
   unit              UnitType
   unit_price        Float
   total_price       Float
+  tax_pct           Float    @default(21)
 
   receipt_items     PurchaseOrderReceiptItem[]
 

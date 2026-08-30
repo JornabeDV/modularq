@@ -61,6 +61,7 @@ export default function EditPurchaseOrderPage() {
       unit: string
       unit_price: number
       total_price: number
+      tax_pct?: number
     }>
   }) => {
     setIsSubmitting(true)
@@ -131,6 +132,7 @@ export default function EditPurchaseOrderPage() {
                 unit: item.unit,
                 unit_price: item.unit_price,
                 total_price: item.total_price,
+                tax_pct: item.tax_pct,
               })),
               subtotal: order.subtotal,
               tax_pct: order.tax_pct,
