@@ -10,6 +10,7 @@ import {
 } from "@react-pdf/renderer"
 import { LOGO_BASE64 } from "@/lib/logo-base64"
 import { COMPANY } from "@/lib/company-config"
+import { sanitizePdfText } from "@/lib/pdf-sanitize"
 
 // Tipos locales para evitar dependencias circulares
 interface PDFSupplier {
@@ -331,7 +332,7 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
           </View>
           <View style={styles.orderTitle}>
             <Text style={styles.orderTitleText}>Orden de Compra</Text>
-            <Text style={styles.orderCode}>N°: {purchaseOrder.order_number}</Text>
+            <Text style={styles.orderCode}>N°: {sanitizePdfText(purchaseOrder.order_number)}</Text>
             <Text style={styles.orderDate}>{formatDate(purchaseOrder.order_date || purchaseOrder.created_at)}</Text>
           </View>
         </View>
@@ -342,18 +343,18 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
           <View style={styles.supplierInfo}>
             <View style={styles.supplierBlock}>
               <Text style={styles.label}>Nombre</Text>
-              <Text style={styles.value}>{purchaseOrder.supplier.name}</Text>
+              <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.name)}</Text>
             </View>
             {purchaseOrder.supplier.contact_name && (
               <View style={styles.supplierBlock}>
                 <Text style={styles.label}>Contacto</Text>
-                <Text style={styles.value}>{purchaseOrder.supplier.contact_name}</Text>
+                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.contact_name)}</Text>
               </View>
             )}
             {purchaseOrder.supplier.cuit && (
               <View style={styles.supplierBlock}>
                 <Text style={styles.label}>CUIT</Text>
-                <Text style={styles.value}>{purchaseOrder.supplier.cuit}</Text>
+                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.cuit)}</Text>
               </View>
             )}
           </View>
@@ -361,19 +362,19 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
             {purchaseOrder.supplier.email && (
               <View style={styles.supplierBlock}>
                 <Text style={styles.label}>Email</Text>
-                <Text style={styles.value}>{purchaseOrder.supplier.email}</Text>
+                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.email)}</Text>
               </View>
             )}
             {purchaseOrder.supplier.phone && (
               <View style={styles.supplierBlock}>
                 <Text style={styles.label}>Teléfono</Text>
-                <Text style={styles.value}>{purchaseOrder.supplier.phone}</Text>
+                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.phone)}</Text>
               </View>
             )}
             {purchaseOrder.supplier.address && (
               <View style={styles.supplierBlock}>
                 <Text style={styles.label}>Dirección</Text>
-                <Text style={styles.value}>{purchaseOrder.supplier.address}</Text>
+                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.address)}</Text>
               </View>
             )}
           </View>
@@ -392,11 +393,11 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
             </View>
             {purchaseOrder.items.map((item, idx) => (
               <View key={idx} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.colDescription]}>{item.description}</Text>
+                <Text style={[styles.tableCell, styles.colDescription]}>{sanitizePdfText(item.description)}</Text>
                 <Text style={[styles.tableCell, styles.colQuantity]}>
                   {item.quantity.toLocaleString("es-AR", { maximumFractionDigits: 2 })}
                 </Text>
-                <Text style={[styles.tableCell, styles.colUnit]}>{item.unit}</Text>
+                <Text style={[styles.tableCell, styles.colUnit]}>{sanitizePdfText(item.unit)}</Text>
                 <Text style={[styles.tableCell, styles.colUnitPrice]}>
                   {formatCurrency(item.unit_price, currency)}
                 </Text>
@@ -446,13 +447,13 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
               {purchaseOrder.payment_terms && (
                 <View style={{ width: "45%" }}>
                   <Text style={styles.conditionLabel}>Condiciones de pago</Text>
-                  <Text style={styles.conditionValue}>{purchaseOrder.payment_terms}</Text>
+                  <Text style={styles.conditionValue}>{sanitizePdfText(purchaseOrder.payment_terms)}</Text>
                 </View>
               )}
               {purchaseOrder.delivery_terms && (
                 <View style={{ width: "45%" }}>
                   <Text style={styles.conditionLabel}>Términos de entrega</Text>
-                  <Text style={styles.conditionValue}>{purchaseOrder.delivery_terms}</Text>
+                  <Text style={styles.conditionValue}>{sanitizePdfText(purchaseOrder.delivery_terms)}</Text>
                 </View>
               )}
               {purchaseOrder.delivery_date && (
@@ -464,7 +465,7 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
               {purchaseOrder.notes && (
                 <View style={{ width: "100%", marginTop: 5 }}>
                   <Text style={styles.conditionLabel}>Notas</Text>
-                  <Text style={styles.conditionValue}>{purchaseOrder.notes}</Text>
+                  <Text style={styles.conditionValue}>{sanitizePdfText(purchaseOrder.notes)}</Text>
                 </View>
               )}
             </View>
