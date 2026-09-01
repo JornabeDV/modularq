@@ -11,6 +11,7 @@ import {
 } from "@react-pdf/renderer";
 import { LOGO_BASE64 } from "@/lib/logo-base64";
 import { COMPANY } from "@/lib/company-config";
+import { sanitizePdfText } from "@/lib/pdf-sanitize";
 import type { NoteItem, GroupNote } from "@/lib/quote-notes-config";
 
 const styles = StyleSheet.create({
@@ -505,20 +506,20 @@ export function CotizadorPDFDocument({
         <View style={styles.moduleRow}>
           <View style={styles.moduleContent}>
             <Text style={styles.moduleName}>
-              {item.moduleName}
+              {sanitizePdfText(item.moduleName)}
               {showQty ? ` (x${item.quantity})` : ''}
             </Text>
             {item.moduleDescription && (
               <Text style={styles.moduleDescription}>
-                {item.moduleDescription}
+                {sanitizePdfText(item.moduleDescription)}
               </Text>
             )}
             {item.moduleDescriptionSections && item.moduleDescriptionSections.length > 0 && (
               <View style={styles.descriptionSections}>
                 {item.moduleDescriptionSections.map((sec, i) => (
                   <View key={i}>
-                    <Text style={styles.descriptionSectionTitle}>{sec.section}</Text>
-                    <Text style={styles.descriptionSectionBody}>{sec.description}</Text>
+                    <Text style={styles.descriptionSectionTitle}>{sanitizePdfText(sec.section)}</Text>
+                    <Text style={styles.descriptionSectionBody}>{sanitizePdfText(sec.description)}</Text>
                   </View>
                 ))}
               </View>
@@ -547,7 +548,7 @@ export function CotizadorPDFDocument({
               <View key={ad.id} style={styles.adicionalesRow}>
                 <View style={styles.adicionalItem}>
                   <View style={styles.adicionalBullet} />
-                  <Text style={styles.adicionalName}>{ad.name}</Text>
+                  <Text style={styles.adicionalName}>{sanitizePdfText(ad.name)}</Text>
                 </View>
                 <Text style={styles.adicionalPrice}>{formatPrice(ad.price, currency)}</Text>
               </View>
@@ -589,7 +590,7 @@ export function CotizadorPDFDocument({
               <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
             )}
             {currency === 'USD' && exchangeRate && exchangeRate.venta > 0 && (
-              <Text style={styles.quoteDate}>{exchangeRate.origen} Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
+              <Text style={styles.quoteDate}>{sanitizePdfText(exchangeRate.origen)} Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
             )}
           </View>
         </View>
@@ -598,19 +599,19 @@ export function CotizadorPDFDocument({
         {client && (
           <View style={styles.clientBox}>
             <Text style={styles.clientLabel}>Datos del cliente</Text>
-            <Text style={styles.clientName}>{client.name}</Text>
+            <Text style={styles.clientName}>{sanitizePdfText(client.name)}</Text>
             <View style={styles.clientRow}>
               <View style={styles.clientCol}>
                 {client.cuit && (
                   <>
                     <Text style={styles.clientDetailLabel}>CUIT</Text>
-                    <Text style={styles.clientDetail}>{client.cuit}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(client.cuit)}</Text>
                   </>
                 )}
                 {client.contact && (
                   <>
                     <Text style={styles.clientDetailLabel}>Contacto</Text>
-                    <Text style={styles.clientDetail}>{client.contact}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(client.contact)}</Text>
                   </>
                 )}
               </View>
@@ -618,13 +619,13 @@ export function CotizadorPDFDocument({
                 {client.email && (
                   <>
                     <Text style={styles.clientDetailLabel}>Email</Text>
-                    <Text style={styles.clientDetail}>{client.email}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(client.email)}</Text>
                   </>
                 )}
                 {client.phone && (
                   <>
                     <Text style={styles.clientDetailLabel}>Teléfono</Text>
-                    <Text style={styles.clientDetail}>{client.phone}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(client.phone)}</Text>
                   </>
                 )}
               </View>
@@ -717,9 +718,11 @@ export function CotizadorPDFDocument({
             ...(currency === 'USD' && exchangeRate
               ? [{
                   type: 'free' as const,
-                  content: exchangeRate.origen === 'Dólar Divisa'
-                    ? 'Precio de venta: Se cotiza en dólar Divisa del dia de la fecha de la facturación.'
-                    : defaultNote,
+                  content: sanitizePdfText(
+                    exchangeRate.origen === 'Dólar Divisa'
+                      ? 'Precio de venta: Se cotiza en dólar Divisa del dia de la fecha de la facturación.'
+                      : defaultNote
+                  ),
                 }]
               : []),
             ...(notesList ?? []),
@@ -735,14 +738,14 @@ export function CotizadorPDFDocument({
                   // Legacy string format
                   return (
                     <Text key={i} style={styles.notesText}>
-                      {i + 1}. {note}
+                      {i + 1}. {sanitizePdfText(note)}
                     </Text>
                   );
                 }
                 if (note.type === 'free') {
                   return (
                     <Text key={i} style={styles.notesText}>
-                      {i + 1}. {note.content}
+                      {i + 1}. {sanitizePdfText(note.content)}
                     </Text>
                   );
                 }
@@ -756,14 +759,14 @@ export function CotizadorPDFDocument({
                   return (
                     <View key={i} style={{ marginTop: i > 0 ? 4 : 0, flexDirection: 'row', flexWrap: 'wrap' }}>
                       <Text style={styles.notesText}>
-                        {i + 1}. {group.title}:{' '}
+                        {i + 1}. {sanitizePdfText(group.title)}:
                       </Text>
                       {checkedItems.map((item, idx) => (
                         <View key={idx} style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                          <Text style={styles.notesText}>{item.content}</Text>
+                          <Text style={styles.notesText}>{sanitizePdfText(item.content)}</Text>
                           {item.link && (
                             <Link src={item.link.url} style={styles.groupItemLink}>
-                              {' '}{item.link.text}
+                              {' '}{sanitizePdfText(item.link.text)}
                             </Link>
                           )}
                         </View>
@@ -776,16 +779,16 @@ export function CotizadorPDFDocument({
                 return (
                   <View key={i} style={{ marginTop: i > 0 ? 4 : 0 }}>
                     <Text style={styles.notesText}>
-                      {i + 1}. {group.title}
+                      {i + 1}. {sanitizePdfText(group.title)}
                     </Text>
                     {checkedItems.map((item, idx) => (
                       <View key={idx} style={styles.groupItem}>
                         <Text style={styles.groupItemLabel}>{String.fromCharCode(97 + idx)})</Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
-                          <Text style={styles.groupItemText}>{item.content}</Text>
+                          <Text style={styles.groupItemText}>{sanitizePdfText(item.content)}</Text>
                           {item.link && (
                             <Link src={item.link.url} style={styles.groupItemLink}>
-                              {' '}{item.link.text}
+                              {' '}{sanitizePdfText(item.link.text)}
                             </Link>
                           )}
                         </View>
@@ -795,7 +798,7 @@ export function CotizadorPDFDocument({
                 );
               })}
               {notes && displayNotes.length === 0 && (
-                <Text style={styles.notesText}>{notes}</Text>
+                <Text style={styles.notesText}>{sanitizePdfText(notes)}</Text>
               )}
             </View>
           );
@@ -803,9 +806,9 @@ export function CotizadorPDFDocument({
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerLeft}>
-            {generatorName ? `Preparado por: ${generatorName}` : COMPANY.legalName}
-          </Text>
+            <Text style={styles.footerLeft}>
+              {generatorName ? `Preparado por: ${sanitizePdfText(generatorName)}` : COMPANY.legalName}
+            </Text>
           <Text
             style={styles.footerRight}
             render={({ pageNumber, totalPages }) =>

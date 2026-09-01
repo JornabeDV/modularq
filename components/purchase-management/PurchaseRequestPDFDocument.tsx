@@ -10,6 +10,7 @@ import {
 } from "@react-pdf/renderer"
 import { LOGO_BASE64 } from "@/lib/logo-base64"
 import { COMPANY } from "@/lib/company-config"
+import { sanitizePdfText } from "@/lib/pdf-sanitize"
 
 interface PDFMaterial {
   id?: string
@@ -228,7 +229,7 @@ export function PurchaseRequestPDFDocument({ purchaseRequest }: PurchaseRequestP
           </View>
           <View style={styles.requestTitle}>
             <Text style={styles.requestTitleText}>Pedido de Materiales</Text>
-            <Text style={styles.requestNumber}>N°: {purchaseRequest.request_number}</Text>
+            <Text style={styles.requestNumber}>N°: {sanitizePdfText(purchaseRequest.request_number)}</Text>
             <Text style={styles.requestDate}>Emisión: {formatDate(purchaseRequest.created_at)}</Text>
           </View>
         </View>
@@ -250,10 +251,10 @@ export function PurchaseRequestPDFDocument({ purchaseRequest }: PurchaseRequestP
                 <Text style={[styles.tableCell, styles.colQuantity]}>
                   {item.quantity.toLocaleString("es-AR", { maximumFractionDigits: 2 })}
                 </Text>
-                <Text style={[styles.tableCell, styles.colDescription]}>{item.description}</Text>
-                <Text style={[styles.tableCell, styles.colUnit]}>{item.unit}</Text>
+                <Text style={[styles.tableCell, styles.colDescription]}>{sanitizePdfText(item.description)}</Text>
+                <Text style={[styles.tableCell, styles.colUnit]}>{sanitizePdfText(item.unit)}</Text>
                 <Text style={[styles.tableCell, styles.colBrand]}>
-                  {item.material?.brand || "—"}
+                  {sanitizePdfText(item.material?.brand) || "—"}
                 </Text>
               </View>
             ))}
@@ -265,7 +266,7 @@ export function PurchaseRequestPDFDocument({ purchaseRequest }: PurchaseRequestP
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Observaciones</Text>
             <View style={styles.notesBox}>
-              <Text style={styles.notesText}>{purchaseRequest.notes}</Text>
+              <Text style={styles.notesText}>{sanitizePdfText(purchaseRequest.notes)}</Text>
             </View>
           </View>
         )}

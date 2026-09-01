@@ -11,6 +11,7 @@ import {
 import { LOGO_BASE64 } from "@/lib/logo-base64"
 import { COMPANY } from "@/lib/company-config"
 import { DEFAULT_DELIVERY_CONDITIONS } from "@/lib/constants"
+import { sanitizePdfText } from "@/lib/pdf-sanitize"
 
 export interface DeliveryReceiptPDFItemAdditional {
   name: string
@@ -373,16 +374,16 @@ export function DeliveryReceiptPDFDocument({
     <View key={idx} style={styles.tableRow}>
       <Text style={[styles.tableCell, styles.colQty]}>{item.quantity}</Text>
       <View style={styles.colDescription}>
-        <Text style={styles.itemName}>{item.name}</Text>
+        <Text style={styles.itemName}>{sanitizePdfText(item.name)}</Text>
         {item.description && (
-          <Text style={styles.itemDescription}>{item.description}</Text>
+          <Text style={styles.itemDescription}>{sanitizePdfText(item.description)}</Text>
         )}
         {item.module_description && item.module_description.length > 0 && (
           <View>
             {item.module_description.map((sec, i) => (
               <View key={i}>
-                <Text style={styles.sectionTitleSmall}>{sec.section}</Text>
-                <Text style={styles.sectionBody}>{sec.description}</Text>
+                <Text style={styles.sectionTitleSmall}>{sanitizePdfText(sec.section)}</Text>
+                <Text style={styles.sectionBody}>{sanitizePdfText(sec.description)}</Text>
               </View>
             ))}
           </View>
@@ -393,7 +394,7 @@ export function DeliveryReceiptPDFDocument({
               <View key={i} style={styles.additionalRow}>
                 <View style={styles.additionalBullet} />
                 <Text style={styles.additionalText}>
-                  {ad.name} x {ad.quantity}
+                  {sanitizePdfText(ad.name)} x {ad.quantity}
                 </Text>
               </View>
             ))}
@@ -448,7 +449,7 @@ export function DeliveryReceiptPDFDocument({
             <Text style={styles.receiptTitle}>
               {receipt.type === "rental" ? "Remito de Alquiler" : "Remito de Entrega"}
             </Text>
-            <Text style={styles.receiptNumber}>N°: {receipt.number}</Text>
+            <Text style={styles.receiptNumber}>N°: {sanitizePdfText(receipt.number)}</Text>
             <Text style={styles.receiptDate}>
               Emisión: {formatDate(receipt.issue_date)}
             </Text>
@@ -464,22 +465,22 @@ export function DeliveryReceiptPDFDocument({
         <View style={styles.section}>
           <View style={styles.clientBox}>
             <Text style={styles.clientLabel}>Datos del cliente</Text>
-            <Text style={styles.clientName}>
-              {receipt.client_name}
-              {receipt.client_company ? ` (${receipt.client_company})` : ""}
+              <Text style={styles.clientName}>
+              {sanitizePdfText(receipt.client_name)}
+              {receipt.client_company ? ` (${sanitizePdfText(receipt.client_company)})` : ""}
             </Text>
             <View style={styles.clientColumns}>
               <View style={styles.clientColumn}>
                 {receipt.client_cuit && (
                   <>
                     <Text style={styles.clientDetailLabel}>CUIT</Text>
-                    <Text style={styles.clientDetail}>{receipt.client_cuit}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.client_cuit)}</Text>
                   </>
                 )}
                 {receipt.client_phone && (
                   <>
                     <Text style={styles.clientDetailLabel}>Teléfono</Text>
-                    <Text style={styles.clientDetail}>{receipt.client_phone}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.client_phone)}</Text>
                   </>
                 )}
               </View>
@@ -487,13 +488,13 @@ export function DeliveryReceiptPDFDocument({
                 {receipt.client_email && (
                   <>
                     <Text style={styles.clientDetailLabel}>Email</Text>
-                    <Text style={styles.clientDetail}>{receipt.client_email}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.client_email)}</Text>
                   </>
                 )}
                 {receipt.delivery_address && (
                   <>
                     <Text style={styles.clientDetailLabel}>Dirección de entrega</Text>
-                    <Text style={styles.clientDetail}>{receipt.delivery_address}</Text>
+                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.delivery_address)}</Text>
                   </>
                 )}
               </View>
@@ -512,15 +513,15 @@ export function DeliveryReceiptPDFDocument({
         {(receipt.notes || (receipt.notes_list && receipt.notes_list.length > 0)) && (
           <View style={styles.notesBox}>
             <Text style={styles.notesLabel}>Notas</Text>
-            {receipt.notes && <Text style={styles.notesText}>{receipt.notes}</Text>}
+            {receipt.notes && <Text style={styles.notesText}>{sanitizePdfText(receipt.notes)}</Text>}
             {receipt.notes_list &&
               receipt.notes_list.length > 0 &&
               receipt.notes_list.map((note, i) => (
                 <Text key={i} style={styles.notesText}>
                   {typeof note === "string"
-                    ? `${i + 1}. ${note}`
+                    ? `${i + 1}. ${sanitizePdfText(note)}`
                     : note?.content
-                    ? `${i + 1}. ${note.content}`
+                    ? `${i + 1}. ${sanitizePdfText(note.content)}`
                     : null}
                 </Text>
               ))}
@@ -535,7 +536,7 @@ export function DeliveryReceiptPDFDocument({
             : DEFAULT_DELIVERY_CONDITIONS
           ).map((condition, i) => (
             <Text key={i} style={styles.conditionsText}>
-              {i + 1}) {typeof condition === 'string' ? condition : condition?.content}
+               {i + 1}) {typeof condition === 'string' ? sanitizePdfText(condition) : condition?.content ? sanitizePdfText(condition.content) : null}
             </Text>
           ))}
         </View>
