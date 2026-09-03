@@ -12,6 +12,7 @@ import {
 import { LOGO_BASE64 } from "@/lib/logo-base64";
 import { COMPANY } from "@/lib/company-config";
 import { sanitizePdfText } from "@/lib/pdf-sanitize";
+import { montoEnLetras } from "@/lib/number-to-words-es";
 import type { NoteItem, GroupNote } from "@/lib/quote-notes-config";
 
 const styles = StyleSheet.create({
@@ -713,14 +714,24 @@ export function CotizadorPDFDocument({
         {/* Notas */}
         {(() => {
           const defaultNote =
-            'Precio de venta: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.'
+            'Moneda: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.'
+          const moneda = currency === 'USD' ? 'dólares estadounidenses' : 'pesos argentinos';
+          const totalEnLetras = totalAmount > 0
+            ? `Precio de Venta: Son ${montoEnLetras(totalAmount, { moneda })}`
+            : '';
           const displayNotes: NoteItem[] = [
+            ...(totalEnLetras
+              ? [{
+                  type: 'free' as const,
+                  content: sanitizePdfText(totalEnLetras),
+                }]
+              : []),
             ...(currency === 'USD' && exchangeRate
               ? [{
                   type: 'free' as const,
                   content: sanitizePdfText(
                     exchangeRate.origen === 'Dólar Divisa'
-                      ? 'Precio de venta: Se cotiza en dólar Divisa del dia de la fecha de la facturación.'
+                      ? 'Moneda: Se cotiza en dólar Divisa del dia de la fecha de la facturación.'
                       : defaultNote
                   ),
                 }]
