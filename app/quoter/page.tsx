@@ -271,7 +271,7 @@ export default function CotizadorPage() {
                         <span className="text-xs sm:text-sm text-muted-foreground w-5">1.</span>
                         <input
                           type="text"
-                          value={`Precio de venta: Se cotiza en dólar ${q.dollarType === 'mayorista' ? 'Divisa' : 'oficial BNA vendedor'} del dia de la fecha de la facturación.`}
+                          value={`Moneda: Se cotiza en dólar ${q.dollarType === 'mayorista' ? 'Divisa' : 'oficial BNA vendedor'} del dia de la fecha de la facturación.`}
                           disabled
                           className="flex-1 text-xs border rounded px-2 py-1 bg-muted/50 text-muted-foreground"
                         />
