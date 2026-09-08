@@ -31,7 +31,7 @@ export interface Quote {
   project_count?: number
 }
 
-export type QuoteItemType = 'standard_module' | 'custom_module' | 'service'
+export type QuoteItemType = 'standard_module' | 'custom_module' | 'service' | 'stock_material'
 
 export interface QuoteAdditional {
   id: string
@@ -48,6 +48,7 @@ export interface QuoteItem {
   quote_id: string
   type: QuoteItemType
   standard_module_id?: string
+  material_id?: string
   name: string
   description?: string
   unit_price: number

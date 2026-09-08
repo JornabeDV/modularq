@@ -21,6 +21,7 @@ export interface Material {
   unitPrice?: number
   currency: MaterialCurrency
   unitPriceARS?: number | null
+  precioVenta?: number | null
   exchangeRate?: number | null
   exchangeRateDate?: string | null
   supplier?: string
@@ -42,6 +43,7 @@ export interface CreateMaterialData {
   unit_price_ars?: number | null
   exchange_rate?: number | null
   exchange_rate_date?: string | null
+  precio_venta?: number | null
   supplier?: string
   brand?: string
 }
@@ -59,6 +61,7 @@ export interface UpdateMaterialData {
   unit_price_ars?: number | null
   exchange_rate?: number | null
   exchange_rate_date?: string | null
+  precio_venta?: number | null
   supplier?: string
   brand?: string
 }
@@ -79,6 +82,7 @@ function formatMaterial(material: any): Material {
     unitPrice: material.unit_price,
     currency: material.currency || 'ARS',
     unitPriceARS: material.unit_price_ars,
+    precioVenta: material.precio_venta,
     exchangeRate: material.exchange_rate,
     exchangeRateDate: material.exchange_rate_date,
     supplier: material.supplier,

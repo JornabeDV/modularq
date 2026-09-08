@@ -37,6 +37,7 @@ import { StandardModulesTab } from "@/components/cotizador/StandardModulesTab";
 import { CustomModuleForm } from "@/components/cotizador/CustomModuleForm";
 import { CustomModuleEditor } from "@/components/cotizador/CustomModuleEditor";
 import { ServicesTab } from "@/components/cotizador/ServicesTab";
+import { StockMaterialsTab } from "@/components/cotizador/StockMaterialsTab";
 import { QuoteItemCard } from "@/components/cotizador/QuoteItemCard";
 
 export default function CotizadorPage() {
@@ -86,7 +87,7 @@ export default function CotizadorPage() {
             )}
           </div>
           <p className="text-muted-foreground text-sm mt-1">
-            Generá un presupuesto seleccionando módulos estándar, personalizados o servicios.
+            Generá un presupuesto seleccionando módulos estándar, personalizados, servicios o materiales en stock.
           </p>
         </div>
 
@@ -451,35 +452,45 @@ export default function CotizadorPage() {
                 }
               />
             ) : (
-              <Tabs defaultValue="standard" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="standard">Estándar</TabsTrigger>
-                  <TabsTrigger value="custom">Personalizados</TabsTrigger>
-                  <TabsTrigger value="services">Servicios</TabsTrigger>
-                </TabsList>
-                <TabsContent value="standard" className="mt-4">
-                  <StandardModulesTab
-                    modules={modules}
-                    loading={modulesLoading}
-                    onAddModule={q.addStandardModule}
-                    exchangeRate={q.exchangeRate}
-                    currency={q.quoteCurrency}
-                  />
-                </TabsContent>
-                <TabsContent value="custom" className="mt-4">
-                  <CustomModuleForm onAdd={q.addCustomModule} exchangeRate={q.exchangeRate} currency={q.quoteCurrency} />
-                </TabsContent>
-                <TabsContent value="services" className="mt-4">
-                  <ServicesTab
-                    services={q.services}
-                    loading={q.servicesLoading}
-                    onAddService={q.addService}
-                    onAddCustomService={q.addCustomService}
-                    exchangeRate={q.exchangeRate}
-                    currency={q.quoteCurrency}
-                  />
-                </TabsContent>
-              </Tabs>
+               <Tabs defaultValue="standard" className="w-full">
+                 <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 bg-muted rounded-lg p-1 h-auto max-sm:min-h-[80px]">
+                   <TabsTrigger value="standard">Estándar</TabsTrigger>
+                   <TabsTrigger value="custom">Personalizados</TabsTrigger>
+                   <TabsTrigger value="services">Servicios</TabsTrigger>
+                   <TabsTrigger value="materials">Materiales en Stock</TabsTrigger>
+                 </TabsList>
+                 <TabsContent value="standard" className="mt-4">
+                   <StandardModulesTab
+                     modules={modules}
+                     loading={modulesLoading}
+                     onAddModule={q.addStandardModule}
+                     exchangeRate={q.exchangeRate}
+                     currency={q.quoteCurrency}
+                   />
+                 </TabsContent>
+                 <TabsContent value="custom" className="mt-4">
+                   <CustomModuleForm onAdd={q.addCustomModule} exchangeRate={q.exchangeRate} currency={q.quoteCurrency} />
+                 </TabsContent>
+                 <TabsContent value="services" className="mt-4">
+                   <ServicesTab
+                     services={q.services}
+                     loading={q.servicesLoading}
+                     onAddService={q.addService}
+                     onAddCustomService={q.addCustomService}
+                     exchangeRate={q.exchangeRate}
+                     currency={q.quoteCurrency}
+                   />
+                 </TabsContent>
+                 <TabsContent value="materials" className="mt-4">
+                   <StockMaterialsTab
+                     materials={q.stockMaterials}
+                     loading={q.stockMaterialsLoading}
+                     onAddMaterial={q.addStockMaterial}
+                     exchangeRate={q.exchangeRate}
+                     currency={q.quoteCurrency}
+                   />
+                 </TabsContent>
+               </Tabs>
             )}
           </div>
 
@@ -532,6 +543,7 @@ export default function CotizadorPage() {
               exchangeRate={q.exchangeRate}
               currency={q.quoteCurrency}
               taxPct={q.taxPct}
+              discountPct={q.discountPct}
               generating={q.generating}
               savingDraft={q.savingDraft}
               selectedClient={q.selectedClient}
@@ -540,6 +552,7 @@ export default function CotizadorPage() {
               onSaveDraft={q.handleSaveDraft}
               onUpdateFinalTotal={q.setFinalTotal}
               onTaxPctChange={q.setTaxPct}
+              onDiscountPctChange={q.setDiscountPct}
             />
           </div>
         </div>

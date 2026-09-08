@@ -42,6 +42,7 @@ interface MaterialFormData {
   min_stock: number;
   unit_price: number;
   currency: MaterialCurrency;
+  precio_venta?: number | null;
   supplier: string;
   brand: string;
 }
@@ -191,6 +192,7 @@ export function MaterialForm({
   const isGeneratingCodeRef = useRef(false);
   const hasSetDefaultCategory = useRef(false);
   const [unitPriceInput, setUnitPriceInput] = useState("");
+  const [precioVentaInput, setPrecioVentaInput] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState<MaterialFormData>({
     code: "",
@@ -200,9 +202,10 @@ export function MaterialForm({
     unit: "unidad",
     stock_quantity: 0,
     min_stock: 0,
-    unit_price: 0,
-    currency: "ARS",
-    supplier: "",
+  unit_price: 0,
+  currency: "ARS",
+  precio_venta: undefined,
+  supplier: "",
     brand: "",
   });
 
@@ -242,12 +245,16 @@ export function MaterialForm({
         stock_quantity: initialData.stockQuantity || 0,
         min_stock: initialData.minStock || 0,
         unit_price: initialData.unitPrice || 0,
+        precio_venta: initialData?.precioVenta || undefined,
         currency: initialData.currency || "ARS",
         supplier: initialData.supplier || "",
         brand: initialData.brand || "",
       });
       setUnitPriceInput(
         initialData.unitPrice?.toString().replace(".", ",") || "",
+      );
+      setPrecioVentaInput(
+        initialData.precioVenta?.toString().replace(".", ",") || "",
       );
     } else {
       setFormData({
@@ -258,8 +265,9 @@ export function MaterialForm({
         unit: "unidad",
         stock_quantity: 0,
         min_stock: 0,
-        unit_price: 0,
+         unit_price: 0,
         currency: "ARS",
+        precio_venta: undefined,
         supplier: "",
         brand: "",
       });
@@ -570,6 +578,9 @@ export function MaterialForm({
       min_stock: formData.min_stock,
       unit_price: formData.unit_price > 0 ? formData.unit_price : undefined,
       currency: formData.currency,
+      precio_venta: precioVentaInput
+        ? parseFloat(precioVentaInput.replace(",", ".")) || null
+        : undefined,
       supplier: formData.supplier || undefined,
       brand: formData.brand || undefined,
     };
@@ -997,6 +1008,27 @@ export function MaterialForm({
                   {errors.unit_price}
                 </p>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="precio_venta" className="mb-2">
+                Precio de Venta
+              </Label>
+              <PriceInput
+                id="precio_venta"
+                value={precioVentaInput}
+                onChange={setPrecioVentaInput}
+                onFocus={(e: any) => {
+                  if (e.target.value === "0") {
+                    e.target.select();
+                  }
+                }}
+                placeholder="0.00"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Precio al que se cotiza el material. Si está vacío, se usa el costo.
+              </p>
             </div>
 
             <div>

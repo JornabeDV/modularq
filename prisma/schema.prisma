@@ -235,10 +235,11 @@ model Material {
   min_stock       Float            @default(0)
   unit_price      Float?
   currency        String           @default("ARS")
-  unit_price_ars  Float?
-  exchange_rate   Float?
-  exchange_rate_date DateTime?
-  supplier        String?
+   unit_price_ars  Float?
+   exchange_rate   Float?
+   exchange_rate_date DateTime?
+   precio_venta    Float?
+   supplier        String?
   brand           String?
   created_at      DateTime         @default(now())
   updated_at      DateTime         @updatedAt
@@ -379,6 +380,7 @@ enum QuoteItemType {
   standard_module
   custom_module
   service
+  stock_material
 }
 // Cabecera de cotizaciones rápidas
 model Quote {
@@ -392,6 +394,7 @@ model Quote {
   client_phone   String?
   client_email   String?
   subtotal       Float    @default(0)
+  discount_pct   Float    @default(0)
   total          Float    @default(0)
   tax_pct        Float    @default(21)
   total_ars      Float?
@@ -432,6 +435,7 @@ model QuoteItem {
   quote_id           String
   type               QuoteItemType
   standard_module_id String?
+  material_id        String?
   name               String
   description        String?
   unit_price         Float           @default(0)

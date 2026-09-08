@@ -1228,13 +1228,14 @@ export class PrismaTypedService {
     unit_price?: number
     currency?: string
     unit_price_ars?: number
-    exchange_rate?: number
-    exchange_rate_date?: string
-    supplier?: string
-    brand?: string
-    created_by?: string
-  }): Promise<any> {
-    const stockQuantity = materialData.stock_quantity ?? 0
+     exchange_rate?: number
+     exchange_rate_date?: string
+     precio_venta?: number | null
+     supplier?: string
+     brand?: string
+     created_by?: string
+   }): Promise<any> {
+     const stockQuantity = materialData.stock_quantity ?? 0
     const { created_by, ...materialInsertData } = materialData
 
     // Pre-validar duplicados antes de tocar la base
@@ -1298,13 +1299,14 @@ export class PrismaTypedService {
     unit_price?: number
     currency?: string
     unit_price_ars?: number
-    exchange_rate?: number
-    exchange_rate_date?: string
-    supplier?: string
-    brand?: string
-    created_by?: string
-  }): Promise<any> {
-    const currentMaterial = await this.getMaterialById(id)
+     exchange_rate?: number
+     exchange_rate_date?: string
+     precio_venta?: number | null
+     supplier?: string
+     brand?: string
+     created_by?: string
+   }): Promise<any> {
+     const currentMaterial = await this.getMaterialById(id)
     if (!currentMaterial) throw new Error('Material no encontrado')
 
     const { created_by, ...materialUpdateData } = materialData
@@ -2177,6 +2179,7 @@ export class PrismaTypedService {
     notes?: string
     notes_list?: string[] | null
     subtotal: number
+    discount_pct?: number
     total: number
     tax_pct?: number
     total_ars?: number
@@ -2188,34 +2191,35 @@ export class PrismaTypedService {
     valid_until?: string
     created_by: string
     items: Array<{
-      type: 'standard_module' | 'custom_module' | 'service'
+      type: 'standard_module' | 'custom_module' | 'service' | 'stock_material'
       standard_module_id?: string
+      material_id?: string | null
       name: string
       description?: string
-      unit_price: number
-      quantity: number
-      subtotal: number
-      is_optional?: boolean
-      sort_order: number
-      module_description?: { section: string; description: string }[] | null
-      additionals: Array<{
-        material_id?: string
-        name: string
-        unit_price: number
-        quantity: number
-        subtotal: number
-      }>
-      attachments?: Array<{
-        filename: string
-        original_name: string
-        mime_type: string
-        size: number
-        url: string
-        storage_path: string
-      }>
-    }>
-  }): Promise<{ id: string; number: string }> {
-    const validUntil = input.valid_until
+    unit_price: number
+         quantity: number
+         subtotal: number
+         is_optional?: boolean
+         sort_order: number
+          module_description?: { section: string; description: string }[] | null
+          additionals: Array<{
+            material_id?: string
+           name: string
+           unit_price: number
+           quantity: number
+           subtotal: number
+         }>
+         attachments?: Array<{
+           filename: string
+           original_name: string
+           mime_type: string
+           size: number
+           url: string
+           storage_path: string
+       }>
+     }>
+   }): Promise<{ id: string; number: string }> {
+     const validUntil = input.valid_until
       ? new Date(input.valid_until)
       : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d })()
 
@@ -2233,6 +2237,7 @@ export class PrismaTypedService {
         notes: input.notes ?? null,
         notes_list: input.notes_list ?? null,
         subtotal: input.subtotal,
+        discount_pct: input.discount_pct ?? 0,
         total: input.total,
         tax_pct: input.tax_pct ?? 21,
         total_ars: input.total_ars ?? null,
@@ -2250,10 +2255,11 @@ export class PrismaTypedService {
     if (error) throw error
 
     for (const item of input.items) {
-      const itemPayload = {
+       const itemPayload = {
         quote_id: quote.id,
         type: item.type,
         standard_module_id: item.standard_module_id ?? null,
+        material_id: item.material_id ?? null,
         name: item.name,
         description: item.description ?? null,
         unit_price: item.unit_price,
@@ -2339,6 +2345,7 @@ export class PrismaTypedService {
       notes?: string
       notes_list?: string[] | null
       subtotal: number
+      discount_pct?: number
       total: number
       tax_pct?: number
       total_ars?: number
@@ -2348,8 +2355,9 @@ export class PrismaTypedService {
       exchange_rate_date?: string
       valid_until?: string
       items: Array<{
-        type: 'standard_module' | 'custom_module' | 'service'
+        type: 'standard_module' | 'custom_module' | 'service' | 'stock_material'
         standard_module_id?: string
+        material_id?: string | null
         name: string
         description?: string
         unit_price: number
@@ -2395,6 +2403,7 @@ export class PrismaTypedService {
       notes: input.notes ?? null,
       notes_list: input.notes_list ?? null,
       subtotal: input.subtotal,
+      discount_pct: input.discount_pct ?? 0,
       total: input.total,
       tax_pct: input.tax_pct ?? 21,
       currency: input.currency ?? 'USD',
@@ -2421,10 +2430,11 @@ export class PrismaTypedService {
 
     // 4. Insertar items nuevos (mismo código que createQuote)
     for (const item of input.items) {
-      const itemPayload = {
+       const itemPayload = {
         quote_id: id,
         type: item.type,
         standard_module_id: item.standard_module_id ?? null,
+        material_id: item.material_id ?? null,
         name: item.name,
         description: item.description ?? null,
         unit_price: item.unit_price,
@@ -2491,7 +2501,7 @@ export class PrismaTypedService {
   static async getQuotes(userId: string, role: string, status?: string, quoteType?: string) {
     let query = supabase
       .from('quotes')
-      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, total, tax_pct, total_ars, currency, dollar_type, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
+      .select('id, number, quote_type, status, client_id, client_name, client_company, client_phone, client_email, subtotal, discount_pct, total, tax_pct, total_ars, currency, dollar_type, exchange_rate, exchange_rate_date, pdf_url, valid_until, created_by, created_at, sent_at, closed_at')
       .order('created_at', { ascending: false })
 
     // All authorized roles (admin, supervisor, vendedor) see all quotes
@@ -3987,8 +3997,9 @@ export class PrismaTypedService {
     notes_list?: any[] | null
     created_by: string
     items: Array<{
-      type: 'standard_module' | 'custom_module' | 'service'
+      type: 'standard_module' | 'custom_module' | 'service' | 'stock_material'
       standard_module_id?: string
+      material_id?: string | null
       name: string
       description?: string
       quantity: number
@@ -4104,8 +4115,9 @@ export class PrismaTypedService {
       delivery_conditions?: any[] | null
       notes_list?: any[] | null
       items: Array<{
-        type: 'standard_module' | 'custom_module' | 'service'
+        type: 'standard_module' | 'custom_module' | 'service' | 'stock_material'
         standard_module_id?: string
+        material_id?: string | null
         name: string
         description?: string
         quantity: number
