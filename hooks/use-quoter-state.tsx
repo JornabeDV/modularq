@@ -22,6 +22,7 @@ import type {
 import type { StandardModule } from "@/hooks/use-standard-modules";
 import type { ServiceCatalogItem } from "@/components/cotizador/ServicesTab";
 import type { Client } from "@/hooks/use-clients-prisma";
+import type { StockMaterial } from "@/hooks/use-stock-materials";
 
 const ALLOWED_ROLES = ["admin", "supervisor", "vendedor"];
 
@@ -47,6 +48,8 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   const [adicionales, setAdicionales] = useState<{ id: string; name: string; unit_price: number }[]>([]);
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
+  const [stockMaterials, setStockMaterials] = useState<StockMaterial[]>([]);
+  const [stockMaterialsLoading, setStockMaterialsLoading] = useState(false);
   const [loadingSource, setLoadingSource] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [editingItemKey, setEditingItemKey] = useState<string | null>(null);
@@ -55,6 +58,8 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   const [quoteCurrency, setQuoteCurrency] = useState<'ARS' | 'USD'>('USD');
   const [dollarType, setDollarType] = useState<'common' | 'mayorista'>('common');
   const [taxPct, setTaxPct] = useState(21);
+  const [discountPct, setDiscountPct] = useState(0);
+  const [hasManualTotal, setHasManualTotal] = useState(false);
 
   const getDefaultValidUntil = () => {
     const d = new Date();
@@ -106,6 +111,15 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
       .finally(() => setServicesLoading(false));
   }, []);
 
+  useEffect(() => {
+    setStockMaterialsLoading(true);
+    fetch("/api/materials?inStock=true&excludeAdicionales=true", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setStockMaterials(d.materials ?? []))
+      .catch(() => {})
+      .finally(() => setStockMaterialsLoading(false));
+  }, []);
+
   // ── Duplicate / Edit quote loader ──────────────────────────────────────────
   useEffect(() => {
     const duplicateId = searchParams.get("duplicate");
@@ -132,6 +146,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         setQuoteCurrency(quote.currency === 'ARS' ? 'ARS' : 'USD');
         setDollarType(quote.dollar_type === 'mayorista' ? 'mayorista' : 'common');
         setTaxPct(quote.tax_pct ?? 21);
+        setDiscountPct(quote.discount_pct ?? 0);
 
         const migrated = migrateNotesList(
           quote.notes_list && Array.isArray(quote.notes_list) && quote.notes_list.length > 0
@@ -167,6 +182,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           key: `${item.type}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           type: item.type,
           standardModuleId: item.standard_module_id ?? undefined,
+          materialId: item.material_id ?? undefined,
           name: item.name,
           description: item.description ?? undefined,
           moduleDescriptionSections: item.module_description ?? undefined,
@@ -192,6 +208,10 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
             setFinalTotal(quote.total ?? quote.subtotal ?? 0);
           }
         }
+        // Si hay descuento % persistido, deja que el useEffect lo recalcule.
+        // Si no hay descuento y el total guardado difiere del subtotal, se
+        // considera un ajuste manual previo y se preserva.
+        setHasManualTotal(!(quote.discount_pct && quote.discount_pct > 0));
 
         if (isEdit) {
           setEditingQuoteId(sourceId);
@@ -220,8 +240,15 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
   }, [quoteItems]);
 
   useEffect(() => {
-    setFinalTotal(subtotal);
-  }, [subtotal]);
+    if (discountPct > 0) {
+      // El descuento % tiene prioridad: total = subtotal * (1 - pct/100)
+      const withDiscount = subtotal * (1 - discountPct / 100);
+      setFinalTotal(withDiscount);
+      setHasManualTotal(false);
+    } else if (!hasManualTotal) {
+      setFinalTotal(subtotal);
+    }
+  }, [subtotal, discountPct, hasManualTotal]);
 
   useEffect(() => {
     getExchangeRate(dollarType).then(setExchangeRate).catch(() => {});
@@ -307,7 +334,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     ]);
   }
 
-  function addCustomService(item: { name: string; description: string; unitPrice: number; quantity: number; unit: string }) {
+   function addCustomService(item: { name: string; description: string; unitPrice: number; quantity: number; unit: string }) {
     const key = `svc-custom-${Date.now()}`;
     setQuoteItems((prev) => [
       ...prev,
@@ -319,6 +346,53 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         unitPrice: item.unitPrice,
         quantity: item.quantity,
         isOptional: false,
+        adicionales: [],
+      },
+    ]);
+  }
+
+  function addStockMaterial(material: StockMaterial, quantity: number) {
+    const key = `mat-${material.id}-${Date.now()}`;
+    const rate = exchangeRate?.venta ?? 0;
+
+    let basePriceARS: number;
+    if (material.precioVenta != null && material.precioVenta > 0) {
+      if (material.currency === "USD") {
+        const rate = material.exchangeRate ?? 0;
+        basePriceARS = rate > 0 ? material.precioVenta * rate : 0;
+      } else {
+        basePriceARS = material.precioVenta;
+      }
+    } else if (material.currency === "USD") {
+      if (material.unitPriceARS != null && material.unitPriceARS > 0) {
+        basePriceARS = material.unitPriceARS;
+      } else if (material.exchangeRate && material.exchangeRate > 0 && material.unitPrice) {
+        basePriceARS = material.unitPrice * material.exchangeRate;
+      } else {
+        basePriceARS = 0;
+      }
+    } else {
+      basePriceARS = material.unitPrice ?? 0;
+    }
+
+    const unitPrice =
+      quoteCurrency === "ARS"
+        ? basePriceARS
+        : rate > 0
+          ? basePriceARS / rate
+          : basePriceARS;
+
+    setQuoteItems((prev) => [
+      ...prev,
+      {
+        key,
+        type: "stock_material",
+        materialId: material.id,
+        materialCode: material.code,
+        name: material.name,
+        description: material.description || material.categoryName,
+        unitPrice,
+        quantity,
         adicionales: [],
       },
     ]);
@@ -469,6 +543,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
         ],
         subtotal,
+        discount_pct: discountPct,
         total: finalTotal,
         total_ars: quoteCurrency === 'USD' && exchangeRate && exchangeRate.venta > 0
           ? Number((finalTotal * exchangeRate.venta).toFixed(2))
@@ -481,6 +556,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         items: quoteItems.map((item, i) => ({
           type: item.type,
           standard_module_id: item.standardModuleId,
+          material_id: item.materialId,
           name: item.name,
           description: item.description,
           unit_price: item.unitPrice,
@@ -584,6 +660,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           ...(groupHasCheckedItems(additionalServicesNote) ? [additionalServicesNote] : []),
         ],
         subtotal,
+        discount_pct: discountPct,
         total: finalTotal,
         total_ars: quoteCurrency === 'USD' && exchangeRate && exchangeRate.venta > 0
           ? Number((finalTotal * exchangeRate.venta).toFixed(2))
@@ -596,6 +673,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
         items: quoteItems.map((item, i) => ({
           type: item.type,
           standard_module_id: item.standardModuleId,
+          material_id: item.materialId,
           name: item.name,
           description: item.description,
           unit_price: item.unitPrice,
@@ -637,7 +715,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
           generatorName={userProfile!.name ?? userProfile!.email ?? undefined}
           finalTotal={finalTotal}
           taxPct={taxPct}
-          discount={subtotal > finalTotal ? subtotal - finalTotal : undefined}
+          discount={undefined}
           client={
             selectedClient
               ? {
@@ -714,9 +792,12 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     quoteItems,
     subtotal,
     finalTotal, setFinalTotal,
+    discountPct, setDiscountPct,
+    hasManualTotal, setHasManualTotal,
     // Data
     adicionales,
     services, servicesLoading,
+    stockMaterials, stockMaterialsLoading,
     // Status
     generating, savingDraft,
     savedQuote, sourcePdfUrl,
@@ -731,6 +812,7 @@ export function useQuoterState({ clients }: { clients: Client[] }) {
     addCustomModule,
     addService,
     addCustomService,
+    addStockMaterial,
     removeItem,
     updateQuantity,
     toggleItemOptional,

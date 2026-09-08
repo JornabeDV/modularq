@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { PriceInput } from "@/components/ui/price-input";
 import { ExchangeRate } from "@/lib/exchange-rate";
 
-export type QuoteItemType = "standard_module" | "custom_module" | "service";
+export type QuoteItemType = "standard_module" | "custom_module" | "service" | "stock_material";
 
 export interface SelectedAdicional {
   id: string;
@@ -45,12 +45,14 @@ export interface QuoteItemState {
   key: string;
   type: QuoteItemType;
   standardModuleId?: string;
+  materialId?: string;
+  materialCode?: string;
   name: string;
   description?: string;
   moduleDescriptionSections?: ModuleDescriptionSection[];
   unitPrice: number;
   quantity: number;
-  isOptional?: boolean; // para servicios: si es true, no suma al total
+  isOptional?: boolean;
   adicionales: SelectedAdicional[];
   attachments?: QuoteItemAttachment[];
 }
@@ -59,12 +61,14 @@ const TYPE_LABELS: Record<QuoteItemType, string> = {
   standard_module: "Módulo Estándar",
   custom_module: "Módulo Personalizado",
   service: "Servicio",
+  stock_material: "Material en Stock",
 };
 
 const TYPE_BADGE_COLORS: Record<QuoteItemType, string> = {
   standard_module: "bg-blue-100 text-blue-800 hover:bg-blue-100",
   custom_module: "bg-amber-100 text-amber-800 hover:bg-amber-100",
   service: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
+  stock_material: "bg-purple-100 text-purple-800 hover:bg-purple-100",
 };
 
 interface QuoteItemCardProps {
@@ -97,7 +101,7 @@ function formatARS(amount: number) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
     currency: "ARS",
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -126,7 +130,9 @@ export function QuoteItemCard({
   const canHaveAttachments =
     item.type === "custom_module" || item.type === "standard_module";
   const canEdit =
-    item.type === "custom_module" || item.type === "standard_module";
+    item.type === "custom_module" ||
+    item.type === "standard_module" ||
+    item.type === "stock_material";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
@@ -164,7 +170,12 @@ export function QuoteItemCard({
           {/* Fila 1: nombre/badge + botones de acción */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <p className="font-medium text-sm truncate">{item.name}</p>
+               <p className="font-medium text-sm truncate">{item.name}</p>
+               {item.type === "stock_material" && item.materialCode && (
+                 <span className="text-[10px] text-muted-foreground bg-muted/50 px-1 py-0 rounded shrink-0">
+                   {item.materialCode}
+                 </span>
+               )}
               <Badge
                 variant="secondary"
                 className={cn(
@@ -235,7 +246,7 @@ export function QuoteItemCard({
                           ? formatUSD(itemSubtotal)
                           : formatARS(itemSubtotal)}
                       </span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums leading-tight">
+                      <span className="text-xs text-muted-foreground tabular-nums leading-tight">
                         {currency === "USD"
                           ? formatARS(itemSubtotal * exchangeRate.venta)
                           : formatUSD(itemSubtotal / exchangeRate.venta)}
@@ -359,7 +370,7 @@ export function QuoteItemCard({
                         ? formatUSD(itemSubtotal)
                         : formatARS(itemSubtotal)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                    <span className="text-xs text-muted-foreground tabular-nums">
                       {currency === "USD"
                         ? formatARS(itemSubtotal * exchangeRate.venta)
                         : formatUSD(itemSubtotal / exchangeRate.venta)}
@@ -418,7 +429,7 @@ export function QuoteItemCard({
                               : formatARS(ad.unit_price)}
                           </span>
                           {exchangeRate && (
-                            <span className="text-[10px] text-muted-foreground tabular-nums min-w-[70px] text-right">
+                            <span className="text-xs text-muted-foreground tabular-nums min-w-[70px] text-right">
                               {currency === "USD"
                                 ? formatARS(ad.unit_price)
                                 : formatUSD(ad.unit_price / exchangeRate.venta)}
@@ -511,7 +522,7 @@ export function QuoteItemCard({
                         ? formatUSD(adicionalesTotal)
                         : formatARS(adicionalesTotal)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground tabular-nums ml-1">
+                    <span className="text-xs text-muted-foreground tabular-nums ml-1">
                       (
                       {currency === "USD"
                         ? formatARS(adicionalesTotal * exchangeRate.venta)

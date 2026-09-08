@@ -28,6 +28,8 @@ export function getPDFItems(
     basePrice: item.unitPrice,
     quantity: item.quantity,
     isOptional: item.isOptional,
+    materialId: item.materialId,
+    materialCode: item.materialCode,
     adicionales: item.adicionales,
   }));
 

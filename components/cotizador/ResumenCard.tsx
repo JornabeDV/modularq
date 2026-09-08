@@ -19,6 +19,7 @@ interface ResumenCardProps {
   exchangeRate: ExchangeRate | null;
   currency: 'ARS' | 'USD';
   taxPct: number;
+  discountPct: number;
   generating: boolean;
   savingDraft: boolean;
   selectedClient: Client | null;
@@ -27,6 +28,7 @@ interface ResumenCardProps {
   onSaveDraft: () => void;
   onUpdateFinalTotal: (value: number) => void;
   onTaxPctChange: (value: number) => void;
+  onDiscountPctChange: (value: number) => void;
 }
 
 export function ResumenCard({
@@ -36,6 +38,7 @@ export function ResumenCard({
   exchangeRate,
   currency,
   taxPct,
+  discountPct,
   generating,
   savingDraft,
   selectedClient,
@@ -44,15 +47,20 @@ export function ResumenCard({
   onSaveDraft,
   onUpdateFinalTotal,
   onTaxPctChange,
+  onDiscountPctChange,
 }: ResumenCardProps) {
   const hasAdjustment = finalTotal !== subtotal;
   const rate = exchangeRate?.venta ?? 0;
-
+  const hasDiscount = discountPct > 0;
+  const discountAmount = subtotal * (discountPct / 100);
   const primary = finalTotal;
   const secondary = currency === 'USD' && rate > 0 ? primary * rate : currency === 'ARS' && rate > 0 ? primary / rate : 0;
 
   const [primaryInput, setPrimaryInput] = useState(
     primary === 0 ? "" : primary.toFixed(2).replace(".", ","),
+  );
+  const [discountInput, setDiscountInput] = useState(
+    discountPct === 0 ? "" : String(discountPct),
   );
 
   const taxRate = taxPct / 100;
@@ -65,11 +73,15 @@ export function ResumenCard({
     setPrimaryInput(primary === 0 ? "" : primary.toFixed(2).replace(".", ","));
   }, [primary]);
 
+  useEffect(() => {
+    setDiscountInput(discountPct === 0 ? "" : String(discountPct));
+  }, [discountPct]);
+
   const fmtARS = (n: number) =>
     new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
     }).format(n);
 
   const fmtUSD = (n: number) =>
@@ -121,13 +133,54 @@ export function ResumenCard({
 
         <div className="space-y-2 border-t pt-3">
           <div className="flex justify-between items-center gap-3">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">Descuento %</span>
+            <div className="flex items-center gap-2">
+              <div className="relative w-24">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.5"
+                  inputMode="decimal"
+                  className="w-full text-right text-sm font-medium tabular-nums border rounded px-2 py-1 pr-6"
+                  value={discountInput}
+                  placeholder="0"
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setDiscountInput(raw);
+                    const parsed = parseFloat(raw);
+                    onDiscountPctChange(isNaN(parsed) || parsed < 0 ? 0 : parsed);
+                  }}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+              </div>
+            </div>
+          </div>
+          {hasDiscount && (
+            <p className="text-xs text-muted-foreground text-right">
+              −{fmtPrimary(discountAmount)}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2 border-t pt-3">
+          <div className="flex justify-between items-center gap-3">
             <span className="font-semibold whitespace-nowrap text-sm">Subtotal sin IVA ({primaryLabel})</span>
             <div className="flex items-center gap-2">
               <PriceInput
                 className={`w-32 text-right text-sm font-bold tabular-nums border rounded px-2 py-1 ${
-                  hasAdjustment ? "border-primary bg-primary/5" : ""
+                  hasDiscount
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : hasAdjustment
+                      ? "border-primary bg-primary/5"
+                      : ""
                 }`}
                 value={primaryInput}
+                disabled={hasDiscount}
+                title={hasDiscount ? "Subtotal con descuento aplicado. Limpiá el descuento % para editarlo a mano." : undefined}
                 onChange={(val) => setPrimaryInput(val)}
                 onBlur={() => {
                   const parsed = parsePriceInput(primaryInput);

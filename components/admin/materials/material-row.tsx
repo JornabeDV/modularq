@@ -114,6 +114,31 @@ export function MaterialRow({
             <span className="text-muted-foreground">-</span>
           )}
         </TableCell>
+
+        <TableCell>
+          {material.precioVenta != null && material.precioVenta > 0 ? (
+            (() => {
+              const pair = formatCurrencyPair(
+                material.precioVenta,
+                material.currency || 'ARS',
+                exchangeRate ?? null
+              );
+              return (
+                <div className="flex flex-col">
+                  <span className="font-medium tabular-nums">{pair.primary}</span>
+                  {pair.secondary && (
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {pair.secondary}
+                    </span>
+                  )}
+                </div>
+              );
+            })()
+          ) : (
+            <span className="text-muted-foreground text-sm">-</span>
+          )}
+        </TableCell>
+
         <TableCell
           className="max-w-[150px] truncate"
           title={material.supplier || ""}

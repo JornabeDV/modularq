@@ -396,7 +396,7 @@ export interface CotizadorDescriptionSection {
 }
 
 export interface CotizadorItem {
-  type: 'standard_module' | 'custom_module' | 'service';
+  type: 'standard_module' | 'custom_module' | 'service' | 'stock_material';
   moduleId: string;
   moduleName: string;
   moduleDescription?: string;
@@ -404,6 +404,8 @@ export interface CotizadorItem {
   basePrice: number;
   quantity: number;
   isOptional?: boolean;
+  materialId?: string;
+  materialCode?: string;
   adicionales: Array<{
     id: string;
     name: string;
@@ -482,6 +484,7 @@ export function CotizadorPDFDocument({
   const serviceItems = items.filter((i) => i.type === 'service');
   const includedServiceItems = serviceItems.filter((i) => !i.isOptional);
   const optionalServiceItems = serviceItems.filter((i) => i.isOptional);
+  const stockMaterialItems = items.filter((i) => i.type === 'stock_material');
 
   const calculateItemTotal = (item: CotizadorItem) => {
     if (item.type === 'service' && item.isOptional) return 0;
@@ -491,7 +494,8 @@ export function CotizadorPDFDocument({
   const subtotalStandard = standardItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
   const subtotalCustom = customItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
   const subtotalServices = serviceItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
-  const computedTotal = subtotalStandard + subtotalCustom + subtotalServices;
+  const subtotalStockMaterials = stockMaterialItems.reduce((acc, item) => acc + calculateItemTotal(item), 0);
+  const computedTotal = subtotalStandard + subtotalCustom + subtotalServices + subtotalStockMaterials;
   const displayTotal = finalTotal ?? computedTotal;
   const discountAmount = discount ?? 0;
   const taxRate = (taxPct ?? 21) / 100;
@@ -508,6 +512,9 @@ export function CotizadorPDFDocument({
           <View style={styles.moduleContent}>
             <Text style={styles.moduleName}>
               {sanitizePdfText(item.moduleName)}
+              {item.materialCode && (
+                <Text style={{ fontSize: 9, color: "#6b7280", fontWeight: "normal" }}>[{sanitizePdfText(item.materialCode)}]</Text>
+              )}
               {showQty ? ` (x${item.quantity})` : ''}
             </Text>
             {item.moduleDescription && (
@@ -669,6 +676,14 @@ export function CotizadorPDFDocument({
           </View>
         )}
 
+        {/* Materiales en Stock */}
+        {stockMaterialItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Materiales</Text>
+            {stockMaterialItems.map((item, idx) => renderItem(item, idx))}
+          </View>
+        )}
+
         {/* Totales */}
         <View style={styles.totalsBox}>
           <View style={styles.totalRow}>
@@ -717,7 +732,7 @@ export function CotizadorPDFDocument({
             'Moneda: Se cotiza en dólar oficial BNA vendedor del dia de la fecha de la facturación.'
           const moneda = currency === 'USD' ? 'dólares estadounidenses' : 'pesos argentinos';
           const totalEnLetras = totalAmount > 0
-            ? `Precio de Venta: Son ${montoEnLetras(totalAmount, { moneda })}`
+            ? `${quoteType === 'rental' ? 'Precio de Alquiler' : 'Precio de Venta'}: Son ${montoEnLetras(totalAmount, { moneda })}`
             : '';
           const displayNotes: NoteItem[] = [
             ...(totalEnLetras

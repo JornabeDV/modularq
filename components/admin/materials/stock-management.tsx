@@ -23,6 +23,7 @@ type SortField =
   | "category"
   | "stockQuantity"
   | "unitPrice"
+  | "precioVenta"
   | "supplier"
   | "brand";
 type SortOrder = "asc" | "desc";
@@ -105,8 +106,14 @@ export function StockManagement() {
         updateData.unit_price = materialData.unit_price;
       if (materialData.currency !== undefined)
         updateData.currency = materialData.currency;
+      if (materialData.precio_venta !== undefined)
+        updateData.precio_venta = materialData.precio_venta;
       if (materialData.supplier !== undefined)
         updateData.supplier = materialData.supplier;
+      if (materialData.brand !== undefined)
+        updateData.brand = materialData.brand;
+      if (materialData.unit_price_ars !== undefined)
+        updateData.unit_price_ars = materialData.unit_price_ars;
 
       const result = await updateMaterial(materialId, updateData);
       if (result.success) {
@@ -199,8 +206,11 @@ export function StockManagement() {
       case "stockQuantity":
         comparison = a.stockQuantity - b.stockQuantity;
         break;
-      case "unitPrice":
+       case "unitPrice":
         comparison = (a.unitPrice || 0) - (b.unitPrice || 0);
+        break;
+      case "precioVenta":
+        comparison = (a.precioVenta || 0) - (b.precioVenta || 0);
         break;
       case "supplier":
         comparison = (a.supplier || "").localeCompare(b.supplier || "");
