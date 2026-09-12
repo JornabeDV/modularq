@@ -6,12 +6,13 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
 } from "@react-pdf/renderer"
-import { LOGO_BASE64 } from "@/lib/logo-base64"
-import { COMPANY } from "@/lib/company-config"
 import { DEFAULT_DELIVERY_CONDITIONS } from "@/lib/constants"
 import { sanitizePdfText } from "@/lib/pdf-sanitize"
+import { PdfCompanyHeader } from "@/components/pdf/PdfCompanyHeader"
+import { PdfCompanyFooter } from "@/components/pdf/PdfCompanyFooter"
+import { PdfInfoCard } from "@/components/pdf/PdfInfoCard"
+import { PdfCompanyInfoBox } from "@/components/pdf/PdfCompanyInfoBox"
 
 export interface DeliveryReceiptPDFItemAdditional {
   name: string
@@ -49,7 +50,7 @@ export interface DeliveryReceiptPDFData {
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    paddingTop: 110,
+    paddingTop: 120,
     paddingBottom: 60,
     fontSize: 10,
     fontFamily: "Helvetica",
@@ -59,8 +60,6 @@ const styles = StyleSheet.create({
     top: 25,
     left: 30,
     right: 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: "#e5e7eb",
@@ -431,76 +430,43 @@ export function DeliveryReceiptPDFDocument({
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header} fixed>
-          <View style={styles.logoSection}>
-            <Image src={LOGO_BASE64} style={styles.logo} />
-            <View>
-              <Text style={styles.companyName}>{COMPANY.name}</Text>
-              <Text style={styles.companyTagline}>{COMPANY.tagline}</Text>
-              <Text style={styles.companyContact}>{COMPANY.address}</Text>
-              <Text style={styles.companyContact}>
-                {COMPANY.phone} · {COMPANY.email}
+          <PdfCompanyHeader>
+            <View style={styles.receiptBlock}>
+              <View style={styles.disclaimer}>
+                <Text style={styles.disclaimerText}>Documento no válido como factura</Text>
+              </View>
+              <Text style={styles.receiptTitle}>
+                {receipt.type === "rental" ? "Remito de Alquiler" : "Remito de Entrega"}
               </Text>
-            </View>
-          </View>
-          <View style={styles.receiptBlock}>
-            <View style={styles.disclaimer}>
-              <Text style={styles.disclaimerText}>Documento no válido como factura</Text>
-            </View>
-            <Text style={styles.receiptTitle}>
-              {receipt.type === "rental" ? "Remito de Alquiler" : "Remito de Entrega"}
-            </Text>
-            <Text style={styles.receiptNumber}>N°: {sanitizePdfText(receipt.number)}</Text>
-            <Text style={styles.receiptDate}>
-              Emisión: {formatDate(receipt.issue_date)}
-            </Text>
-            {receipt.delivery_date && (
+              <Text style={styles.receiptNumber}>N°: {sanitizePdfText(receipt.number)}</Text>
               <Text style={styles.receiptDate}>
-                Entrega estimada: {formatDate(receipt.delivery_date)}
+                Emisión: {formatDate(receipt.issue_date)}
               </Text>
-            )}
-          </View>
+              {receipt.delivery_date && (
+                <Text style={styles.receiptDate}>
+                  Entrega estimada: {formatDate(receipt.delivery_date)}
+                </Text>
+              )}
+            </View>
+          </PdfCompanyHeader>
         </View>
 
+        {/* Datos de la empresa (page 1 only - normal flow) */}
+        <PdfCompanyInfoBox />
+
         {/* Cliente */}
-        <View style={styles.section}>
-          <View style={styles.clientBox}>
-            <Text style={styles.clientLabel}>Datos del cliente</Text>
-              <Text style={styles.clientName}>
-              {sanitizePdfText(receipt.client_name)}
-              {receipt.client_company ? ` (${sanitizePdfText(receipt.client_company)})` : ""}
-            </Text>
-            <View style={styles.clientColumns}>
-              <View style={styles.clientColumn}>
-                {receipt.client_cuit && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>CUIT</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.client_cuit)}</Text>
-                  </>
-                )}
-                {receipt.client_phone && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>Teléfono</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.client_phone)}</Text>
-                  </>
-                )}
-              </View>
-              <View style={styles.clientColumn}>
-                {receipt.client_email && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>Email</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.client_email)}</Text>
-                  </>
-                )}
-                {receipt.delivery_address && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>Dirección de entrega</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(receipt.delivery_address)}</Text>
-                  </>
-                )}
-              </View>
-            </View>
-          </View>
-        </View>
+        <PdfInfoCard
+          cardLabel="Datos del cliente"
+          title={`${receipt.client_name}${receipt.client_company ? ` (${receipt.client_company})` : ""}`}
+          leftFields={[
+            { label: "CUIT", value: receipt.client_cuit },
+            { label: "Teléfono", value: receipt.client_phone },
+          ]}
+          rightFields={[
+            { label: "Email", value: receipt.client_email },
+            { label: "Dirección de entrega", value: receipt.delivery_address },
+          ]}
+        />
 
         {/* Items */}
         {standardItems.length > 0 && renderTable("Módulos Estándar", standardItems)}
@@ -562,15 +528,7 @@ export function DeliveryReceiptPDFDocument({
         </View>
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text style={styles.footerLeft}>{COMPANY.legalName}</Text>
-          <Text
-            style={styles.footerRight}
-            render={({ pageNumber, totalPages }) =>
-              `Página ${pageNumber} de ${totalPages}`
-            }
-          />
-        </View>
+        <PdfCompanyFooter />
       </Page>
     </Document>
   )

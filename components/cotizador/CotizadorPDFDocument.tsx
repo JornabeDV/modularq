@@ -6,19 +6,20 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
   Link,
 } from "@react-pdf/renderer";
-import { LOGO_BASE64 } from "@/lib/logo-base64";
-import { COMPANY } from "@/lib/company-config";
 import { sanitizePdfText } from "@/lib/pdf-sanitize";
 import { montoEnLetras } from "@/lib/number-to-words-es";
 import type { NoteItem, GroupNote } from "@/lib/quote-notes-config";
+import { PdfCompanyHeader } from "@/components/pdf/PdfCompanyHeader";
+import { PdfCompanyFooter } from "@/components/pdf/PdfCompanyFooter";
+import { PdfInfoCard } from "@/components/pdf/PdfInfoCard";
+import { PdfCompanyInfoBox } from "@/components/pdf/PdfCompanyInfoBox";
 
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    paddingTop: 120,
+    paddingTop: 110,
     paddingBottom: 60,
     fontSize: 10,
     fontFamily: "Helvetica",
@@ -28,8 +29,6 @@ const styles = StyleSheet.create({
     top: 25,
     left: 30,
     right: 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: "#e5e7eb",
@@ -573,72 +572,43 @@ export function CotizadorPDFDocument({
         {/* Header fijo */}
         <View style={styles.header} fixed>
           {/* Izquierda: logo + datos empresa */}
-          <View style={styles.logoSection}>
-            <Image style={styles.logo} src={LOGO_BASE64} />
-            <View>
-              <Text style={styles.companyName}>{COMPANY.name}</Text>
-              <Text style={styles.companyTagline}>{COMPANY.tagline}</Text>
-              <Text style={styles.companyContact}>{COMPANY.address}</Text>
-              <Text style={styles.companyContact}>
-                {COMPANY.phone} · {COMPANY.email}
+          <PdfCompanyHeader>
+            {/* Derecha: título + número + fecha */}
+            <View style={styles.quoteBlock}>
+              <Text style={styles.quoteTitle}>
+                {quoteType === 'rental' ? 'Presupuesto de Alquiler' : 'Presupuesto de Venta'}
               </Text>
+              {quoteNumber && (
+                <Text style={styles.quoteNumber}>N°: {quoteNumber.split('-').pop()}</Text>
+              )}
+              <Text style={styles.quoteDate}>Emisión: {date}</Text>
+              {validUntil && (
+                <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
+              )}
+              {currency === 'USD' && exchangeRate && exchangeRate.venta > 0 && (
+                <Text style={styles.quoteDate}>{sanitizePdfText(exchangeRate.origen)} Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
+              )}
             </View>
-          </View>
-
-          {/* Derecha: título + número + fecha */}
-          <View style={styles.quoteBlock}>
-            <Text style={styles.quoteTitle}>
-              {quoteType === 'rental' ? 'Presupuesto de Alquiler' : 'Presupuesto de Venta'}
-            </Text>
-            {quoteNumber && (
-              <Text style={styles.quoteNumber}>N°: {quoteNumber.split('-').pop()}</Text>
-            )}
-            <Text style={styles.quoteDate}>Emisión: {date}</Text>
-            {validUntil && (
-              <Text style={styles.quoteDate}>Válida hasta: {validUntil}</Text>
-            )}
-            {currency === 'USD' && exchangeRate && exchangeRate.venta > 0 && (
-              <Text style={styles.quoteDate}>{sanitizePdfText(exchangeRate.origen)} Venta: ${exchangeRate.venta.toLocaleString('es-AR')}</Text>
-            )}
-          </View>
+          </PdfCompanyHeader>
         </View>
+
+        {/* Datos de la empresa (page 1 only - normal flow) */}
+        <PdfCompanyInfoBox />
 
         {/* Datos del cliente */}
         {client && (
-          <View style={styles.clientBox}>
-            <Text style={styles.clientLabel}>Datos del cliente</Text>
-            <Text style={styles.clientName}>{sanitizePdfText(client.name)}</Text>
-            <View style={styles.clientRow}>
-              <View style={styles.clientCol}>
-                {client.cuit && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>CUIT</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(client.cuit)}</Text>
-                  </>
-                )}
-                {client.contact && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>Contacto</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(client.contact)}</Text>
-                  </>
-                )}
-              </View>
-              <View style={styles.clientCol}>
-                {client.email && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>Email</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(client.email)}</Text>
-                  </>
-                )}
-                {client.phone && (
-                  <>
-                    <Text style={styles.clientDetailLabel}>Teléfono</Text>
-                    <Text style={styles.clientDetail}>{sanitizePdfText(client.phone)}</Text>
-                  </>
-                )}
-              </View>
-            </View>
-          </View>
+          <PdfInfoCard
+            cardLabel="Datos del cliente"
+            title={client.name}
+            leftFields={[
+              { label: "CUIT", value: client.cuit },
+              { label: "Contacto", value: client.contact },
+            ]}
+            rightFields={[
+              { label: "Email", value: client.email },
+              { label: "Teléfono", value: client.phone },
+            ]}
+          />
         )}
 
         {/* Módulos Estándar */}
@@ -831,17 +801,7 @@ export function CotizadorPDFDocument({
         })()}
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-            <Text style={styles.footerLeft}>
-              {generatorName ? `Preparado por: ${sanitizePdfText(generatorName)}` : COMPANY.legalName}
-            </Text>
-          <Text
-            style={styles.footerRight}
-            render={({ pageNumber, totalPages }) =>
-              `Página ${pageNumber} de ${totalPages}`
-            }
-          />
-        </View>
+        <PdfCompanyFooter />
       </Page>
     </Document>
   );

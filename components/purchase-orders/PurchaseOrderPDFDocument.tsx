@@ -6,11 +6,12 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
 } from "@react-pdf/renderer"
-import { LOGO_BASE64 } from "@/lib/logo-base64"
-import { COMPANY } from "@/lib/company-config"
 import { sanitizePdfText } from "@/lib/pdf-sanitize"
+import { PdfCompanyHeader } from "@/components/pdf/PdfCompanyHeader"
+import { PdfCompanyFooter } from "@/components/pdf/PdfCompanyFooter"
+import { PdfInfoCard } from "@/components/pdf/PdfInfoCard"
+import { PdfCompanyInfoBox } from "@/components/pdf/PdfCompanyInfoBox"
 
 // Tipos locales para evitar dependencias circulares
 interface PDFSupplier {
@@ -56,7 +57,7 @@ interface PDFPurchaseOrder {
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    paddingTop: 110,
+    paddingTop: 100,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
@@ -65,8 +66,6 @@ const styles = StyleSheet.create({
     top: 25,
     left: 30,
     right: 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: "#e5e7eb",
@@ -319,66 +318,32 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header} fixed>
-          <View style={styles.logoSection}>
-            <Image src={LOGO_BASE64} style={styles.logo} />
-            <View>
-              <Text style={styles.companyName}>{COMPANY.name}</Text>
-              <Text style={styles.companySlogan}>{COMPANY.tagline}</Text>
-              <Text style={styles.companyContact}>{COMPANY.address}</Text>
-              <Text style={styles.companyContact}>
-                {COMPANY.phone} · {COMPANY.email}
-              </Text>
+          <PdfCompanyHeader>
+            <View style={styles.orderTitle}>
+              <Text style={styles.orderTitleText}>Orden de Compra</Text>
+              <Text style={styles.orderCode}>N°: {sanitizePdfText(purchaseOrder.order_number)}</Text>
+              <Text style={styles.orderDate}>{formatDate(purchaseOrder.order_date || purchaseOrder.created_at)}</Text>
             </View>
-          </View>
-          <View style={styles.orderTitle}>
-            <Text style={styles.orderTitleText}>Orden de Compra</Text>
-            <Text style={styles.orderCode}>N°: {sanitizePdfText(purchaseOrder.order_number)}</Text>
-            <Text style={styles.orderDate}>{formatDate(purchaseOrder.order_date || purchaseOrder.created_at)}</Text>
-          </View>
+          </PdfCompanyHeader>
         </View>
 
+        {/* Datos de la empresa (page 1 only - normal flow) */}
+        <PdfCompanyInfoBox />
+
         {/* Proveedor */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Proveedor</Text>
-          <View style={styles.supplierInfo}>
-            <View style={styles.supplierBlock}>
-              <Text style={styles.label}>Nombre</Text>
-              <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.name)}</Text>
-            </View>
-            {purchaseOrder.supplier.contact_name && (
-              <View style={styles.supplierBlock}>
-                <Text style={styles.label}>Contacto</Text>
-                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.contact_name)}</Text>
-              </View>
-            )}
-            {purchaseOrder.supplier.cuit && (
-              <View style={styles.supplierBlock}>
-                <Text style={styles.label}>CUIT</Text>
-                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.cuit)}</Text>
-              </View>
-            )}
-          </View>
-          <View style={[styles.supplierInfo, { marginTop: 8 }]}>
-            {purchaseOrder.supplier.email && (
-              <View style={styles.supplierBlock}>
-                <Text style={styles.label}>Email</Text>
-                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.email)}</Text>
-              </View>
-            )}
-            {purchaseOrder.supplier.phone && (
-              <View style={styles.supplierBlock}>
-                <Text style={styles.label}>Teléfono</Text>
-                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.phone)}</Text>
-              </View>
-            )}
-            {purchaseOrder.supplier.address && (
-              <View style={styles.supplierBlock}>
-                <Text style={styles.label}>Dirección</Text>
-                <Text style={styles.value}>{sanitizePdfText(purchaseOrder.supplier.address)}</Text>
-              </View>
-            )}
-          </View>
-        </View>
+        <PdfInfoCard
+          cardLabel="Proveedor"
+          leftFields={[
+            { label: "Nombre", value: purchaseOrder.supplier.name },
+            { label: "CUIT", value: purchaseOrder.supplier.cuit },
+            { label: "Dirección", value: purchaseOrder.supplier.address },
+          ]}
+          rightFields={[
+            { label: "Contacto", value: purchaseOrder.supplier.contact_name },
+            { label: "Email", value: purchaseOrder.supplier.email },
+            { label: "Teléfono", value: purchaseOrder.supplier.phone },
+          ]}
+        />
 
         {/* Ítems */}
         <View style={styles.section}>
@@ -473,10 +438,7 @@ export function PurchaseOrderPDFDocument({ purchaseOrder }: PurchaseOrderPDFDocu
         )}
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text>{COMPANY.name} - {COMPANY.address}</Text>
-          <Text>{COMPANY.phone} | {COMPANY.email}</Text>
-        </View>
+        <PdfCompanyFooter />
       </Page>
     </Document>
   )
