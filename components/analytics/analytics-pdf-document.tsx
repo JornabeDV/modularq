@@ -4,10 +4,11 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
 } from "@react-pdf/renderer";
-import { LOGO_BASE64 } from "@/lib/logo-base64";
 import type { PeriodActivityStats } from "./analytics-utils";
+import { PdfCompanyHeader } from "@/components/pdf/PdfCompanyHeader";
+import { PdfCompanyFooter } from "@/components/pdf/PdfCompanyFooter";
+import { PdfCompanyInfoBox } from "@/components/pdf/PdfCompanyInfoBox";
 
 export interface PdfProject {
   name: string;
@@ -60,13 +61,6 @@ export interface AnalyticsPdfData {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const COMPANY_INFO = {
-  name: "ModulArq",
-  slogan: "Módulos Habitacionales",
-  address: "Maurín 6688 Sur, Pocito, San Juan, Argentina",
-  cuit: "30-71144558-3",
-};
-
 const STATUS_LABELS: Record<string, string> = {
   planning: "Planificación",
   active: "Activo",
@@ -95,7 +89,7 @@ const TASK_STATUS_ROWS = [
 const s = StyleSheet.create({
   page: {
     padding: 30,
-    paddingTop: 108,
+    paddingTop: 105,
     paddingBottom: 54,
     fontSize: 10,
     fontFamily: "Helvetica",
@@ -107,8 +101,6 @@ const s = StyleSheet.create({
     top: 22,
     left: 30,
     right: 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: "#e5e7eb",
@@ -299,42 +291,22 @@ function PdfHeader({
 }) {
   return (
     <View style={s.header} fixed>
-      <View style={s.logoSection}>
-        <Image style={s.logo} src={LOGO_BASE64} />
-        <View>
-          <Text style={s.companyName}>{COMPANY_INFO.name}</Text>
-          <Text style={s.companySlogan}>{COMPANY_INFO.slogan}</Text>
+      <PdfCompanyHeader>
+        <View style={s.reportTitle}>
+          <Text style={s.reportTitleText}>
+            {periodMode === "week" ? "REPORTE SEMANAL" : "REPORTE MENSUAL"}
+          </Text>
+          <Text style={s.reportPeriod}>{periodLabel}</Text>
+          <Text style={s.reportDate}>
+            Generado:{" "}
+            {generatedAt.toLocaleDateString("es-AR", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            })}
+          </Text>
         </View>
-      </View>
-      <View style={s.reportTitle}>
-        <Text style={s.reportTitleText}>
-          {periodMode === "week" ? "REPORTE SEMANAL" : "REPORTE MENSUAL"}
-        </Text>
-        <Text style={s.reportPeriod}>{periodLabel}</Text>
-        <Text style={s.reportDate}>
-          Generado:{" "}
-          {generatedAt.toLocaleDateString("es-AR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          })}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-function PdfFooter() {
-  return (
-    <View style={s.footer} fixed>
-      <Text>
-        {COMPANY_INFO.name} — {COMPANY_INFO.address}
-      </Text>
-      <Text
-        render={({ pageNumber, totalPages }) =>
-          `Página ${pageNumber} de ${totalPages}`
-        }
-      />
+      </PdfCompanyHeader>
     </View>
   );
 }
@@ -443,7 +415,11 @@ export function AnalyticsPdfDocument({ data }: { data: AnalyticsPdfData }) {
           periodLabel={periodLabel}
           periodMode={periodMode}
         />
-        <PdfFooter />
+
+        {/* Datos de la empresa (page 1 only - normal flow) */}
+        <PdfCompanyInfoBox />
+
+        <PdfCompanyFooter />
 
         {/* ── KPIs ── */}
         <View style={s.kpiRow}>

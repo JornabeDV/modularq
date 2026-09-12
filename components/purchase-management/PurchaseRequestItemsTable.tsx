@@ -169,20 +169,6 @@ export function PurchaseRequestItemsTable({
                           loading={materialsLoading}
                           onSelect={(materialId) => handleUpdateItem(index, "material_id", materialId)}
                         />
-                        {item.material_id && materialsById[item.material_id] && (
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <Badge variant="outline" className="text-[10px]">
-                              {materialsById[item.material_id].currency || 'ARS'}
-                            </Badge>
-                            {materialsById[item.material_id].unitPrice ? (
-                              <span className="text-[10px] text-muted-foreground tabular-nums">
-                                {materialsById[item.material_id].currency === 'USD'
-                                  ? `USD ${materialsById[item.material_id].unitPrice?.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
-                                  : `ARS ${materialsById[item.material_id].unitPrice?.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`}
-                              </span>
-                            ) : null}
-                          </div>
-                        )}
                       </div>
                       <CreateMaterialDialog
                         materials={materials}

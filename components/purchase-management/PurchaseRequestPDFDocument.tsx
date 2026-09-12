@@ -6,11 +6,11 @@ import {
   Text,
   View,
   StyleSheet,
-  Image,
 } from "@react-pdf/renderer"
-import { LOGO_BASE64 } from "@/lib/logo-base64"
-import { COMPANY } from "@/lib/company-config"
 import { sanitizePdfText } from "@/lib/pdf-sanitize"
+import { PdfCompanyHeader } from "@/components/pdf/PdfCompanyHeader"
+import { PdfCompanyFooter } from "@/components/pdf/PdfCompanyFooter"
+import { PdfCompanyInfoBox } from "@/components/pdf/PdfCompanyInfoBox"
 
 interface PDFMaterial {
   id?: string
@@ -37,7 +37,7 @@ interface PDFPurchaseRequest {
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    paddingTop: 110,
+    paddingTop: 100,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
@@ -46,8 +46,6 @@ const styles = StyleSheet.create({
     top: 25,
     left: 30,
     right: 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: "#e5e7eb",
@@ -216,23 +214,17 @@ export function PurchaseRequestPDFDocument({ purchaseRequest }: PurchaseRequestP
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header} fixed>
-          <View style={styles.logoSection}>
-            <Image src={LOGO_BASE64} style={styles.logo} />
-            <View>
-              <Text style={styles.companyName}>{COMPANY.name}</Text>
-              <Text style={styles.companySlogan}>{COMPANY.tagline}</Text>
-              <Text style={styles.companyContact}>{COMPANY.address}</Text>
-              <Text style={styles.companyContact}>
-                {COMPANY.phone} · {COMPANY.email}
-              </Text>
+          <PdfCompanyHeader>
+            <View style={styles.requestTitle}>
+              <Text style={styles.requestTitleText}>Pedido de Materiales</Text>
+              <Text style={styles.requestNumber}>N°: {sanitizePdfText(purchaseRequest.request_number)}</Text>
+              <Text style={styles.requestDate}>Emisión: {formatDate(purchaseRequest.created_at)}</Text>
             </View>
-          </View>
-          <View style={styles.requestTitle}>
-            <Text style={styles.requestTitleText}>Pedido de Materiales</Text>
-            <Text style={styles.requestNumber}>N°: {sanitizePdfText(purchaseRequest.request_number)}</Text>
-            <Text style={styles.requestDate}>Emisión: {formatDate(purchaseRequest.created_at)}</Text>
-          </View>
+          </PdfCompanyHeader>
         </View>
+
+        {/* Datos de la empresa (page 1 only - normal flow) */}
+        <PdfCompanyInfoBox />
 
         {/* Ítems */}
         <View style={styles.section}>
@@ -272,10 +264,7 @@ export function PurchaseRequestPDFDocument({ purchaseRequest }: PurchaseRequestP
         )}
 
         {/* Footer */}
-        <View style={styles.footer} fixed>
-          <Text>{COMPANY.name} - {COMPANY.address}</Text>
-          <Text>{COMPANY.phone} | {COMPANY.email}</Text>
-        </View>
+        <PdfCompanyFooter />
       </Page>
     </Document>
   )
